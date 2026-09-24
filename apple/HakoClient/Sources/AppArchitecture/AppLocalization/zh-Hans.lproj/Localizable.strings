@@ -1381,6 +1381,7 @@
 "IPv6-only" = "仅 IPv6";
 "Icon" = "图标";
 "Icon Only" = "仅图标";
+"Icon URL" = "图标地址";
 "Icons" = "图标";
 "Identity" = "身份";
 "Identity & Dialing" = "身份与拨号";

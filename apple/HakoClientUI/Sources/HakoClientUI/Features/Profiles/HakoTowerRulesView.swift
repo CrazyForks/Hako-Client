@@ -709,6 +709,22 @@ enum HakoTowerGroupCandidates {
     }
 }
 
+ 
+ 
+ 
+ 
+enum HakoTowerGroupIcon {
+    static func read(_ document: OrderedJSON) -> String {
+        if case .string(let value) = document.topLevelValue("icon") { return value }
+        return ""
+    }
+
+    static func apply(_ icon: String, to document: OrderedJSON) -> OrderedJSON {
+        let trimmed = icon.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? document.removingTopLevel("icon") : document.settingTopLevel("icon", to: .string(trimmed))
+    }
+}
+
 private struct HakoTowerGroupEditor: View {
     let group: ConfigurationRuleDraft.Group
     let all: [ConfigurationRuleDraft.Group]
@@ -720,6 +736,7 @@ private struct HakoTowerGroupEditor: View {
     let close: () -> Void
     @State private var query = ""
     @State private var name: String
+    @State private var icon: String
     @State private var kind: String
     @State private var selected: [String]
     @State private var includeAll: Bool
@@ -732,6 +749,7 @@ private struct HakoTowerGroupEditor: View {
         save: @escaping (OrderedJSON) async throws -> Void, close: @escaping () -> Void) {
         self.group = group; self.all = all; self.identityOnly = identityOnly; self.nodeSections = nodeSections; self.save = save; self.close = close
         _name = State(initialValue: group.name); _kind = State(initialValue: group.type)
+        _icon = State(initialValue: HakoTowerGroupIcon.read(group.document))
         if case .array(let values) = group.document.topLevelValue("proxies") { _selected = State(initialValue: values.compactMap { if case .string(let value) = $0 { return value }; return nil }) }
         else { _selected = State(initialValue: []) }
         _includeAll = State(initialValue: group.document.topLevelValue("include-all") == .scalar("true") || group.document.topLevelValue("include-all-proxies") == .scalar("true"))
@@ -743,7 +761,7 @@ private struct HakoTowerGroupEditor: View {
     }
     private var originalIncludeAll: Bool { group.document.topLevelValue("include-all") == .scalar("true") || group.document.topLevelValue("include-all-proxies") == .scalar("true") }
     private var originalFilter: String { if case .string(let value) = group.document.topLevelValue("filter") { return value }; return "" }
-    private var dirty: Bool { name != group.name || kind != group.type || selected != originalSelected || includeAll != originalIncludeAll || filter != originalFilter }
+    private var dirty: Bool { name != group.name || icon != HakoTowerGroupIcon.read(group.document) || kind != group.type || selected != originalSelected || includeAll != originalIncludeAll || filter != originalFilter }
     private var availableSections: [ConfigurationRuleTargetCandidates.Section] {
         HakoTowerGroupCandidates.available(
             groups: all.filter { $0.id != group.id }.map(\.name), excludingGroup: group.name,
@@ -760,9 +778,15 @@ private struct HakoTowerGroupEditor: View {
     var body: some View {
         Form {
             if identityOnly {
-                Section("名称与 Emoji") { TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name") }
+                Section("名称与 Emoji") {
+                    TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name")
+                    TextField("Icon URL", text: $icon, prompt: Text(verbatim: "https://…")).autocorrectionDisabled().accessibilityIdentifier("configuration.rules.group.icon")
+                }
             } else {
-                Section("名称与 Emoji") { TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name") }
+                Section("名称与 Emoji") {
+                    TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name")
+                    TextField("Icon URL", text: $icon, prompt: Text(verbatim: "https://…")).autocorrectionDisabled().accessibilityIdentifier("configuration.rules.group.icon")
+                }
                 Section {
                     Picker("Group Type", selection: $kind) { ForEach(Array(Set([group.type, "select", "url-test", "fallback"])).sorted(), id: \.self) { Text(verbatim: $0).tag($0) } }.accessibilityIdentifier("configuration.rules.group.type")
                 } footer: { Text("Changing the group type changes how routes are chosen.") }
@@ -798,7 +822,7 @@ private struct HakoTowerGroupEditor: View {
                 Button { commit() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(busy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (!identityOnly && selected.isEmpty && !includeAll))
             }
         }
-        .hakoRegistersDeparture(isDirty: dirty, isBusy: busy, save: { commit($0) }, discard: { name = group.name; kind = group.type; selected = originalSelected; includeAll = originalIncludeAll; filter = originalFilter })
+        .hakoRegistersDeparture(isDirty: dirty, isBusy: busy, save: { commit($0) }, discard: { name = group.name; icon = HakoTowerGroupIcon.read(group.document); kind = group.type; selected = originalSelected; includeAll = originalIncludeAll; filter = originalFilter })
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if insideProductModal {
                 HakoModalActionBar(primaryTitle: "Save", primaryDisabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (!identityOnly && selected.isEmpty && !includeAll), isBusy: busy, onPrimary: { commit() })
@@ -811,7 +835,7 @@ private struct HakoTowerGroupEditor: View {
         Task { @MainActor in
             defer { busy = false }
             do {
-                var document = group.document.settingTopLevel("name", to: .string(name))
+                var document = HakoTowerGroupIcon.apply(icon, to: group.document.settingTopLevel("name", to: .string(name)))
                 if !identityOnly {
                     if kind != group.type, case .object(let fields) = document {
                         let typeFields: Set<String> = ["url", "interval", "tolerance", "strategy", "lazy", "expected-status", "max-failed-times"]
