@@ -45,6 +45,13 @@ struct HakoTVNodesScreen: View {
 
      
      
+     
+     
+    private enum HeaderButton: Hashable { case unfix, testAll }
+    @FocusState private var headerFocus: HeaderButton?
+
+     
+     
     private var browsingMode: HakoTVOutboundMode {
         state.observations.mode.hasValue ? state.outboundMode : .rule
     }
@@ -103,18 +110,49 @@ struct HakoTVNodesScreen: View {
                     Button {
                         shownGroupName = group.name
                     } label: {
-                        LabeledContent {
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                                Text(group.name)
+                                    .lineLimit(1)
+                                Spacer(minLength: 0)
+                                Text(Self.groupRowValue(for: group, state: state))
+                                    .lineLimit(1)
+                                    .fixedSize()
+                                    .monospacedDigit()
+                                    .font(Self.detailFont)
+                                    .foregroundStyle(.secondary)
+                            }
                              
                              
                              
-                            Text(Self.groupRowValue(for: group, state: state))
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        } label: {
-                            Text(group.name)
-                            Text(Self.groupRowSubtitle(for: group, state: state))
-                                .lineLimit(1)
+                             
+                            HStack(spacing: 0) {
+                                Text(Self.groupRowTypeLead(for: group))
+                                    .lineLimit(1)
+                                    .fixedSize()
+                                if let selection = Self.groupRowSelection(for: group) {
+                                    Text(selection)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+                            }
+                            .font(Self.detailFont)
+                            .foregroundStyle(.secondary)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                      
                      
@@ -146,7 +184,9 @@ struct HakoTVNodesScreen: View {
                          
                          
                          
+                         
                         Button {
+                            headerFocus = .testAll
                             if let onUnpin {
                                 onUnpin(group)
                             } else {
@@ -157,6 +197,7 @@ struct HakoTVNodesScreen: View {
                                 .font(.caption)
                         }
                         .accessibilityIdentifier("tvos.nodes.unfix")
+                        .focused($headerFocus, equals: .unfix)
                     }
                     if Self.offersTestAll(for: group) {
                          
@@ -171,8 +212,16 @@ struct HakoTVNodesScreen: View {
                                 .font(.caption)
                         }
                         .accessibilityIdentifier("tvos.nodes.test-all")
+                        .focused($headerFocus, equals: .testAll)
                     }
                 }
+                 
+                 
+                 
+                 
+                 
+                 
+                .focusSection()
                 if let refusal = group.memberChoiceRefusal {
                      
                     Text(refusal.localizedForTelevision)
@@ -501,7 +550,21 @@ struct HakoTVNodesScreen: View {
      
      
     static func groupRowSubtitle(for group: HakoProxyGroupSnapshot, state: HakoTVProductState) -> String {
-        group.isEmpty ? "\(group.type) \(noNodes)" : group.type
+        groupRowTypeLead(for: group) + (groupRowSelection(for: group) ?? "")
+    }
+
+     
+     
+     
+    static func groupRowTypeLead(for group: HakoProxyGroupSnapshot) -> String {
+        if group.isEmpty { return "\(group.type) \(noNodes)" }
+        return group.currentSelection == nil ? group.type : "\(group.type) · "
+    }
+
+     
+     
+    static func groupRowSelection(for group: HakoProxyGroupSnapshot) -> String? {
+        group.isEmpty ? nil : group.currentSelection
     }
 
      
@@ -509,13 +572,12 @@ struct HakoTVNodesScreen: View {
      
      
      
-     
     static func groupRowValue(for group: HakoProxyGroupSnapshot, state: HakoTVProductState) -> String {
-        guard !group.isEmpty, let selection = group.currentSelection else { return "—" }
-        if case .measured(let milliseconds) = displayedLatency(forGroup: group, state: state) {
-            return "\(selection) (\(latencyLabel(.measured(milliseconds: milliseconds))))"
-        }
-        return selection
+        guard !group.isEmpty else { return "" }
+        return latencyLabel(
+            displayedLatency(forGroup: group, state: state),
+            failureCategory: state.failureReasons[group.name] ?? ""
+        )
     }
 
      
