@@ -753,6 +753,29 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
 
      
      
+     
+     
+     
+     
+    struct LiveLatency: Equatable {
+        let terminal: String
+        let state: HakoProxyLatencyState
+    }
+
+     
+     
+     
+    static func displayedLatency(
+        live: LiveLatency?,
+        route: String?,
+        initial: HakoProxyLatencyState
+    ) -> HakoProxyLatencyState {
+        if let live, live.terminal == route { return live.state }
+        return initial
+    }
+
+     
+     
     @ViewBuilder
     private var groupIcon: some View {
         switch HakoProxyGroupIconKind.of(group.icon) {
@@ -793,7 +816,15 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
         }
     }
 
-    @State private var liveLatency: HakoProxyLatencyState?
+    @State private var live: LiveLatency?
+
+    private var latency: HakoProxyLatencyState {
+        Self.displayedLatency(
+            live: live,
+            route: group.resolvedRuntimeRoute ?? group.runtimeSelection,
+            initial: initialLatency
+        )
+    }
 
     var body: some View {
         let _ = HakoPerf.count("proxies.list.header")
@@ -821,7 +852,7 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
                                     .truncationMode(.middle)
                             }
                             if !group.isEmpty,
-                               case .measured(let milliseconds) = liveLatency ?? initialLatency {
+                               case .measured(let milliseconds) = latency {
                                 Text(hako: .verbatim("(\(milliseconds) ms)"))
                                     .monospacedDigit()
                                     .foregroundStyle(HakoProxyLatencyPalette.color(milliseconds))
@@ -860,7 +891,7 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
              
             Button(action: test) {
                 Group {
-                    if liveLatency == .testing {
+                    if latency == .testing {
                         ProgressView()
                             .controlSize(.small)
                     } else {
@@ -921,15 +952,15 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
                 ?? Empty<HakoLatencyPulse, Never>().eraseToAnyPublisher()
         ) { batch in
             guard !group.isEmpty, let terminal = batch.groupTerminals[group.name] else {
-                if !batch.isTesting { liveLatency = nil }
+                if !batch.isTesting { live = nil }
                 return
             }
             if let landed = batch.results[terminal] {
-                liveLatency = landed
+                live = LiveLatency(terminal: terminal, state: landed)
             } else if batch.testing.contains(terminal) {
-                liveLatency = .testing
+                live = LiveLatency(terminal: terminal, state: .testing)
             } else if !batch.isTesting {
-                liveLatency = nil
+                live = nil
             }
         }
     }
