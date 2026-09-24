@@ -436,12 +436,32 @@ public extension View {
              
              
              
+             
+             
+             
+            .modifier(HakoNativePresentationOwnsDismiss())
+             
+             
+             
+             
             .environment(\.hakoProductChromeApplied, false)
     }
 }
 
 private struct HakoInsideModalPresentationKey: EnvironmentKey {
     static let defaultValue = false
+}
+
+ 
+ 
+private struct HakoNativePresentationOwnsDismiss: ViewModifier {
+    func body(content: Content) -> some View {
+#if os(macOS)
+        content
+#else
+        content.environment(\.hakoProductModalDismiss, nil)
+#endif
+    }
 }
 
 public extension EnvironmentValues {

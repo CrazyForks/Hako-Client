@@ -522,7 +522,7 @@ public extension View {
         let coverItem = HakoModalItemSplit.binding(item, keeping: immersive)
         sheet(item: sheetItem) { value in
             content(value)
-                .hakoModalPresentation(role)
+                 
                  
                  
                  
@@ -533,11 +533,12 @@ public extension View {
                  
                  
                 .environment(\.hakoProductModalDismiss) { sheetItem.wrappedValue = nil }
+                .hakoModalPresentation(role)
         }
         .fullScreenCover(item: coverItem) { value in
             content(value)
-                .hakoModalPresentation(role)
                 .environment(\.hakoProductModalDismiss) { coverItem.wrappedValue = nil }
+                .hakoModalPresentation(role)
         }
 #endif
     }
@@ -561,9 +562,9 @@ public extension View {
 #else
         sheet(isPresented: isPresented) {
             content()
-                .hakoModalPresentation(role)
                  
                 .environment(\.hakoProductModalDismiss) { isPresented.wrappedValue = false }
+                .hakoModalPresentation(role)
         }
 #endif
     }

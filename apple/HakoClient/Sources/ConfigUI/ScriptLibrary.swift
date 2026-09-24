@@ -522,7 +522,6 @@ struct ScriptEditorView: View {
     @State private var diagnosticLine: Int?
     @State private var asksAboutUnsaved = false
 
-    @State private var source: ScriptEditorSource = .write
     @State private var importAddress = ""
     @State private var showsFileImporter = false
     @State private var importing = false
@@ -548,7 +547,6 @@ struct ScriptEditorView: View {
     var body: some View {
         HakoFeatureNavigationContainer {
             VStack(spacing: 0) {
-            sourceBar
             Form {
                 Section {
                     TextField("Script name", text: $label)
@@ -560,19 +558,16 @@ struct ScriptEditorView: View {
                 } header: {
                     Text("Name")
                 }
-                switch source {
-                case .write: EmptyView()
-                case .url: urlPane
-                case .file: filePane
-                }
                 Section("Script") {
                     CodeEditorPanel(
                         text: $bodyText,
                         language: .javascript,
                         minHeight: 320,
-                        diagnosticLine: diagnosticLine
+                        diagnosticLine: diagnosticLine,
+                        chrome: .minimal
                     )
                 }
+                importSection
                 Section {
                      
                      
@@ -721,66 +716,10 @@ struct ScriptEditorView: View {
      
      
      
-    private var sourceBar: some View {
-#if os(macOS)
-        HStack(spacing: 2) {
-            sourceSegment(.write, "Write", identifier: "scripts.editor.source.write")
-            sourceSegment(.url, "URL", identifier: "scripts.editor.source.url")
-            sourceSegment(.file, "File", identifier: "scripts.editor.source.file")
-        }
-        .padding(2)
-        .background(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Color.primary.opacity(0.07))
-        )
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 2)
-#else
-        Picker(HakoCopy.key("Source"), selection: $source) {
-            Text(HakoCopy.key("Write")).tag(ScriptEditorSource.write)
-            Text(HakoCopy.key("URL")).tag(ScriptEditorSource.url)
-            Text(HakoCopy.key("File")).tag(ScriptEditorSource.file)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .accessibilityIdentifier("scripts.editor.source")
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 2)
-#endif
-    }
-
-#if os(macOS)
-    private func sourceSegment(
-        _ value: ScriptEditorSource,
-        _ key: String,
-        identifier: String
-    ) -> some View {
-        Button { source = value } label: {
-            Text(HakoCopy.key(key))
-                .font(.callout.weight(source == value ? .semibold : .regular))
-                .frame(maxWidth: .infinity, minHeight: 26)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background {
-            if source == value {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(Color(nsColor: .controlColor))
-                    .shadow(color: .black.opacity(0.18), radius: 1, y: 1)
-            }
-        }
-        .accessibilityIdentifier(identifier)
-        .accessibilityAddTraits(source == value ? .isSelected : [])
-    }
-#endif
-
-    private var urlPane: some View {
+     
+     
+    private var importSection: some View {
         Section {
-             
-             
-             
             TextField(
                 HakoCopy.key("Script URL"),
                 text: $importAddress,
@@ -798,21 +737,14 @@ struct ScriptEditorView: View {
             }
             .disabled(importing || importAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             .accessibilityIdentifier("scripts.editor.import.url")
-            if !importResult.isEmpty {
-                HakoStatusMessage(text: .copy(importResult), kind: .error)
-                    .accessibilityIdentifier("scripts.editor.import.result")
-            }
-        }
-    }
-
-    private var filePane: some View {
-        Section {
             Button("Choose File…") { showsFileImporter = true }
                 .accessibilityIdentifier("scripts.editor.import.file")
             if !importResult.isEmpty {
                 HakoStatusMessage(text: .copy(importResult), kind: .error)
                     .accessibilityIdentifier("scripts.editor.import.result")
             }
+        } header: {
+            Text("Import")
         }
     }
 
@@ -836,7 +768,6 @@ struct ScriptEditorView: View {
                let suggested = ScriptImport.suggestedName(for: url) {
                 label = suggested
             }
-            source = .write
         } catch {
             importResult = (error as NSError).localizedDescription
         }
@@ -861,7 +792,6 @@ struct ScriptEditorView: View {
                 bodyText = text
                 result = ""
                 diagnosticLine = nil
-                source = .write
             } catch {
                 importResult = ScriptImportError.notText.localizedDescription
             }
@@ -873,6 +803,8 @@ struct ScriptEditorView: View {
     private func test() async { _ = validate(name: await loadActiveProfileName()) }
 
     private func persist() {
+         
+        let source: ScriptEditorSource = importAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .write : .url
         switch ScriptEditorSaveIntent.decide(source: source, address: importAddress) {
         case .importThenSave:
              

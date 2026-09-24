@@ -507,7 +507,9 @@ struct ProfileOverrideView: View {
         let selected = selectedScriptID == script.id
         HStack(spacing: HakoTheme.Spacing.row) {
             Button {
-                selectedScriptID = script.id
+                 
+                 
+                selectedScriptID = selected ? nil : script.id
             } label: {
                 HStack {
                     Text(verbatim: script.label)
@@ -524,6 +526,7 @@ struct ProfileOverrideView: View {
                 .contentShape(Rectangle())
             }
             .hakoSelectionRowStyle()
+            .buttonStyle(.plain)
             .accessibilityIdentifier("profile.override.script.\(script.id)")
             .accessibilityAddTraits(selected ? .isSelected : [])
             Button {
