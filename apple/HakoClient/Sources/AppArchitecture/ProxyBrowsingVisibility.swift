@@ -87,7 +87,9 @@ enum ProxyBrowsingVisibility {
         case .direct:
             return []
         case .global:
-            return groups.filter { !isHidden($0) }
+             
+             
+            return groups.filter { !isHidden($0) && name($0) == kernelGlobalGroupName }
         case .rule:
             return groups.filter { group in
                 guard !isHidden(group) else { return false }
