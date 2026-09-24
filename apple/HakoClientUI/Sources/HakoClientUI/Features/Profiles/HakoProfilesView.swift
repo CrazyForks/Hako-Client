@@ -2077,7 +2077,12 @@ private struct HakoProfileDetailView<
                          
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Use Original Configuration")
-                            if let name = profile.configurationSourceNames?.first, !name.isEmpty {
+                            if profile.isTakenOverByScript {
+                                 
+                                 
+                                 
+                                Text(hako: HakoProfileSnapshot.takenOverByScript).font(.footnote).foregroundStyle(.tertiary)
+                            } else if let name = profile.configurationSourceNames?.first, !name.isEmpty {
                                 Text(verbatim: name).font(.footnote).foregroundStyle(.secondary)
                             }
                         }
@@ -2101,12 +2106,20 @@ private struct HakoProfileDetailView<
             .accessibilityIdentifier("profile-detail.configuration-sources")
             HakoRowDivider()
             }
+             
+             
+             
+             
+            let takenOver = profile.isTakenOverByScript
             Button { present(.configurationRules(profile.id)) } label: {
                 HakoProfileActionRow(title: "Rule Scheme",
-                    subtitle: profile.configurationRuleName.map { .verbatim($0) } ?? .copy("Choose a rule scheme"),
-                    symbol: .ruleDomain, tint: .primary, icon: icon)
+                    subtitle: takenOver ? HakoProfileSnapshot.takenOverByScript
+                        : profile.configurationRuleName.map { .verbatim($0) } ?? .copy("Choose a rule scheme"),
+                    symbol: .ruleDomain, tint: takenOver ? .secondary : .primary,
+                    titleColor: takenOver ? .secondary : .primary, showsDisclosure: !takenOver, icon: icon)
             }
             .buttonStyle(.plain)
+            .disabled(takenOver)
             .accessibilityIdentifier("profile-detail.configuration-rules")
             }
             if let follows = profile.followsConfigurationSourceUpdates {

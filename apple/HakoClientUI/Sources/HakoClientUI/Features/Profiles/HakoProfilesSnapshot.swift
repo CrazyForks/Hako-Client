@@ -199,6 +199,13 @@ public struct HakoProfileSnapshot:
         featureAvailability?.canSync ?? true
     }
 
+     
+     
+     
+     
+    public var isTakenOverByScript: Bool { overrideScriptName != nil }
+    public static let takenOverByScript: HakoDisplayText = .copy("Taken over by the override script")
+
     public var canConfigureSubscription: Bool {
         featureAvailability?.canConfigureSubscription ?? true
     }

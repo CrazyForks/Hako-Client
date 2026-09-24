@@ -2874,6 +2874,7 @@
 "TUN IPv6: On" = "On";
 "Tabs" = "Tabs";
 "Tailscale Demo" = "Tailscale Demo";
+"Taken over by the override script" = "Taken over by the override script";
 "Tap Retry, then allow VPN setup." = "Tap Retry, then allow VPN setup.";
 "Tap START, then allow VPN setup." = "Tap START, then allow VPN setup.";
 "Tap any backup or prior version to preview it. Swipe a current backup left to delete it; swipe a conflict copy right to keep it as the iCloud version." = "Tap any backup or prior version to preview it. Swipe a current backup left to delete it; swipe a conflict copy right to keep it as the iCloud version.";
