@@ -231,19 +231,14 @@ final class ExtensionProvider: NSObject {
         ) { [weak self] snapshot in
             guard let self else { return }
             pathLock.lock()
-            let ipv6SupportChanged = (defaultPathIsSatisfied && defaultPathSupportsIPv6)
-                != (snapshot.isReady && snapshot.supportsIPv6)
-            let interfaceChange = physicalInterfaceIdentity.observe(
-                ready: snapshot.isReady, name: snapshot.interfaceName
+            let correction = notePhysicalPathForTunnelSettings(
+                ready: snapshot.isReady, name: snapshot.interfaceName, supportsIPv6: snapshot.supportsIPv6
             )
             defaultInterfaceIndex = snapshot.interfaceIndex
-            defaultInterfaceName = snapshot.interfaceName
             defaultInterfaceType = snapshot.interfaceType
-            defaultPathIsSatisfied = snapshot.isReady
             defaultPathIsExpensive = snapshot.expensive
             defaultPathIsConstrained = snapshot.constrained
             defaultPathSupportsIPv4 = snapshot.supportsIPv4
-            defaultPathSupportsIPv6 = snapshot.supportsIPv6
             physicalPathAvailableInterfaces = snapshot.availableInterfaces
             physicalPathUpdateCount &+= 1
             physicalPathHistory.append(PhysicalPathEvent(
@@ -263,16 +258,9 @@ final class ExtensionProvider: NSObject {
             }
             let listener = interfaceListener
             pathLock.unlock()
-            if Self.pathSchedulesCorrection(
-                interfaceChange: interfaceChange, ipv6SupportChanged: ipv6SupportChanged,
-                followsPath: ipStack.tunIPv6Mode.followsPath
-            ) {
-                self.scheduleTunnelSettingsFollowingPath(
-                    hasIPv6: snapshot.isReady && snapshot.supportsIPv6,
-                    interfaceChange: interfaceChange,
-                    generation: settingsGeneration
-                )
-            }
+            followPhysicalPath(
+                correction, followsPath: ipStack.tunIPv6Mode.followsPath, generation: settingsGeneration
+            )
 #if os(iOS) || os(macOS)
              
             widgetMailbox.pathChanged(interfaceType: snapshot.interfaceType)
@@ -320,6 +308,40 @@ final class ExtensionProvider: NSObject {
         interfaceChange: PhysicalInterfaceIdentity.Change, ipv6SupportChanged: Bool, followsPath: Bool
     ) -> Bool {
         interfaceChange != .none || (ipv6SupportChanged && followsPath)
+    }
+
+    struct PathCorrection {
+        let interfaceChange: PhysicalInterfaceIdentity.Change
+        let ipv6SupportChanged: Bool
+        let hasIPv6: Bool
+    }
+
+     
+     
+    private func notePhysicalPathForTunnelSettings(
+        ready: Bool, name: String, supportsIPv6: Bool
+    ) -> PathCorrection {
+        let ipv6SupportChanged = (defaultPathIsSatisfied && defaultPathSupportsIPv6) != (ready && supportsIPv6)
+        let interfaceChange = physicalInterfaceIdentity.observe(ready: ready, name: name)
+        defaultInterfaceName = name
+        defaultPathIsSatisfied = ready
+        defaultPathSupportsIPv6 = supportsIPv6
+        return PathCorrection(
+            interfaceChange: interfaceChange, ipv6SupportChanged: ipv6SupportChanged, hasIPv6: ready && supportsIPv6
+        )
+    }
+
+     
+    private func followPhysicalPath(
+        _ correction: PathCorrection, followsPath: Bool, generation: TunnelNetworkSettingsWriter.Generation
+    ) {
+        guard Self.pathSchedulesCorrection(
+            interfaceChange: correction.interfaceChange, ipv6SupportChanged: correction.ipv6SupportChanged,
+            followsPath: followsPath
+        ) else { return }
+        scheduleTunnelSettingsFollowingPath(
+            hasIPv6: correction.hasIPv6, interfaceChange: correction.interfaceChange, generation: generation
+        )
     }
 
      
@@ -428,11 +450,11 @@ final class ExtensionProvider: NSObject {
                 self.withStateLock {
                     self.networkSettings = plan.settings
                     self.appliedSettingsRevision = plan.revision
+                     
+                     
                     self.appliedInterfaceName = plan.interfaceName
-                    if plan.interfaceName != nil {
-                        self.pathReapplyOwed = false
-                        self.pathRecoveredSinceApply = false
-                    }
+                    self.pathReapplyOwed = false
+                    self.pathRecoveredSinceApply = false
                     appliedIPv6 = plan.settings.ipv6Settings != nil
                     appliedAfterInterfaceChange = plan.followsInterfaceChange
                 }
