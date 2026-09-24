@@ -211,6 +211,7 @@ public struct HakoMacRuleEditorSheet: View {
                         draft: state.draft, rowID: id,
                         nodeCandidates: nodeCandidates,
                         createGroup: { document in try mutateThrowing { draft in try draft.setGroup(document, groupID: nil) } },
+                        geoValues: actions.geoValues,
                         commit: { raw, enabled, note in mutate { draft in
                             if let id {
                                 draft.setRule(raw, enabled: enabled, note: note, rowID: id)
@@ -722,6 +723,10 @@ struct HakoMacRuleRowEditor: View {
      
      
     let createGroup: ((OrderedJSON) throws -> Void)?
+     
+     
+     
+    let geoValues: HakoMacGeoValueLoader?
     let commit: (String, Bool, String) -> Void
     let close: () -> Void
     @State private var raw: String
@@ -742,15 +747,19 @@ struct HakoMacRuleRowEditor: View {
     @State private var structured: Bool
     @State private var pickingTarget = false
     @State private var addingGroup = false
+    @State private var pickingGeo = false
+    @State private var pickedFrom: HakoMacGeoResource?
 
     init(draft: ConfigurationRuleDraft, rowID: UUID?,
          nodeCandidates: ConfigurationRuleTargetCandidates = .init(sections: []),
          createGroup: ((OrderedJSON) throws -> Void)? = nil,
+         geoValues: HakoMacGeoValueLoader? = nil,
          commit: @escaping (String, Bool, String) -> Void, close: @escaping () -> Void) {
         self.draft = draft
         self.nodeCandidates = nodeCandidates
         self.rowID = rowID
         self.createGroup = createGroup
+        self.geoValues = geoValues
         self.commit = commit
         self.close = close
         let row = rowID.flatMap { id in draft.rows.first { $0.id == id } }
@@ -804,9 +813,18 @@ struct HakoMacRuleRowEditor: View {
             title: rowID == nil ? .copy("Add Rule") : .copy("Rule"),
             subtitle: .verbatim(raw),
             width: 560,
-            height: structured ? 480 : 340
+            height: pickingGeo ? 520 : (structured ? 480 : 340)
         ) {
-            if pickingTarget {
+            if pickingGeo, let resource = action.hakoMacGeoResource, let geoValues {
+                HakoMacGeoValuePickerPage(
+                    resource: resource, current: content, load: geoValues,
+                    identifier: "configuration-center.rule-editor.rule.geo"
+                ) { picked in
+                    content = picked
+                    pickedFrom = resource
+                    pickingGeo = false
+                }
+            } else if pickingTarget {
                 HakoMacTargetPickerPage(
                     candidates: candidates, current: target,
                     identifier: "configuration-center.rule-editor.rule.target",
@@ -830,7 +848,12 @@ struct HakoMacRuleRowEditor: View {
                             Text(hako: .copy("Rule Type"))
                         }
                         .accessibilityIdentifier("configuration-center.rule-editor.rule.action")
-                        if action.needsContent {
+                        if let resource = action.hakoMacGeoResource, geoValues != nil {
+                            HakoMacGeoValueRow(
+                                resource: resource, value: content,
+                                identifier: "configuration-center.rule-editor.rule.geo"
+                            ) { pickingGeo = true }
+                        } else if action.needsContent {
                              
                              
                             LabeledContent {
@@ -851,7 +874,12 @@ struct HakoMacRuleRowEditor: View {
                             pickingTarget = true
                         }
                     }
-                    .onChange(of: assembled) { value in raw = value }
+                    .onChange(of: action) { changed in
+                         
+                         
+                         
+                        if pickedFrom != nil, changed.hakoMacGeoResource != pickedFrom { content = ""; pickedFrom = nil }
+                    }
                 }
                 Section {
                     TextField(text: $raw, prompt: Text(verbatim: "DOMAIN-SUFFIX,example.com,DIRECT")) { Text(hako: .copy("Rule")) }
@@ -866,11 +894,15 @@ struct HakoMacRuleRowEditor: View {
             .accessibilityIdentifier("configuration-center.rule-editor.rule-sheet")
             }
         } leading: {
-            if pickingTarget {
+            if pickingGeo {
+                Button { pickingGeo = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.rule-editor.rule.geo.back")
+            } else if pickingTarget {
                 Button { pickingTarget = false } label: { Text(hako: .copy("Back")) }
                     .accessibilityIdentifier("configuration-center.rule-editor.rule.target.back")
             }
         } trailing: {
+            if !pickingGeo {
             HakoMacSheetButtons(
                 closeIdentifier: "configuration-center.rule-editor.rule.cancel",
                 primaryTitle: .copy("Done"),
@@ -879,11 +911,17 @@ struct HakoMacRuleRowEditor: View {
                 onClose: close,
                 onPrimary: { commit(raw.trimmingCharacters(in: .whitespacesAndNewlines), enabled, note); close() }
             )
+            }
         }
          
          
          
         .onAppear { if rowID == nil { raw = assembled } }
+         
+         
+         
+         
+        .onChange(of: assembled) { value in if structured { raw = value } }
          
          
          
