@@ -1873,6 +1873,7 @@ private final class HakoMacSceneModel: ObservableObject {
     fileprivate func ruleEditorSheet(_ selection: HakoMacLibrarySelection) -> some View {
         HakoMacRuleEditorSheet(
             actions: ruleEditorActions(schemeID: selection.id),
+            initialPane: selection.pane,
             saved: { [weak self] in Task { await self?.configurationLibrary.reload() } }
         )
          
@@ -1921,6 +1922,7 @@ private final class HakoMacSceneModel: ObservableObject {
                 }
             }
         )
+        actions.editScheme = { [weak self] id in self?.configurationCenterEditingScheme = HakoMacLibrarySelection(id: id) }
         actions.addChain = { [weak self] in self?.configurationCenterChain = HakoMacChainRequest(existingID: nil) }
          
         actions.reorder = { ids in list.reorder(ids) }
@@ -2026,7 +2028,8 @@ private final class HakoMacSceneModel: ObservableObject {
                 page: { [weak self] id in
                     guard let self else { return AnyView(EmptyView()) }
                     return self.configurationCenterRoutedDetail(.scheme(id), list: self.configurationCenterLatestList ?? list, actions: self.configurationCenterListActions(list))
-                }
+                },
+                editAt: { [weak self] pane in self?.configurationCenterEditingScheme = HakoMacLibrarySelection(id: schemeID, pane: pane) }
             )
         )
         pane.updateError = configurationLibrary.updateFailures[scheme.sourceID]

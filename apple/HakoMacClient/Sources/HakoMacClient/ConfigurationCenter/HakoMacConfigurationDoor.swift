@@ -49,5 +49,9 @@ struct HakoMacDoorRow: View {
  
 public struct HakoMacLibrarySelection: Identifiable, Equatable {
     public let id: String
-    public init(id: String) { self.id = id }
+     
+     
+     
+    public var pane: HakoMacRuleEditorSheet.Pane = .rules
+    public init(id: String, pane: HakoMacRuleEditorSheet.Pane = .rules) { self.id = id; self.pane = pane }
 }

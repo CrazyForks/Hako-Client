@@ -45,6 +45,10 @@ public struct HakoMacSchemePaneActions {
     public var load: @MainActor () async throws -> HakoMacRuleEditorState
      
     public var page: (@MainActor (String) -> AnyView)?
+     
+     
+     
+    public var editAt: (@MainActor (HakoMacRuleEditorSheet.Pane) -> Void)? = nil
 
     public init(
         edit: @escaping @MainActor () -> Void,
@@ -52,9 +56,11 @@ public struct HakoMacSchemePaneActions {
         update: @escaping @MainActor () async throws -> Void = {},
         delete: @escaping @MainActor () -> Void,
         load: @escaping @MainActor () async throws -> HakoMacRuleEditorState = { throw ConfigurationLibraryError.unreadable },
-        page: (@MainActor (String) -> AnyView)? = nil
+        page: (@MainActor (String) -> AnyView)? = nil,
+        editAt: (@MainActor (HakoMacRuleEditorSheet.Pane) -> Void)? = nil
     ) {
         self.edit = edit; self.duplicate = duplicate; self.update = update; self.delete = delete; self.load = load; self.page = page
+        self.editAt = editAt
     }
 
     public static var unavailable: Self { Self(edit: {}, duplicate: { throw ConfigurationLibraryError.unreadable }, delete: {}) }
@@ -93,7 +99,15 @@ public struct HakoMacSchemePane: View {
         }
     }
 
-    private var isEditable: Bool { scheme.kind == .custom && scheme.isRetainedSnapshot != true }
+     
+     
+     
+     
+     
+     
+     
+     
+    private var isEditable: Bool { scheme.isRetainedSnapshot != true }
     private var comesFromLink: Bool {
         if case .subscription = source?.origin { return true }
         return false
@@ -106,25 +120,45 @@ public struct HakoMacSchemePane: View {
          
         HakoMacCardPage {
             headerCard
-            HakoMacCardSection(footer: isEditable ? nil : .copy("Copy this rule scheme to make changes.")) {
+             
+             
+             
+             
+            HakoMacCardSection {
                 HakoMacValueRow(.copy("Kind"), value: kind).hakoMacCardRow()
                 if let source {
-                    HakoMacRoutedRow {
-                        HakoMacRuleBrowsePage(kind: .groups, load: actions.load)
-                            .navigationTitle(Text(hako: .copy("Policy Groups")))
-                    } label: {
+                     
+                     
+                     
+                     
+                     
+                    if isEditable, let editAt = actions.editAt {
                         HakoMacPushRowLabel(.copy("Policy Groups"), value: .verbatim(String(source.groupCount)))
-                    }
-                    .accessibilityIdentifier("configuration-center.scheme.groups")
-                    .hakoMacCardRow()
-                    HakoMacRoutedRow {
-                        HakoMacRuleBrowsePage(kind: .rules, load: actions.load)
-                            .navigationTitle(Text(hako: .copy("Rules")))
-                    } label: {
+                            .hakoMacPressableRow { editAt(.groups) }
+                            .accessibilityIdentifier("configuration-center.scheme.groups")
+                            .hakoMacCardRow()
                         HakoMacPushRowLabel(.copy("Rules"), value: .verbatim(String(source.ruleCount)))
+                            .hakoMacPressableRow { editAt(.rules) }
+                            .accessibilityIdentifier("configuration-center.scheme.rules")
+                            .hakoMacCardRow()
+                    } else {
+                        HakoMacRoutedRow {
+                            HakoMacRuleBrowsePage(kind: .groups, load: actions.load, edit: isEditable ? actions.edit : nil)
+                                .navigationTitle(Text(hako: .copy("Policy Groups")))
+                        } label: {
+                            HakoMacPushRowLabel(.copy("Policy Groups"), value: .verbatim(String(source.groupCount)))
+                        }
+                        .accessibilityIdentifier("configuration-center.scheme.groups")
+                        .hakoMacCardRow()
+                        HakoMacRoutedRow {
+                            HakoMacRuleBrowsePage(kind: .rules, load: actions.load, edit: isEditable ? actions.edit : nil)
+                                .navigationTitle(Text(hako: .copy("Rules")))
+                        } label: {
+                            HakoMacPushRowLabel(.copy("Rules"), value: .verbatim(String(source.ruleCount)))
+                        }
+                        .accessibilityIdentifier("configuration-center.scheme.rules")
+                        .hakoMacCardRow()
                     }
-                    .accessibilityIdentifier("configuration-center.scheme.rules")
-                    .hakoMacCardRow()
                 }
             }
             HakoMacCardSection(.copy("Used by Profiles")) {
@@ -149,6 +183,10 @@ public struct HakoMacSchemePane: View {
                 Text(hako: kind).lineLimit(1)
                 Spacer()
                 if busy { ProgressView().controlSize(.small) }
+                 
+                 
+                 
+                 
                 if isEditable {
                     Button { actions.edit() } label: { Text(hako: .copy("Edit")) }
                         .disabled(busy)
@@ -229,6 +267,10 @@ struct HakoMacRuleBrowsePage: View {
 
     let kind: Kind
     let load: @MainActor () async throws -> HakoMacRuleEditorState
+     
+     
+     
+    var edit: (@MainActor () -> Void)? = nil
     @State private var state: HakoMacRuleEditorState?
     @State private var error: String?
     @State private var filter = ""
@@ -254,6 +296,16 @@ struct HakoMacRuleBrowsePage: View {
          
          
         HakoMacCardPage {
+            if let edit {
+                HakoMacCardSection {
+                    HStack(spacing: HakoTheme.Spacing.compact) {
+                        Spacer()
+                        Button { edit() } label: { Text(hako: .copy("Edit")) }
+                            .accessibilityIdentifier("configuration-center.scheme.browse.edit")
+                    }
+                    .hakoMacCardRow()
+                }
+            }
             if let error {
                 HakoMacCardSection {
                     HStack { Text(verbatim: error).foregroundStyle(.red).accessibilityIdentifier("configuration-center.scheme.browse.error"); Spacer() }

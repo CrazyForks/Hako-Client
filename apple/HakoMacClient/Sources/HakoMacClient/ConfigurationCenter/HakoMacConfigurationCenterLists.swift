@@ -34,6 +34,10 @@ public struct HakoMacConfigurationCenterListActions {
      
     public var failure: (message: HakoDisplayText, canRetry: Bool)? = nil
     public var retryFailure: @MainActor () -> Void = {}
+     
+     
+     
+    public var editScheme: (@MainActor (String) -> Void)? = nil
 
     public init(
         addConfiguration: @escaping @MainActor () -> Void,
@@ -490,6 +494,12 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                  
                  
                  
+                 
+                 
+                if scheme.isRetainedSnapshot != true, let editScheme = actions.editScheme {
+                    Button { editScheme(scheme.id) } label: { Text(hako: .copy("Edit")) }
+                    Divider()
+                }
                 if linked.contains(scheme.sourceID) {
                     Button { Task { _ = await model.updateSource(scheme.sourceID) } } label: { Text(hako: .copy("Refresh Rules")) }
                 }
