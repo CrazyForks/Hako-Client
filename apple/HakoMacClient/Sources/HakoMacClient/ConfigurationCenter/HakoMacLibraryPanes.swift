@@ -393,7 +393,7 @@ public struct HakoMacCollectionPane: View {
                         } label: {
                             Image(systemName: "ellipsis")
                         }
-                        .menuStyle(.borderedButton).fixedSize()
+                        .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize()
                         .disabled(busy)
                         .accessibilityIdentifier("configuration-center.collection.manage")
                     }

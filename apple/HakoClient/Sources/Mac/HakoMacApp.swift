@@ -1003,6 +1003,13 @@ private final class HakoMacSceneModel: ObservableObject {
      
     @Published var configurationCenterPendingDelete: HakoMacConfigurationCenterItem?
     @Published var configurationCenterImport: HakoMacImportRequest?
+     
+     
+     
+     
+     
+     
+    var configurationCenterLatestList: HakoProfilesListPresentation?
     @Published var configurationCenterEditingScheme: HakoMacLibrarySelection?
      
      
@@ -1072,7 +1079,7 @@ private final class HakoMacSceneModel: ObservableObject {
                     )
                 }.value
             },
-            importOriginal: { payload in
+            importOriginal: { [weak self] payload in
                 let source: Profile.Source
                 switch payload.record.origin {
                 case .subscription(let link):
@@ -1087,6 +1094,9 @@ private final class HakoMacSceneModel: ObservableObject {
                     source: source,
                     rawYAML: String(decoding: payload.original, as: UTF8.self)
                 )
+                 
+                 
+                self?.configurationCenterImport = nil
             },
              
              
@@ -1650,6 +1660,7 @@ private final class HakoMacSceneModel: ObservableObject {
      
      
     func configurationCenter(_ list: HakoProfilesListPresentation) -> some View {
+        configurationCenterLatestList = list
         let actions = configurationCenterListActions(list)
         configurationCenterDeleteHandler = { item in actions.delete(item) }
         armDeleteConfirmation()
@@ -1719,17 +1730,6 @@ private final class HakoMacSceneModel: ObservableObject {
             )
             .hakoModalPresentation(.fitted)
         }
-        .sheet(item: configurationCenterChainBinding) { [weak self] request in
-            if let self {
-                let existing = request.existingID.flatMap { id in self.configurationLibrary.snapshot.sources.first { $0.id == id } }
-                HakoMacChainSheet(
-                    existing: existing,
-                    actions: self.chainSheetActions(existing: existing),
-                    close: { [weak self] in self?.configurationCenterChain = nil }
-                )
-                .hakoModalPresentation(.fitted)
-            }
-        }
          
          
          
@@ -1798,7 +1798,15 @@ private final class HakoMacSceneModel: ObservableObject {
                 AnyView(
                     HakoMacObservedLibraryPage(model: self.configurationLibrary) { [weak self] _ in
                         if let self {
-                            self.configurationCenterDetail(item, list: list, hadRecipe: hadRecipe)
+                             
+                             
+                             
+                             
+                            HakoMacFollowsProfilesPage(profiles: self.profiles) { [weak self] in
+                                if let self {
+                                    self.configurationCenterDetail(item, list: self.configurationCenterLatestList ?? list, hadRecipe: hadRecipe)
+                                }
+                            }
                         }
                     }
                     .onAppear { [weak self] in self?.configurationCenterShownItem = item }
@@ -1816,6 +1824,18 @@ private final class HakoMacSceneModel: ObservableObject {
                 AnyView(EmptyView())
             }
         }
+    }
+
+     
+     
+     
+    fileprivate func chainSheet(_ request: HakoMacChainRequest) -> some View {
+        let existing = request.existingID.flatMap { id in configurationLibrary.snapshot.sources.first { $0.id == id } }
+        return HakoMacChainSheet(
+            existing: existing,
+            actions: chainSheetActions(existing: existing),
+            close: { [weak self] in self?.configurationCenterChain = nil }
+        )
     }
 
      
@@ -2027,8 +2047,15 @@ private final class HakoMacSceneModel: ObservableObject {
             var state = Self.subscriptionState(appProfile)
             change(&state)
             let actions = subscriptionActions(profileID: id)
+            HakoMacDebugLog.note("profile-url \(id.rawValue): save autoUpdate \(state.autoUpdate) interval \(state.updateIntervalHours)")
             Task { @MainActor in
-                do { _ = try await actions.save(state) } catch { library.report(error.localizedDescription) }
+                do {
+                    let saved = try await actions.save(state)
+                    HakoMacDebugLog.note("profile-url \(id.rawValue): saved autoUpdate \(saved.autoUpdate) interval \(saved.updateIntervalHours)")
+                } catch {
+                    HakoMacDebugLog.note("profile-url \(id.rawValue): save failed \(error.localizedDescription)")
+                    library.report(error.localizedDescription)
+                }
             }
         }
          
@@ -4657,6 +4684,22 @@ struct HakoMacScriptEditorRequest: Hashable, Codable {
  
  
  
+ 
+ 
+ 
+ 
+private struct HakoMacFollowsProfilesPage<Content: View>: View {
+    let profiles: ProfilesViewModel
+    @ViewBuilder let content: () -> Content
+    @State private var generation = 0
+
+    var body: some View {
+        let _ = generation
+        content()
+            .onReceive(profiles.$profiles.dropFirst()) { _ in generation &+= 1 }
+    }
+}
+
 private struct HakoMacCentrePresentations: ViewModifier {
     @ObservedObject var model: HakoMacSceneModel
     let actions: HakoMacConfigurationCenterListActions
@@ -4675,6 +4718,10 @@ private struct HakoMacCentrePresentations: ViewModifier {
             }
             .sheet(item: model.configurationCenterEditingSchemeBinding) { selection in
                 model.ruleEditorSheet(selection)
+                    .hakoModalPresentation(.fitted)
+            }
+            .sheet(item: model.configurationCenterChainBinding) { request in
+                model.chainSheet(request)
                     .hakoModalPresentation(.fitted)
             }
     }
