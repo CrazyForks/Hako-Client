@@ -599,7 +599,7 @@ private struct ProfileAdvancedGroupsHost: View {
  
  
  
-private struct ProfileRuntimeTrustEditor: View {
+struct ProfileRuntimeTrustEditor: View {
     @Environment(\.hakoInsideProductModalPresentation)
     private var insideProductModal
     let profile: Profile
@@ -1088,5 +1088,53 @@ private struct ProfileRawPatchEditor: View {
         }
         .hakoPageTitle("Raw Fields")
         .hakoDetailPageInsets()
+    }
+}
+
+ 
+ 
+ 
+ 
+struct ProfileTrustPage: View {
+    let profile: Profile
+    let sourceYAML: String?
+    let patchJSON: String
+    let save: (String) throws -> Void
+
+    @Environment(\.hakoProductModalDismiss) private var productModalDismiss
+    @State private var dismiss = HakoDismissHandle()
+    @State private var error = ""
+
+    var body: some View {
+        HakoFeatureNavigationContainer {
+            ProfileRuntimeTrustEditor(
+                profile: profile,
+                sourceYAML: sourceYAML,
+                patchJSON: patchJSON
+            ) { patchJSON in
+                do {
+                    try save(patchJSON)
+                    close()
+                } catch {
+                    self.error = error.localizedDescription
+                }
+            }
+            .hakoFeaturePresentation(ownsNavigationContainer: true)
+            .hakoToolbarUnlessInPanel {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { close() }
+                }
+            }
+            .alert("Cannot Save", isPresented: Binding(get: { !error.isEmpty }, set: { if !$0 { error = "" } })) {
+                Button("OK") {}
+            } message: {
+                Text(verbatim: error)
+            }
+        }
+        .hakoCapturesDismiss(dismiss)
+    }
+
+    private func close() {
+        if let productModalDismiss { productModalDismiss() } else { dismiss() }
     }
 }

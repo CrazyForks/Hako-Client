@@ -3245,6 +3245,7 @@
 "Traffic is routed through the Clash packet tunnel." = "流量經由 Clash 通道轉發。";
 "Traffic passes through the entry node, then the exit node. Referenced nodes follow source updates." = "流量先經過前置節點，再由出口節點存取目標。引用的節點隨來源更新。";
 "Traffic recognition, route coverage, and connection behavior" = "管理流量識別、路由範圍與連線行為";
+"Traffic recognition, time sync and trust for this configuration" = "本設定專屬的流量識別、時間同步與信任";
 "Traffic that goes out directly is resolved once more by the direct-connection nameserver below." = "直連出去的流量會再由下方的直連 nameserver 解析一次。";
 "Traffic that matches nothing above." = "以上都未命中的流量。";
 "Traffic the outbound cannot carry leaves over DIRECT with your own address, and the connection shows no rule name. UDP applications are never interrupted." = "出口承載不了的流量會帶著你自己的網址經 DIRECT 出門，連線上也不會顯示規則名。UDP App不會被打斷。";

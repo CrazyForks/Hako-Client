@@ -533,51 +533,6 @@ struct GoldenFlowHomeAdapter: View {
         _ destination: HomeProfileEditorDestination
     ) -> some View {
         switch destination {
-        case .customNodes(let profile):
-            CustomNodesView(
-                profile: profile,
-                sourceYAML: profiles.uiProjectedYAML(for: profile),
-                loadDraft: {
-                    try profiles.providerDefinitionsDraft(for: profile)
-                },
-                 
-                 
-                 
-                prepareDraft: nil,
-                saveDraft: {
-                    try profiles.updateProviderDefinitions($0)
-                },
-                savePayload: {
-                    try profiles.updateCustomNodePayload($0, for: profile.id)
-                },
-                applyEdits: {
-                    profiles.applyProfileNow(profile.id)
-                },
-                isApplying: profiles.isActivating,
-                renameNode: { try profiles.renameProxyNode(profileID: profile.id, from: $0, to: $1) },
-            )
-        case .proxySources(let profile):
-            ProfileProviderDefinitionsView(
-                profile: profile,
-                kind: .proxy,
-                load: {
-                    try await profiles.providerDefinitionsDraftAsync(for: profile)
-                },
-                save: {
-                    try profiles.updateProviderDefinitions($0)
-                }
-            )
-        case .ruleSets(let profile):
-            ProfileProviderDefinitionsView(
-                profile: profile,
-                kind: .rule,
-                load: {
-                    try await profiles.providerDefinitionsDraftAsync(for: profile)
-                },
-                save: {
-                    try profiles.updateProviderDefinitions($0)
-                }
-            )
         case .network(let profile):
             ProfileNetworkSettingsView(
                 profile: profile,
@@ -589,13 +544,6 @@ struct GoldenFlowHomeAdapter: View {
                 }
             ) { draft in
                 try profiles.updateNetwork(draft)
-            }
-        case .rules(let profile):
-            ProfileRulesAdapter(
-                profile: profile,
-                sourceYAML: profiles.uiProjectedYAML(for: profile)
-            ) { draft in
-                try profiles.updateRules(draft)
             }
         case .rulesOverview(let profile):
             RulesOverviewHost(
@@ -656,66 +604,16 @@ struct GoldenFlowHomeAdapter: View {
                     generation: proxiesPreparationGeneration
                 )
             }
-        case .proxyChains(let profile):
-            ProfileProxyChainsView(
-                profile: profile,
-                rawYAML: profiles.runtimeSourceYAML(for: profile),
-                save: {
-                    try profiles.updateProxyChains($0)
-                },
-                 
-                 
-                 
-                 
-                measure: command.isConnected
-                    ? { name in
-                        let outcome = await command.urlTestQuietly(name: name)
-                        return outcome.succeeded ? outcome.delay : 0
-                    }
-                    : nil,
-                savePayloadDialers: { edits in
-                    guard !edits.isEmpty else {
-                        return
-                    }
-                    guard let latest = profiles.profiles.first(
-                        where: { $0.id == profile.id }
-                    ) else {
-                        throw PipelineError.sourceUnavailable(
-                            "the profile is no longer available"
-                        )
-                    }
-                    var working =
-                        try profiles.providerDefinitionsDraft(
-                            for: latest
-                        )
-                    for edit in edits {
-                        try working.setPayloadDialer(
-                            provider: edit.provider,
-                            node: edit.node,
-                            dialerProxy: edit.dialerProxy
-                        )
-                    }
-                    try profiles.updateProviderDefinitions(working)
-                },
-                openCustomNodes: {
-                    editorDestination = .customNodes(profile)
-                }
-            )
-        case .advanced(let profile):
-            ProfileAdvancedOverridesView(
+        case .trust(let profile):
+            ProfileTrustPage(
                 profile: profile,
                 sourceYAML: profiles.sourceYAML(for: profile),
-                save: {
-                    try profiles.updateAdvancedOverrides($0)
-                }
-            )
-        case .additionalFields(let profile):
-            ProfileAdditionalFieldsView(
-                profile: profile,
-                save: {
-                    try profiles.updateAdvancedOverrides($0)
-                }
-            )
+                patchJSON: profile.override.patchJSON
+            ) { patchJSON in
+                var draft = ProfileAdvancedOverridesDraft(profile: profile)
+                draft.rawPatchJSON = patchJSON
+                try profiles.updateAdvancedOverrides(draft)
+            }
         }
     }
 
@@ -1386,10 +1284,7 @@ struct GoldenFlowHomeAdapter: View {
                 proxyCount: timedTally?.proxies ?? 0,
                 ruleCount: timedTally?.rules ?? 0,
                 connection: timedPresentation,
-                initialSection:
-                    false
-                        ? .adjust
-                        : .common,
+                initialSection: .common,
                 favoriteCards: favoriteCards,
                 trafficScope:
                     trafficOnlyProxy ? .proxiedOnly : .allTraffic,
@@ -1960,22 +1855,10 @@ struct GoldenFlowHomeAdapter: View {
             return
         }
         switch action {
-        case .customNodes:
-            editorDestination = .customNodes(currentProfile)
-        case .proxyChains:
-            editorDestination = .proxyChains(currentProfile)
-        case .routingRules:
-            editorDestination = .rules(currentProfile)
         case .connection:
             editorDestination = .network(currentProfile)
-        case .proxySources:
-            editorDestination = .proxySources(currentProfile)
-        case .ruleSets:
-            editorDestination = .ruleSets(currentProfile)
-        case .advancedOverrides:
-            editorDestination = .advanced(currentProfile)
-        case .rawFields:
-            editorDestination = .additionalFields(currentProfile)
+        case .trust:
+            editorDestination = .trust(currentProfile)
         }
     }
 
@@ -1986,16 +1869,6 @@ struct GoldenFlowHomeAdapter: View {
             return module.subtitle
         }
         switch module {
-        case .nodes:
-            let chains = profile.proxyChain?.assignments.count ?? 0
-            return chains == 0
-                ? module.subtitle
-                : HakoCopy.format("%d proxy chains", locale: locale, chains)
-        case .rules:
-            let count = profile.override.appendRules.count
-            return count == 0
-                ? module.subtitle
-                : HakoCopy.format("%d personal rules", locale: locale, count)
         case .network:
             let count =
                 ProfileNetworkDraft(profile: profile)
@@ -2007,53 +1880,6 @@ struct GoldenFlowHomeAdapter: View {
                     locale: locale,
                     count
                 )
-        case .resources:
-             
-             
-             
-            guard let counts = resourceCounts, counts.hasResources else {
-                return module.subtitle
-            }
-            if counts.providers > 0 {
-                return HakoCopy.format(
-                    "%d proxy sources · %d rule sets",
-                    locale: locale,
-                    counts.proxyProviders,
-                    counts.ruleProviders
-                )
-            }
-            return HakoCopy.format(
-                "%d supporting files",
-                locale: locale,
-                counts.supportingFiles
-            )
-        case .advancedOverrides:
-            switch profile.overwriteMode ?? .standard {
-            case .standard:
-                let count =
-                    ProfileAdvancedOverridesDraft(profile: profile)
-                        .rawPatchFieldCount
-                return count == 0
-                    ? HakoCopy.string("Visual settings only", locale: locale)
-                    : HakoCopy.format(
-                        "%d additional fields",
-                        locale: locale,
-                        count
-                    )
-            case .script:
-                return profile.selectedScriptID == nil
-                    ? HakoCopy.string("Choose a local script", locale: locale)
-                    : HakoCopy.string("Local script selected", locale: locale)
-            case .custom:
-                let custom =
-                    profile.customOverwrite ?? CustomOverwriteSpec()
-                return HakoCopy.format(
-                    "%d custom groups · %d rules",
-                    locale: locale,
-                    custom.proxyGroups.count,
-                    custom.rules.count
-                )
-            }
         }
     }
 
@@ -2272,37 +2098,19 @@ struct GoldenFlowHomeAdapter: View {
 private enum HomeProfileEditorDestination: Identifiable {
     case rulesOverview(Profile)
     case proxiesOverview(Profile)
-    case customNodes(Profile)
-    case proxySources(Profile)
-    case ruleSets(Profile)
     case network(Profile)
-    case rules(Profile)
-    case proxyChains(Profile)
-    case advanced(Profile)
-    case additionalFields(Profile)
+    case trust(Profile)
 
     var id: String {
         switch self {
-        case .customNodes(let profile):
-            "\(profile.id)|custom-nodes"
-        case .proxySources(let profile):
-            "\(profile.id)|proxy-sources"
-        case .ruleSets(let profile):
-            "\(profile.id)|rule-sets"
         case .network(let profile):
             "\(profile.id)|network"
-        case .rules(let profile):
-            "\(profile.id)|rules"
+        case .trust(let profile):
+            "\(profile.id)|trust"
         case .rulesOverview(let profile):
             "\(profile.id)|rules-overview"
         case .proxiesOverview(let profile):
             "\(profile.id)|proxies-overview"
-        case .proxyChains(let profile):
-            "\(profile.id)|proxy-chains"
-        case .advanced(let profile):
-            "\(profile.id)|advanced"
-        case .additionalFields(let profile):
-            "\(profile.id)|additional-fields"
         }
     }
 }

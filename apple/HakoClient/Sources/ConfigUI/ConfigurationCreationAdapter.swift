@@ -11,8 +11,6 @@ struct ConfigurationCreationAdapter: View {
     let legacyImport: (@escaping () -> Void) -> AnyView
     var editingProfileID: String? = nil
     var editingStep: ConfigurationCreationDraft.Step? = nil
-    var personalRules: (() -> AnyView)? = nil
-    @State private var showsPersonalRules = false
     @State private var globalDNSOverride = false
     @State private var draft = ConfigurationCreationDraft()
     @State private var library = ConfigurationLibrarySnapshot()
@@ -34,9 +32,6 @@ struct ConfigurationCreationAdapter: View {
     var body: some View {
         HakoFeatureNavigationContainer {
             creationContent
-            .hakoProductModal(isPresented: $showsPersonalRules, role: .page) {
-                if let personalRules { personalRules() }
-            }
             .hakoCapturesDismiss(dismiss)
             .task { await loadLibrary() }
             .hakoProductModal(isPresented: Binding(get: { inspectedSourceID != nil },
@@ -113,7 +108,6 @@ struct ConfigurationCreationAdapter: View {
                 sourceDetails: { inspectedSourceID = $0 },
                 manageSources: { showsSourceLibrary = true },
                 manageRules: { showsRuleLibrary = true },
-                editPersonalRules: personalRules == nil ? nil : { showsPersonalRules = true },
                 completionNodes: { value in AnyView(completionContents(draft: value, nodes: true)) },
                 completionRules: { value in AnyView(completionContents(draft: value, nodes: false)) },
                 dnsDestination: { AnyView(dnsEditor(publishes: false)) }, globalDNSOverride: globalDNSOverride,

@@ -544,11 +544,7 @@ struct ProfileCenterAdapter: View {
                 editingProfileID: id.rawValue, editingStep: .sources)
         case .configurationRules(let id):
             ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
-                editingProfileID: id.rawValue, editingStep: .rules,
-                personalRules: {
-                    AnyView(capabilityView(.rules(id)))
-                })
-        case .configurationDNS(let id):
+                editingProfileID: id.rawValue, editingStep: .rules)        case .configurationDNS(let id):
             ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
                 editingProfileID: id.rawValue, editingStep: .finish)
         case .sourceEditor(let id):

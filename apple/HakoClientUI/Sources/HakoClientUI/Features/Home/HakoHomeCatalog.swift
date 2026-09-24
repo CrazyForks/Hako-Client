@@ -7,14 +7,12 @@ public enum HakoHomeSection:
     Sendable
 {
     case common
-    case adjust
 
     public var id: Self { self }
 
     public var title: String {
         switch self {
         case .common: "General"
-        case .adjust: "Override"
         }
     }
 }
@@ -80,6 +78,11 @@ public enum HakoHomeCatalog {
     }
 }
 
+ 
+ 
+ 
+ 
+ 
 public enum HakoHomeAdjustmentAction:
     String,
     CaseIterable,
@@ -88,27 +91,15 @@ public enum HakoHomeAdjustmentAction:
     Identifiable,
     Sendable
 {
-    case customNodes
-    case proxyChains
-    case routingRules
     case connection
-    case proxySources
-    case ruleSets
-    case advancedOverrides
-    case rawFields
+    case trust
 
     public var id: Self { self }
 
     public var title: String {
         switch self {
-        case .customNodes: "Custom Nodes"
-        case .proxyChains: "Proxy Chains"
-        case .routingRules: "Routing Rules"
         case .connection: "Sniffer & NTP"
-        case .proxySources: "Proxy Sources"
-        case .ruleSets: "Rule Sets"
-        case .advancedOverrides: "Advanced Overrides"
-        case .rawFields: "Raw Fields"
+        case .trust: "Compatibility & Trust"
         }
     }
 }
@@ -121,66 +112,37 @@ public enum HakoHomeAdjustmentModule:
     Identifiable,
     Sendable
 {
-    case nodes
-    case rules
     case network
-    case resources
-    case advancedOverrides
 
-    public var id: String {
-        switch self {
-        case .advancedOverrides: "advanced"
-        default: rawValue
-        }
-    }
+    public var id: String { rawValue }
 
     public var title: String {
         switch self {
-        case .nodes: "Proxy Overrides"
-        case .rules: "Personal Rules"
         case .network: "Profile Network"
-        case .resources: "Resources"
-        case .advancedOverrides: "Advanced"
         }
     }
 
     public var subtitle: String {
         switch self {
-        case .nodes: "Custom nodes and proxy chains for this profile"
-        case .rules: "Rules layered over this profile's subscription"
-        case .network: "Profile-specific traffic recognition and time sync"
-        case .resources: "Proxy sources and rule sets used by this profile"
-        case .advancedOverrides: "Scripts, custom overrides, and long-tail core fields"
+        case .network: "Traffic recognition, time sync and trust for this configuration"
         }
     }
 
     public var symbol: HakoSymbol {
         switch self {
-        case .nodes: .serverRack
-        case .rules: .ruleDomain
         case .network: .network
-        case .resources: .shippingbox
-        case .advancedOverrides: .curlybraces
         }
     }
 
     public var accent: HakoAccentRole {
         switch self {
-        case .nodes: .green
-        case .rules: .indigo
         case .network: .teal
-        case .resources: .orange
-        case .advancedOverrides: .purple
         }
     }
 
     public var actions: [HakoHomeAdjustmentAction] {
         switch self {
-        case .nodes: [.customNodes, .proxyChains]
-        case .rules: [.routingRules]
-        case .network: [.connection]
-        case .resources: [.proxySources, .ruleSets]
-        case .advancedOverrides: [.advancedOverrides, .rawFields]
+        case .network: [.connection, .trust]
         }
     }
 }

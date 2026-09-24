@@ -124,7 +124,6 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    @State private var section: HakoHomeSection
     @State private var favoriteCards: [HakoHomeCard]
     @State private var trafficScope: HakoHomeTrafficScope
     @State private var showsCardCustomization = false
@@ -146,7 +145,6 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
         self.palette = palette
         self.customizationPresentation = customizationPresentation
         self.icon = icon
-        _section = State(initialValue: snapshot.home.initialSection)
         _favoriteCards = State(initialValue: snapshot.home.favoriteCards)
         _trafficScope = State(initialValue: snapshot.home.trafficScope)
     }
@@ -156,7 +154,6 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
         Group {
             if regularShellScrollsContent {
                 homeContent
-                    .id(section)
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("home.root")
             } else {
@@ -260,12 +257,7 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
                             .frame(height: headerExpansionDistance)
                     }
                     homeContent
-                        .id(section)
                 }
-            }
-            .onChange(of: section) { _ in
-                headerCompaction.reset()
-                proxy.scrollTo(hakoHomeTopAnchor, anchor: .top)
             }
         }
         .accessibilityIdentifier("home.root")
@@ -321,9 +313,8 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
     private var homeCards: some View {
         if snapshot.selectedProfile == nil {
             unavailableProfileCard
-        } else if section == .common {
-            commonContent
         } else {
+            commonContent
             adjustmentContent
         }
     }
@@ -339,7 +330,6 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
     private func topBar(compaction: CGFloat) -> some View {
         VStack(spacing: 0) {
             header(compaction: compaction)
-            sectionPicker
         }
     }
 
@@ -742,12 +732,6 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
                 )
             )
         }
-    }
-
-    private var sectionPicker: some View {
-        HakoHomeSectionTabs(section: $section, separator: palette.separator)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, HakoTheme.Spacing.standard)
     }
 
     private var commonContent: some View {

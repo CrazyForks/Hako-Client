@@ -148,39 +148,7 @@ struct ProfileOverrideView: View {
                         Text("Patch JSON")
                     }
 
-                    Group {
-                    Section {
-                        ForEach(ruleRows.current(for: rules)) { row in
-                            let rule = ruleRows.index(of: row.id)
-                                .map { rules[$0] } ?? ""
-                            HakoMacDeletableRow(onDelete: {
-                                ruleRows.remove(row.id, from: &rules)
-                            }) {
-                                Button {
-                                    editingRule = RuleEditTarget(rowID: row.id, raw: rule)
-                                } label: {
-                                    Text(rule)
-                                        .font(.caption.monospaced())
-                                        .foregroundStyle(.primary)
-                                }
-                            }
-                        }
-                        .onDelete { ruleRows.removeOffsets($0, from: &rules) }
-                        .onMove { ruleRows.move(fromOffsets: $0, toOffset: $1, in: &rules) }
-                        .onAppear { ruleRows.resync(count: rules.count) }
-                        .onChange(of: rules.count) { ruleRows.resync(count: $0) }
-
-                        HakoAddRow(Text("Add Rule")) {
-                            editingRule = RuleEditTarget(rowID: nil, raw: "")
-                        } touchLabel: {
-                            Label("Add Rule", systemImage: HakoSymbol.plus.name)
-                        }
-                        Toggle("Insert before subscription rules", isOn: $prependRules)
-                            .accessibilityIdentifier("profile.override.prepend-rules")
-                    } header: {
-                        Text("Added Rules")
-                    }
-                    }
+                    addedRulesSection
                 }
                      
                      
@@ -376,7 +344,7 @@ struct ProfileOverrideView: View {
                      
                      
                      
-                    if mode != .custom, !rules.isEmpty {
+                    if !configurationCenter, mode != .custom, !rules.isEmpty {
                         HakoEditButton()
                     }
                 }
@@ -609,6 +577,21 @@ struct ProfileOverrideView: View {
             addingScriptSheet = true
         }
         .accessibilityIdentifier("profile.override.script.add")
+        if configurationCenter, mode != .custom, !rules.isEmpty {
+            Section {
+                HakoRoutedViewLink {
+                    HakoLazyView { exceptionsPage }
+                } label: {
+                    HakoDestinationRow(
+                        title: "This Configuration's Exceptions",
+                        subtitle: .format("%@ rules", [String(rules.count)]),
+                        symbol: .listBulletRectangle,
+                        tint: .gray
+                    )
+                }
+                .accessibilityIdentifier("profile.override.exceptions")
+            }
+        }
         if configurationCenter, mode != .custom, patchFieldCount > 0 {
             Section {
                 HakoRoutedViewLink {
@@ -624,6 +607,47 @@ struct ProfileOverrideView: View {
                 .accessibilityIdentifier("profile.override.patch")
             }
         }
+    }
+
+     
+     
+    private var addedRulesSection: some View {
+                    Section {
+                        ForEach(ruleRows.current(for: rules)) { row in
+                            let rule = ruleRows.index(of: row.id)
+                                .map { rules[$0] } ?? ""
+                            HakoMacDeletableRow(onDelete: {
+                                ruleRows.remove(row.id, from: &rules)
+                            }) {
+                                Button {
+                                    editingRule = RuleEditTarget(rowID: row.id, raw: rule)
+                                } label: {
+                                    Text(rule)
+                                        .font(.caption.monospaced())
+                                        .foregroundStyle(.primary)
+                                }
+                            }
+                        }
+                        .onDelete { ruleRows.removeOffsets($0, from: &rules) }
+                        .onMove { ruleRows.move(fromOffsets: $0, toOffset: $1, in: &rules) }
+                        .onAppear { ruleRows.resync(count: rules.count) }
+                        .onChange(of: rules.count) { ruleRows.resync(count: $0) }
+
+                        HakoAddRow(Text("Add Rule")) {
+                            editingRule = RuleEditTarget(rowID: nil, raw: "")
+                        } touchLabel: {
+                            Label("Add Rule", systemImage: HakoSymbol.plus.name)
+                        }
+                        Toggle("Insert before subscription rules", isOn: $prependRules)
+                            .accessibilityIdentifier("profile.override.prepend-rules")
+                    } header: {
+                        Text("Added Rules")
+                    }
+    }
+
+    private var exceptionsPage: some View {
+        Form { addedRulesSection }
+            .hakoPageTitle("This Configuration's Exceptions")
     }
 
     private var patchFieldCount: Int {

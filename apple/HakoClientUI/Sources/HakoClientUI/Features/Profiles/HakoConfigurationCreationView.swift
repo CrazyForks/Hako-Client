@@ -78,7 +78,6 @@ public struct HakoConfigurationCreationView: View {
     private let sourceDetails: (String) -> Void
     private let manageSources: () -> Void
     private let manageRules: () -> Void
-    private let editPersonalRules: (() -> Void)?
     private let dnsDestination: (() -> AnyView)?
      
      
@@ -108,14 +107,12 @@ public struct HakoConfigurationCreationView: View {
                 sourceDetails: @escaping (String) -> Void = { _ in },
                 manageSources: @escaping () -> Void = {},
                 manageRules: @escaping () -> Void = {},
-                editPersonalRules: (() -> Void)? = nil,
                 completionNodes: ((ConfigurationCreationDraft) -> AnyView)? = nil, completionRules: ((ConfigurationCreationDraft) -> AnyView)? = nil,
                 dnsDestination: (() -> AnyView)? = nil, globalDNSOverride: Bool = false,
                 previewNodeDNS: ((ConfigurationCreationDraft) async throws -> ConfigurationNodeDNSPreview)? = nil) {
         self.palette = palette; self.presentationClass = presentationClass; self.icon = icon
         self.completionNodes = completionNodes; self.completionRules = completionRules
         self.dnsDestination = dnsDestination; self.globalDNSOverride = globalDNSOverride
-        self.editPersonalRules = editPersonalRules
         self.editingStep = editingStep
         self.previewNodeDNS = previewNodeDNS
         self.isEditing = isEditing; self.baseline = baseline; self.sourceDetails = sourceDetails; self.manageSources = manageSources; self.manageRules = manageRules
@@ -358,12 +355,6 @@ public struct HakoConfigurationCreationView: View {
                             .accessibilityIdentifier("configuration.create.rule.\(baseID == ConfigurationBuiltins.basicRuleID ? "basic" : baseID == ConfigurationBuiltins.lazyRuleID ? "lazy" : rule.id)")
                         }
                     } header: { Text(HakoCopy.key(group.title)) }
-                }
-            }
-            if let editPersonalRules {
-                Section {
-                    Button("This Configuration's Exceptions", action: editPersonalRules)
-                        .accessibilityIdentifier("configuration.create.personal-rules")
                 }
             }
             Section {
