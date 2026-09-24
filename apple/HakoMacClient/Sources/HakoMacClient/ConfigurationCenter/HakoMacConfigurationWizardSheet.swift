@@ -78,7 +78,11 @@ public struct HakoMacConfigurationWizardSheet: View {
     @ObservedObject private var model: HakoMacConfigurationLibraryModel
     private let actions: HakoMacConfigurationWizardActions
     private let created: () -> Void
-    @Environment(\.dismiss) private var dismiss
+     
+     
+     
+     
+    @State private var dismiss = HakoDismissHandle()
     @Environment(\.locale) private var locale
     @State private var draft = ConfigurationCreationDraft()
     @State private var creationID = UUID().uuidString.lowercased()
@@ -156,7 +160,9 @@ public struct HakoMacConfigurationWizardSheet: View {
                 },
                 close: { addingSource = false }
             )
+            .hakoModalPresentation(.fitted)
         }
+        .hakoCapturesDismiss(dismiss)
     }
 
      

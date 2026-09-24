@@ -29,20 +29,19 @@ struct HakoMacCardCustomizationPanel: View {
     let commit: ([HakoHomeCard]) -> Void
 
     @State private var cards: [HakoHomeCard]
-    @Environment(\.dismiss) private var dismiss
      
      
      
      
      
-    @Environment(\.hakoProductModalDismiss) private var modalDismiss
+     
+     
+     
+     
+    @State private var dismiss = HakoDismissHandle()
 
     private func close() {
-        if let modalDismiss {
-            modalDismiss()
-        } else {
-            dismiss()
-        }
+        dismiss.closeModalOrDismiss()
     }
 
     init(
@@ -68,6 +67,7 @@ struct HakoMacCardCustomizationPanel: View {
          
         .frame(width: 460, height: 520)
         .accessibilityIdentifier("home.cards.customization")
+        .hakoCapturesDismiss(dismiss)
     }
 
     private var header: some View {

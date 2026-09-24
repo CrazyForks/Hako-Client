@@ -95,7 +95,11 @@ public struct HakoMacRuleEditorSheet: View {
 
     private let actions: HakoMacRuleEditorActions
     private let saved: () -> Void
-    @Environment(\.dismiss) private var dismiss
+     
+     
+     
+     
+    @State private var dismiss = HakoDismissHandle()
     @Environment(\.locale) private var locale
     @State private var state: HakoMacRuleEditorState?
     @State private var baseline: ConfigurationRuleDraft?
@@ -167,6 +171,7 @@ public struct HakoMacRuleEditorSheet: View {
         }
         .task { if state == nil { await load() } }
         .sheet(item: $sheet) { item in
+            Group {
             if let state {
                 switch item {
                 case .rule(let id):
@@ -209,6 +214,8 @@ public struct HakoMacRuleEditorSheet: View {
                     )
                 }
             }
+            }
+            .hakoModalPresentation(.fitted)
         }
         .alert(Text(hako: .copy("Discard Changes")), isPresented: $confirmsDiscard) {
             Button(role: .destructive) { dismiss() } label: { Text(hako: .copy("Discard Changes")) }
@@ -224,6 +231,7 @@ public struct HakoMacRuleEditorSheet: View {
             }
             Button(role: .cancel) {} label: { Text(hako: .copy("Cancel")) }
         }
+        .hakoCapturesDismiss(dismiss)
     }
 
      

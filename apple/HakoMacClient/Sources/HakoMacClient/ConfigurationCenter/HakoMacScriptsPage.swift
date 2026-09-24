@@ -171,6 +171,7 @@ public struct HakoMacScriptsPage: View {
                 addManual: { name, body in try await apply { try await actions.addManual(name, body) } },
                 close: { adding = false }
             )
+            .hakoModalPresentation(.fitted)
         }
         .alert(Text(hako: .verbatim(deleting?.label ?? "")), isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button(role: .destructive) {
@@ -208,7 +209,11 @@ public struct HakoMacScriptsPage: View {
 public struct HakoMacScriptsSheet: View {
     private let configurationName: String
     private let actions: HakoMacScriptsActions
-    @Environment(\.dismiss) private var dismiss
+     
+     
+     
+     
+    @State private var dismiss = HakoDismissHandle()
 
     public init(configurationName: String, actions: HakoMacScriptsActions) {
         self.configurationName = configurationName
@@ -221,6 +226,7 @@ public struct HakoMacScriptsSheet: View {
         } trailing: {
             HakoMacSheetButtons(closeTitle: .copy("Close"), closeIdentifier: "configuration-center.scripts.close", onClose: { dismiss() })
         }
+        .hakoCapturesDismiss(dismiss)
     }
 }
 
