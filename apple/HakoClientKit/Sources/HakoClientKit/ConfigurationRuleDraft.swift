@@ -69,10 +69,15 @@ public struct ConfigurationRuleDraft: Equatable, Sendable {
     public private(set) var rows: [Row]
     public let originalDocument: OrderedJSON
     public private(set) var generatedRuleGroups: [String: String]
+     
+    public private(set) var disabledRules: Set<String>
+    public private(set) var notes: [String: String]
 
     public init(scheme: ConfigurationRuleScheme, payload: ConfigurationSourcePayload) throws {
         schemeID = scheme.id; version = .init(payload.record); label = scheme.label
         generatedRuleGroups = scheme.generatedRuleGroups ?? [:]
+        disabledRules = Set(scheme.disabledRules ?? [])
+        notes = scheme.ruleNotes ?? [:]
         originalDocument = try OrderedJSON.parse(payload.documentJSON)
         additionalDocument = ConfigurationRuleDocument.project(originalDocument)
         groups = try ConfigurationRuleGroupSnapshot.read(additionalDocument).map { Group(id: UUID(), document: $0.document) }
@@ -114,7 +119,26 @@ public struct ConfigurationRuleDraft: Equatable, Sendable {
         if let rowID, let index = rows.firstIndex(where: { $0.id == rowID }) { rows[index].raw = raw }
         else if rowID == nil { rows.insert(.init(raw: raw), at: rows.firstIndex(where: \.isFinal) ?? rows.endIndex) }
     }
-    public mutating func remove(_ ids: Set<UUID>) { rows.removeAll { ids.contains($0.id) && !$0.isFinal } }
+    public mutating func remove(_ ids: Set<UUID>) {
+        rows.removeAll { ids.contains($0.id) && !$0.isFinal }
+        let kept = Set(rows.map(\.raw))
+        disabledRules = disabledRules.filter { kept.contains($0) }
+        notes = notes.filter { kept.contains($0.key) }
+    }
+    public func isEnabled(_ raw: String) -> Bool { !disabledRules.contains(raw) }
+    public func note(for raw: String) -> String { notes[raw] ?? "" }
+     
+    public mutating func setRule(_ raw: String, enabled: Bool, note: String, rowID: UUID?) {
+        let previous = rowID.flatMap { id in rows.first { $0.id == id }?.raw }
+        setRule(raw, rowID: rowID)
+        if let previous, previous != raw, !rows.contains(where: { $0.raw == previous }) {
+            disabledRules.remove(previous)
+            notes.removeValue(forKey: previous)
+        }
+        if enabled { disabledRules.remove(raw) } else { disabledRules.insert(raw) }
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { notes.removeValue(forKey: raw) } else { notes[raw] = trimmed }
+    }
     public mutating func move(_ ids: Set<UUID>, before target: UUID?) {
         let moving = rows.filter { ids.contains($0.id) && !$0.isFinal }
         guard !moving.isEmpty, target.map({ !ids.contains($0) }) ?? true else { return }

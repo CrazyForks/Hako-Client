@@ -1013,7 +1013,7 @@ public struct HakoConfigurationRuleEditingView: View {
     private let error: String?
     private let save: (ConfigurationRuleDraft, @escaping (Bool) -> Void) -> Void
     private let close: () -> Void
-    private let ruleEditor: (String, ConfigurationRuleDraft, @escaping (String) -> Void, (() -> Void)?) -> AnyView
+    private let ruleEditor: (String, ConfigurationRuleDraft, @escaping (String, Bool, String) -> Void, (() -> Void)?) -> AnyView
     private let groupEditor: (ConfigurationRuleDraft, UUID?, @escaping (OrderedJSON) -> Void) -> AnyView
     @Environment(\.locale) private var locale
     @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
@@ -1026,7 +1026,7 @@ public struct HakoConfigurationRuleEditingView: View {
     public init(draft: ConfigurationRuleDraft, isBusy: Bool, error: String?,
                 save: @escaping (ConfigurationRuleDraft, @escaping (Bool) -> Void) -> Void,
                 close: @escaping () -> Void,
-                ruleEditor: @escaping (String, ConfigurationRuleDraft, @escaping (String) -> Void, (() -> Void)?) -> AnyView,
+                ruleEditor: @escaping (String, ConfigurationRuleDraft, @escaping (String, Bool, String) -> Void, (() -> Void)?) -> AnyView,
                 groupEditor: @escaping (ConfigurationRuleDraft, UUID?, @escaping (OrderedJSON) -> Void) -> AnyView) {
         _draft = State(initialValue: draft); _baseline = State(initialValue: draft)
         self.isBusy = isBusy; self.error = error; self.save = save; self.close = close; self.ruleEditor = ruleEditor; self.groupEditor = groupEditor
@@ -1104,7 +1104,7 @@ public struct HakoConfigurationRuleEditingView: View {
             isBusy: isBusy, saveTitle: "Save", saveDisabled: !canSave,
             save: { submit { _ in } }, discard: { draft = baseline; close() })
         .hakoProductModal(item: $editing, role: .page) { target in
-            ruleEditor(target.raw, draft, { raw in draft.setRule(raw, rowID: target.rowID) },
+            ruleEditor(target.raw, draft, { raw, enabled, note in draft.setRule(raw, enabled: enabled, note: note, rowID: target.rowID) },
                 target.rowID.flatMap { id in
                     guard draft.rows.contains(where: { $0.id == id && !$0.isFinal }) else { return nil }
                     return { draft.remove([id]) }
@@ -1118,17 +1118,24 @@ public struct HakoConfigurationRuleEditingView: View {
         }
     }
     private func ruleRow(_ row: ConfigurationRuleDraft.Row) -> some View {
-        Button { editing = .init(rowID: row.id, raw: row.raw) } label: {
+        let enabled = draft.isEnabled(row.raw)
+        let note = draft.note(for: row.raw)
+        return Button { editing = .init(rowID: row.id, raw: row.raw) } label: {
             VStack(alignment: .leading, spacing: 4) {
                 if let rule = HakoStructuredRule.parse(row.raw) {
                     Text(verbatim: rule.action.rawValue + (rule.content.isEmpty ? "" : ", " + rule.content))
-                        .font(.callout).foregroundStyle(.primary).lineLimit(2)
+                        .font(.callout).foregroundStyle(enabled ? Color.primary : Color.secondary).lineLimit(2)
                     Text(verbatim: "→ " + rule.target).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
                 } else {
-                    Text(verbatim: row.raw).font(.callout).foregroundStyle(.primary).lineLimit(3)
+                    Text(verbatim: row.raw).font(.callout).foregroundStyle(enabled ? Color.primary : Color.secondary).lineLimit(3)
+                }
+                if !note.isEmpty {
+                    Text(verbatim: note).font(.footnote).foregroundStyle(.secondary).lineLimit(2)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-        }.buttonStyle(.plain).accessibilityIdentifier("configuration.rule.editor.row.\(row.id)")
+        }.buttonStyle(.plain)
+            .accessibilityValue(Text(enabled ? "" : "Off"))
+            .accessibilityIdentifier("configuration.rule.editor.row.\(row.id)")
     }
     private func submit(_ completion: @escaping (Bool) -> Void) {
         guard canSave else { completion(false); return }

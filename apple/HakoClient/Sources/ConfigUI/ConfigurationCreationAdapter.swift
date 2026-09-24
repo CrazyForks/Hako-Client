@@ -1519,7 +1519,10 @@ private struct ConfigurationRuleEditingAdapter: View {
                             }
                         }, close: close, ruleEditor: { raw, draft, accept, delete in
                             AnyView(HakoFeatureNavigationContainer {
-                                RuleBuilderAdapter(raw: raw, options: ConfigurationGroupEditorBridge.ruleOptions(draft), showsPersonalMetadata: false, delete: delete, save: accept)
+                                RuleBuilderAdapter(raw: raw, options: ConfigurationGroupEditorBridge.ruleOptions(draft), showsPersonalMetadata: true,
+                                    delete: delete, enabled: draft.isEnabled(raw), comment: draft.note(for: raw),
+                                    saveDetails: { raw, enabled, comment in accept(raw, enabled, comment) },
+                                    save: { raw in accept(raw, true, "") })
                             })
                         }, groupEditor: { draft, groupID, accept in
                             AnyView(ConfigurationGroupEditorBridge.editor(draft: draft, groupID: groupID, locale: locale, accept: accept))

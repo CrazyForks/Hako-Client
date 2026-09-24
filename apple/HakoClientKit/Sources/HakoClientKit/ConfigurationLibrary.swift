@@ -92,6 +92,11 @@ public struct ConfigurationRuleScheme: Codable, Equatable, Identifiable, Sendabl
     public var baseSchemeID: String? = nil
     public var initialDocumentJSON: String? = nil
     public var generatedRuleGroups: [String: String]? = nil
+     
+     
+     
+    public var disabledRules: [String]? = nil
+    public var ruleNotes: [String: String]? = nil
     public init(id: String = UUID().uuidString, label: String, kind: Kind, sourceID: String) {
         self.id = id; self.label = label; self.kind = kind; self.sourceID = sourceID
     }

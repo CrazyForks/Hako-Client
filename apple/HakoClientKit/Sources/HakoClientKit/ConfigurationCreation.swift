@@ -430,6 +430,8 @@ extension ConfigurationLibraryStore {
             documentJSON: document.serialized(), resourceFiles: previous.resourceFiles,
             ruleBaselineJSON: kind == .custom ? nil : ConfigurationRuleDocument.project(try OrderedJSON.parse(previous.ruleBaselineJSON ?? previous.documentJSON)).serialized())
         candidate.sources[sourceIndex] = replacement.record; candidate.rules[schemeIndex].label = name
+        candidate.rules[schemeIndex].disabledRules = draft.disabledRules.isEmpty ? nil : draft.disabledRules.sorted()
+        candidate.rules[schemeIndex].ruleNotes = draft.notes.isEmpty ? nil : draft.notes
         let rules = try resolveInput(replacement)
         guard rules.id == record.id else { throw ConfigurationLibraryError.invalidIdentifier }
         var compositions: [String: ConfigurationComposition] = [:]
@@ -525,6 +527,15 @@ extension ConfigurationLibraryStore {
         let inputs = try allInputs.map { input in try nodeScopes?[input.id]?.applying(to: input) ?? input }
         let scheme = try snapshot().rules.first { $0.id == schemeID }
         var routing = ConfigurationRuleDocument.project(try scheme?.projectingCollection(original.document) ?? original.document)
+         
+         
+        if let off = scheme?.disabledRules, !off.isEmpty, case .array(let rules) = routing.topLevelValue("rules") {
+            let offSet = Set(off)
+            routing = routing.settingTopLevel("rules", to: .array(rules.filter { rule in
+                if case .string(let raw) = rule { return !offSet.contains(raw) }
+                return true
+            }))
+        }
         if schemeID == ConfigurationBuiltins.basicRuleID {
             routing = inputs.isEmpty
                 ? .object([("proxy-groups", .array([])), ("rules", .array([.string("MATCH,DIRECT")]))])
