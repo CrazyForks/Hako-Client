@@ -25,6 +25,9 @@ struct PreappliedTunnelDescriptor: Equatable, Codable {
     var inet6IncludedRoutes: [String]
     var inet6ExcludedRoutes: [String]
     var strictRoute: Bool
+     
+    var queryMode: String = ""
+    var ipv6Mode: String = ""
 
     static func == (lhs: Self, rhs: Self) -> Bool {
          
@@ -33,6 +36,8 @@ struct PreappliedTunnelDescriptor: Equatable, Codable {
         lhs.mtu == rhs.mtu
             && lhs.dnsServerAddress == rhs.dnsServerAddress
             && lhs.strictRoute == rhs.strictRoute
+            && lhs.queryMode == rhs.queryMode
+            && lhs.ipv6Mode == rhs.ipv6Mode
             && lhs.inet4Addresses.sorted() == rhs.inet4Addresses.sorted()
             && lhs.inet6Addresses.sorted() == rhs.inet6Addresses.sorted()
             && lhs.inet4IncludedRoutes.sorted() == rhs.inet4IncludedRoutes.sorted()
@@ -108,17 +113,32 @@ struct PreappliedTunnelStore {
         return record
     }
 
-    func descriptor(forTunIntent fingerprint: String) -> PreappliedTunnelDescriptor? {
+    private func cacheKey(_ fingerprint: String, queryMode: String, ipv6Mode: String) -> String? {
         guard !fingerprint.isEmpty else { return nil }
-        return load()?.descriptors[fingerprint]
+        if queryMode.isEmpty && ipv6Mode.isEmpty { return fingerprint }
+        guard ["ipv4-only", "dual-stack", "prefer-ipv4", "prefer-ipv6", "ipv6-only"].contains(queryMode),
+              ["disabled", "automatic", "enabled"].contains(ipv6Mode)
+        else { return nil }
+        return "\(fingerprint)|\(queryMode)|\(ipv6Mode)"
     }
 
-    func remember(_ descriptor: PreappliedTunnelDescriptor, forTunIntent fingerprint: String) {
-        guard !fingerprint.isEmpty else { return }
+    func descriptor(forTunIntent fingerprint: String, queryMode: String = "", ipv6Mode: String = "") -> PreappliedTunnelDescriptor? {
+        guard let key = cacheKey(fingerprint, queryMode: queryMode, ipv6Mode: ipv6Mode),
+              let descriptor = load()?.descriptors[key],
+              descriptor.queryMode == queryMode, descriptor.ipv6Mode == ipv6Mode
+        else { return nil }
+        return descriptor
+    }
+
+    func remember(_ descriptor: PreappliedTunnelDescriptor, forTunIntent fingerprint: String,
+                  queryMode: String = "", ipv6Mode: String = "") {
+        guard let key = cacheKey(fingerprint, queryMode: queryMode, ipv6Mode: ipv6Mode),
+              descriptor.queryMode == queryMode, descriptor.ipv6Mode == ipv6Mode
+        else { return }
         var record = load() ?? Record(build: Self.currentBuild(), order: [], descriptors: [:])
-        record.descriptors[fingerprint] = descriptor
-        record.order.removeAll { $0 == fingerprint }
-        record.order.append(fingerprint)
+        record.descriptors[key] = descriptor
+        record.order.removeAll { $0 == key }
+        record.order.append(key)
         while record.order.count > Self.remembered {
             record.descriptors.removeValue(forKey: record.order.removeFirst())
         }
@@ -126,6 +146,7 @@ struct PreappliedTunnelStore {
             defaults?.set(payload, forKey: Self.key)
         }
     }
+
 }
 
  
