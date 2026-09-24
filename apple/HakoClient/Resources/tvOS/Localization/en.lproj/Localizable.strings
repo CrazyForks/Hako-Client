@@ -10,6 +10,7 @@
 "%lld resolvers · %@" = "%lld resolvers · %@";
 "1 connection · newest first" = "1 connection · newest first";
 "1 never matches here" = "1 never matches here";
+"A VPN operation is already in progress. Wait for it to finish before changing IP Stack settings." = "A VPN operation is already in progress. Wait for it to finish before changing IP Stack settings.";
 "A load-balance group spreads connections across its members, so it has no single route to pin." = "A load-balance group spreads connections across its members, so it has no single route to pin.";
 "A relay sends traffic through its members in order, so there is no one member to choose." = "A relay sends traffic through its members in order, so there is no one member to choose.";
 "A valid memory sample was not included in the reply." = "A valid memory sample was not included in the reply.";
@@ -20,7 +21,10 @@
 "Address" = "Address";
 "Advanced metadata" = "Advanced metadata";
 "All" = "All";
+"Allow VPN setup to connect." = "Allow VPN setup to connect.";
+"Always handle IPv6 in the tunnel. This may cause problems on networks without IPv6 support." = "Always handle IPv6 in the tunnel. This may cause problems on networks without IPv6 support.";
 "An earlier tunnel request is still unresolved." = "An earlier tunnel request is still unresolved.";
+"Applying IP Stack settings…" = "Applying IP Stack settings…";
 "Asked when the first answer looks wrong or is not trusted for the destination." = "Asked when the first answer looks wrong or is not trusted for the destination.";
 "Asynchronous reload is not supported here." = "Asynchronous reload is not supported here.";
 "Bad HTTP" = "Bad HTTP";
@@ -28,9 +32,11 @@
 "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back." = "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back.";
 "Bundled" = "Bundled";
 "Cancel" = "Cancel";
+"Changing this setting restarts the VPN." = "Changing this setting restarts the VPN.";
 "Check that the subscription address is still reachable, then update it once from its own screen." = "Check that the subscription address is still reachable, then update it once from its own screen.";
 "Checking…" = "Checking…";
 "Choice confirmed %@" = "Choice confirmed %@";
+"Choose the IP query mode and how the tunnel handles IPv6. Changes restart a connected VPN." = "Choose the IP query mode and how the tunnel handles IPv6. Changes restart a connected VPN.";
 "Choose the device to restore from" = "Choose the device to restore from";
 "Clash" = "Clash";
 "Clash could not open its secure shared container." = "Clash could not open its secure shared container.";
@@ -58,6 +64,7 @@
 "Diagnostics" = "Diagnostics";
 "Direct" = "Direct";
 "Direct Mode" = "Direct Mode";
+"Do not handle IPv6 traffic in the tunnel." = "Do not handle IPv6 traffic in the tunnel.";
 "Domain" = "Domain";
 "Download" = "Download";
 "Downloading configuration…" = "Downloading configuration…";
@@ -74,8 +81,16 @@
 "Geo data" = "Geo data";
 "Global" = "Global";
 "HTTP and SOCKS5 · username and password required" = "HTTP and SOCKS5 · username and password required";
+"Handle IPv6 when the current network supports it. Network changes update the tunnel without restarting it." = "Handle IPv6 when the current network supports it. Network changes update the tunnel without restarting it.";
 "Home" = "Home";
 "How the tunnel answers a name. fake-ip hands out a placeholder address and routes by the name; redir-host resolves for real first." = "How the tunnel answers a name. fake-ip hands out a placeholder address and routes by the name; redir-host resolves for real first.";
+"IP Query Mode" = "IP Query Mode";
+"IP Stack" = "IP Stack";
+"IP Stack preferences could not be saved (%@), and the previous VPN settings could not be restored (%@). The VPN was not restarted." = "IP Stack preferences could not be saved (%@), and the previous VPN settings could not be restored (%@). The VPN was not restarted.";
+"IP Stack settings were saved, but the VPN did not restart. Connect again to apply them." = "IP Stack settings were saved, but the VPN did not restart. Connect again to apply them.";
+"IPv4 & IPv6" = "IPv4 & IPv6";
+"IPv4 Only" = "IPv4 Only";
+"IPv6 Only (Use with Caution)" = "IPv6 Only (Use with Caution)";
 "In force" = "In force";
 "In use" = "In use";
 "In use. The tunnel fetches its configuration from this address." = "In use. The tunnel fetches its configuration from this address.";
@@ -164,6 +179,8 @@
 "Policy groups and the nodes in each. Press a node to use it; a url-test group picks its own until you do." = "Policy groups and the nodes in each. Press a node to use it; a url-test group picks its own until you do.";
 "Port" = "Port";
 "Powered by Hako" = "Powered by Hako";
+"Prefer IPv4" = "Prefer IPv4";
+"Prefer IPv6" = "Prefer IPv6";
 "Preparing configuration…" = "Preparing configuration…";
 "Profile" = "Profile";
 "Profile URL" = "Profile URL";
@@ -174,6 +191,9 @@
 "Providers" = "Providers";
 "Proxied" = "Proxied";
 "Proxy chain" = "Proxy chain";
+"Query IPv4 and IPv6 together and use the first usable response." = "Query IPv4 and IPv6 together and use the first usable response.";
+"Query only IPv4 addresses and reject IPv6 connections." = "Query only IPv4 addresses and reject IPv6 connections.";
+"Query only IPv6 addresses and reject IPv4 connections. Use with caution: some destinations may be unreachable." = "Query only IPv6 addresses and reject IPv4 connections. Use with caution: some destinations may be unreachable.";
 "Read-only status of the running tunnel: whether it is up, what it is using, and what it has loaded." = "Read-only status of the running tunnel: whether it is up, what it is using, and what it has loaded.";
 "Ready" = "Ready";
 "Ready to restore" = "Ready to restore";
@@ -203,6 +223,7 @@
 "STOPPING" = "STOPPING";
 "Save" = "Save";
 "Saving configuration…" = "Saving configuration…";
+"Select Retry, then allow VPN setup." = "Select Retry, then allow VPN setup.";
 "Selected locally · Runtime not confirmed" = "Selected locally · Runtime not confirmed";
 "Send all traffic through the selected proxy" = "Send all traffic through the selected proxy";
 "Session total · %@" = "Session total · %@";
@@ -221,6 +242,10 @@
 "Stops the tunnel. The configuration and the selected node stay as they are." = "Stops the tunnel. The configuration and the selected node stay as they are.";
 "Switching Route" = "Switching Route";
 "System" = "System";
+"TUN IPv6 Configuration" = "TUN IPv6 Configuration";
+"TUN IPv6: Automatic" = "TUN IPv6: Automatic";
+"TUN IPv6: Off" = "TUN IPv6: Off";
+"TUN IPv6: On" = "TUN IPv6: On";
 "Test" = "Test";
 "Test all" = "Test all";
 "Testing…" = "Testing…";
@@ -262,6 +287,7 @@
 "The request was sent, but its result could not be confirmed. It will not be sent again automatically." = "The request was sent, but its result could not be confirmed. It will not be sent again automatically.";
 "The request's reply belongs to an earlier connection." = "The request's reply belongs to an earlier connection.";
 "The resolvers asked first, in this order." = "The resolvers asked first, in this order.";
+"The saved IP Stack settings are invalid or require a newer app version. They have not been changed." = "The saved IP Stack settings are invalid or require a newer app version. They have not been changed.";
 "The saved configuration is damaged. Import it again." = "The saved configuration is damaged. Import it again.";
 "The server answered %lld. Check the address on your phone." = "The server answered %lld. Check the address on your phone.";
 "The subscription could not be fetched: the request timed out." = "The subscription could not be fetched: the request timed out.";
@@ -306,6 +332,8 @@
 "Valid traffic rates were not included in the reply." = "Valid traffic rates were not included in the reply.";
 "Version" = "Version";
 "Version %@" = "Version %@";
+"Wait for both query results. Prefer IPv4 when available; otherwise use IPv6. This can add latency." = "Wait for both query results. Prefer IPv4 when available; otherwise use IPv6. This can add latency.";
+"Wait for both query results. Prefer IPv6 when available; otherwise use IPv4. This can add latency." = "Wait for both query results. Prefer IPv6 when available; otherwise use IPv4. This can add latency.";
 "Waiting" = "Waiting";
 "Waiting for runtime confirmation" = "Waiting for runtime confirmation";
 "Waiting for update · Last read %@" = "Waiting for update · Last read %@";

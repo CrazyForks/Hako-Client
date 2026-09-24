@@ -39,6 +39,7 @@ struct HakoTVProductState {
      
      
     var issue: String?
+    var vpnAuthorization: HakoVPNAuthorizationState?
      
      
     var pipelinePhase: HakoTVConfigPipeline.Phase?

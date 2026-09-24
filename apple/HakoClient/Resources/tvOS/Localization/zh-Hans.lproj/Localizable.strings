@@ -10,6 +10,7 @@
 "%lld resolvers · %@" = "%lld 个解析器 · %@";
 "1 connection · newest first" = "1 个连接 · 最新在上";
 "1 never matches here" = "1 条在此永不匹配";
+"A VPN operation is already in progress. Wait for it to finish before changing IP Stack settings." = "VPN 操作正在进行，请完成后再更改 IP Stack 设置。";
 "A load-balance group spreads connections across its members, so it has no single route to pin." = "load-balance 组会把连接分散到各成员，因此没有可固定的单一线路。";
 "A relay sends traffic through its members in order, so there is no one member to choose." = "relay 组会按顺序把流量依次经过各成员，因此没有单独可选的成员。";
 "A valid memory sample was not included in the reply." = "回复未包含有效的内存样本。";
@@ -20,7 +21,10 @@
 "Address" = "地址";
 "Advanced metadata" = "高级元数据";
 "All" = "全部";
+"Allow VPN setup to connect." = "允许添加 VPN 配置以连接。";
+"Always handle IPv6 in the tunnel. This may cause problems on networks without IPv6 support." = "始终在隧道中处理 IPv6。在不支持 IPv6 的网络上可能出现问题。";
 "An earlier tunnel request is still unresolved." = "较早的隧道请求仍未完成。";
+"Applying IP Stack settings…" = "正在应用 IP Stack 设置…";
 "Asked when the first answer looks wrong or is not trusted for the destination." = "当第一组解析器的答案看起来不对、或对该目标不可信时，改问这些。";
 "Asynchronous reload is not supported here." = "此处不支持异步重载。";
 "Bad HTTP" = "异常";
@@ -28,9 +32,11 @@
 "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back." = "把 iPhone 或 Mac 存在 iCloud 里的配置带到这台 Apple TV，并保持最新。不会写回任何内容。";
 "Bundled" = "内置";
 "Cancel" = "取消";
+"Changing this setting restarts the VPN." = "更改此设置会重启 VPN。";
 "Check that the subscription address is still reachable, then update it once from its own screen." = "先确认订阅地址仍可访问，然后在它自己的页面里更新一次。";
 "Checking…" = "正在检查…";
 "Choice confirmed %@" = "选择确认于 %@";
+"Choose the IP query mode and how the tunnel handles IPv6. Changes restart a connected VPN." = "选择 IP 查询模式和隧道处理 IPv6 的方式。更改会重启已连接的 VPN。";
 "Choose the device to restore from" = "选择要从哪台设备恢复";
 "Clash" = "Clash";
 "Clash could not open its secure shared container." = "Clash 无法打开其安全共享容器。";
@@ -58,6 +64,7 @@
 "Diagnostics" = "诊断";
 "Direct" = "直连";
 "Direct Mode" = "直连模式";
+"Do not handle IPv6 traffic in the tunnel." = "不在隧道中处理 IPv6 流量。";
 "Domain" = "Domain";
 "Download" = "下载";
 "Downloading configuration…" = "正在下载配置…";
@@ -74,8 +81,16 @@
 "Geo data" = "Geo 数据";
 "Global" = "全局";
 "HTTP and SOCKS5 · username and password required" = "HTTP 与 SOCKS5 · 需要用户名和密码";
+"Handle IPv6 when the current network supports it. Network changes update the tunnel without restarting it." = "当前网络支持 IPv6 时由隧道处理。网络变化时更新隧道，无需重启。";
 "Home" = "首页";
 "How the tunnel answers a name. fake-ip hands out a placeholder address and routes by the name; redir-host resolves for real first." = "隧道如何应答域名查询。fake-ip 先发一个占位地址、按域名分流；redir-host 则先真正解析。";
+"IP Query Mode" = "IP 查询模式";
+"IP Stack" = "IP Stack";
+"IP Stack preferences could not be saved (%@), and the previous VPN settings could not be restored (%@). The VPN was not restarted." = "无法保存 IP Stack 偏好设置（%@），也无法恢复之前的 VPN 设置（%@）。VPN 未重启。";
+"IP Stack settings were saved, but the VPN did not restart. Connect again to apply them." = "IP Stack 设置已保存，但 VPN 未能重新启动。请重新连接以应用设置。";
+"IPv4 & IPv6" = "IPv4 与 IPv6";
+"IPv4 Only" = "仅 IPv4";
+"IPv6 Only (Use with Caution)" = "仅 IPv6（谨慎使用）";
 "In force" = "生效中";
 "In use" = "使用中";
 "In use. The tunnel fetches its configuration from this address." = "使用中。隧道从这个地址获取配置。";
@@ -164,6 +179,8 @@
 "Policy groups and the nodes in each. Press a node to use it; a url-test group picks its own until you do." = "策略组与各组里的节点。按下一个节点即可使用它；在你选之前，url-test 组会自己挑。";
 "Port" = "端口";
 "Powered by Hako" = "由 Hako 驱动";
+"Prefer IPv4" = "优先 IPv4";
+"Prefer IPv6" = "优先 IPv6";
 "Preparing configuration…" = "正在准备配置…";
 "Profile" = "配置";
 "Profile URL" = "配置地址";
@@ -174,6 +191,9 @@
 "Providers" = "Provider";
 "Proxied" = "代理";
 "Proxy chain" = "代理链路";
+"Query IPv4 and IPv6 together and use the first usable response." = "同时查询 IPv4 和 IPv6，使用先返回的可用结果。";
+"Query only IPv4 addresses and reject IPv6 connections." = "仅查询 IPv4 地址，拒绝 IPv6 连接。";
+"Query only IPv6 addresses and reject IPv4 connections. Use with caution: some destinations may be unreachable." = "仅查询 IPv6 地址，拒绝 IPv4 连接。请谨慎使用：部分目标可能无法访问。";
 "Read-only status of the running tunnel: whether it is up, what it is using, and what it has loaded." = "运行中隧道的只读状态：是否在跑、正在用什么、加载了什么。";
 "Ready" = "就绪";
 "Ready to restore" = "可恢复";
@@ -203,6 +223,7 @@
 "STOPPING" = "正在停止";
 "Save" = "保存";
 "Saving configuration…" = "正在保存配置…";
+"Select Retry, then allow VPN setup." = "选择“重试”，然后允许添加 VPN 配置。";
 "Selected locally · Runtime not confirmed" = "已在本机选择 · 尚未确认运行状态";
 "Send all traffic through the selected proxy" = "所有流量都走选中的代理";
 "Session total · %@" = "会话总量 · %@";
@@ -221,6 +242,10 @@
 "Stops the tunnel. The configuration and the selected node stay as they are." = "停止隧道。配置与选中的节点保持不变。";
 "Switching Route" = "正在切换线路";
 "System" = "系统";
+"TUN IPv6 Configuration" = "TUN IPv6 配置";
+"TUN IPv6: Automatic" = "TUN IPv6：自动";
+"TUN IPv6: Off" = "TUN IPv6：关闭";
+"TUN IPv6: On" = "TUN IPv6：开启";
 "Test" = "测速";
 "Test all" = "全部测速";
 "Testing…" = "测速中…";
@@ -262,6 +287,7 @@
 "The request was sent, but its result could not be confirmed. It will not be sent again automatically." = "请求已发送，但无法确认结果。不会自动再次发送。";
 "The request's reply belongs to an earlier connection." = "请求的回复属于之前的连接。";
 "The resolvers asked first, in this order." = "最先询问的解析器，按此顺序。";
+"The saved IP Stack settings are invalid or require a newer app version. They have not been changed." = "已保存的 IP Stack 设置无效或需要更新版本的应用。设置未被更改。";
 "The saved configuration is damaged. Import it again." = "保存的配置已损坏，请重新导入。";
 "The server answered %lld. Check the address on your phone." = "服务器返回了 %lld。请在手机上核对地址。";
 "The subscription could not be fetched: the request timed out." = "无法获取订阅：请求超时。";
@@ -306,6 +332,8 @@
 "Valid traffic rates were not included in the reply." = "回复未包含有效的流量速率。";
 "Version" = "版本";
 "Version %@" = "版本 %@";
+"Wait for both query results. Prefer IPv4 when available; otherwise use IPv6. This can add latency." = "等待两种查询完成。有 IPv4 结果时优先使用，否则使用 IPv6。这可能增加延迟。";
+"Wait for both query results. Prefer IPv6 when available; otherwise use IPv4. This can add latency." = "等待两种查询完成。有 IPv6 结果时优先使用，否则使用 IPv4。这可能增加延迟。";
 "Waiting" = "等待加载";
 "Waiting for runtime confirmation" = "等待确认运行状态";
 "Waiting for update · Last read %@" = "等待更新 · 上次读取 %@";

@@ -6,33 +6,12 @@ import NetworkExtension
  
  
  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
 @MainActor
 final class HakoTVProfileCoordinator {
     typealias Loader = @MainActor () async throws -> [any HakoTVSystemProfile]
     typealias Maker = @MainActor () -> any HakoTVSystemProfile
+
+    enum StartError: Error { case permissionNotGranted }
 
     enum SaveOutcome {
         case saved
@@ -59,8 +38,12 @@ final class HakoTVProfileCoordinator {
      
     private(set) var armedWanted = false
     private var profileStamp = 0
-    private var generation = 0
     private var queue: Task<Void, Never>?
+    private var systemSaveTail: Task<Void, Error>?
+     
+     
+     
+    private var armedSaveRevision: UInt64 = 0
 
     private let load: Loader
     private let make: Maker
@@ -102,13 +85,18 @@ final class HakoTVProfileCoordinator {
      
 
     private func serialized(_ work: @escaping @MainActor () async -> Void) async {
+        let task = enqueue(work)
+        await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
+    }
+
+    private func enqueue(_ work: @escaping @MainActor () async -> Void) -> Task<Void, Never> {
         let prior = queue
         let task = Task { @MainActor in
             await prior?.value
             await work()
         }
         queue = task
-        await task.value
+        return task
     }
 
     private func install(_ profile: any HakoTVSystemProfile) {
@@ -120,37 +108,35 @@ final class HakoTVProfileCoordinator {
         profile.onDemandRules = wanted ? [NEOnDemandRuleConnect()] : nil
         profile.isOnDemandEnabled = wanted
         armedWanted = wanted
-        generation += 1
     }
 
      
      
      
-     
-    private func save(_ profile: any HakoTVSystemProfile) async throws {
-        let began = generation
-        try await HakoTVTunnelController.bounded(timeout, late: { [weak self] result in
-            Task { @MainActor in await self?.reconcileLateSave(profile, began: began, result: result) }
-        }) { try await profile.saveToPreferences() }
-    }
-
-     
-     
-     
-     
-     
-    private func reconcileLateSave(_ profile: any HakoTVSystemProfile, began: Int, result: Result<Void, Error>) async {
-        guard case .success = result else { return }
-        await serialized { [weak self] in
-            guard let self else { return }
-             
-             
-            if self.profile == nil { self.install(profile) }
-            let wanted = self.armedWanted
-            guard profile.isOnDemandEnabled != wanted || began != self.generation else { return }
-            if profile.isOnDemandEnabled != wanted { self.arm(profile, wanted: wanted) }
-            try? await self.save(profile)
+    private func enqueueSave(_ profile: any HakoTVSystemProfile) -> Task<Void, Error> {
+        let prior = systemSaveTail
+        let proto = profile.protocolConfiguration?.copy() as? NEVPNProtocol
+        let rules = profile.onDemandRules?.map { $0.copy() as! NEOnDemandRule }
+        let enabled = profile.isEnabled
+        let onDemand = profile.isOnDemandEnabled
+        let title = profile.localizedDescription
+        let task = Task { @MainActor in
+            _ = try? await prior?.value
+            profile.protocolConfiguration = proto
+            profile.onDemandRules = rules
+            profile.isEnabled = enabled
+            profile.isOnDemandEnabled = onDemand
+            profile.localizedDescription = title
+            try await profile.saveToPreferences()
+            if onDemand { self.armedSaveRevision &+= 1 }
         }
+        systemSaveTail = task
+        return task
+    }
+
+    private func save(_ profile: any HakoTVSystemProfile) async throws {
+        let operation = enqueueSave(profile)
+        try await HakoTVTunnelController.bounded(timeout) { try await operation.value }
     }
 
     private func isIndeterminate(_ error: Error) -> Bool {
@@ -247,32 +233,84 @@ final class HakoTVProfileCoordinator {
      
     func commitStart(
         configure: @escaping @MainActor (any HakoTVSystemProfile) throws -> Void,
-        shouldAbort: @escaping @MainActor () -> Bool
+        shouldAbort: @escaping @MainActor () -> Bool,
+        onWaiting: @escaping @MainActor () -> Void = {}
     ) async throws {
         var failure: Error?
         await serialized { [weak self] in
             guard let self else { return }
             if shouldAbort() { failure = CancellationError(); return }
-            let profile: any HakoTVSystemProfile
-            if let held = self.profile {
-                profile = held
-            } else {
-                do {
-                    profile = try await self.loadInstalled() ?? self.make()
-                } catch {
-                    failure = error
-                    return
-                }
-            }
             do {
+                if let pending = self.systemSaveTail { _ = try? await pending.value }
+                 
+                 
+                let installed = try await HakoTVTunnelController.bounded(self.timeout) { try await self.load() }
+                if shouldAbort() || Task.isCancelled { throw CancellationError() }
+                let found = installed.first(where: self.ownedBy)
+                let profile = found ?? self.make()
+                self.profile = found
+                self.profileStamp += 1
                 try configure(profile)
                 self.arm(profile, wanted: self.intent)
-                try await self.save(profile)
-                self.install(profile)
-                try await HakoTVTunnelController.bounded(self.timeout) { try await profile.loadFromPreferences() }
-            } catch {
-                failure = error
-            }
+                try await VPNStartAuthorization.perform(
+                    save: {
+                        do { try await self.enqueueSave(profile).value }
+                        catch {
+                            if found == nil, VPNStartAuthorization.isPermissionDenial(error as NSError) {
+                                throw StartError.permissionNotGranted
+                            }
+                            throw error
+                        }
+                        self.install(profile)
+                    },
+                    reload: {
+                        try await HakoTVTunnelController.bounded(self.timeout) { try await profile.loadFromPreferences() }
+                    },
+                    start: {},
+                    abort: {
+                        self.arm(profile, wanted: false)
+                        try? await self.enqueueSave(profile).value
+                    },
+                    isCurrent: { !shouldAbort() },
+                    delay: { try await Task.sleep(for: .seconds(self.timeout)) },
+                    onWaiting: onWaiting
+                )
+            } catch { failure = error }
+        }
+        if let failure { throw failure }
+    }
+
+     
+     
+    func applyIPStack(_ next: IPStackSettings, defaults: UserDefaults) async throws {
+        var failure: Error?
+        await serialized {
+            do {
+                if let pending = self.systemSaveTail { _ = try? await pending.value }
+                let installed = try await HakoTVTunnelController.bounded(self.timeout) { try await self.load() }
+                try Task.checkCancellation()
+                let profile = installed.first(where: self.ownedBy)
+                self.profile = profile
+                self.profileStamp += 1
+                let previous = profile?.protocolConfiguration?.copy() as? NEVPNProtocol
+                try await IPStackSettingsApplication.apply(next, defaults: defaults,
+                    saveProtocol: { settings in
+                        guard let profile else { return }
+                        guard let proto = profile.protocolConfiguration?.copy() as? NETunnelProviderProtocol else {
+                            throw IPStackSettingsError.invalidSnapshot
+                        }
+                        proto.providerConfiguration = try settings.applying(to: proto.providerConfiguration)
+                        profile.protocolConfiguration = proto
+                        do { try await self.enqueueSave(profile).value }
+                        catch { profile.protocolConfiguration = previous; throw error }
+                    },
+                    restoreProtocol: {
+                        guard let profile else { return }
+                        profile.protocolConfiguration = previous
+                        try await self.enqueueSave(profile).value
+                    },
+                    isRunning: { false }, restart: {})
+            } catch { failure = error }
         }
         if let failure { throw failure }
     }
@@ -281,18 +319,30 @@ final class HakoTVProfileCoordinator {
      
      
      
-     
-    func stop(performStop: @escaping @MainActor (any HakoTVSystemProfile) -> Void) async {
-        await serialized { [weak self] in
-            guard let self else { return }
-            self.armedWanted = false
-            self.generation += 1
-            guard let profile = self.profile else { return }
-            if profile.isOnDemandEnabled {
-                self.arm(profile, wanted: false)
-                try? await self.save(profile)
+    func requestStop(performStop: @escaping @MainActor (any HakoTVSystemProfile) -> Void) -> Task<Void, Never> {
+        let stopped = profile
+        let stoppedAtArmedRevision = armedSaveRevision
+        if let stopped { performStop(stopped) }
+        return enqueue { [self] in
+             
+             
+            _ = try? await systemSaveTail?.value
+            let needsDisarm = armedWanted || profile?.isOnDemandEnabled == true
+            armedWanted = false
+            guard let profile else { return }
+            if needsDisarm {
+                arm(profile, wanted: false)
+                try? await enqueueSave(profile).value
             }
-            performStop(profile)
+            let armedAfterStop = armedSaveRevision != stoppedAtArmedRevision
+            if stopped !== profile || (armedAfterStop &&
+                (profile.status == .connecting || profile.status == .connected || profile.status == .reasserting)) {
+                performStop(profile)
+            }
         }
+    }
+
+    func stop(performStop: @escaping @MainActor (any HakoTVSystemProfile) -> Void) async {
+        await requestStop(performStop: performStop).value
     }
 }

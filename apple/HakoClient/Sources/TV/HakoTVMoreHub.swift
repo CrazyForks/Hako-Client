@@ -7,21 +7,10 @@ import SwiftUI
  
  
  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
 struct HakoTVMoreHub: View {
     enum Row: Hashable, CaseIterable {
         case autoConnect
+        case ipStack
         case dns
         case userAgent
         case proxyShare
@@ -33,6 +22,7 @@ struct HakoTVMoreHub: View {
             switch self {
             case .autoConnect: String(localized: "Connect automatically")
             case .dns: String(localized: "DNS")
+            case .ipStack: "IP Stack"
             case .userAgent: String(localized: "User-Agent")
             case .proxyShare: String(localized: "Share on this network")
             case .diagnostics: String(localized: "Diagnostics")
@@ -51,6 +41,7 @@ struct HakoTVMoreHub: View {
             switch self {
             case .autoConnect: "autoConnect"
             case .dns: "dns"
+            case .ipStack: "ipStack"
             case .userAgent: "userAgent"
             case .proxyShare: "proxyShare"
             case .diagnostics: "diagnostics"
@@ -63,6 +54,8 @@ struct HakoTVMoreHub: View {
             switch self {
             case .autoConnect:
                 String(localized: "When the Apple TV is on and has a network, the tunnel comes up by itself — no need to open this app first. STOP does not turn this off: it only stops the tunnel until the next Connect, which arms it again.")
+            case .ipStack:
+                String(localized: "Choose the IP query mode and how the tunnel handles IPv6. Changes restart a connected VPN.")
             case .dns:
                 String(localized: "The tunnel's own resolvers, as the profile names them. Not a system DNS setting — an Apple TV has none to change; the policy editor stays on your phone.")
             case .userAgent:
@@ -81,13 +74,13 @@ struct HakoTVMoreHub: View {
          
         var isDoor: Bool {
             switch self {
-            case .dns, .userAgent, .proxyShare, .diagnostics: true
+            case .dns, .ipStack, .userAgent, .proxyShare, .diagnostics: true
             case .autoConnect, .geodata, .version: false
             }
         }
     }
 
-    enum Door: Hashable { case dns, userAgent, proxyShare, diagnostics }
+    enum Door: Hashable { case dns, ipStack, userAgent, proxyShare, diagnostics }
 
      
      
@@ -135,6 +128,7 @@ struct HakoTVMoreHub: View {
                     }
                     .onHakoTVFocus { explained = .autoConnect }
                     .accessibilityIdentifier("tvos.more.\(Row.autoConnect.identifier)")
+                    row(.ipStack, value: "") { opened = .ipStack }
                     row(.dns, value: Self.dnsValue(state)) { opened = .dns }
                     row(.userAgent, value: Self.userAgentValue()) { opened = .userAgent }
                     row(.proxyShare, value: Self.proxyShareValue()) { opened = .proxyShare }

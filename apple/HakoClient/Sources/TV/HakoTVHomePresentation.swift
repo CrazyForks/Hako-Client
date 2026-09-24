@@ -69,6 +69,7 @@ struct HakoTVHomePresentation: Equatable {
             activeProfileName: state.profileName.isEmpty ? "Profile" : state.profileName,
             vpnStatus: status,
             errorMessage: state.issue ?? "",
+            vpnAuthorization: state.vpnAuthorization,
             mode: state.outboundMode.kernelToken
         )
     }
@@ -89,6 +90,13 @@ struct HakoTVHomePresentation: Equatable {
                 tone: .transitional,
                 cancels: true
             )
+        }
+        if let authorization = state.vpnAuthorization, state.issue == nil, !state.isConnected {
+            let waiting = authorization == .waiting
+            return .init(buttonTitle: waiting ? "STARTING".localizedForTelevision : "Retry".localizedForTelevision,
+                         statusLine: waiting ? String(localized: "Allow VPN setup to connect.")
+                            : String(localized: "Select Retry, then allow VPN setup."),
+                         tone: waiting ? .transitional : .idle, cancels: waiting)
         }
         let presentation = HakoHomeConnectionPresenter.presentation(for: facts(for: state))
         switch presentation.phase {

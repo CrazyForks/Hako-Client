@@ -102,7 +102,9 @@ struct HakoTVShell: View {
          
         if stage == .welcome { fixtureState.iCloudRestoreLine = String(localized: "Restore from iCloud") }
         _fixture = State(initialValue: fixtureState)
+
         _tunnel = StateObject(wrappedValue: HakoTVTunnelController())
+
          
          
          
@@ -302,6 +304,8 @@ struct HakoTVShell: View {
                 })
                     .navigationDestination(item: $moreDoor) { door in
                         switch door {
+                        case .ipStack:
+                            HakoTVIPStackScreen(tunnel: tunnel)
                         case .dns:
                             HakoTVDNSScreen(state: state)
                         case .userAgent:
