@@ -358,14 +358,20 @@ public enum ConfigurationComposer {
         return ConfigurationComposition(document: result, sourceIDs: sources.map(\.id), droppedRules: droppedRules)
     }
 
+     
+     
+     
+     
+     
+     
     private static func validateShape(_ input: ConfigurationInput) throws {
         for key in ["proxies", "proxy-groups", "rules"] {
-            if let value = input.document.topLevelValue(key), value.compositionArray == nil {
+            if let value = input.document.topLevelValue(key), !value.isCompositionNull, value.compositionArray == nil {
                 throw ConfigurationCompositionError.invalidDocument(input.id + ": " + key)
             }
         }
         for key in ["proxy-providers", "rule-providers", "sub-rules"] {
-            if let value = input.document.topLevelValue(key), value.compositionObject == nil {
+            if let value = input.document.topLevelValue(key), !value.isCompositionNull, value.compositionObject == nil {
                 throw ConfigurationCompositionError.invalidDocument(input.id + ": " + key)
             }
         }
@@ -550,4 +556,6 @@ private extension OrderedJSON {
     var compositionArray: [OrderedJSON]? { if case .array(let values) = self { return values }; return nil }
     var compositionObject: [(key: String, value: OrderedJSON)]? { if case .object(let values) = self { return values }; return nil }
     var compositionString: String? { if case .string(let value) = self { return value }; return nil }
+     
+    var isCompositionNull: Bool { if case .scalar("null") = self { return true }; return false }
 }
