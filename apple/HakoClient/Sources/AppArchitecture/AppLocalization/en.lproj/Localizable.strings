@@ -1895,6 +1895,7 @@
 "Node Sources" = "Node Sources";
 "Node could not be saved" = "Node could not be saved";
 "Nodes" = "Nodes";
+"Nodes come from the chosen node sources; routing follows the rule scheme." = "Nodes come from the chosen node sources; routing follows the rule scheme.";
 "None" = "None";
 "None in this profile" = "None in this profile";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this.";
@@ -2511,6 +2512,7 @@
 "Rules preserved for this profile during the app-wide settings migration." = "Rules preserved for this profile during the app-wide settings migration.";
 "Running with: %@" = "Running with: %@";
 "Runs as written. This entry called the family inert while that was true, and it stopped being true the night the core wired the address to route.ReCreateServer — a sentence describing behaviour a build no longer has is the defect this surface exists to prevent." = "Runs as written. This entry called the family inert while that was true, and it stopped being true the night the core wired the address to route.ReCreateServer — a sentence describing behaviour a build no longer has is the defect this surface exists to prevent.";
+"Runs the configuration as received, with its own proxy groups, rules and DNS." = "Runs the configuration as received, with its own proxy groups, rules and DNS.";
 "Runtime" = "Runtime";
 "Runtime & Reports" = "Runtime & Reports";
 "Runtime Configuration" = "Runtime Configuration";
@@ -3397,6 +3399,7 @@
 "Use Local Mapping consults the entries above; Use system hosts also reads the device's own hosts file." = "Use Local Mapping consults the entries above; Use system hosts also reads the device's own hosts file.";
 "Use New Value" = "Use New Value";
 "Use Node Value" = "Use Node Value";
+"Use Original Configuration" = "Use Original Configuration";
 "Use Previous" = "Use Previous";
 "Use Profile URL Rules" = "Use Profile URL Rules";
 "Use System DNS" = "Use System DNS";

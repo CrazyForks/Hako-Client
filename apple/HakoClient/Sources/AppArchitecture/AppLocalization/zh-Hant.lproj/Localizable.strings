@@ -1406,7 +1406,7 @@
 "Import File" = "匯入檔案";
 "Import File…" = "匯入檔案…";
 "Import Method" = "匯入方式";
-"Import Original Configuration" = "按原設定檔匯入";
+"Import Original Configuration" = "匯入原始設定檔";
 "Import Preview" = "讀取完成";
 "Import Rule Set" = "匯入規則集";
 "Import Rules" = "匯入規則";
@@ -1895,6 +1895,7 @@
 "Node Sources" = "節點來源";
 "Node could not be saved" = "節點未能儲存";
 "Nodes" = "節點";
+"Nodes come from the chosen node sources; routing follows the rule scheme." = "節點來自所選節點來源，分流按規則方案。";
 "None" = "無";
 "None in this profile" = "本設定檔中沒有";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "出口能承載 UDP 時這幾檔都不生效。Hysteria2、TUIC 以及任何開啟了 udp 的線路——包括 UDP over TCP——都會正常命中規則，走不到這裡。";
@@ -2511,6 +2512,7 @@
 "Rules preserved for this profile during the app-wide settings migration." = "全域設定遷移期間，本設定檔的規則已保留。";
 "Running with: %@" = "實際使用：%@";
 "Runs as written. This entry called the family inert while that was true, and it stopped being true the night the core wired the address to route.ReCreateServer — a sentence describing behaviour a build no longer has is the defect this surface exists to prevent." = "按設定執行。這一條曾把這一族稱為「不生效」，那在當時為真；核心把網址接到 route.ReCreateServer 的那晚它不再為真——一句描述某個建置已經不具備的行為的話，正是這個介面存在的意義所要防的缺陷。";
+"Runs the configuration as received, with its own proxy groups, rules and DNS." = "按收到的原樣執行，使用它自己的代理群組、規則和 DNS。";
 "Runtime" = "執行狀態";
 "Runtime & Reports" = "執行階段與報告";
 "Runtime Configuration" = "執行階段設定";
@@ -3397,6 +3399,7 @@
 "Use Local Mapping consults the entries above; Use system hosts also reads the device's own hosts file." = "「使用本機對映」查閱上方項目；「使用系統 hosts」還會讀取本機自己的 hosts 檔案。";
 "Use New Value" = "採用新值";
 "Use Node Value" = "使用節點的值";
+"Use Original Configuration" = "使用原始設定檔";
 "Use Previous" = "用舊版那份";
 "Use Profile URL Rules" = "使用連結規則";
 "Use System DNS" = "使用系統 DNS";

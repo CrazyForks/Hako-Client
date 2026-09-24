@@ -82,3 +82,70 @@ public extension ConfigurationLibraryStore {
         return .init(recipe: recipe, composition: prepared.composition, candidate: candidate, payloads: prepared.payloads)
     }
 }
+
+public extension ConfigurationLibraryStore {
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func prepareOriginalUse(_ profileID: String, uses: Bool, expectedGeneration: UInt64,
+        resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput = {
+            .init(id: $0.record.id, document: try OrderedJSON.parse($0.documentJSON))
+        }) throws -> PreparedConfigurationCreation {
+        var current = try snapshot()
+        guard current.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
+        guard current.pendingPublications?.isEmpty ?? true else { throw ConfigurationLibraryError.busy }
+        guard let existing = current.recipes.first(where: { $0.id == profileID }) else {
+            throw ConfigurationLibraryError.missingDependency(profileID)
+        }
+        guard (existing.preservesOriginal == true) != uses else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard existing.sources.count == 1, let reference = existing.sources.first else {
+            throw ConfigurationLibraryError.invalidIdentifier
+        }
+        guard !current.sources.contains(where: { $0.id == reference.id && $0.isRetainedSnapshot == true }) else {
+            throw ConfigurationLibraryError.retainedSnapshot
+        }
+        guard uses else {
+             
+             
+            var draft = ConfigurationCreationDraft()
+            draft.step = .finish
+            draft.selectedSourceIDs = [reference.id]
+            let supplied = "rules-" + reference.id
+            draft.selectedRuleID = current.rules.contains { $0.id == supplied } ? supplied : ConfigurationBuiltins.basicRuleID
+            draft.label = existing.label
+            draft.dnsMode = existing.dnsMode ?? .source
+            draft.customDNSJSON = existing.customDNSJSON
+            draft.nodeNameservers = existing.nodeNameservers
+            return try prepareEditing(draft, profileID: profileID, expectedGeneration: expectedGeneration,
+                                      resolveInput: resolveInput)
+        }
+         
+         
+        current.recipes.removeAll { $0.id == profileID }
+        var draft = ConfigurationCreationDraft()
+        draft.useOriginal(try payload(reference))
+        draft.label = existing.label
+        let prepared = try prepareOriginal(draft, profileID: profileID, starting: current, resolveInput: resolveInput)
+        var recipe = prepared.recipe
+        recipe.followsUpdates = existing.followsUpdates
+        recipe.settingsJSON = existing.settingsJSON
+        recipe.settingsSource = existing.settingsSource
+        recipe.settingsRuleDependencies = existing.settingsRuleDependencies
+        var candidate = prepared.candidate
+        candidate.recipes.removeAll { $0.id == profileID }; candidate.recipes.append(recipe)
+        return .init(recipe: recipe, composition: prepared.composition, candidate: candidate, payloads: prepared.payloads)
+    }
+}
