@@ -165,8 +165,22 @@ public struct HakoMacConfigurationInspector: View {
          
          
          
-        .onChange(of: recipe?.sources.map(\.id)) { _ in chosenSources = Self.seeds(profile: profile, recipe: recipe, sources: sources, schemes: schemes).sources }
-        .onChange(of: recipe?.ruleSchemeID) { _ in chosenScheme = Self.seeds(profile: profile, recipe: recipe, sources: sources, schemes: schemes).scheme }
+         
+         
+         
+         
+         
+         
+        .onChange(of: recipe?.sources.map(\.id)) { ids in
+            let next = ids.map(Set.init) ?? Self.seeds(profile: profile, recipe: nil, sources: sources, schemes: schemes).sources
+            HakoMacDebugLog.note("page.resync sources recipe=\(ids ?? []) chosen \(chosenSources.sorted()) → \(next.sorted())")
+            chosenSources = next
+        }
+        .onChange(of: recipe?.ruleSchemeID) { scheme in
+            let next = scheme ?? Self.seeds(profile: profile, recipe: nil, sources: sources, schemes: schemes).scheme
+            HakoMacDebugLog.note("page.resync scheme recipe=\(scheme ?? "nil") chosen \(chosenScheme) → \(next)")
+            chosenScheme = next
+        }
         }
         .task(id: profile.id) { scripts = await scriptsActions.load() }
     }
@@ -260,8 +274,11 @@ public struct HakoMacConfigurationInspector: View {
     }
 
     private func toggleSource(_ id: String) {
-        if chosenSources.contains(id) { chosenSources.remove(id) } else { chosenSources.insert(id) }
-        actions.setSources(sources.map(\.id).filter { chosenSources.contains($0) })
+        let was = chosenSources.contains(id)
+        if was { chosenSources.remove(id) } else { chosenSources.insert(id) }
+        let ids = sources.map(\.id).filter { chosenSources.contains($0) }
+        HakoMacDebugLog.note("page.toggle \(id) \(was ? "off" : "on") → setSources \(ids)")
+        actions.setSources(ids)
     }
 
     private var composition: some View {
@@ -303,6 +320,7 @@ public struct HakoMacConfigurationInspector: View {
     private func chooseScheme(_ id: String) {
         guard id != chosenScheme else { return }
         chosenScheme = id
+        HakoMacDebugLog.note("page.choose scheme \(id)")
         actions.setScheme(id)
     }
 
@@ -555,14 +573,25 @@ struct HakoMacConfigurationSourceRow: View {
 
     var body: some View {
         HStack(spacing: HakoTheme.Spacing.compact) {
-            HakoMacChoiceRow(
-                title: .verbatim(source.label),
-                subtitle: .count(source.nodeCount, one: "%@ node", other: "%@ nodes"),
-                style: .multiple,
-                isSelected: chosen,
-                identifier: "configuration-center.configuration.source.\(source.id)",
-                toggle: toggle
-            )
+             
+             
+             
+             
+             
+             
+             
+             
+            Toggle(isOn: Binding(get: { chosen }, set: { _ in toggle() })) {
+                VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
+                    Text(verbatim: source.label)
+                    Text(hako: .count(source.nodeCount, one: "%@ node", other: "%@ nodes"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(HakoMacCheckboxStyle())
+            .accessibilityIdentifier("configuration-center.configuration.source.\(source.id)")
+            Spacer(minLength: HakoTheme.Spacing.row)
             if chosen {
                 Button(action: inspect) { Image(systemName: "info.circle") }
                     .buttonStyle(.borderless)
@@ -705,5 +734,26 @@ struct HakoMacScopeSheet: View {
             },
             back: back
         )
+    }
+}
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+struct HakoMacCheckboxStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: HakoTheme.Spacing.compact) {
+            Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
+                .font(.title3)
+                .foregroundStyle(configuration.isOn ? Color.accentColor : Color.secondary)
+                .frame(width: HakoTheme.Control.pointerRowTarget)
+            configuration.label
+        }
+        .frame(maxHeight: .infinity)
+        .hakoMacPressableRow { configuration.isOn.toggle() }
     }
 }

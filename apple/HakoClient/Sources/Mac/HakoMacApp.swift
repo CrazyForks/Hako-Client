@@ -1927,13 +1927,20 @@ private final class HakoMacSceneModel: ObservableObject {
              
              
              
+            let cached = library.snapshot.generation
             await library.reload()
             let snapshot = library.snapshot
-            guard let recipe = snapshot.recipes.first(where: { $0.id == id.rawValue }) else { return }
+            guard let recipe = snapshot.recipes.first(where: { $0.id == id.rawValue }) else {
+                HakoMacDebugLog.note("edit \(id.rawValue): no recipe at generation \(snapshot.generation) — nothing written")
+                return
+            }
             var draft = ConfigurationCreationAdapter.editingDraft(recipe: recipe, label: profile.label)
             change(&draft)
+            HakoMacDebugLog.note("edit \(id.rawValue): generation cached \(cached) fresh \(snapshot.generation) recipe \(recipe.sources.map(\.id)) → sources \(draft.selectedSourceIDs) rule \(draft.selectedRuleID)")
             try await profiles.editConfiguration(draft, id: id.rawValue, generation: snapshot.generation)
             await library.reload()
+            let after = library.snapshot
+            HakoMacDebugLog.note("edit \(id.rawValue): written, generation \(after.generation) recipe \(after.recipes.first { $0.id == id.rawValue }?.sources.map(\.id) ?? [])")
         }
          
          
@@ -1941,6 +1948,7 @@ private final class HakoMacSceneModel: ObservableObject {
          
         let failed: @MainActor (Error) -> Void = { [weak self] error in
             NSLog("configuration-centre.edit-failed:%@", error.localizedDescription)
+            HakoMacDebugLog.note("edit \(id.rawValue): REFUSED \(error) — \(error.localizedDescription)")
             library.report(error.localizedDescription)
             self?.configurationWriteError = error.localizedDescription
             Task { @MainActor in await library.reload() }
@@ -1967,21 +1975,37 @@ private final class HakoMacSceneModel: ObservableObject {
         func convertLegacyNow(sources: [String]?, scheme: String?) async throws {
             await library.reload()
             let generation = library.snapshot.generation
+            HakoMacDebugLog.note("convert \(id.rawValue): generation \(generation) sources \(sources ?? []) scheme \(scheme ?? "nil")")
             let source = try await profiles.configurationSourceFromLegacy(id.rawValue)
             var draft = ConfigurationCreationDraft()
-            let hasRules = source.record.hasRules && source.record.registersSuppliedRules != false
             let ownRules = "rules-" + source.record.id
-            let rule: ConfigurationRuleScheme? = hasRules
+             
+             
+             
+             
+             
+             
+            let registeredRules = library.snapshot.rules.contains { $0.id == ownRules }
+            let hasRules = registeredRules || (source.record.hasRules && source.record.registersSuppliedRules != false)
+            let rule: ConfigurationRuleScheme? = hasRules && !registeredRules
                 ? ConfigurationRuleScheme(id: ownRules, label: source.record.label, kind: .supplied, sourceID: source.record.id)
                 : nil
             draft.add(source, rule: rule)
-            if let sources { draft.selectedSourceIDs = sources.filter { $0 != source.record.id } }
+             
+             
+             
+             
+             
+             
+             
+            if let sources { draft.selectedSourceIDs = sources }
             draft.selectedRuleID = scheme ?? (hasRules ? ownRules : ConfigurationBuiltins.basicRuleID)
             draft.label = profile.label
             draft.dnsMode = .source
             draft.connectAfterCreation = false
             try await profiles.editConfiguration(draft, id: id.rawValue, generation: generation)
             await library.reload()
+            HakoMacDebugLog.note("convert \(id.rawValue): written, generation \(library.snapshot.generation) recipe \(library.snapshot.recipes.first { $0.id == id.rawValue }?.sources.map(\.id) ?? [])")
         }
          
          
@@ -2399,6 +2423,15 @@ private final class HakoMacSceneModel: ObservableObject {
         self.vpn = vpn
         let reviewContainer = (nil as URL?)
         self.reviewContainer = reviewContainer
+         
+         
+         
+         
+        if let working = (reviewContainer ?? HakoAppIdentifiers.appGroupContainer)?
+            .appendingPathComponent("working", isDirectory: true) {
+            HakoMacDebugLog.sink = HakoMacDebugLog.fileSink(working.appendingPathComponent("configuration-centre.debug.log"))
+            HakoMacDebugLog.note("app.launch review=\(reviewContainer != nil)")
+        }
 
             backupScope = .ordinary
             profiles = ProfilesViewModel(vpn: vpn)
