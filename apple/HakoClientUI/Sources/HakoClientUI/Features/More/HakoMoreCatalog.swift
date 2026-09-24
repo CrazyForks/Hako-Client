@@ -145,12 +145,30 @@ public enum HakoMoreCatalog {
         .about,
     ]
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
     public static let sections = [
-         
-         
+        HakoMoreSectionDescriptor(
+            id: .connectionBehavior,
+            destinations: connectionBehaviorDestinations
+        ),
         HakoMoreSectionDescriptor(
             id: .coreSettings,
             destinations: [.dnsAndHosts, .tunnelAndRoutes, .coreBehavior]
+        ),
+        HakoMoreSectionDescriptor(
+            id: .clientPreferences,
+            destinations: [.clientSettings, .appearance]
         ),
          
          
@@ -165,17 +183,10 @@ public enum HakoMoreCatalog {
             destinations: [.geoResources, .storage]
         ),
         HakoMoreSectionDescriptor(
-            id: .connectionBehavior,
-            destinations: connectionBehaviorDestinations
-        ),
-        HakoMoreSectionDescriptor(
             id: .integrations,
             destinations: [.systemIntegrations]
         ),
-        HakoMoreSectionDescriptor(
-            id: .clientPreferences,
-            destinations: [.clientSettings, .appearance]
-        ),
+         
         HakoMoreSectionDescriptor(
             id: .about,
             destinations: [.about]
