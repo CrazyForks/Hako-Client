@@ -1018,7 +1018,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                     TextField(
                         "",
                         text: $subscriptionURL,
-                        prompt: Text(verbatim: "https://example.com/subscription")
+                        prompt: Text(verbatim: "https://example.com/config.yaml")
                     )
                     .labelsHidden()
                     .keyboardType(.URL)
@@ -1053,7 +1053,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                         )
                     }
                 } header: {
-                    Text("Subscription")
+                    Text("Config URL")
                 }
 
                 if ProfileMetadataUpdate.strippingSourceCredentials(
@@ -1080,7 +1080,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                     }
                 }
             }
-            .hakoPageTitle("Subscription Settings")
+            .hakoPageTitle("Config URL Settings")
             .alert("Remove Stored Link Credentials", isPresented: $confirmsCredentialRemoval) {
                 Button("Remove Stored Link Credentials", role: .destructive) { stripStoredCredentials() }
                     .accessibilityIdentifier("profile-metadata.strip-credentials.confirm")
@@ -1107,7 +1107,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                     }
                 }
             }
-            .hakoProductModalRoot(title: "Subscription Settings")
+            .hakoProductModalRoot(title: "Config URL Settings")
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if insideProductModal {
                      

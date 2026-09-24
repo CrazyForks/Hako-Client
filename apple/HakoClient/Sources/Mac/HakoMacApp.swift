@@ -282,7 +282,7 @@ struct HakoMacApp: App {
                 Text(hako: .copy(
                     model.profileImports.pendingConfirmation
                         .map { HakoMacInstallLinkPrompt(pending: $0).title }
-                        ?? "Add this subscription?"
+                        ?? "Add this config URL?"
                 )),
                 isPresented: Binding(
                      
@@ -2172,7 +2172,7 @@ private final class HakoMacSceneModel: ObservableObject {
         switch profile.source {
         case .url:
             source = .remote
-            sourceSummary = "Subscription"
+            sourceSummary = "Config URL"
         case .file(let name):
             source = .file
             sourceSummary = .copy(name)

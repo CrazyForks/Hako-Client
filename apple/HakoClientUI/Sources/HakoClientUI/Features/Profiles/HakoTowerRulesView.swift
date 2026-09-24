@@ -783,7 +783,7 @@ public enum HakoConfigurationRuleLibrarySection: CaseIterable {
         switch self {
         case .builtin: "Built-in Rules"
         case .custom: "My Rules"
-        case .subscription: "From Subscriptions"
+        case .subscription: "From Config URLs"
         case .file: "From Files"
         }
     }

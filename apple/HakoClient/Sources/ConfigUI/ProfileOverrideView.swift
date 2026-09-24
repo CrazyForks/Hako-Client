@@ -656,7 +656,7 @@ struct ProfileOverrideView: View {
                         } touchLabel: {
                             Label("Add Rule", systemImage: HakoSymbol.plus.name)
                         }
-                        Toggle("Insert before subscription rules", isOn: $prependRules)
+                        Toggle("Insert before config URL rules", isOn: $prependRules)
                             .accessibilityIdentifier("profile.override.prepend-rules")
                     } header: {
                         Text("Added Rules")
@@ -1221,7 +1221,7 @@ struct ProfileProxyChainEditor: View {
                 } header: {
                     Text("Needs Attention")
                 } footer: {
-                    Text("A subscription update or source edit renamed/deleted these proxies. Migrate the identity or remove its override before saving.")
+                    Text("A config URL update or source edit renamed/deleted these proxies. Migrate the identity or remove its override before saving.")
                 }
             }
 

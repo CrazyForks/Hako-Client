@@ -266,7 +266,7 @@ public struct HakoConfigurationCreationView: View {
     private var sourceSections: some View {
         let sources = self.sources.filter { source in !selectableLegacy.contains { "legacy-" + $0.id == source.id } }
         return Group {
-            sourceSelectionSection("From Subscriptions", items: sources.filter {
+            sourceSelectionSection("From Config URLs", items: sources.filter {
                 if case .subscription = $0.origin { return $0.nodeChain == nil }; return false
             })
             sourceSelectionSection("From Files", items: sources.filter {
@@ -589,7 +589,7 @@ public struct HakoConfigurationSourceDetailView: View {
                 }
             }
             if let usage = source.subscriptionUsage {
-                Section("Subscription") { HakoConfigurationSubscriptionUsageView(usage: usage, detailed: true) }
+                Section("Data Usage") { HakoConfigurationSubscriptionUsageView(usage: usage, detailed: true) }
             }
             if isSubscription {
                 HakoConfigurationSubscriptionFields(draft: $subscriptionDraft).disabled(isBusy)
@@ -603,7 +603,7 @@ public struct HakoConfigurationSourceDetailView: View {
                         .accessibilityIdentifier("configuration.source.editSource")
                 } footer: {
                     if case .subscription = source.origin {
-                        Text("Subscription updates replace local node edits.")
+                        Text("Config URL updates replace local node edits.")
                     }
                 }
             }
@@ -750,7 +750,7 @@ public struct HakoConfigurationSourceLibraryView: View {
             if isReady && sources.isEmpty && !collections.contains(where: { $0.source.isRetainedSnapshot != true }) {
                 HakoConfigurationLibraryCard(palette: palette, nativeList: true) { Text("No Sources Yet").foregroundStyle(.secondary) }
             }
-            sourceSection("From Subscriptions", sources: sources.filter {
+            sourceSection("From Config URLs", sources: sources.filter {
                 if case .subscription = $0.origin { return true }; return false
             })
             sourceSection("From Files", sources: sources.filter {
@@ -1344,7 +1344,7 @@ public enum HakoConfigurationRuleGroupCopy {
 public enum HakoConfigurationUpdateCopy {
     public static func message(_ error: Error, locale: Locale) -> String {
         if error is ConfigurationRuleReplay.Conflict {
-            return HakoCopy.string("The subscription conflicts with your rule edits. Your current configuration was kept.", locale: locale)
+            return HakoCopy.string("The config URL conflicts with your rule edits. Your current configuration was kept.", locale: locale)
         }
         return error.localizedDescription
     }
@@ -1487,7 +1487,7 @@ private struct HakoConfigurationSubscriptionFields: View {
     @Binding var draft: ConfigurationSourceSettingsDraft
     var body: some View {
         Group {
-            Section("Subscription URL") { TextField("URL", text: $draft.url).accessibilityIdentifier("configuration.source.subscription.url").hakoConfigurationResolverInput() }
+            Section("Config URL") { TextField("URL", text: $draft.url).accessibilityIdentifier("configuration.source.subscription.url").hakoConfigurationResolverInput() }
             Section {
                 Picker("Update Interval", selection: $draft.intervalHours) {
                     Text("Manually").tag(0)
@@ -1533,8 +1533,8 @@ public struct HakoConfigurationSourceSettingsView: View {
             if let error { Section { Text(verbatim: error).foregroundStyle(.red) } }
         }
         .disabled(isBusy)
-        .hakoPageTitle("Subscription Settings")
-        .hakoProductModalRoot(title: "Subscription Settings")
+        .hakoPageTitle("Config URL Settings")
+        .hakoProductModalRoot(title: "Config URL Settings")
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { if dirty { confirmsDiscard = true } else { close() } }.disabled(isBusy)
@@ -1586,7 +1586,7 @@ public struct HakoConfigurationSubscriptionImportView: View {
     public var body: some View {
         Form {
             Section {
-                TextField("Subscription URL or Share Link", text: $request.url).accessibilityIdentifier("configuration.subscription.import.url").hakoConfigurationResolverInput()
+                TextField("Config URL or Share Link", text: $request.url).accessibilityIdentifier("configuration.subscription.import.url").hakoConfigurationResolverInput()
             } header: { Text("Link") } footer: {
                 Text("HTTP links are sent without encryption.")
             }
@@ -1609,8 +1609,8 @@ public struct HakoConfigurationSubscriptionImportView: View {
             }
         }
         .disabled(saving)
-        .hakoPageTitle("Add Subscription")
-        .hakoProductModalRoot(title: "Add Subscription")
+        .hakoPageTitle("Add Config URL")
+        .hakoProductModalRoot(title: "Add Config URL")
         .task(id: PreviewKey(request: request, retry: retry)) { await read() }
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .cancellationAction) {

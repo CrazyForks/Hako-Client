@@ -309,7 +309,7 @@ public extension HakoStartupExplanation {
             }
             if stage.hasPrefix("apply:proxy-providers") {
                 return .copy(
-                    "Most of this start’s memory went to loading the nodes from your proxy subscriptions — every subscription’s full node list loads at start. Removing subscriptions you don’t use, or narrowing one with a proxy-provider filter, lowers this step directly."
+                    "Most of this start’s memory went to loading the nodes from your config URLs — every config URL’s full node list loads at start. Removing config URLs you don’t use, or narrowing one with a proxy-provider filter, lowers this step directly."
                 )
             }
             if stage.hasPrefix("parse:dns") || stage.hasPrefix("parse:rules")
@@ -357,7 +357,7 @@ public extension HakoStartupExplanation {
         }
         if resource.hasPrefix("proxy-provider:") {
             return .copy(
-                "Most of this start’s memory went to loading the nodes from your proxy subscriptions — every subscription’s full node list loads at start. Removing subscriptions you don’t use, or narrowing one with a proxy-provider filter, lowers this step directly."
+                "Most of this start’s memory went to loading the nodes from your config URLs — every config URL’s full node list loads at start. Removing config URLs you don’t use, or narrowing one with a proxy-provider filter, lowers this step directly."
             )
         }
         if resource.hasPrefix("geoip:") {

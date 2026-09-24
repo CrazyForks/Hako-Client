@@ -193,14 +193,14 @@ enum NetworkPathPolicy {
             return NetworkPathPolicyDecision(
                 action: .deferOperation,
                 title: "Low Data Mode",
-                message: "Automatic subscription and resource updates wait until Low Data Mode is no longer active."
+                message: "Automatic config URL and resource updates wait until Low Data Mode is no longer active."
             )
         }
         if snapshot.isExpensive, !settings.allowExpensiveUpdates {
             return NetworkPathPolicyDecision(
                 action: .deferOperation,
                 title: "Metered Network",
-                message: "Automatic subscription and resource updates wait for an unmetered network."
+                message: "Automatic config URL and resource updates wait for an unmetered network."
             )
         }
         return NetworkPathPolicyDecision(

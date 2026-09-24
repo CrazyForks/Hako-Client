@@ -29,14 +29,14 @@ struct HakoMacInstallLinkPrompt {
     }
 
     var title: String {
-        isLocalConfiguration ? "Add this configuration?" : "Add this subscription?"
+        isLocalConfiguration ? "Add this configuration?" : "Add this config URL?"
     }
 
      
     var lead: String {
         isLocalConfiguration
             ? "A link wants to add a configuration to Clash.\n\n"
-            : "A link wants to add a subscription to Clash.\n\n"
+            : "A link wants to add a config URL to Clash.\n\n"
     }
 
      

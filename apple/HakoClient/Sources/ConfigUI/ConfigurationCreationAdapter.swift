@@ -288,7 +288,7 @@ private struct ConfigurationDNSSettingsAdapter: View {
             Section {
                 choice("System DNS", mode: .system)
                 choice("Custom", mode: .custom)
-            } footer: { Text("Uses your current network's DNS. Subscription DNS is not used.") }
+            } footer: { Text("Uses your current network's DNS. Config URL DNS is not used.") }
             if globalOverride {
                 Section { Text("Global DNS override is enabled and can change this selection.").foregroundStyle(.secondary) }
             }
@@ -527,12 +527,12 @@ private struct ConfigurationSourceDetailAdapter: View {
                 .hakoProductModal(isPresented: $showsNodeSource, role: .page) {
                     ConfigurationNodeSourceEditor(model: model, record: source, changed: changed)
                 }
-                .confirmationDialog("Subscription Update Conflict", isPresented: $confirmsRuleReplacement, titleVisibility: .visible) {
-                    Button("Use Subscription Rules", role: .destructive) {
+                .confirmationDialog("Update Conflict", isPresented: $confirmsRuleReplacement, titleVisibility: .visible) {
+                    Button("Use Config URL Rules", role: .destructive) {
                         refreshSource(replacingRules: true)
                     }
                     Button("Cancel", role: .cancel) {}
-                } message: { Text("Your rule edits conflict with this update. Use the subscription rules to replace your edits, or cancel to keep the current configuration. You can copy your rule scheme before updating.") }
+                } message: { Text("Your rule edits conflict with this update. Use the config URL rules to replace your edits, or cancel to keep the current configuration. You can copy your rule scheme before updating.") }
         }
     }
     private func refreshSource(replacingRules: Bool = false) {
@@ -1455,7 +1455,7 @@ private struct ConfigurationTowerManualRuleEditor: View {
     }
 }
 
-private enum ConfigurationTowerRuleReader {
+enum ConfigurationTowerRuleReader {
     static func normalizedURL(_ value: String) -> String {
         let value = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard var parts = URLComponents(string: value) else { return value }

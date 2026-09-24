@@ -69,7 +69,7 @@ enum BundledProfileProvisioner {
         var errorDescription: String? {
             switch self {
             case .invalidSubscriptionURL:
-                return "Bundled subscription must be a valid HTTPS URL."
+                return "The bundled config URL must be HTTPS."
             }
         }
     }

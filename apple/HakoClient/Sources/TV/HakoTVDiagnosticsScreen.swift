@@ -182,7 +182,7 @@ struct HakoTVDiagnosticsScreen: View {
     }
 
     static var lastProblemAdvice: String {
-        String(localized: "Check that the subscription address is still reachable, then update it once from its own screen.")
+        String(localized: "Check that the config URL is still reachable, then update it once from its own screen.")
     }
 
      

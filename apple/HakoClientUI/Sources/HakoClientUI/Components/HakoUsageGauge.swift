@@ -30,7 +30,7 @@ struct HakoUsageGauge: View {
             }
         }
         .frame(height: 6)
-        .accessibilityLabel(Text(hako: .copy("Subscription usage")))
+        .accessibilityLabel(Text(hako: .copy("Data Usage")))
         .accessibilityValue(Text(hako: .format(
             "%@ percent", ["\(Int(fraction * 100))"]
         )))

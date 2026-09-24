@@ -420,7 +420,7 @@ public struct HakoMacProfilesList: View {
             }
         }
         .frame(height: 6)
-        .accessibilityLabel(Text(hako: .copy("Subscription usage")))
+        .accessibilityLabel(Text(hako: .copy("Data Usage")))
         .accessibilityValue(Text(hako: .format(
             "%@ percent", ["\(Int(fraction * 100))"]
         )))
@@ -623,7 +623,7 @@ public struct HakoMacProfilesList: View {
             actionRow(
                 symbol: HakoSymbol.plusCircle.rawValue,
                 title: .copy("Add Profile"),
-                subtitle: .copy("Subscription link · config file · from scratch"),
+                subtitle: .copy("Config URL · config file · from scratch"),
                 showsChevron: false
             )
         }

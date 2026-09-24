@@ -1414,7 +1414,7 @@ final class ProfilesViewModel: ObservableObject {
             if case let .url(url) = $0.source { return url == rawURL }
             return false
         }) {
-            statusMessage = .format("Subscription already exists; syncing %@…", [existing.label])
+            statusMessage = .format("Config URL already exists; syncing %@…", [existing.label])
             sync(existing)
             return
         }

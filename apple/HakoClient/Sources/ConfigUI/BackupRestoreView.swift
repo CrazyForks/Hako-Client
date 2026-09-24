@@ -721,7 +721,7 @@ private struct BackupRestorePreviewSheet: View {
             )
             if preview.omittedRemoteSourceCount > 0 {
                 HakoStatusMessage(
-                    text: .format("%@ remote subscription link(s) were excluded. Their cached sources restore as local profiles.", [String(preview.omittedRemoteSourceCount)]),
+                    text: .format("%@ config URL(s) were excluded. Their cached sources restore as local profiles.", [String(preview.omittedRemoteSourceCount)]),
                     kind: .information
                 )
                 .accessibilityIdentifier("backup.preview.omitted-remote")

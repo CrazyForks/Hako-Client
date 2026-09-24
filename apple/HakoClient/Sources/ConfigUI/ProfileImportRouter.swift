@@ -14,9 +14,9 @@ enum ProfileInstallLinkError: LocalizedError, Equatable {
         case .unsupportedLink:
             return "This configuration link is not supported."
         case .missingSubscription:
-            return "The configuration link does not contain a subscription URL."
+            return "The link does not contain a config URL."
         case .unusableSubscription:
-            return "The configuration link does not contain a usable subscription address."
+            return "The link does not contain a usable config URL."
         case .unsupportedFile:
             return "That file is not a configuration Clash can read."
         case .fileTooLarge:

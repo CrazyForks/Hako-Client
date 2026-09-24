@@ -740,7 +740,7 @@ struct ProviderNoticesSection: View {
              
              
             Label(
-                "Subscription changes touched your edits",
+                "Config URL changes touched your edits",
                 systemImage: HakoSymbol.exclamationmarkTriangle.rawValue
             )
             .accessibilityIdentifier("providers.notices")

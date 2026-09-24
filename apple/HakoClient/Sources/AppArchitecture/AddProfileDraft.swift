@@ -72,7 +72,7 @@ struct AddProfileDraft: Equatable {
         guard !canSubmit else { return nil }
         switch tab {
         case .link:
-            return "Paste a subscription link or configuration text to continue."
+            return "Paste a config URL or configuration text to continue."
         case .file:
             return "Choose a configuration file, or paste its text, to continue."
         case .blank:

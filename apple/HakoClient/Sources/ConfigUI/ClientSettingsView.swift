@@ -130,11 +130,11 @@ struct ClientSettingsView: View {
             } header: {
                 Text("Automatic Updates")
             } footer: {
-                Text("Subscriptions and resources update on their own schedule over any connection. Turn one off to hold updates back on that kind of network.")
+                Text("Config URLs and resources update on their own schedule over any connection. Turn one off to hold updates back on that kind of network.")
             }
 
             Section {
-                Picker("Subscription Compatibility", selection: $userAgentPreset) {
+                Picker("Config URL Compatibility", selection: $userAgentPreset) {
                     ForEach(ClientUserAgent.Preset.allCases) { preset in
                         Text(hako: .copy(preset.label)).tag(preset)
                     }
@@ -156,7 +156,7 @@ struct ClientSettingsView: View {
                  
                  
                  
-                Text("The app sends this when it downloads a subscription or a provider, unless an override sets global-ua. Clash is recommended; FlClash is a compatibility fallback for panels that negotiate by client name.")
+                Text("The app sends this when it downloads a config URL or a provider, unless an override sets global-ua. Clash is recommended; FlClash is a compatibility fallback for panels that negotiate by client name.")
             }
 
             Section {

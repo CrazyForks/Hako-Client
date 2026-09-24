@@ -1064,7 +1064,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
             ).fetch(profile: profile, useConditionalValidators: false)
             guard let fetched else {
                 throw PipelineError.sourceUnavailable(
-                    "The subscription did not provide a source configuration."
+                    "The config URL did not provide a source configuration."
                 )
             }
             return try await coordinator.regenerateRuntime(

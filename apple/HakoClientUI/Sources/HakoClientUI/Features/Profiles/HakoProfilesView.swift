@@ -1889,9 +1889,9 @@ private struct HakoProfileDetailView<
     private func heldBackLine(_ item: HakoProfileHeldBackUpdate) -> HakoDisplayText {
         switch item.change {
         case .removed:
-            return .format("Removed by the subscription · yours: %@", [item.appValue])
+            return .format("Removed by the config URL · yours: %@", [item.appValue])
         case .added, .changed:
-            return .format("Subscription now: %@ · yours: %@", [item.newValue ?? "", item.appValue])
+            return .format("Config URL now: %@ · yours: %@", [item.newValue ?? "", item.appValue])
         }
     }
 
@@ -1899,7 +1899,7 @@ private struct HakoProfileDetailView<
         _ profile: HakoProfileSnapshot
     ) -> some View {
         HakoProfileGroup(
-            title: "Subscription",
+            title: "Config URL",
             palette: palette,
             presentationClass: presentationClass
         ) {
@@ -1965,7 +1965,7 @@ private struct HakoProfileDetailView<
                         .subscriptionSettings(profile.id)
                 } label: {
                     HakoProfileActionRow(
-                        title: "Subscription Settings",
+                        title: "Config URL Settings",
                         symbol: .link,
                         tint: .primary,
                         icon: icon
@@ -1988,7 +1988,7 @@ private struct HakoProfileDetailView<
                     send(.copySubscriptionLink(id: profile.id))
                 } label: {
                     HakoProfileActionRow(
-                        title: "Copy Subscription Link",
+                        title: "Copy Config URL",
                         symbol: .docOnDoc,
                         tint: .primary,
                         showsDisclosure: false,

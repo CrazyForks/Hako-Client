@@ -110,7 +110,7 @@ struct HakoTVProductState {
      
      
     var lastProblem: Problem? = Problem(
-        sentence: String(localized: "The subscription could not be fetched: the request timed out."),
+        sentence: String(localized: "The config URL could not be fetched: the request timed out."),
         at: Date().addingTimeInterval(-22 * 60)
     )
 

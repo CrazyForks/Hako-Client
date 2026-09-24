@@ -38,7 +38,7 @@
 "Bundled" = "Bundled";
 "Cancel" = "Cancel";
 "Changing this setting restarts the VPN." = "Changing this setting restarts the VPN.";
-"Check that the subscription address is still reachable, then update it once from its own screen." = "Check that the subscription address is still reachable, then update it once from its own screen.";
+"Check that the config URL is still reachable, then update it once from its own screen." = "Check that the config URL is still reachable, then update it once from its own screen.";
 "Checking…" = "Checking…";
 "Choice confirmed %@" = "Choice confirmed %@";
 "Choose different entry and exit nodes." = "Choose different entry and exit nodes.";
@@ -269,6 +269,7 @@
 "The active configuration changed while a replacement was being prepared" = "The active configuration changed while a replacement was being prepared";
 "The app version and build, for a support report." = "The app version and build, for a support report.";
 "The ceiling on this device has not been measured." = "The ceiling on this device has not been measured.";
+"The config URL could not be fetched: the request timed out." = "The config URL could not be fetched: the request timed out.";
 "The configuration could not be activated. Try again." = "The configuration could not be activated. Try again.";
 "The configuration could not be saved on this Apple TV: %@" = "The configuration could not be saved on this Apple TV: %@";
 "The configuration failed the tunnel's check: %@" = "The configuration failed the tunnel's check: %@";
@@ -307,7 +308,6 @@
 "The saved IP Stack settings are invalid or require a newer app version. They have not been changed." = "The saved IP Stack settings are invalid or require a newer app version. They have not been changed.";
 "The saved configuration is damaged. Import it again." = "The saved configuration is damaged. Import it again.";
 "The server answered %lld. Check the address on your phone." = "The server answered %lld. Check the address on your phone.";
-"The subscription could not be fetched: the request timed out." = "The subscription could not be fetched: the request timed out.";
 "The system did not answer in time." = "The system did not answer in time.";
 "The system did not take the change — the switch is back where it was." = "The system did not take the change — the switch is back where it was.";
 "The system has not answered yet — the change may still take. The switch shows what you asked for; the next Connect applies it again." = "The system has not answered yet — the change may still take. The switch shows what you asked for; the next Connect applies it again.";

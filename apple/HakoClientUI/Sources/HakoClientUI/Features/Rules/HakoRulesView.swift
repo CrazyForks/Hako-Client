@@ -315,11 +315,11 @@ public struct HakoRulesOverviewView<
         if !overview.buckets.isEmpty {
             HakoProductGroup(
                 .format(
-                    "Subscription Rules (%@)",
+                    "Config URL Rules (%@)",
                     [String(overview.inlineCount)]
                 ),
                 footer:
-                    "Grouped by destination. Updates from the subscription replace these rules.",
+                    "Grouped by destination. Updates from the config URL replace these rules.",
                 palette: palette
             ) {
                  

@@ -38,7 +38,7 @@
 "Bundled" = "內建";
 "Cancel" = "取消";
 "Changing this setting restarts the VPN." = "更改此設定會重新啟動 VPN。";
-"Check that the subscription address is still reachable, then update it once from its own screen." = "先確認訂閱網址仍可連上，然後在它自己的頁面裡更新一次。";
+"Check that the config URL is still reachable, then update it once from its own screen." = "先確認設定連結仍可連上，然後在它自己的頁面裡更新一次。";
 "Checking…" = "正在檢查…";
 "Choice confirmed %@" = "選擇確認於 %@";
 "Choose different entry and exit nodes." = "前置節點和出口節點要不同。";
@@ -269,6 +269,7 @@
 "The active configuration changed while a replacement was being prepared" = "正在準備新設定時，目前設定被改動了";
 "The app version and build, for a support report." = "App 版本與建置編號，供回報問題時使用。";
 "The ceiling on this device has not been measured." = "這台裝置上的上限還沒有量過。";
+"The config URL could not be fetched: the request timed out." = "無法取得設定連結：請求逾時。";
 "The configuration could not be activated. Try again." = "設定啟用失敗，請重試。";
 "The configuration could not be saved on this Apple TV: %@" = "設定無法儲存到這台 Apple TV：%@";
 "The configuration failed the tunnel's check: %@" = "設定沒有通過通道的檢查：%@";
@@ -307,7 +308,6 @@
 "The saved IP Stack settings are invalid or require a newer app version. They have not been changed." = "已儲存的 IP Stack 設定無效或需要更新版本的App。設定未被更改。";
 "The saved configuration is damaged. Import it again." = "儲存的設定已損壞，請重新匯入。";
 "The server answered %lld. Check the address on your phone." = "伺服器回傳了 %lld。請在手機上核對網址。";
-"The subscription could not be fetched: the request timed out." = "無法取得訂閱：請求逾時。";
 "The system did not answer in time." = "系統沒有及時回應。";
 "The system did not take the change — the switch is back where it was." = "系統沒有接受這次更改，開關已回到原來的位置。";
 "The system has not answered yet — the change may still take. The switch shows what you asked for; the next Connect applies it again." = "系統還沒有回應，這次更改可能仍會生效。開關顯示的是你要的狀態；下一次按「連線」時會再套用一次。";

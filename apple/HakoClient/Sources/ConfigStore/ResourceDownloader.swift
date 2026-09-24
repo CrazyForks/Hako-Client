@@ -658,7 +658,7 @@ enum ConfigurationFailureClassifier {
         case .invalidURL:
             return (title: "Invalid resource address", message: "Edit the profile and enter a valid address.", code: "source.invalid-url")
         case .invalidTextEncoding:
-            return (title: "Unreadable configuration", message: "The subscription response is not UTF-8 configuration text.", code: "config.encoding")
+            return (title: "Unreadable configuration", message: "The config URL response is not UTF-8 configuration text.", code: "config.encoding")
         case .yamlSyntax:
             return (title: "YAML syntax error", message: "The downloaded text is not valid configuration YAML. Edit the profile or contact the provider.", code: "config.yaml")
         case .mihomoSchema:
@@ -1022,7 +1022,7 @@ extension ConfigurationFailureClassifier {
             let parts = field.split(separator: ".").map(String.init)
             let provider = parts.count >= 3 ? parts[1] : (parts.first ?? field)
             return HakoCopy.format(
-                "“%@” has no subscription link yet — this configuration is a template, and that line still holds placeholder text. Open it and paste your own subscription link.",
+                "“%@” has no config URL yet — this configuration is a template, and that line still holds placeholder text. Open it and paste your own config URL.",
                 locale: locale,
                 provider
             )

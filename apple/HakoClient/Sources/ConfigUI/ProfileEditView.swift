@@ -362,7 +362,7 @@ struct ProfileEditView: View {
             Button("Cancel", role: .cancel) { settleDeparture(false) }
         } message: {
             Text(
-                "This profile updates from its subscription. The next update overwrites what you edited here."
+                "This profile updates from its config URL. The next update overwrites what you edited here."
             )
         }
         .hakoCapturesDismiss(dismiss)

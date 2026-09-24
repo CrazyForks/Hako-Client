@@ -473,7 +473,7 @@ struct AddProfileView: View {
                  
                 HakoStatusMessage(
                     text: .copy(isSourceImport ? "That is a node link. Use Add Custom Node in the source library."
-                        : "That is a node, not a subscription. Add it under a profile's Custom Nodes."),
+                        : "That is a node, not a config URL. Add it under a profile's Custom Nodes."),
                     kind: .warning
                 )
                 .accessibilityIdentifier("profile.add.cross-reference")
@@ -532,7 +532,7 @@ struct AddProfileView: View {
                      
                      
                      
-                    prompt: Text(verbatim: "https://example.com/subscription"),
+                    prompt: Text(verbatim: "https://example.com/config.yaml"),
                     axis: .vertical
                 )
                     .accessibilityIdentifier("profile.add.link")
@@ -541,7 +541,7 @@ struct AddProfileView: View {
                 TextField(
                     "",
                     text: $draft.linkText,
-                    prompt: Text(verbatim: "https://example.com/subscription")
+                    prompt: Text(verbatim: "https://example.com/config.yaml")
                 )
                     .accessibilityIdentifier("profile.add.paste")
             }
@@ -692,7 +692,7 @@ struct AddProfileView: View {
         } footer: {
             Text(HakoCopy.key(
                 isSourceImport ? "Create an empty source, then add nodes and rules."
-                    : "You can start without a subscription: everything goes direct, and you add nodes and rules yourself."
+                    : "You can start without a config URL: everything goes direct, and you add nodes and rules yourself."
             ))
                 .addPanelMacLeadingFooter()
         }
@@ -750,18 +750,18 @@ struct AddProfileView: View {
     private var linkFooterText: HakoDisplayText {
         switch draft.linkFooter {
         case .accepts:
-            return .copy("Subscription links and install links both work.")
+            return .copy("Config URLs and install links both work.")
         case .downloadsOverHTTPS:
             return .copy(
                 isSourceImport ? "The source is downloaded before it is saved."
-                    : "Clash downloads the subscription when the profile is activated."
+                    : "Clash downloads the config URL when the profile is activated."
             )
         case .cleartextWarning:
             return .copy(
                 "This link is not encrypted. Credentials in the address travel in the clear."
             )
         case .unwrappedInstallLink(let host):
-            return .format("Install link. The subscription inside is %@.", [host])
+            return .format("Install link. The config URL inside is %@.", [host])
         }
     }
 
