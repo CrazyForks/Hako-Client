@@ -42,7 +42,7 @@ struct ProfileOverrideView: View {
     @State private var isConfirmingQuickFill = false
     @State private var editingRule: RuleEditTarget?
     @State private var editingScript: ConfigScript?
-    @State private var addingScript: ConfigScript?
+    @State private var addingScriptSheet = false
     @State private var deletingScript: ConfigScript?
 
     private let globalRules: [String]
@@ -132,7 +132,11 @@ struct ProfileOverrideView: View {
                  
                  
                  
-                if mode != .custom {
+                 
+                 
+                 
+                 
+                if mode != .custom, !configurationCenter {
                     Section {
                         CodeEditorPanel(
                             text: $patchText,
@@ -144,7 +148,7 @@ struct ProfileOverrideView: View {
                         Text("Patch JSON")
                     }
 
-                    if !configurationCenter {
+                    Group {
                     Section {
                         ForEach(ruleRows.current(for: rules)) { row in
                             let rule = ruleRows.index(of: row.id)
@@ -184,19 +188,7 @@ struct ProfileOverrideView: View {
                      
                      
                      
-                    Section {
-                        ForEach(scripts) { script in
-                            scriptRow(script)
-                        }
-                        HakoAddRow(Text("Add Script")) {
-                            addingScript = ScriptLibrary.fresh()
-                        } touchLabel: {
-                            Label("Add Script", systemImage: HakoSymbol.plus.name)
-                        }
-                        .accessibilityIdentifier("profile.override.script.add")
-                    } header: {
-                        Text("Script")
-                    }
+                scriptSections
                 if mode == .custom {
                     Section {
                         HakoRoutedViewLink {
@@ -421,15 +413,14 @@ struct ProfileOverrideView: View {
                 }
                 .hakoModalPresentation(.page)
             }
-            .hakoProductModal(item: $addingScript, role: .page, immersive: { _ in true }) { script in
-                ScriptEditorView(script: script) { saved in
+            .hakoProductModal(isPresented: $addingScriptSheet, role: .form) {
+                ScriptAddSheet(library: scriptLibrary, close: { addingScriptSheet = false }) { added in
                      
                      
-                    ScriptLibrary.upsert(saved, in: scriptLibrary)
-                    selectedScriptID = saved.id
-                    addingScript = nil
+                    selectedScriptID = added.id
+                    addingScriptSheet = false
                 }
-                .hakoModalPresentation(.page)
+                .hakoModalPresentation(.form)
             }
             .hakoDeleteConfirmation(deletingScript?.label ?? "",
                 isPresented: Binding(get: { deletingScript != nil }, set: { if !$0 { deletingScript = nil } }),
@@ -594,6 +585,61 @@ struct ProfileOverrideView: View {
                 applyLegacyRelayMigration: false
             )
         }
+    }
+
+     
+     
+    @ViewBuilder
+    private var scriptSections: some View {
+        Section {
+            ForEach(scripts) { script in
+                scriptRow(script)
+            }
+        } header: {
+            Text("Script")
+        }
+        HakoConfigurationLibraryAddCard(kind: .scripts, palette: HakoClientUI.HakoProductPalette.hakoProduct,
+            nativeList: true, showsHeader: false) {
+            addingScriptSheet = true
+        }
+        .accessibilityIdentifier("profile.override.script.add")
+        if configurationCenter, mode != .custom, patchFieldCount > 0 {
+            Section {
+                HakoRoutedViewLink {
+                    HakoLazyView { patchPage }
+                } label: {
+                    HakoDestinationRow(
+                        title: "Field Patch",
+                        subtitle: .format("%@ fields", [String(patchFieldCount)]),
+                        symbol: .curlybraces,
+                        tint: .gray
+                    )
+                }
+                .accessibilityIdentifier("profile.override.patch")
+            }
+        }
+    }
+
+    private var patchFieldCount: Int {
+        ((try? JSONSerialization.jsonObject(with: Data(patchText.utf8))) as? [String: Any])?.count ?? 0
+    }
+
+    private var patchPage: some View {
+        Form {
+            Section {
+                CodeEditorPanel(
+                    text: $patchText,
+                    language: .json,
+                    minHeight: 260,
+                    diagnosticLine: patchDiagnosticLine
+                )
+            }
+            Section {
+                Button("Clear Field Patch", role: .destructive) { patchText = "{}" }
+                    .accessibilityIdentifier("profile.override.patch.clear")
+            }
+        }
+        .hakoPageTitle("Field Patch")
     }
 
     private func draftProfile() throws -> Profile {

@@ -1758,12 +1758,13 @@ struct HakoConfigurationLibraryCard<Content: View>: View {
 
  
 public enum HakoConfigurationAddition {
-    case configuration, nodes, rules
+    case configuration, nodes, rules, scripts
     public var title: String {
         switch self {
         case .configuration: "Create Configuration"
         case .nodes: "Create Nodes"
         case .rules: "Create Rules"
+        case .scripts: "Add Script"
         }
     }
     public var entryTitle: String { title }
@@ -1772,18 +1773,27 @@ public enum HakoConfigurationAddition {
         case .configuration: "Import from a configuration link or Clash configuration file, or use custom nodes"
         case .nodes: "Import from a configuration link or Clash configuration file, or create nodes manually"
         case .rules: "Import from a configuration link or Clash configuration file, or edit rules manually"
+        case .scripts: "Import from a link or file, or write one by hand"
         }
     }
 }
 
-struct HakoConfigurationLibraryAddCard: View {
+ 
+ 
+ 
+public struct HakoConfigurationLibraryAddCard: View {
     let kind: HakoConfigurationAddition
     let palette: HakoProductPalette
     var nativeList = false
     var showsHeader = true
     var disabled = false
     let action: () -> Void
-    var body: some View {
+    public init(kind: HakoConfigurationAddition, palette: HakoProductPalette, nativeList: Bool = false,
+                showsHeader: Bool = true, disabled: Bool = false, action: @escaping () -> Void) {
+        self.kind = kind; self.palette = palette; self.nativeList = nativeList
+        self.showsHeader = showsHeader; self.disabled = disabled; self.action = action
+    }
+    public var body: some View {
         HakoConfigurationLibraryCard(title: showsHeader ? .copy(kind.title) : nil, palette: palette, nativeList: nativeList) {
             Button(action: action) {
                 HakoProfileActionRow(title: .copy(kind.entryTitle), subtitle: .copy(kind.creationHint),

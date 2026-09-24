@@ -35,6 +35,7 @@
 "%@ downloads through the app rather than through a node, so the node you named is not used." = "%@ 由 App 下載，不走節點，所以你指定的節點不會被使用。";
 "%@ entries" = "%@ 條";
 "%@ failed" = "失敗 %@";
+"%@ fields" = "%@ 個欄位";
 "%@ files, %@ in total" = "%@ 個檔案，共 %@";
 "%@ group" = "%@ 個群組";
 "%@ groups" = "%@ 個群組";
@@ -598,6 +599,7 @@
 "Clash’s VPN profile is ready. Connect when you are ready." = "Clash VPN 設定檔已準備好，可在需要時連線。";
 "Clear" = "清除";
 "Clear DNS cache?" = "清除 DNS 快取？";
+"Clear Field Patch" = "清除欄位補丁";
 "Clear Local Reports?" = "清除本機報告？";
 "Clear the DNS cache?" = "清除 DNS 快取？";
 "Clear the Fake-IP cache?" = "清除 Fake-IP 快取？";
@@ -1164,6 +1166,7 @@
 "Fetched by Clash through the proxy it names, after the switch; the app does not download it." = "切換後由 Clash 經它指定的代理取得；App 不下載它。";
 "Field" = "欄位";
 "Field Not Kept" = "有個欄位沒能保留";
+"Field Patch" = "欄位補丁";
 "Fields meant for a Linux firewall or for Clash on Android stay in your file and do nothing here." = "那些給 Linux 防火牆或 Android 版 Clash 用的欄位會留在你的檔案裡，在這裡不起作用。";
 "Fields not yet represented by a native control remain byte-for-byte equivalent in the generated provider object." = "尚無原生控制項目的欄位，會在生成的資源物件中逐位元組保持一致。";
 "File" = "檔案";
@@ -1403,6 +1406,7 @@
 "Import from a configuration link or Clash configuration file, or edit rules manually" = "從設定連結或 Clash 設定檔匯入，也可手動編輯";
 "Import from a configuration link or Clash configuration file, or use custom nodes" = "從設定連結或 Clash 設定檔匯入，也可使用自建節點";
 "Import from a link or file" = "從連結或檔案匯入";
+"Import from a link or file, or write one by hand" = "從連結或檔案匯入，也可手動編寫";
 "Import one or more YAML configurations into Clash." = "向 Clash 匯入一個或多個 YAML 設定。";
 "Import public PEM certificates only. Private keys are never accepted here." = "只匯入公開的 PEM 憑證。此處絕不接受私鑰。";
 "Imported" = "匯入的";

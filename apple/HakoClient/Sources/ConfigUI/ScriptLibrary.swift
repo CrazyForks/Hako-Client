@@ -471,11 +471,11 @@ struct ScriptLibraryView: View {
         }
          
         .hakoProductModal(item: $editing, role: .page, immersive: { _ in true }) { script in
-            ScriptEditorView(script: script) { save($0) }
+            ScriptEditorView(script: script, showsImportInMenu: true) { save($0) }
                 .hakoModalPresentation(.page)
         }
         .hakoProductModal(item: $adding, role: .page, immersive: { _ in true }) { script in
-            ScriptEditorView(script: script) { save($0) }
+            ScriptEditorView(script: script, showsImportInMenu: true) { save($0) }
                 .hakoModalPresentation(.page)
         }
     }
@@ -569,8 +569,13 @@ struct ScriptEditorView: View {
     @State private var showsImportError = false
     private let originalBody: String
 
-    init(script: ConfigScript, save: @escaping (ConfigScript) -> Void) {
+     
+     
+    let showsImportInMenu: Bool
+
+    init(script: ConfigScript, showsImportInMenu: Bool = false, save: @escaping (ConfigScript) -> Void) {
         self.script = script
+        self.showsImportInMenu = showsImportInMenu
         self.save = save
         originalBody = script.body
         _label = State(initialValue: script.label)
@@ -768,20 +773,22 @@ struct ScriptEditorView: View {
             )
         }
         .accessibilityIdentifier("scripts.editor.softWrap")
-        Divider()
-        Button {
-            importResult = ""
-            importingFromLink = true
-        } label: {
-            Label("Import from Link…", systemImage: HakoSymbol.link.name)
+        if showsImportInMenu {
+            Divider()
+            Button {
+                importResult = ""
+                importingFromLink = true
+            } label: {
+                Label("Import from Link…", systemImage: HakoSymbol.link.name)
+            }
+            .accessibilityIdentifier("scripts.editor.import.link")
+            Button {
+                showsFileImporter = true
+            } label: {
+                Label("Import File…", systemImage: HakoSymbol.squareAndArrowDown.name)
+            }
+            .accessibilityIdentifier("scripts.editor.import.file")
         }
-        .accessibilityIdentifier("scripts.editor.import.link")
-        Button {
-            showsFileImporter = true
-        } label: {
-            Label("Import File…", systemImage: HakoSymbol.squareAndArrowDown.name)
-        }
-        .accessibilityIdentifier("scripts.editor.import.file")
         Divider()
         Button {
             Task { await test() }
@@ -941,5 +948,175 @@ struct ScriptEditorView: View {
 
     private func dismissPresentation() {
         (productModalDismiss ?? { dismiss() })()
+    }
+}
+
+ 
+ 
+ 
+struct ScriptAddSheet: View {
+    let library: UserDefaults
+    let close: () -> Void
+    let added: (ConfigScript) -> Void
+
+    @State private var tab = 1
+    @State private var address = ""
+    @State private var name = ""
+    @State private var bodyText = ScriptLibrary.fresh().body
+    @State private var importing = false
+    @State private var failure = ""
+    @State private var showsFailure = false
+    @State private var showsFileImporter = false
+
+    var body: some View {
+        HakoFeatureNavigationContainer {
+            VStack(spacing: 0) {
+                tabs
+                Form { fields }
+            }
+            .hakoPageTitle("Add Script")
+            .hakoToolbarUnlessInPanel {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { close() }
+                        .accessibilityIdentifier("scripts.add.cancel")
+                }
+                ToolbarItem(placement: .confirmationAction) { commitButton }
+            }
+        }
+        .fileImporter(
+            isPresented: $showsFileImporter,
+            allowedContentTypes: [.javaScript, .plainText, .text],
+            allowsMultipleSelection: false
+        ) { outcome in
+            importFile(outcome)
+        }
+        .alert("Import Failed", isPresented: $showsFailure) {
+            Button("OK") {}
+        } message: {
+            Text(verbatim: failure)
+        }
+    }
+
+    private var tabs: some View {
+        Picker("Add Script", selection: $tab) {
+            Text(HakoCopy.key("Link")).tag(1)
+            Text(HakoCopy.key("File")).tag(2)
+            Text(HakoCopy.key("Manual")).tag(3)
+        }
+        .pickerStyle(.segmented).padding(.horizontal, 20).padding(.vertical, 8)
+        .accessibilityIdentifier("scripts.add.tabs")
+    }
+
+    @ViewBuilder
+    private var fields: some View {
+        switch tab {
+        case 1:
+            Section {
+                TextField("Script URL", text: $address)
+                    .textContentType(.URL)
+#if !os(macOS)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+#endif
+                    .autocorrectionDisabled()
+                    .accessibilityIdentifier("scripts.add.link.address")
+            }
+        case 2:
+            Section {
+                Button("Choose File…") { showsFileImporter = true }
+                    .accessibilityIdentifier("scripts.add.file.choose")
+            }
+        default:
+            Section {
+                TextField("Script name", text: $name)
+                    .accessibilityIdentifier("scripts.add.name")
+            }
+            Section {
+                CodeEditorPanel(
+                    text: $bodyText,
+                    language: .javascript,
+                    minHeight: 240,
+                    diagnosticLine: nil
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var commitButton: some View {
+        if tab == 1 {
+            Button(importing ? "Importing…" : "Import") {
+                Task { @MainActor in await importLink() }
+            }
+            .disabled(importing || address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .accessibilityIdentifier("scripts.add.link.import")
+        } else if tab == 3 {
+            Button("Save") { saveManual() }
+                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityIdentifier("scripts.add.save")
+        }
+    }
+
+    private func importLink() async {
+        importing = true
+        defer { importing = false }
+        do {
+            let text = try await ScriptImport.body(at: address)
+            let label = (try? ScriptImport.address(address)).flatMap(ScriptImport.suggestedName(for:))
+                ?? ScriptLibrary.defaultLabel
+            finish(label: label, body: text)
+        } catch {
+            fail((error as NSError).localizedDescription)
+        }
+    }
+
+    private func importFile(_ outcome: Result<[URL], Error>) {
+        switch outcome {
+        case let .success(urls):
+            guard let url = urls.first else { return }
+             
+             
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let text = try String(contentsOf: url, encoding: .utf8)
+                guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    fail(ScriptImportError.empty.localizedDescription)
+                    return
+                }
+                finish(label: url.deletingPathExtension().lastPathComponent, body: text)
+            } catch {
+                fail(ScriptImportError.notText.localizedDescription)
+            }
+        case let .failure(error):
+            fail((error as NSError).localizedDescription)
+        }
+    }
+
+    private func saveManual() {
+        finish(label: name, body: bodyText)
+    }
+
+     
+     
+    private func finish(label: String, body: String) {
+        let existing = ScriptLibrary.load(from: library)
+        let id = UUID().uuidString
+        var candidate = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        if candidate.isEmpty { candidate = ScriptLibrary.defaultLabel }
+        var attempt = 2
+        var script = ScriptLibrary.editedScript(id: id, label: candidate, body: body, existing: existing)
+        while script == nil, attempt < 100 {
+            script = ScriptLibrary.editedScript(id: id, label: "\(candidate) \(attempt)", body: body, existing: existing)
+            attempt += 1
+        }
+        guard let script else { fail(ScriptImportError.empty.localizedDescription); return }
+        ScriptLibrary.upsert(script, in: library)
+        added(script)
+    }
+
+    private func fail(_ message: String) {
+        failure = message
+        showsFailure = true
     }
 }

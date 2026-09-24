@@ -35,6 +35,7 @@
 "%@ downloads through the app rather than through a node, so the node you named is not used." = "%@ downloads through the app rather than through a node, so the node you named is not used.";
 "%@ entries" = "%@ entries";
 "%@ failed" = "%@ failed";
+"%@ fields" = "%@ fields";
 "%@ files, %@ in total" = "%@ files, %@ in total";
 "%@ group" = "%@ group";
 "%@ groups" = "%@ groups";
@@ -598,6 +599,7 @@
 "Clash’s VPN profile is ready. Connect when you are ready." = "Clash’s VPN profile is ready. Connect when you are ready.";
 "Clear" = "Clear";
 "Clear DNS cache?" = "Clear DNS cache?";
+"Clear Field Patch" = "Clear Field Patch";
 "Clear Local Reports?" = "Clear Local Reports?";
 "Clear the DNS cache?" = "Clear the DNS cache?";
 "Clear the Fake-IP cache?" = "Clear the Fake-IP cache?";
@@ -1164,6 +1166,7 @@
 "Fetched by Clash through the proxy it names, after the switch; the app does not download it." = "Fetched by Clash through the proxy it names, after the switch; the app does not download it.";
 "Field" = "Field";
 "Field Not Kept" = "Field Not Kept";
+"Field Patch" = "Field Patch";
 "Fields meant for a Linux firewall or for Clash on Android stay in your file and do nothing here." = "Fields meant for a Linux firewall or for Clash on Android stay in your file and do nothing here.";
 "Fields not yet represented by a native control remain byte-for-byte equivalent in the generated provider object." = "Fields not yet represented by a native control remain byte-for-byte equivalent in the generated provider object.";
 "File" = "File";
@@ -1403,6 +1406,7 @@
 "Import from a configuration link or Clash configuration file, or edit rules manually" = "Import from a configuration link or Clash configuration file, or edit rules manually";
 "Import from a configuration link or Clash configuration file, or use custom nodes" = "Import from a configuration link or Clash configuration file, or use custom nodes";
 "Import from a link or file" = "Import from a link or file";
+"Import from a link or file, or write one by hand" = "Import from a link or file, or write one by hand";
 "Import one or more YAML configurations into Clash." = "Import one or more YAML configurations into Clash.";
 "Import public PEM certificates only. Private keys are never accepted here." = "Import public PEM certificates only. Private keys are never accepted here.";
 "Imported" = "Imported";
