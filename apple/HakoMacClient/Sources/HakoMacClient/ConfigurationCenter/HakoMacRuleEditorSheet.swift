@@ -349,6 +349,14 @@ public struct HakoMacRuleEditorSheet: View {
                 .accessibilityIdentifier("configuration-center.rule-editor.add-rule")
             ForEach(draft.rows) { row in
                 ruleRow(row, draft: draft)
+                     
+                     
+                    .moveDisabled(row.isFinal)
+            }
+             
+             
+            .onMove { offsets, destination in
+                mutate { $0.moveRows(fromOffsets: offsets, toOffset: destination) }
             }
         } header: {
             Text(hako: .copy("Rules"))
@@ -384,10 +392,18 @@ public struct HakoMacRuleEditorSheet: View {
                 Text(hako: .copy("Enabled"))
             }
             Divider()
-            Button { moveRow(row.id, up: true, in: draft) } label: { Text(hako: .copy("Move Up")) }
-                .disabled(draft.rows.first?.id == row.id)
-            Button { moveRow(row.id, up: false, in: draft) } label: { Text(hako: .copy("Move Down")) }
-                .disabled(draft.rows.last?.id == row.id)
+             
+             
+             
+             
+            Button { mutate { $0.moveRow(row.id, offset: -1) } } label: { Text(hako: .copy("Move Up")) }
+                .disabled(row.isFinal || draft.rows.first?.id == row.id)
+            Button { mutate { $0.moveRow(row.id, offset: 1) } } label: { Text(hako: .copy("Move Down")) }
+                 
+                 
+                 
+                 
+                .disabled(row.isFinal || Self.isRowAboveFinal(row, in: draft))
             Divider()
             Button(role: .destructive) { mutate { $0.remove([row.id]) } } label: { Text(hako: .copy("Delete")) }
         }
@@ -529,17 +545,14 @@ public struct HakoMacRuleEditorSheet: View {
         }
     }
 
-    private func moveRow(_ id: UUID, up: Bool, in draft: ConfigurationRuleDraft) {
-        guard let index = draft.rows.firstIndex(where: { $0.id == id }) else { return }
-        let target: UUID?
-        if up {
-            guard index > 0 else { return }
-            target = draft.rows[index - 1].id
-        } else {
-            guard index + 1 < draft.rows.count else { return }
-            target = index + 2 < draft.rows.count ? draft.rows[index + 2].id : nil
-        }
-        mutate { $0.move([id], before: target) }
+     
+     
+     
+     
+    static func isRowAboveFinal(_ row: ConfigurationRuleDraft.Row, in draft: ConfigurationRuleDraft) -> Bool {
+        let rows = draft.rows
+        guard rows.count >= 2, rows[rows.count - 1].isFinal else { return false }
+        return rows[rows.count - 2].id == row.id
     }
 
     private func moveGroup(_ id: UUID, up: Bool, in draft: ConfigurationRuleDraft) {
