@@ -79,6 +79,10 @@ struct HakoTVProductState {
     var failureReasons: [String: String] = [:]
      
      
+     
+    var easyTierNodeNames: Set<String> = []
+     
+     
     var rules: [HakoRuleLineSnapshot]
      
      

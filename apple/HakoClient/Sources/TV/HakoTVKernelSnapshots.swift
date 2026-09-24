@@ -103,11 +103,16 @@ enum HakoTVKernelSnapshots {
             let members = all.map { member in
                 HakoProxyMemberSnapshot(name: member, type: type(of: member), isGroup: isGroup(member))
             }
+             
+             
+             
+             
             return HakoProxyGroupSnapshot(
                 name: name,
                 type: entry["type"] as? String ?? "",
                 members: members,
-                runtimeSelection: entry["now"] as? String
+                runtimeSelection: entry["now"] as? String,
+                emptyFallback: entry["emptyFallback"] as? String
             )
         }
          

@@ -580,13 +580,16 @@ final class HakoTVTunnelController: ObservableObject {
         )
         guard state.isConnected, sweepingMembers.isEmpty else { return }
         let generation = ipcGeneration
-        let previousLatency = group.members.reduce(into: [String: HakoProxyLatencyState]()) {
+         
+         
+        let members = HakoTVNodesScreen.sweepMembers(of: group, state: state)
+        let previousLatency = members.reduce(into: [String: HakoProxyLatencyState]()) {
             $0[$1.name] = state.latency[$1.name]
         }
-        sweepingMembers = Set(group.members.map(\.name))
+        sweepingMembers = Set(members.map(\.name))
         defer {
             if generation === ipcGeneration {
-                for member in group.members where state.latency[member.name] == .testing {
+                for member in members where state.latency[member.name] == .testing {
                     state.latency[member.name] = previousLatency[member.name] ?? .untested
                 }
                 sweepingMembers = []
@@ -603,7 +606,7 @@ final class HakoTVTunnelController: ObservableObject {
          
          
         var measured = 0
-        for member in group.members {
+        for member in members {
             guard generation.isValid else { return }
             do {
                 let reply = try await send(["cmd": "urltest", "name": member.name], expectedGeneration: generation)
@@ -820,6 +823,7 @@ final class HakoTVTunnelController: ObservableObject {
         state.dnsFallback = facts.dnsFallback
         state.dnsDefaultNameservers = facts.dnsDefaultNameservers
         state.groupCount = facts.proxyGroupNames.count
+        state.easyTierNodeNames = facts.easyTierNodeNames
         state.outboundMode = HakoTVOutboundMode(rawValue: facts.mode) ?? .rule
         state.geodataSource = "Bundled"
         state.providers = catalog.entries

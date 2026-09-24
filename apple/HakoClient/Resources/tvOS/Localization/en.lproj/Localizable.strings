@@ -379,4 +379,5 @@
 "Which copy of the GeoIP and GeoSite databases the tunnel loaded." = "Which copy of the GeoIP and GeoSite databases the tunnel loaded.";
 "Your iPhone or Mac keeps profiles in iCloud: restore them here, or add one by its address." = "Your iPhone or Mac keeps profiles in iCloud: restore them here, or add one by its address.";
 "download failed: %@" = "download failed: %@";
+"easytier · Not supported" = "easytier · Not supported";
 "tvOS guarantees 500 KB of storage and may discard the rest. A profile URL survives that; a file does not." = "tvOS guarantees 500 KB of storage and may discard the rest. A profile URL survives that; a file does not.";

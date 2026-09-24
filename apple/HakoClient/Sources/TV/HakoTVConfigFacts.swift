@@ -25,6 +25,8 @@ struct HakoTVConfigFacts: Equatable {
      
     let nodeCount: Int
      
+    let easyTierNodeNames: Set<String>
+     
     let mode: String
 
     enum ReadingError: LocalizedError {
@@ -66,6 +68,13 @@ struct HakoTVConfigFacts: Equatable {
         proxyGroupNames = rawGroups.compactMap { $0["name"] as? String }.filter { $0 != "GLOBAL" }
         let rawProxies = root["proxies"] as? [[String: Any]] ?? []
         nodeCount = rawProxies.count
+        easyTierNodeNames = Set(rawProxies.compactMap { proxy in
+            guard let kind = proxy["type"] as? String,
+                  kind.trimmingCharacters(in: .whitespaces).lowercased() == "easytier",
+                  let name = proxy["name"] as? String
+            else { return nil }
+            return name
+        })
         var typeByName: [String: String] = [:]
         for proxy in rawProxies {
             if let name = proxy["name"] as? String { typeByName[name] = proxy["type"] as? String ?? "" }
