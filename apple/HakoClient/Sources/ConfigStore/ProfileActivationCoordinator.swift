@@ -212,7 +212,6 @@ enum ProfileRuntimeConfigBuilder {
         applyLegacyRelayMigration: Bool = true
     ) throws -> RuntimeBuildStages {
         let profileWorking: String
-        var droppedPersonal: [String] = []  
         switch profile.overwriteMode ?? .standard {
         case .standard, .script:
             var spec = profile.override
@@ -244,12 +243,13 @@ enum ProfileRuntimeConfigBuilder {
              
              
              
+             
+             
             personalRules = try resolvedFallbackTargets(personalRules, mergedInto: scripted)
-            let personal = droppingUnknownTargets(personalRules, mergedInto: scripted)
-            droppedPersonal = personal.dropped
-            profileWorking = personal.kept.isEmpty ? scripted : try ConfigTransforms.mergeOverride(
+            let kept = droppingUnknownTargets(personalRules, mergedInto: scripted).kept
+            profileWorking = kept.isEmpty ? scripted : try ConfigTransforms.mergeOverride(
                 raw: scripted,
-                overrideJSON: overrideJSON(from: OverrideSpec(appendRules: personal.kept, prependRules: spec.prependRules))
+                overrideJSON: overrideJSON(from: OverrideSpec(appendRules: kept, prependRules: spec.prependRules))
             )
         case .custom:
             profileWorking = try (profile.customOverwrite ?? CustomOverwriteSpec())
@@ -273,9 +273,7 @@ enum ProfileRuntimeConfigBuilder {
         effectiveGlobal.appendRules = try resolvedFallbackTargets(
             effectiveGlobal.appendRules, mergedInto: profileWorking
         )
-        let global = droppingUnknownTargets(effectiveGlobal.appendRules, mergedInto: profileWorking)
-        effectiveGlobal.appendRules = global.kept
-        droppedPersonal += global.dropped
+        effectiveGlobal.appendRules = droppingUnknownTargets(effectiveGlobal.appendRules, mergedInto: profileWorking).kept
         let merged = try ConfigTransforms.mergeOverride(
             raw: profileWorking,
             overrideJSON: overrideJSON(from: effectiveGlobal)
