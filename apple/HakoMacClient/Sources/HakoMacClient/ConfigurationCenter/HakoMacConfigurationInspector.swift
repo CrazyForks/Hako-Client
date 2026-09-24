@@ -31,6 +31,9 @@ public struct HakoMacConfigurationInspectorActions {
     public var copyProfileURL: @MainActor () -> Void = {}
      
      
+    public var customRules: HakoMacCustomRulesActions? = nil
+     
+     
      
     public var setOriginalUse: @MainActor (Bool) -> Void = { _ in }
     public var loadScopeChoices: @MainActor (ConfigurationSourceRecord) async throws -> HakoMacNodeScopeChoices = { _ in
@@ -98,6 +101,7 @@ public struct HakoMacConfigurationInspector: View {
     @State private var chosenScheme: String
      
     @State private var scripts = HakoMacScriptsState.empty
+    @State private var customRules = HakoMacCustomRulesState.empty
     @State private var showsAllHeldBack = false
     @State private var confirmsCredentialRemoval = false
     @Environment(\.locale) private var locale
@@ -178,7 +182,10 @@ public struct HakoMacConfigurationInspector: View {
             chosenScheme = next
         }
         }
-        .task(id: profile.id) { scripts = await scriptsActions.load() }
+        .task(id: profile.id) {
+            scripts = await scriptsActions.load()
+            if let load = actions.customRules?.load { customRules = await load() }
+        }
         .onAppear { HakoMacDebugLog.note("page.appear \(profile.id.rawValue) composed=\(isComposed) follows=\(String(describing: profile.followsConfigurationSourceUpdates)) canEditSource=\(profile.canEditSource)") }
         .onChange(of: profile.followsConfigurationSourceUpdates) { follows in
             HakoMacDebugLog.note("page.profile \(profile.id.rawValue) follows=\(String(describing: follows)) composed=\(isComposed)")
@@ -405,6 +412,22 @@ public struct HakoMacConfigurationInspector: View {
                 }
             }
             .accessibilityIdentifier("configuration-center.configuration.scripts")
+             
+             
+             
+             
+            if let rules = actions.customRules {
+                HakoRoutedViewLink(onReturn: { Task { @MainActor in customRules = await rules.load() } }) {
+                    HakoMacCustomRulesPage(actions: rules, initial: customRules)
+                        .navigationTitle(Text(hako: .copy("Custom Rules")))
+                } label: {
+                    HakoMacPushRowLabel(.copy("Custom Rules"), value: customRules.rules.isEmpty
+                        ? .copy("None") : .count(customRules.rules.count, one: "%@ rule", other: "%@ rules"))
+                }
+                .accessibilityValue(Text(hako: customRules.rules.isEmpty
+                    ? .copy("None") : .count(customRules.rules.count, one: "%@ rule", other: "%@ rules")))
+                .accessibilityIdentifier("configuration-center.configuration.custom-rules")
+            }
         }
     }
 

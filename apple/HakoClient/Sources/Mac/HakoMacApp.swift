@@ -2172,6 +2172,7 @@ private final class HakoMacSceneModel: ObservableObject {
                 }
             }, failure: failed)
         }
+        actions.customRules = customRulesActions(profileID: id)
          
          
         actions.setScope = { sourceID, scope in
@@ -2197,6 +2198,68 @@ private final class HakoMacSceneModel: ObservableObject {
             NSPasteboard.general.setString(link, forType: .string)
         }
         return actions
+    }
+
+     
+
+     
+     
+     
+     
+     
+     
+     
+    private func customRulesActions(profileID: HakoClientKit.Profile.ID) -> HakoMacCustomRulesActions {
+        let profiles = self.profiles
+        let id = profileID.rawValue
+        func state() -> HakoMacCustomRulesState {
+            guard let profile = profiles.profiles.first(where: { $0.id == id }) else { return .empty }
+            let muted = Set(profile.override.disabledAppendRules ?? [])
+            let comments = profile.override.appendRuleComments ?? [:]
+            return HakoMacCustomRulesState(
+                rules: profile.override.appendRules.map {
+                    HakoMacCustomRule(text: $0, isEnabled: !muted.contains($0), comment: comments[$0])
+                },
+                prepends: profile.override.prependRules
+            )
+        }
+        func write(_ change: (inout Profile) -> Void) throws -> HakoMacCustomRulesState {
+            guard var profile = profiles.profiles.first(where: { $0.id == id }) else {
+                throw ConfigurationLibraryError.missingDependency(id)
+            }
+            change(&profile)
+            profiles.update(profile)
+            return state()
+        }
+        return HakoMacCustomRulesActions(
+            load: { state() },
+            save: { rules in
+                guard Set(rules.map(\.text)).count == rules.count else { throw ConfigurationLibraryError.invalidIdentifier }
+                return try write { profile in
+                    profile.override.appendRules = rules.map(\.text)
+                    let muted = rules.filter { !$0.isEnabled }.map(\.text)
+                    profile.override.disabledAppendRules = muted.isEmpty ? nil : muted
+                    var comments: [String: String] = [:]
+                    for rule in rules { if let comment = rule.comment, !comment.isEmpty { comments[rule.text] = comment } }
+                    profile.override.appendRuleComments = comments.isEmpty ? nil : comments
+                }
+            },
+            setPrepends: { on in try write { $0.override.prependRules = on } },
+            targets: {
+                let text = try await profiles.loadSavedConfigurationPreview(for: id)
+                return try await Task.detached {
+                    var names: [String] = ["DIRECT", "REJECT", "REJECT-DROP", "PASS"]
+                    let json = try ConfigTransforms.yamlToJSON(text)
+                    if let root = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any],
+                       let groups = root["proxy-groups"] as? [[String: Any]] {
+                        for group in groups {
+                            if let name = group["name"] as? String, !names.contains(name) { names.append(name) }
+                        }
+                    }
+                    return names
+                }.value
+            }
+        )
     }
 
      
