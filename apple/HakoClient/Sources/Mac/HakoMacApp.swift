@@ -2953,6 +2953,8 @@ private final class HakoMacSceneModel: ObservableObject {
         refreshSnapshot()
     }
 
+
+
      
      
     private func startAutomaticResourceRefresh() {
