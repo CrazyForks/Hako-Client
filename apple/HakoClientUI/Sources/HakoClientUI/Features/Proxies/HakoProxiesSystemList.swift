@@ -509,15 +509,19 @@ struct HakoProxyMemberListRow: View, Equatable {
                         .accessibilityHidden(!isCurrent)
                     if density == .standard {
                         VStack(alignment: .leading, spacing: 2) {
-                            HakoRegionalFlag.label(row.name, pointSize: 17, relativeTo: .body)
-                                .font(.body)
+                             
+                             
+                             
+                             
+                            HakoRegionalFlag.label(row.name, pointSize: 15, relativeTo: .subheadline)
+                                .font(.subheadline)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                             subtitle
                         }
                     } else {
-                        HakoRegionalFlag.label(row.name, pointSize: 17, relativeTo: .body)
-                            .font(.body)
+                        HakoRegionalFlag.label(row.name, pointSize: 15, relativeTo: .subheadline)
+                            .font(.subheadline)
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }
