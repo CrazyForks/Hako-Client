@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 private struct HakoRegularRootScrollsContentKey: EnvironmentKey {
@@ -90,7 +91,22 @@ private struct HakoRegularRootIsActiveKey: EnvironmentKey {
  
 public final class HakoLatencyPulseGate: @unchecked Sendable, Equatable {
     public var isOpen = true
+     
+     
+     
+     
+     
+     
+     
+    public let opened = PassthroughSubject<Void, Never>()
     public init() {}
+
+     
+    public func setOpen(_ open: Bool) {
+        let wasOpen = isOpen
+        isOpen = open
+        if open, !wasOpen { opened.send() }
+    }
 
      
      

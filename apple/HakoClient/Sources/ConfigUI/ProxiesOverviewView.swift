@@ -184,6 +184,11 @@ struct ProxiesOverviewAdapter: View {
      
      
     @State private var hiddenHold = SnapshotHold()
+     
+     
+     
+     
+    @State private var shownAgain = 0
 
     final class SnapshotHold {
         var value: AppleClientSnapshot?
@@ -444,6 +449,17 @@ struct ProxiesOverviewAdapter: View {
                 ))
             }
             .onReceive(
+                latencyPulseGate?.opened.eraseToAnyPublisher()
+                    ?? Empty<Void, Never>(completeImmediately: false).eraseToAnyPublisher()
+            ) {
+                 
+                 
+                guard hiddenHold.value != nil else { return }
+                hiddenHold.value = nil
+                hiddenHold.key = nil
+                shownAgain &+= 1
+            }
+            .onReceive(
                 sweepEvents
                     ?? Empty<LatencySweepBatch, Never>().eraseToAnyPublisher()
             ) { batch in
@@ -556,6 +572,7 @@ struct ProxiesOverviewAdapter: View {
          
          
          
+        _ = shownAgain
         if !isActiveRoot, let held = hiddenHold.value {
             HakoPerf.count("proxies.snapshot.skipped-hidden")
             return held

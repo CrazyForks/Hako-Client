@@ -283,7 +283,7 @@ struct HakoMacPooledRootSlot: NSViewRepresentable {
          
          
          
-        channels.latencyPulseGate.isOpen = visible
+        channels.latencyPulseGate.setOpen(visible)
     }
 }
 
