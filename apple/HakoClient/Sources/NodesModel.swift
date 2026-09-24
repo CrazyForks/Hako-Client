@@ -237,6 +237,16 @@ struct NodesInventoryProjection: Equatable, Sendable {
     }
 }
 
+ 
+ 
+ 
+enum OfflineCatalogChange {
+    static func isUnchanged(_ snapshot: OfflineProxyCatalogSnapshot?, previousRuntime: Data?, previousYAML: String?) -> Bool {
+        guard let snapshot, let previousYAML else { return false }
+        return snapshot.runtimeData == previousRuntime && snapshot.yaml == previousYAML
+    }
+}
+
 struct OfflineProxyCatalogSnapshot {
     let profileID: String
     let yaml: String
@@ -1077,6 +1087,8 @@ final class NodesModel: ObservableObject {
      
      
     private var lastRuntimeInventory: Data?
+     
+    private var lastOfflineYAML: String?
     private var inventoryProjectionGeneration: UInt64 = 0
     private var inventoryProjectionTasks: [UInt64: Task<Void, Never>] = [:]
      
@@ -2623,9 +2635,18 @@ final class NodesModel: ObservableObject {
     ) {
         inventoryProjectionGeneration &+= 1
         let generation = inventoryProjectionGeneration
+        let previousRuntime = lastRuntimeInventory
+        let previousYAML = groups.isEmpty ? nil : lastOfflineYAML
         inventoryProjectionTasks[generation] = Task.detached(priority: .userInitiated) { [weak self] in
             let began = DispatchTime.now().uptimeNanoseconds
             let snapshot = load()
+             
+             
+             
+            if OfflineCatalogChange.isUnchanged(snapshot, previousRuntime: previousRuntime, previousYAML: previousYAML) {
+                await MainActor.run { self?.inventoryProjectionTasks[generation] = nil }
+                return
+            }
             let projection = snapshot.map { NodesInventoryProjection.read(yaml: $0.yaml) }
             let elapsed = Double(DispatchTime.now().uptimeNanoseconds - began) / 1_000_000
             await MainActor.run {
@@ -2678,6 +2699,7 @@ final class NodesModel: ObservableObject {
         configuredOrder = projection.order
         trafficUsageByGroupName = projection.trafficUsage
         lastRuntimeInventory = snapshot.runtimeData
+        lastOfflineYAML = snapshot.yaml
         applyInventory(snapshot.runtimeData)
     }
 

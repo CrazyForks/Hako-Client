@@ -450,8 +450,24 @@ final class ConfigResourceStore {
      
      
      
+     
+     
+     
+     
+     
+     
     func activeIdentity() throws -> ActiveConfigurationPointer? {
-        try withExclusiveLock {
+        let url = storeURL.appendingPathComponent(Name.activePointer)
+        let stamp = Self.pointerStamp(of: url)
+        Self.activePointerCacheLock.lock()
+        if let cached = Self.activePointerCache[url.path], cached.stamp == stamp {
+            Self.activePointerCacheLock.unlock()
+            return cached.pointer
+        }
+        Self.activePointerCacheLock.unlock()
+        let pointer: ActiveConfigurationPointer? = try withExclusiveLock {
+
+
             guard let pointer = try? readPointer(Name.activePointer) else {
                 return nil
             }
@@ -460,7 +476,32 @@ final class ConfigResourceStore {
                 revision: pointer.revision
             )
         }
+        let read = Self.pointerStamp(of: url)
+        Self.activePointerCacheLock.lock()
+        Self.activePointerCache[url.path] = (read, pointer)
+        Self.activePointerCacheLock.unlock()
+        return pointer
     }
+
+    private struct PointerStamp: Equatable {
+        let size: Int
+        let modified: Date
+    }
+    private static let activePointerCacheLock = NSLock()
+    private static var activePointerCache: [String: (stamp: PointerStamp?, pointer: ActiveConfigurationPointer?)] = [:]
+    private static func pointerStamp(of url: URL) -> PointerStamp? {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = (attributes[.size] as? NSNumber)?.intValue,
+              let modified = attributes[.modificationDate] as? Date else { return nil }
+        return PointerStamp(size: size, modified: modified)
+    }
+    private static func forgetActivePointer(at url: URL) {
+        activePointerCacheLock.lock()
+        activePointerCache[url.path] = nil
+        activePointerCacheLock.unlock()
+    }
+
+
 
     func lastKnownGoodPointer() throws -> ActiveConfigurationPointer? {
         try withExclusiveLock {
@@ -811,6 +852,7 @@ final class ConfigResourceStore {
 
     private func commitActive(_ pointer: Pointer, data: Data) throws {
         try writePointer(Name.activePointer, pointer: pointer)
+        Self.forgetActivePointer(at: storeURL.appendingPathComponent(Name.activePointer))
         try inject(.currentCommitted)
          
          

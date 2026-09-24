@@ -901,7 +901,14 @@ final class ParsedConfigurationDerivations: @unchecked Sendable {
     private var values: [String: Any] = [:]
     private var inFlight: Set<String> = []
 
-    func value<T>(for key: String, _ compute: () -> T) -> T {
+     
+     
+     
+     
+     
+     
+     
+    func value<T>(for key: String, waits: Bool = !Thread.isMainThread, _ compute: () -> T) -> T {
         condition.lock()
         while true {
             if let known = values[key] as? T {
@@ -909,6 +916,10 @@ final class ParsedConfigurationDerivations: @unchecked Sendable {
                 return known
             }
             if !inFlight.contains(key) { break }
+            if !waits {
+                condition.unlock()
+                return compute()
+            }
             condition.wait()
         }
         inFlight.insert(key)
