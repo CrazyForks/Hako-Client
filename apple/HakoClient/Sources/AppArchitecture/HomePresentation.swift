@@ -698,18 +698,15 @@ enum HomeProxiesEntryPolicy {
      
      
      
+     
+     
     static func candidates<Group>(
         _ groups: [Group],
         mode: ProxyBrowsingVisibility.Mode,
         name: (Group) -> String,
         isHidden: (Group) -> Bool
     ) -> [String] {
-        switch mode {
-        case .global:
-            return [ProxyBrowsingVisibility.kernelGlobalGroupName]
-        case .rule, .direct:
-            return ProxyBrowsingVisibility.groups(groups, mode: mode, name: name, isHidden: isHidden).map(name)
-        }
+        ProxyBrowsingVisibility.groups(groups, mode: mode, name: name, isHidden: isHidden).map(name)
     }
 }
 
