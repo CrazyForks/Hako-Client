@@ -12,12 +12,20 @@ public struct ConfigurationLocalRuleSet: Codable, Equatable, Identifiable, Senda
 
 public extension ConfigurationLibrarySnapshot {
     var visibleRuleSchemes: [ConfigurationRuleScheme] {
-        let bases = ConfigurationBuiltins.schemes + availableRules.filter {
+         
+         
+         
+        let available = availableRules
+        let bases = ConfigurationBuiltins.schemes + available.filter {
             $0.baseSchemeID == nil || $0.baseSchemeID.map(ConfigurationBuiltins.isNative) == true
+        }
+        var firstDerivative: [String: ConfigurationRuleScheme] = [:]
+        for scheme in available {
+            if let base = scheme.baseSchemeID, firstDerivative[base] == nil { firstDerivative[base] = scheme }
         }
         var seen = Set<String>()
         return bases.filter { seen.insert($0.id).inserted }.map { base in
-            ConfigurationBuiltins.isNative(base.id) ? base : (availableRules.first(where: { $0.baseSchemeID == base.id }) ?? base)
+            ConfigurationBuiltins.isNative(base.id) ? base : (firstDerivative[base.id] ?? base)
         }
     }
     func effectiveRuleScheme(_ id: String) -> ConfigurationRuleScheme? {

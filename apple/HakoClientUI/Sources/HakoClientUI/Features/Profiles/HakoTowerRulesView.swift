@@ -55,7 +55,11 @@ public struct HakoTowerRulesLibraryView: View {
     }
     private func bundled(_ scheme: ConfigurationRuleScheme) -> Bool { scheme.kind == .builtin }
     public var body: some View {
-        HakoConfigurationLibraryList(palette: palette, accessibilityIdentifier: "configuration.library.rules.content") {
+         
+         
+         
+        let schemes = self.schemes
+        return HakoConfigurationLibraryList(palette: palette, accessibilityIdentifier: "configuration.library.rules.content") {
             if updateAll == nil, let error { Text(verbatim: error).foregroundStyle(.orange) }
             ForEach(HakoConfigurationRuleLibrarySection.allCases, id: \.self) { group in
                 let items = schemes.filter { group.contains($0, library: library) }

@@ -236,7 +236,11 @@ struct ProfileCenterAdapter: View {
     }
 
     private var sharedSnapshot: AppleClientSnapshot {
-        AppleClientSnapshot(
+         
+         
+         
+        let scripts = catalogProfiles.contains { $0.overwriteMode == .script } ? ScriptLibrary.load() : []
+        return AppleClientSnapshot(
             revision: 0,
             connection: AppleClientConnectionSnapshot(
                 phase: .unavailable
@@ -245,7 +249,7 @@ struct ProfileCenterAdapter: View {
                  
                  
                  
-                profiles: catalogProfiles.compactMap(profileSnapshot),
+                profiles: catalogProfiles.compactMap { profileSnapshot($0, scripts: scripts) },
                  
                  
                  
@@ -277,7 +281,7 @@ struct ProfileCenterAdapter: View {
     }
 
     private func profileSnapshot(
-        _ profile: Profile
+        _ profile: Profile, scripts: [ConfigScript]
     ) -> HakoProfileSnapshot? {
         guard let id = try? HakoClientKit.Profile.ID(profile.id) else {
             return nil
@@ -338,7 +342,7 @@ struct ProfileCenterAdapter: View {
             },
             followsConfigurationSourceUpdates: configurationLibrary.recipes.first(where: { $0.id == profile.id })?.followsUpdates,
             overrideScriptName: profile.overwriteMode == .script
-                ? ScriptLibrary.load().first { $0.id == profile.selectedScriptID }?.label : nil
+                ? scripts.first { $0.id == profile.selectedScriptID }?.label : nil
         )
     }
 
