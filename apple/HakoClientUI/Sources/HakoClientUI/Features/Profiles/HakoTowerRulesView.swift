@@ -821,7 +821,7 @@ private struct HakoTowerLocalRuleEditor: View {
                 HakoRoutedViewDestination(isPresented: $pickingPolicy) {
                     HakoRulePolicyPickerView(
                         title: "Select Policy",
-                        builtIns: [("DIRECT", "Do not proxy; connect directly."), ("REJECT", "Abort the request.")],
+                        builtIns: HakoRulePolicyBuiltIns.ruleSet,
                         axPrefix: "configuration.rules.set.policy",
                         offersGlobal: false,
                         options: options,
@@ -1349,4 +1349,14 @@ public enum HakoConfigurationRuleLibrarySection: CaseIterable {
             return library.sources.first { $0.id == base.sourceID }.map { contains($0) } ?? (self == .file)
         }
     }
+}
+
+extension HakoRulePolicyBuiltIns {
+     
+     
+     
+     
+     
+    public static let ruleSet: [(name: String, caption: String)] =
+        rule.filter { ConfigurationRuleTargetCandidates.builtinPolicies.contains($0.name) }
 }

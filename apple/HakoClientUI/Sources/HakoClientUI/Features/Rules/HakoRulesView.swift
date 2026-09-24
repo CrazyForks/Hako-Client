@@ -2355,6 +2355,12 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                 HakoRuleTypeSelectionView(
                     selection: $action,
                     runtimeProfile: runtimeProfile,
+                     
+                     
+                     
+                     
+                     
+                    excludesLogic: !showsTarget,
                     icon: icon
                         )
                         .hakoPushedDetailPage()
@@ -3044,6 +3050,12 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                 error = "\(action.targetLabel) is required."
                 return false
             }
+             
+             
+            guard showsTarget || action.category != .logic else {
+                error = "A rule set cannot carry MATCH or a logic rule. Pick another type."
+                return false
+            }
             candidate = showsTarget ? rule.rawValue : Self.payloadLine(rule)
         }
          
@@ -3544,6 +3556,23 @@ private struct HakoRuleConditionEditorView<Icon: View>: View {
  
  
  
+ 
+ 
+ 
+ 
+ 
+ 
+public enum HakoRulePolicyBuiltIns {
+    public static let rule: [(name: String, caption: String)] = [
+        ("DIRECT", "Do not proxy; connect directly."),
+        ("REJECT", "Abort the request."),
+        ("REJECT-DROP", "Drop silently, without answering."),
+        ("PASS", "Skip this rule; keep matching the ones below."),
+        ("PASS-RULE", "Skip this rule but stay inside the sub-rule list."),
+        ("MATCH", "Follow this profile's final MATCH policy."),
+    ]
+}
+
 public struct HakoRulePolicyPickerView<Icon: View>: View {
     let title: String
     let builtIns: [(name: String, caption: String)]
@@ -3556,14 +3585,7 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
     let pick: (String) -> Void
 
     private static var ruleBuiltIns: [(name: String, caption: String)] {
-        [
-            ("DIRECT", "Do not proxy; connect directly."),
-            ("REJECT", "Abort the request."),
-            ("REJECT-DROP", "Drop silently, without answering."),
-            ("PASS", "Skip this rule; keep matching the ones below."),
-            ("PASS-RULE", "Skip this rule but stay inside the sub-rule list."),
-            ("MATCH", "Follow this profile's final MATCH policy."),
-        ]
+        HakoRulePolicyBuiltIns.rule
     }
 
     public init(
