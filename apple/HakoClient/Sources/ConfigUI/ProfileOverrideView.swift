@@ -44,7 +44,8 @@ struct ProfileOverrideView: View {
     @State private var editingRule: RuleEditTarget?
 
     private let globalRules: [String]
-    private let scripts: [ConfigScript]
+    @State private var scripts: [ConfigScript]
+    private let scriptLibrary: UserDefaults
     private let rawYAML: String?
     private let opensProxyChainsDirectly: Bool
     private let configurationCenter: Bool
@@ -66,6 +67,7 @@ struct ProfileOverrideView: View {
         rawYAML: String?,
         openProxyChains: Bool = false,
         configurationCenter: Bool = false,
+        scriptLibrary: UserDefaults = ScriptLibrary.appGroupDefaults,
         save: @escaping (Profile) -> Void
     ) {
         let settingsFacade = ProfileSettingsFacade()
@@ -83,7 +85,8 @@ struct ProfileOverrideView: View {
             initialValue: Set(settings.override.disabledGlobalRules ?? [])
         )
         globalRules = settings.migratedGlobalOverride?.appendRules ?? []
-        scripts = ScriptLibrary.load()
+        self.scriptLibrary = scriptLibrary
+        _scripts = State(initialValue: ScriptLibrary.load(from: scriptLibrary))
         _selectedScriptID = State(initialValue: settings.selectedScriptID)
         _mode = State(initialValue: settings.overwriteMode ?? .standard)
         _customGroups = State(initialValue: settings.customOverwrite?.proxyGroups ?? [])
@@ -185,13 +188,39 @@ struct ProfileOverrideView: View {
                     }
                 } else if mode == .script {
                     Section {
-                    Picker("Override Script", selection: $selectedScriptID) {
-                        Text("None").tag(String?.none)
-                        ForEach(scripts) { script in
-                            Text(script.label).tag(Optional(script.id))
+                        if scripts.isEmpty {
+                            HakoEmptyState(
+                                title: "No Local Scripts",
+                                message: "Create a local script before selecting Script mode.",
+                                symbol: .curlybraces
+                            )
+                            .listRowSeparator(.hidden)
+                        } else {
+                            Picker("Override Script", selection: $selectedScriptID) {
+                                Text("None").tag(String?.none)
+                                ForEach(scripts) { script in
+                                    Text(script.label).tag(Optional(script.id))
+                                }
+                            }
+                            .accessibilityIdentifier("profile.override.script")
                         }
-                    }
-                        .accessibilityIdentifier("profile.override.script")
+                         
+                         
+                         
+                         
+                         
+                         
+                        HakoRoutedViewLink {
+                            HakoLazyView { ScriptLibraryView() }
+                        } label: {
+                            HakoDestinationRow(
+                                title: "Manage Local Scripts",
+                                subtitle: .format("%@ scripts", [String(scripts.count)]),
+                                symbol: .curlybraces,
+                                tint: .purple
+                            )
+                        }
+                        .accessibilityIdentifier("profile.override.manage-scripts")
                     } header: {
                         Text("Script")
                     } footer: {
@@ -347,6 +376,20 @@ struct ProfileOverrideView: View {
                 }.value
             }
             .hakoPageTitle(.copy(configurationCenter ? "Overrides and Scripts" : "Profile Override"))
+             
+             
+             
+             
+             
+             
+             
+             
+            .onReceive(NotificationCenter.default.publisher(for: ScriptLibrary.didChange)) { _ in
+                scripts = ScriptLibrary.load(from: scriptLibrary)
+                if let selected = selectedScriptID, !scripts.contains(where: { $0.id == selected }) {
+                    selectedScriptID = nil
+                }
+            }
              
              
              
