@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 2,
+  "upstreamRepository": "https://github.com/MetaCubeX/meta-rules-dat",
+  "upstreamRevision": "4178770badecb1b349fbcd62c737e0d7a2079729",
+  "releaseTag": "latest",
+  "publishedAt": "2026-08-20T22:55:13Z",
+  "licenseFile": "LICENSE.meta-rules-dat.txt",
+  "resources": [
+    {
+      "kind": "geosite",
+      "fileName": "GeoSite.dat",
+      "sourceAsset": "GeoSite.dat.xz",
+      "encoding": "xz",
+      "bundledSize": 822620,
+      "bundledSHA256": "733f1aab56071b2a7202bdea3bb1e87ccf22b6d80c8d92548ccfdbf89dd8f7a6",
+      "downloadURL": "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat",
+      "size": 4246414,
+      "sha256": "e501fa4171f5b382f9b2b0e47ebdcd81f8bf052b32f682eaa16783830597507f"
+    },
+    {
+      "kind": "mmdb",
+      "fileName": "geoip.metadb",
+      "sourceAsset": "geoip.metadb.xz",
+      "encoding": "xz",
+      "bundledSize": 2138124,
+      "bundledSHA256": "9a2ab5d3d2c73287ec4e717e4ee0317e0e89a11c436f4ba568ea35ab2e97b279",
+      "downloadURL": "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb",
+      "size": 8593535,
+      "sha256": "9d500c84613994153b531de7153b3602f2b9adde253a28307c74dba1bea1a957"
+    },
+    {
+      "kind": "geoip",
+      "fileName": "GeoIP.dat",
+      "sourceAsset": "GeoIP.dat.xz",
+      "encoding": "xz",
+      "bundledSize": 1754692,
+      "bundledSHA256": "335d494b5c931f7db246a7214dfc215f6b7badace0e8deee7db5c91e9d6a91d9",
+      "downloadURL": "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat",
+      "size": 17185495,
+      "sha256": "8ebcb11333f7deed4bf2740f2ce3249aa8997ef03d437150c7ae373c011cd72a"
+    },
+    {
+      "kind": "asn",
+      "fileName": "ASN.mmdb",
+      "sourceAsset": "ASN.mmdb.xz",
+      "encoding": "xz",
+      "bundledSize": 3792080,
+      "bundledSHA256": "f819ed9625514e907236f312ac64c36771b987375d8ca2db94eb7d7e3c926810",
+      "downloadURL": "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb",
+      "size": 12061149,
+      "sha256": "82abcabdf4d0ecb34da45e4f0f9bc30bf933cfbfec446b89a2215fae5b1fdbdc"
+    }
+  ]
+}
