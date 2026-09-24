@@ -188,6 +188,7 @@
 "Optional" = "Optional";
 "Outbound mode" = "Outbound mode";
 "Outbound mode · %@" = "Outbound mode · %@";
+"Override script" = "Override script";
 "Overrides not applied — back up again on your iPhone" = "Overrides not applied — back up again on your iPhone";
 "Password" = "Password";
 "Plain addresses used to look up the resolvers above, before any of them can be reached by name." = "Plain addresses used to look up the resolvers above, before any of them can be reached by name.";
@@ -242,6 +243,7 @@
 "STOPPING" = "STOPPING";
 "Save" = "Save";
 "Saving configuration…" = "Saving configuration…";
+"Script URL" = "Script URL";
 "Select Retry, then allow VPN setup." = "Select Retry, then allow VPN setup.";
 "Selected locally · Runtime not confirmed" = "Selected locally · Runtime not confirmed";
 "Send all traffic through the selected proxy" = "Send all traffic through the selected proxy";

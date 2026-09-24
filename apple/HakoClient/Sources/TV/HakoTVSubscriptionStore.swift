@@ -29,14 +29,27 @@ struct HakoTVSubscription: Codable, Equatable, Identifiable {
      
      
     let rules: HakoTVProfileRules?
+     
+     
+     
+     
+     
+     
+    let scriptURL: URL?
 
     init(requestURL: URL, name: String, updatedAt: Date? = nil, restored: Restored? = nil,
-         rules: HakoTVProfileRules? = nil) {
+         rules: HakoTVProfileRules? = nil, scriptURL: URL? = nil) {
         self.requestURL = requestURL
         self.name = name
         self.updatedAt = updatedAt
         self.restored = restored
         self.rules = rules
+        self.scriptURL = scriptURL
+    }
+
+     
+    func withScriptURL(_ scriptURL: URL?) -> HakoTVSubscription {
+        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules, scriptURL: scriptURL)
     }
 
     var effectiveRules: HakoTVProfileRules { rules ?? .own }
@@ -44,7 +57,7 @@ struct HakoTVSubscription: Codable, Equatable, Identifiable {
      
      
     func withRules(_ rules: HakoTVProfileRules) -> HakoTVSubscription {
-        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules)
+        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules, scriptURL: scriptURL)
     }
 
     struct Restored: Codable, Equatable {
@@ -175,7 +188,8 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
             let typedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
             subscriptions[index] = HakoTVSubscription(
                 requestURL: url, name: typedName.isEmpty ? existing.name : name,
-                updatedAt: existing.updatedAt, restored: existing.restored, rules: rules
+                updatedAt: existing.updatedAt, restored: existing.restored, rules: rules,
+                scriptURL: existing.scriptURL
             )
         } else {
             subscriptions.append(HakoTVSubscription(requestURL: url, name: name, rules: rules))
@@ -203,7 +217,8 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             updatedAt: existing.updatedAt,
             restored: existing.restored,
-            rules: existing.rules
+            rules: existing.rules,
+            scriptURL: existing.scriptURL
         )
         persist()
     }
@@ -216,9 +231,27 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
         let existing = subscriptions[index]
         subscriptions[index] = HakoTVSubscription(
             requestURL: existing.requestURL, name: existing.name, updatedAt: existing.updatedAt,
-            restored: existing.restored, rules: rules
+            restored: existing.restored, rules: rules, scriptURL: existing.scriptURL
         )
         persist()
+    }
+
+    mutating func setScriptURL(_ id: HakoTVSubscription.ID, _ scriptURL: URL?) {
+        guard let index = subscriptions.firstIndex(where: { $0.id == id }) else { return }
+        subscriptions[index] = subscriptions[index].withScriptURL(scriptURL)
+        persist()
+    }
+
+     
+     
+     
+    static func scriptURL(from text: String) throws -> URL? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        guard let url = URL(string: trimmed), let scheme = url.scheme?.lowercased(),
+              ["http", "https"].contains(scheme), url.host?.isEmpty == false
+        else { throw ProfileValidationError.invalidRemoteURL }
+        return url
     }
 
      
@@ -256,7 +289,8 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
             requestURL: url,
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             updatedAt: nil,
-            rules: subscriptions[index].rules
+            rules: subscriptions[index].rules,
+            scriptURL: subscriptions[index].scriptURL
         )
         if chosenID == id { chosenID = url }
         persist()
@@ -278,7 +312,8 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
             name: PanelName.deduplicated(panelName, existing: others),
             updatedAt: existing.updatedAt,
             restored: existing.restored,
-            rules: existing.rules
+            rules: existing.rules,
+            scriptURL: existing.scriptURL
         )
         persist()
     }
@@ -290,7 +325,7 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
         let existing = subscriptions[index]
         subscriptions[index] = HakoTVSubscription(
             requestURL: existing.requestURL, name: existing.name, updatedAt: date, restored: existing.restored,
-            rules: existing.rules
+            rules: existing.rules, scriptURL: existing.scriptURL
         )
         persist()
     }
@@ -306,7 +341,8 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
                 name: item.name,
                 updatedAt: subscriptions[index].updatedAt,
                 restored: item.restored,
-                rules: subscriptions[index].rules
+                rules: subscriptions[index].rules,
+                scriptURL: subscriptions[index].scriptURL
             )
         } else {
             subscriptions.append(item)

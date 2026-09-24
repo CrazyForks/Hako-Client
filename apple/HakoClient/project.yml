@@ -608,6 +608,7 @@ targets:
     - path: Sources/ConfigUI/ClientUserAgent.swift
     - path: Sources/ConfigUI/IPStackSettings.swift
     - path: Sources/ConfigUI/IPStackSettingsApplication.swift
+    - path: Sources/ConfigUI/ScriptEngine.swift
     - path: Sources/VPNStartAuthorization.swift
     - path: Shared/HakoLogStore.swift
       group: Shared

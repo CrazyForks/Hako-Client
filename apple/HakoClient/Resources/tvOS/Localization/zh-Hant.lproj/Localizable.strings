@@ -188,6 +188,7 @@
 "Optional" = "選填";
 "Outbound mode" = "出站模式";
 "Outbound mode · %@" = "出站模式 · %@";
+"Override script" = "覆寫腳本";
 "Overrides not applied — back up again on your iPhone" = "覆寫未套用——請在 iPhone 上重新備份";
 "Password" = "密碼";
 "Plain addresses used to look up the resolvers above, before any of them can be reached by name." = "上面那些解析器在能以網域連上之前，先用這些純 IP 位址查詢它們。";
@@ -242,6 +243,7 @@
 "STOPPING" = "正在停止";
 "Save" = "儲存";
 "Saving configuration…" = "正在儲存設定…";
+"Script URL" = "腳本網址";
 "Select Retry, then allow VPN setup." = "選擇「重試」，然後允許新增 VPN 設定。";
 "Selected locally · Runtime not confirmed" = "已在本機選擇 · 尚未確認執行狀態";
 "Send all traffic through the selected proxy" = "所有流量都走選取的代理";

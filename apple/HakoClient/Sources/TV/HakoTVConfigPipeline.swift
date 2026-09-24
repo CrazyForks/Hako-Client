@@ -118,6 +118,9 @@ final class HakoTVConfigPipeline {
     static func profileID(for subscription: HakoTVSubscription) -> String {
         var identity = subscription.requestURL.absoluteString
         if subscription.effectiveRules != .own { identity += "\n" + subscription.effectiveRules.rawValue }
+         
+         
+        if let script = subscription.scriptURL { identity += "\nscript:" + script.absoluteString }
         let digest = SHA256.hash(data: Data(identity.utf8))
         let bytes = Array(digest.prefix(16))
         let uuid = UUID(uuid: (
@@ -168,12 +171,32 @@ final class HakoTVConfigPipeline {
              
              
              
+            let composed: String
             do {
-                sourceYAML = try HakoTVComposedProfile.document(body: fetched.body, rules: subscription.effectiveRules)
+                composed = try HakoTVComposedProfile.document(body: fetched.body, rules: subscription.effectiveRules)
             } catch let error as HakoTVSubscriptionFetcher.FetchError {
                 throw error
             } catch {
                 throw PipelineError.invalidConfiguration(error.localizedDescription)
+            }
+             
+             
+             
+             
+             
+            if let scriptURL = subscription.scriptURL {
+                let script = try await HakoTVSubscriptionFetcher.fetchBody(scriptURL, session: session, userAgent: userAgent)
+                guard let source = String(data: script.body, encoding: .utf8) else {
+                    throw PipelineError.invalidConfiguration(HakoTVOverrideScript.notText)
+                }
+                do {
+                    sourceYAML = try HakoTVOverrideScript.apply(script: source, toYAML: composed, profileName: subscription.title)
+                } catch {
+                    throw PipelineError.invalidConfiguration(error.localizedDescription)
+                }
+                HakoLogStore.shared.append("tv override script applied  bytes=\(script.body.count)", stream: .app)
+            } else {
+                sourceYAML = composed
             }
             userInfo = fetched.userInfo
             panelName = fetched.panelName

@@ -186,6 +186,12 @@ struct HakoTVSubscriptionDetailScreen: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("tvos.subscription.updated")
+                 
+                 
+                Text(Self.scriptLine(for: subscription))
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("tvos.subscription.script")
                 if let updateFailure {
                      
                      
@@ -211,6 +217,13 @@ struct HakoTVSubscriptionDetailScreen: View {
      
      
      
+     
+     
+    static func scriptLine(for subscription: HakoTVSubscription) -> String {
+        let value = subscription.scriptURL?.host ?? String(localized: "None")
+        return "\(String(localized: "Override script")) · \(value)"
+    }
+
     static func verbs(isCurrent: Bool, isFetchable: Bool = true) -> [Verb] {
         var verbs: [Verb] = isCurrent ? [.update, .rules, .edit, .remove] : [.rules, .edit, .use, .remove]
         if !isFetchable { verbs.removeAll { $0 == .rules } }
