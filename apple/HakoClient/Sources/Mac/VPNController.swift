@@ -542,13 +542,17 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         let writeIntent = profileWriteIntentGeneration
         stopGeneration &+= 1
         vpnAuthorization = nil
-        if applyingIPStackSettings { manager?.connection.stopVPNTunnel() }
         userStopInFlight = true
         if let manager, Self.disarmOnDemandForUserStop(manager) || applyingIPStackSettings {
              
              
             try? await saveToPreferences(manager, whileIntent: writeIntent, disarmOnly: true)
         }
+         
+         
+         
+         
+        if applyingIPStackSettings { manager?.connection.stopVPNTunnel() }
         if profileWriteIntentGeneration == writeIntent { manager?.connection.stopVPNTunnel() }
         if let status = manager?.connection.status {
             updateStatus(status)
