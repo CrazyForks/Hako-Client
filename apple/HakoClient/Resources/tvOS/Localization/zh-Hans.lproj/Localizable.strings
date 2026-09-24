@@ -246,6 +246,7 @@
 "STOPPING" = "正在停止";
 "Save" = "保存";
 "Saving configuration…" = "正在保存配置…";
+"Script" = "脚本";
 "Script URL" = "脚本地址";
 "Select Retry, then allow VPN setup." = "选择“重试”，然后允许添加 VPN 配置。";
 "Selected locally · Runtime not confirmed" = "已在本机选择 · 尚未确认运行状态";
@@ -323,6 +324,7 @@
 "The resolvers asked first, in this order." = "最先询问的解析器，按此顺序。";
 "The saved IP Stack settings are invalid or require a newer app version. They have not been changed." = "已保存的 IP Stack 设置无效或需要更新版本的应用。设置未被更改。";
 "The saved configuration is damaged. Import it again." = "保存的配置已损坏，请重新导入。";
+"The script at this address runs on the profile every time it is fetched, after the rules are applied. Leave it empty to run the profile as it comes. Update Script fetches the same address again." = "每次拉取配置后，都会在应用规则之后运行这个地址上的脚本。留空则按原样运行配置。「更新脚本」会重新拉取同一地址。";
 "The server answered %lld. Check the address on your phone." = "服务器返回了 %lld。请在手机上核对地址。";
 "The system did not answer in time." = "系统没有及时响应。";
 "The system did not take the change — the switch is back where it was." = "系统没有接受这次更改，开关已回到原来的位置。";

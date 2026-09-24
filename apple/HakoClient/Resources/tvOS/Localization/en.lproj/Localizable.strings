@@ -246,6 +246,7 @@
 "STOPPING" = "STOPPING";
 "Save" = "Save";
 "Saving configuration…" = "Saving configuration…";
+"Script" = "Script";
 "Script URL" = "Script URL";
 "Select Retry, then allow VPN setup." = "Select Retry, then allow VPN setup.";
 "Selected locally · Runtime not confirmed" = "Selected locally · Runtime not confirmed";
@@ -323,6 +324,7 @@
 "The resolvers asked first, in this order." = "The resolvers asked first, in this order.";
 "The saved IP Stack settings are invalid or require a newer app version. They have not been changed." = "The saved IP Stack settings are invalid or require a newer app version. They have not been changed.";
 "The saved configuration is damaged. Import it again." = "The saved configuration is damaged. Import it again.";
+"The script at this address runs on the profile every time it is fetched, after the rules are applied. Leave it empty to run the profile as it comes. Update Script fetches the same address again." = "The script at this address runs on the profile every time it is fetched, after the rules are applied. Leave it empty to run the profile as it comes. Update Script fetches the same address again.";
 "The server answered %lld. Check the address on your phone." = "The server answered %lld. Check the address on your phone.";
 "The system did not answer in time." = "The system did not answer in time.";
 "The system did not take the change — the switch is back where it was." = "The system did not take the change — the switch is back where it was.";

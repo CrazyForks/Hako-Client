@@ -39,39 +39,111 @@ struct HakoTVShell: View {
     @State private var store: HakoTVSubscriptionStore
      
      
-    @State private var showsAddSubscription = false
      
      
      
      
-    @State private var showsOutboundMode = false
      
      
-    @State private var showsSubscriptions = false
      
      
-    @State private var subscriptionDoor: HakoTVSubscription.ID?
-     
-     
-    @State private var editDoor: EditDoor?
-    @State private var rulesDoor: RulesDoor?
-    @State private var autoUpdateDoor: AutoUpdateDoor?
+    enum HomeDoor: Hashable {
+         
+        case outboundMode
+         
+         
+        case nodes
+         
+        case subscriptions
+         
+         
+        case iCloudRestore
+         
+         
+        case addSubscription
+         
+        case subscription(HakoTVSubscription.ID)
+         
+        case edit(HakoTVSubscription.ID)
+         
+        case rules(HakoTVSubscription.ID)
+         
+        case autoUpdate(HakoTVSubscription.ID)
+         
+        case script(HakoTVSubscription.ID)
+    }
+    @State private var homePath: [HomeDoor] = []
 
-    struct AutoUpdateDoor: Identifiable, Hashable {
-        let id: HakoTVSubscription.ID
+    private func homeDoorOpen(_ door: HomeDoor) -> Bool { homePath.contains(door) }
+
+     
+     
+    private func setHomeDoor(_ door: HomeDoor, open: Bool) {
+        if open {
+            if !homePath.contains(door) { homePath.append(door) }
+        } else if let index = homePath.firstIndex(of: door) {
+            homePath.removeSubrange(index...)
+        }
     }
 
-    struct EditDoor: Identifiable, Hashable {
-        let id: HakoTVSubscription.ID
+    private func homeDoorBinding(_ door: HomeDoor) -> Binding<Bool> {
+        Binding(get: { homeDoorOpen(door) }, set: { setHomeDoor(door, open: $0) })
     }
+
      
-    struct RulesDoor: Identifiable, Hashable {
-        let id: HakoTVSubscription.ID
+     
+    private func homeDoorID(_ kind: (HakoTVSubscription.ID) -> HomeDoor, _ matches: (HomeDoor) -> HakoTVSubscription.ID?) -> HakoTVSubscription.ID? {
+        for door in homePath { if let id = matches(door) { return id } }
+        return nil
     }
-     
-     
-     
-    @State private var showsNodes = false
+
+    private func setHomeDoorID(_ id: HakoTVSubscription.ID?, kind: (HakoTVSubscription.ID) -> HomeDoor, matches: (HomeDoor) -> HakoTVSubscription.ID?) {
+        if let index = homePath.firstIndex(where: { matches($0) != nil }) {
+            homePath.removeSubrange(index...)
+        }
+        if let id { homePath.append(kind(id)) }
+    }
+
+    private var showsAddSubscription: Bool {
+        get { homeDoorOpen(.addSubscription) }
+        nonmutating set { setHomeDoor(.addSubscription, open: newValue) }
+    }
+    private var showsOutboundMode: Bool {
+        get { homeDoorOpen(.outboundMode) }
+        nonmutating set { setHomeDoor(.outboundMode, open: newValue) }
+    }
+    private var showsSubscriptions: Bool {
+        get { homeDoorOpen(.subscriptions) }
+        nonmutating set { setHomeDoor(.subscriptions, open: newValue) }
+    }
+    private var showsNodes: Bool {
+        get { homeDoorOpen(.nodes) }
+        nonmutating set { setHomeDoor(.nodes, open: newValue) }
+    }
+    private var showsICloudRestore: Bool {
+        get { homeDoorOpen(.iCloudRestore) }
+        nonmutating set { setHomeDoor(.iCloudRestore, open: newValue) }
+    }
+    private var subscriptionDoor: HakoTVSubscription.ID? {
+        get { homeDoorID(HomeDoor.subscription) { if case .subscription(let id) = $0 { return id }; return nil } }
+        nonmutating set { setHomeDoorID(newValue, kind: HomeDoor.subscription) { if case .subscription(let id) = $0 { return id }; return nil } }
+    }
+    private var editDoor: HakoTVSubscription.ID? {
+        get { homeDoorID(HomeDoor.edit) { if case .edit(let id) = $0 { return id }; return nil } }
+        nonmutating set { setHomeDoorID(newValue, kind: HomeDoor.edit) { if case .edit(let id) = $0 { return id }; return nil } }
+    }
+    private var rulesDoor: HakoTVSubscription.ID? {
+        get { homeDoorID(HomeDoor.rules) { if case .rules(let id) = $0 { return id }; return nil } }
+        nonmutating set { setHomeDoorID(newValue, kind: HomeDoor.rules) { if case .rules(let id) = $0 { return id }; return nil } }
+    }
+    private var autoUpdateDoor: HakoTVSubscription.ID? {
+        get { homeDoorID(HomeDoor.autoUpdate) { if case .autoUpdate(let id) = $0 { return id }; return nil } }
+        nonmutating set { setHomeDoorID(newValue, kind: HomeDoor.autoUpdate) { if case .autoUpdate(let id) = $0 { return id }; return nil } }
+    }
+    private var scriptDoor: HakoTVSubscription.ID? {
+        get { homeDoorID(HomeDoor.script) { if case .script(let id) = $0 { return id }; return nil } }
+        nonmutating set { setHomeDoorID(newValue, kind: HomeDoor.script) { if case .script(let id) = $0 { return id }; return nil } }
+    }
      
      
     @State private var utilitiesDoor: HakoTVUtilitiesHub.Door?
@@ -79,8 +151,6 @@ struct HakoTVShell: View {
     @State private var moreDoor: HakoTVMoreHub.Door?
      
      
-     
-    @State private var showsICloudRestore = false
     @State private var iCloudRestoreFromList = false
      
      
@@ -138,9 +208,13 @@ struct HakoTVShell: View {
     }
 
     private func closeICloudRestore() {
+        var restoreOpen = showsICloudRestore
+        var subscriptionsOpen = showsSubscriptions
         Self.finishICloudRestore(fromList: iCloudRestoreFromList,
-                                 restoreOpen: &showsICloudRestore,
-                                 subscriptionsOpen: &showsSubscriptions)
+                                 restoreOpen: &restoreOpen,
+                                 subscriptionsOpen: &subscriptionsOpen)
+        showsICloudRestore = restoreOpen
+        showsSubscriptions = subscriptionsOpen
     }
 
      
@@ -149,6 +223,127 @@ struct HakoTVShell: View {
                                    subscriptionsOpen: inout Bool) {
         restoreOpen = false
         if fromList { subscriptionsOpen = true }
+    }
+
+     
+    @ViewBuilder
+    private func homeScreen(for door: HomeDoor) -> some View {
+        switch door {
+        case .iCloudRestore:
+            iCloudRestoreScreen
+        case .outboundMode:
+            HakoTVOutboundModeScreen(
+                state: state,
+                onSelect: live ? { mode in Task { await tunnel.setMode(mode) } } : nil
+            )
+        case .nodes:
+            HakoTVNodesScreen(
+                state: state,
+                onPin: live ? { member, group in Task { await tunnel.pin(member: member, group: group) } } : nil,
+                onTestAll: live ? { group in Task { await tunnel.testAll(group: group) } } : nil,
+                onTest: live ? { member in Task { await tunnel.testOne(member: member) } } : nil
+            )
+        case .subscriptions:
+            HakoTVSubscriptionsScreen(
+                store: $store,
+                onOpen: { subscriptionDoor = $0 },
+                onAdd: { showsAddSubscription = true },
+                onRestore: {
+                    iCloudRestoreFromList = true
+                    showsICloudRestore = true
+                }
+            )
+        case .subscription(let id):
+            HakoTVSubscriptionDetailScreen(
+                store: $store,
+                id: id,
+                refresh: live ? tunnel.state.refresh : nil,
+                onDone: {
+                     
+                     
+                     
+                     
+                     
+                    subscriptionDoor = nil
+                },
+                onUpdate: live ? {
+                    if let subscription = store.subscriptions.first(where: { $0.id == id }) {
+                        Task { await tunnel.refresh(subscription: subscription) }
+                    }
+                } : nil,
+                onEdit: { editDoor = id },
+                onRules: { rulesDoor = id },
+                onAutoUpdate: { autoUpdateDoor = id },
+                onScript: { scriptDoor = id }
+            )
+        case .script(let id):
+            HakoTVProfileScriptScreen(
+                store: $store,
+                id: id,
+                onUpdateScript: live ? {
+                    if let subscription = store.subscriptions.first(where: { $0.id == id }) {
+                        Task { await tunnel.updateScript(subscription: subscription, isCurrent: store.current?.id == id) }
+                    }
+                } : nil
+            ) { changedID in
+                 
+                 
+                 
+                 
+                scriptDoor = nil
+                guard live, let subscription = Self.refreshAfterDoor(changed: changedID != nil, id: id, in: store) else { return }
+                Task { await tunnel.refresh(subscription: subscription) }
+            }
+        case .autoUpdate(let id):
+            HakoTVAutoUpdateScreen(store: $store, id: id) { _ in
+                autoUpdateDoor = nil
+                scheduleBackgroundRefresh()
+            }
+        case .rules(let id):
+            HakoTVProfileRulesScreen(store: $store, id: id) { row, changed in
+                 
+                rulesDoor = nil
+                 
+                 
+                 
+                 
+                guard live, let subscription = Self.refreshAfterDoor(changed: changed, id: row.id, in: store) else { return }
+                Task { await tunnel.refresh(subscription: subscription) }
+            }
+        case .edit(let id):
+            HakoTVEditSubscriptionScreen(store: $store, id: id) { newAddress in
+                 
+                 
+                editDoor = nil
+                 
+                 
+                 
+                 
+                 
+                 
+                guard live,
+                      let subscription = HakoTVEditSubscriptionScreen.refreshTarget(
+                          newAddress: newAddress, in: store
+                      )
+                else { return }
+                Task { await tunnel.refresh(subscription: subscription) }
+            }
+        case .addSubscription:
+            HakoTVAddSubscriptionScreen(store: $store) {
+                 
+                 
+                showsAddSubscription = false
+            }
+        }
+    }
+
+     
+     
+     
+     
+    static func refreshAfterDoor(changed: Bool, id: HakoTVSubscription.ID, in store: HakoTVSubscriptionStore) -> HakoTVSubscription? {
+        guard changed, store.current?.id == id else { return nil }
+        return store.subscriptions.first { $0.id == id }
     }
 
     private var hasConfiguration: Bool {
@@ -191,14 +386,14 @@ struct HakoTVShell: View {
              
              
              
-            NavigationStack {
+            NavigationStack(path: $homePath) {
                 Group {
                     if hasConfiguration || stage == .home || stage == .connected || stage == .outboundMode {
                         HakoTVHomeView(
                             state: state,
-                            showsOutboundMode: $showsOutboundMode,
-                            showsSubscriptions: $showsSubscriptions,
-                            showsNodes: $showsNodes,
+                            showsOutboundMode: homeDoorBinding(.outboundMode),
+                            showsSubscriptions: homeDoorBinding(.subscriptions),
+                            showsNodes: homeDoorBinding(.nodes),
                             onPrimaryAction: live ? primaryAction : nil
                         )
                     } else {
@@ -212,107 +407,8 @@ struct HakoTVShell: View {
                         )
                     }
                 }
-                .navigationDestination(isPresented: $showsICloudRestore) {
-                    iCloudRestoreScreen
-                }
-                .navigationDestination(isPresented: $showsOutboundMode) {
-                    HakoTVOutboundModeScreen(
-                        state: state,
-                        onSelect: live ? { mode in Task { await tunnel.setMode(mode) } } : nil
-                    )
-                }
-                .navigationDestination(isPresented: $showsNodes) {
-                    HakoTVNodesScreen(
-                        state: state,
-                        onPin: live ? { member, group in Task { await tunnel.pin(member: member, group: group) } } : nil,
-                        onTestAll: live ? { group in Task { await tunnel.testAll(group: group) } } : nil,
-                        onTest: live ? { member in Task { await tunnel.testOne(member: member) } } : nil
-                    )
-                }
-                .navigationDestination(isPresented: $showsSubscriptions) {
-                    HakoTVSubscriptionsScreen(
-                        store: $store,
-                        onOpen: { subscriptionDoor = $0 },
-                        onAdd: { showsAddSubscription = true },
-                        onRestore: {
-                            iCloudRestoreFromList = true
-                            showsICloudRestore = true
-                        }
-                    )
-                }
-                .navigationDestination(item: $subscriptionDoor) { id in
-                    HakoTVSubscriptionDetailScreen(
-                        store: $store,
-                        id: id,
-                        refresh: live ? tunnel.state.refresh : nil,
-                        onDone: {
-                             
-                             
-                             
-                             
-                             
-                            subscriptionDoor = nil
-                        },
-                        onUpdate: live ? {
-                            if let subscription = store.subscriptions.first(where: { $0.id == id }) {
-                                Task { await tunnel.refresh(subscription: subscription) }
-                            }
-                        } : nil,
-                        onUpdateScript: live ? {
-                            if let subscription = store.subscriptions.first(where: { $0.id == id }) {
-                                Task { await tunnel.updateScript(subscription: subscription, isCurrent: store.current?.id == id) }
-                            }
-                        } : nil,
-                        onEdit: { editDoor = EditDoor(id: id) },
-                        onRules: { rulesDoor = RulesDoor(id: id) },
-                        onAutoUpdate: { autoUpdateDoor = AutoUpdateDoor(id: id) }
-                    )
-                }
-                .navigationDestination(item: $autoUpdateDoor) { door in
-                    HakoTVAutoUpdateScreen(store: $store, id: door.id) { _ in
-                        autoUpdateDoor = nil
-                        scheduleBackgroundRefresh()
-                    }
-                }
-                .navigationDestination(item: $rulesDoor) { door in
-                    HakoTVProfileRulesScreen(store: $store, id: door.id) { row in
-                         
-                        rulesDoor = nil
-                         
-                         
-                         
-                         
-                        guard live, store.current?.id == row.id else { return }
-                        Task { await tunnel.refresh(subscription: row) }
-                    }
-                }
-                .navigationDestination(item: $editDoor) { door in
-                    HakoTVEditSubscriptionScreen(store: $store, id: door.id) { newAddress in
-                         
-                         
-                        editDoor = nil
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                        guard live,
-                              let subscription = HakoTVEditSubscriptionScreen.refreshTarget(
-                                  newAddress: newAddress, in: store
-                              )
-                        else { return }
-                        Task { await tunnel.refresh(subscription: subscription) }
-                    }
-                }
-                .navigationDestination(isPresented: $showsAddSubscription) {
-                    HakoTVAddSubscriptionScreen(store: $store) {
-                         
-                         
-                         
-                        showsAddSubscription = false
-                    }
+                .navigationDestination(for: HomeDoor.self) { door in
+                    homeScreen(for: door)
                 }
             }
              
@@ -492,7 +588,7 @@ struct HakoTVShell: View {
                 try? await Task.sleep(for: .milliseconds(400))
                 subscriptionDoor = current.id
                 try? await Task.sleep(for: .milliseconds(400))
-                editDoor = EditDoor(id: current.id)
+                editDoor = current.id
             }
             if stage == .profileRules, let current = store.current {
                  
@@ -500,7 +596,7 @@ struct HakoTVShell: View {
                 try? await Task.sleep(for: .milliseconds(400))
                 subscriptionDoor = current.id
                 try? await Task.sleep(for: .milliseconds(400))
-                rulesDoor = RulesDoor(id: current.id)
+                rulesDoor = current.id
             }
             if stage == .addSubscription { showsAddSubscription = true }
             if stage == .more { tab = .more }

@@ -8,7 +8,9 @@ struct HakoTVProfileRulesScreen: View {
     @Binding var store: HakoTVSubscriptionStore
     let id: HakoTVSubscription.ID
      
-    var onChosen: (HakoTVSubscription) -> Void = { _ in }
+     
+     
+    var onChosen: (HakoTVSubscription, Bool) -> Void = { _, _ in }
 
     private var chosen: HakoTVProfileRules {
         store.subscriptions.first { $0.id == id }?.effectiveRules ?? .own
@@ -20,8 +22,8 @@ struct HakoTVProfileRulesScreen: View {
                 Section("Rules") {
                     ForEach(HakoTVProfileRules.allCases) { choice in
                         Button {
-                            store.setRules(id, choice)
-                            if let row = store.subscriptions.first(where: { $0.id == id }) { onChosen(row) }
+                            let changed = Self.choose(choice, for: id, in: &store)
+                            if let row = store.subscriptions.first(where: { $0.id == id }) { onChosen(row, changed) }
                         } label: {
                             HStack {
                                 Text(choice.title)
@@ -62,5 +64,16 @@ struct HakoTVProfileRulesScreen: View {
 
     static var whenItApplies: String {
         String(localized: "The profile in use fetches its configuration again right away. Another profile applies the choice when it is next used.")
+    }
+
+     
+
+     
+     
+    @discardableResult
+    static func choose(_ choice: HakoTVProfileRules, for id: HakoTVSubscription.ID, in store: inout HakoTVSubscriptionStore) -> Bool {
+        let before = store.subscriptions.first { $0.id == id }?.effectiveRules
+        store.setRules(id, choice)
+        return before != choice
     }
 }

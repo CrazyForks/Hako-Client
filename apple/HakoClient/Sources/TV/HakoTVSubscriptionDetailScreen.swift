@@ -31,9 +31,9 @@ struct HakoTVSubscriptionDetailScreen: View {
      
      
     enum Verb: Hashable, CaseIterable {
-        case update
-        case updateScript
+        case script
         case rules
+        case update
         case autoUpdate
         case edit
         case use
@@ -41,8 +41,8 @@ struct HakoTVSubscriptionDetailScreen: View {
 
         var title: String {
             switch self {
+            case .script: String(localized: "Script")
             case .update: String(localized: "Update now")
-            case .updateScript: String(localized: "Update Script")
             case .rules: String(localized: "Rules")
             case .autoUpdate: String(localized: "Auto update")
             case .edit: String(localized: "Edit")
@@ -53,8 +53,8 @@ struct HakoTVSubscriptionDetailScreen: View {
 
         var identifier: String {
             switch self {
+            case .script: "script"
             case .update: "update"
-            case .updateScript: "update-script"
             case .rules: "rules"
             case .autoUpdate: "auto-update"
             case .edit: "edit"
@@ -76,13 +76,13 @@ struct HakoTVSubscriptionDetailScreen: View {
      
     var onUpdate: (() -> Void)?
      
-     
-    var onUpdateScript: (() -> Void)?
-     
     var onEdit: () -> Void = {}
      
     var onRules: () -> Void = {}
     var onAutoUpdate: () -> Void = {}
+     
+     
+    var onScript: () -> Void = {}
 
     @State private var asksToRemove = false
 
@@ -121,44 +121,55 @@ struct HakoTVSubscriptionDetailScreen: View {
 
     private var actions: some View {
         List {
-            Section {
-                ForEach(Self.verbs(isCurrent: isCurrent, isFetchable: subscription?.hasFetchableAddress ?? false, hasScript: subscription?.scriptURL != nil), id: \.self) { verb in
-                    Button(role: verb == .remove ? .destructive : nil) {
-                        perform(verb)
-                    } label: {
-                        if verb == .update {
-                            HStack(spacing: 16) {
-                                if isUpdating { ProgressView() }
-                                Text(Self.updateRowTitle(updating: isUpdating))
-                            }
-                        } else if verb == .rules {
-                             
-                             
-                            HStack {
-                                Text(verb.title)
-                                Spacer()
-                                Text(subscription?.effectiveRules.title ?? "")
-                                    .foregroundStyle(.secondary)
-                            }
-                        } else if verb == .autoUpdate {
-                            HStack {
-                                Text(verb.title)
-                                Spacer()
-                                Text(HakoTVAutoUpdateScreen.title(forHours: subscription?.updateIntervalHours ?? 0))
-                                    .foregroundStyle(.secondary)
-                            }
-                        } else {
-                            Text(verb.title)
+             
+             
+            ForEach(Array(Self.sections(isCurrent: isCurrent, isFetchable: subscription?.hasFetchableAddress ?? false).enumerated()), id: \.offset) { _, verbs in
+                Section {
+                    ForEach(verbs, id: \.self) { verb in
+                        Button(role: verb == .remove ? .destructive : nil) {
+                            perform(verb)
+                        } label: {
+                            row(for: verb)
                         }
+                        .disabled(verb == .update && isUpdating)
+                        .accessibilityIdentifier("tvos.subscription.\(verb.identifier)")
                     }
-                    .disabled(verb == .update && isUpdating)
-                    .accessibilityIdentifier("tvos.subscription.\(verb.identifier)")
                 }
             }
         }
         .listStyle(.grouped)
         .safeAreaPadding(.horizontal, 44)
         .frame(maxWidth: .infinity)
+    }
+
+     
+     
+    @ViewBuilder
+    private func row(for verb: Verb) -> some View {
+        switch verb {
+        case .update:
+            HStack(spacing: 16) {
+                if isUpdating { ProgressView() }
+                Text(Self.updateRowTitle(updating: isUpdating))
+            }
+        case .script:
+            trailing(verb.title, subscription.map(HakoTVProfileScriptScreen.rowValue(for:)) ?? "")
+        case .rules:
+            trailing(verb.title, subscription?.effectiveRules.title ?? "")
+        case .autoUpdate:
+            trailing(verb.title, HakoTVAutoUpdateScreen.title(forHours: subscription?.updateIntervalHours ?? 0))
+        default:
+            Text(verb.title)
+        }
+    }
+
+    private func trailing(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(value)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func perform(_ verb: Verb) {
@@ -169,8 +180,8 @@ struct HakoTVSubscriptionDetailScreen: View {
             } else {
                 store.markUpdated(id, at: Date())
             }
-        case .updateScript:
-            onUpdateScript?()
+        case .script:
+            onScript()
         case .rules:
             onRules()
         case .autoUpdate:
@@ -245,11 +256,19 @@ struct HakoTVSubscriptionDetailScreen: View {
         return "\(String(localized: "Override script")) · \(value)"
     }
 
-    static func verbs(isCurrent: Bool, isFetchable: Bool = true, hasScript: Bool = false) -> [Verb] {
-        var verbs: [Verb] = isCurrent ? [.update, .updateScript, .rules, .autoUpdate, .edit, .remove] : [.updateScript, .rules, .autoUpdate, .edit, .use, .remove]
-        if !isFetchable { verbs.removeAll { $0 == .rules || $0 == .autoUpdate } }
-        if !hasScript { verbs.removeAll { $0 == .updateScript } }
-        return verbs
+     
+     
+     
+    static func sections(isCurrent: Bool, isFetchable: Bool = true) -> [[Verb]] {
+        let document: [Verb] = isFetchable ? [.script, .rules] : []
+        var row: [Verb] = isCurrent ? [.update, .autoUpdate, .edit] : [.autoUpdate, .edit, .use]
+        if !isFetchable { row.removeAll { $0 == .autoUpdate } }
+        return [document, row, [.remove]].filter { !$0.isEmpty }
+    }
+
+     
+    static func verbs(isCurrent: Bool, isFetchable: Bool = true) -> [Verb] {
+        sections(isCurrent: isCurrent, isFetchable: isFetchable).flatMap { $0 }
     }
 
     static func updateRowTitle(updating: Bool) -> String {

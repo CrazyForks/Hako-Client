@@ -27,7 +27,6 @@ struct HakoTVEditSubscriptionScreen: View {
 
     @State private var nameText: String
     @State private var addressText: String
-    @State private var scriptText: String
     @State private var refusal: String?
 
     init(
@@ -40,7 +39,6 @@ struct HakoTVEditSubscriptionScreen: View {
         self.onDone = onDone
         _nameText = State(initialValue: Self.seedName(for: id, in: store.wrappedValue))
         _addressText = State(initialValue: Self.seedAddress(for: id, in: store.wrappedValue))
-        _scriptText = State(initialValue: Self.seedScript(for: id, in: store.wrappedValue))
     }
 
     var body: some View {
@@ -68,14 +66,6 @@ struct HakoTVEditSubscriptionScreen: View {
                 .textInputAutocapitalization(.never)
                 .onSubmit(save)
                 .accessibilityIdentifier("tvos.subscription.edit.address")
-            Text("Script URL")
-                .font(.caption)
-                .textCase(.uppercase)
-                .foregroundStyle(.tertiary)
-            TextField("Script URL", text: $scriptText, prompt: Text("Optional"))
-                .textInputAutocapitalization(.never)
-                .onSubmit(save)
-                .accessibilityIdentifier("tvos.subscription.edit.script")
             Text("Type on your phone instead — the keyboard is already waiting there.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -115,17 +105,15 @@ struct HakoTVEditSubscriptionScreen: View {
 
     private func save() {
         do {
-            let script = try HakoTVSubscriptionStore.scriptURL(from: scriptText)
-            let scriptChanged = script != store.subscriptions.first { $0.id == id }?.scriptURL
             let addressChanged = try store.edit(id, name: nameText, urlString: addressText)
             refusal = nil
              
              
             let saved = URL(string: addressText.trimmingCharacters(in: .whitespacesAndNewlines))
-            if let saved { store.setScriptURL(saved, script) }
              
              
-            onDone(addressChanged || scriptChanged ? saved : nil)
+             
+            onDone(addressChanged ? saved : nil)
         } catch {
              
              
@@ -158,10 +146,6 @@ struct HakoTVEditSubscriptionScreen: View {
 
      
      
-    static func seedScript(for id: HakoTVSubscription.ID, in store: HakoTVSubscriptionStore) -> String {
-        store.subscriptions.first { $0.id == id }?.scriptURL?.absoluteString ?? ""
-    }
-
     static func seedAddress(for id: HakoTVSubscription.ID, in store: HakoTVSubscriptionStore) -> String {
         store.subscriptions.first { $0.id == id }?.requestURL.absoluteString ?? ""
     }
