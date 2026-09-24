@@ -953,19 +953,6 @@ final class ProfilesViewModel: ObservableObject {
         }.value
     }
 
-     
-     
-    func copyConfigurationRuleScheme(draft: ConfigurationRuleDraft, label: String, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
-        await settleLibraryHousekeeping()
-        guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
-        guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
-        changingConfigurationLibrary = true
-        defer { changingConfigurationLibrary = false }
-        return try await Task.detached(priority: .userInitiated) {
-            try library.copyRuleScheme(draft, label: label, expectedGeneration: generation)
-        }.value
-    }
-
     func copyConfigurationRuleScheme(_ id: String, label: String, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
         await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }

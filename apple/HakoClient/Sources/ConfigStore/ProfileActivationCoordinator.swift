@@ -1,4 +1,5 @@
 import Foundation
+import HakoClientKit
 import HakoClientUI
 
 enum PipelineError: LocalizedError {
@@ -1024,7 +1025,7 @@ final class ProfileActivationCoordinator {
         updated.activeRevision = pointer.revision
          
          
-        for rule in Self.personalRulesLeftOut(of: prepared, profile: profile, globalOverride: globalOverride()) {
+        for rule in ProfileRuntimeConfigBuilder.personalRulesLeftOut(of: prepared, profile: profile, globalOverride: globalOverride()) {
              
             HakoLogStore.shared.append(
                 "personal rule left out of the runtime: \(rule) names a policy this configuration does not define",
