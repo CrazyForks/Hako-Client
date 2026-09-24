@@ -35,6 +35,7 @@ import HakoClientKit
  
  
  
+ 
 struct StorageMaintenance {
     enum Area: String, CaseIterable, Hashable, Sendable {
         case configurations, library, geodata, providerCaches, compiledGeodata, logs, temporary
@@ -73,23 +74,27 @@ struct StorageMaintenance {
     func measure() -> [Measurement] { Area.allCases.map(measure) }
 
     func measure(_ area: Area) -> Measurement {
-        var bytes = paths(area).reduce(0) { $0 + StorageMeasurement.allocatedBytes(at: $1) }
-        if area == .configurations {
-             
-             
-            bytes -= temporaryItems().filter { $0.lastPathComponent.hasPrefix(".tmp-") }
-                .reduce(0) { $0 + StorageMeasurement.allocatedBytes(at: $1) }
-            bytes = max(0, bytes)
-        }
-        let reclaimable = reclaimableItems(area).reduce(0) { $0 + StorageMeasurement.allocatedBytes(at: $1) }
-        return Measurement(area: area, bytes: bytes, reclaimable: min(reclaimable, bytes))
+         
+         
+        let elsewhere = area == .configurations
+            ? temporaryItems().filter { $0.lastPathComponent.hasPrefix(".tmp-") }
+            : []
+        let bytes = StorageMeasurement.allocatedBytes(at: paths(area), excluding: elsewhere)
+         
+         
+         
+        let remaining = StorageMeasurement.allocatedBytes(
+            at: paths(area), excluding: elsewhere + reclaimableItems(area)
+        )
+        return Measurement(area: area, bytes: bytes, reclaimable: max(0, bytes - remaining))
     }
 
      
     func paths(_ area: Area) -> [URL] {
         switch area {
         case .configurations:
-            return [working.appendingPathComponent("store", isDirectory: true)]
+            return [working.appendingPathComponent("store", isDirectory: true),
+                    working.appendingPathComponent("payloads", isDirectory: true)]
         case .library:
             return [working.appendingPathComponent("configuration-library", isDirectory: true)]
         case .geodata:
@@ -114,6 +119,7 @@ struct StorageMaintenance {
             guard let store = try? ConfigResourceStore(containerURL: containerURL) else { return [] }
             return ((try? store.orphanedProfileDirectories(registered: registeredProfileIDs())) ?? [])
                 + ((try? store.supersededRevisionDirectories()) ?? [])
+                + store.payloadStore.unreferencedBlobs()
         case .logs:
             return staleLogFiles()
         case .library, .providerCaches:
@@ -147,6 +153,10 @@ struct StorageMaintenance {
                 let store = try ConfigResourceStore(containerURL: containerURL)
                 try store.removeOrphanedProfileDirectories(registered: registeredProfileIDs())
                 try store.removeSupersededRevisionDirectories()
+                 
+                 
+                 
+                try store.removeUnreferencedPayloadBlobs()
             case .logs:
                 for url in staleLogFiles() { try? fileManager.removeItem(at: url) }
             case .geodata:
@@ -191,7 +201,7 @@ struct StorageMaintenance {
     func retiredDashboardDirectories() -> [URL] {
         let own: Set<String> = [
             "store", "configuration-library", "geodata", "payloads", "provider-runtime",
-            "compiled-geoip", "compiled-geosite", "active",
+            "compiled-geoip", "compiled-geosite", "active", "proxies",
         ]
         let entries = (try? fileManager.contentsOfDirectory(
             at: working, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
@@ -247,25 +257,57 @@ struct StorageMaintenance {
 }
 
  
+ 
+ 
+ 
+ 
 enum StorageMeasurement {
     static func allocatedBytes(at url: URL, fileManager: FileManager = .default) -> Int64 {
-        guard let values = try? url.resourceValues(
-            forKeys: [.isDirectoryKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
-        ) else { return 0 }
-        if values.isDirectory != true {
-            return Int64(values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? 0)
+        allocatedBytes(at: [url], excluding: [], fileManager: fileManager)
+    }
+
+     
+     
+    static func allocatedBytes(
+        at urls: [URL], excluding: [URL] = [], fileManager: FileManager = .default
+    ) -> Int64 {
+        let excluded = excluding.map { $0.standardizedFileURL.path }
+        func isExcluded(_ url: URL) -> Bool {
+            let path = url.standardizedFileURL.path
+            return excluded.contains { path == $0 || path.hasPrefix($0 + "/") }
         }
-        guard let enumerator = fileManager.enumerator(
-            at: url,
-            includingPropertiesForKeys: [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey],
-            options: [.skipsHiddenFiles]
-        ) else { return 0 }
+        let keys: Set<URLResourceKey> = [
+            .isDirectoryKey, .isRegularFileKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey,
+            .fileResourceIdentifierKey,
+        ]
+        var seen = Set<NSObject>()
         var total: Int64 = 0
-        for case let child as URL in enumerator {
-            guard let childValues = try? child.resourceValues(
-                forKeys: [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
-            ), childValues.isRegularFile == true else { continue }
-            total += Int64(childValues.totalFileAllocatedSize ?? childValues.fileAllocatedSize ?? 0)
+        func count(_ file: URL, _ values: URLResourceValues) {
+            guard values.isRegularFile == true else { return }
+            if let identifier = values.fileResourceIdentifier as? NSObject {
+                guard seen.insert(identifier).inserted else { return }
+            }
+            total += Int64(values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? 0)
+        }
+        for url in urls where !isExcluded(url) {
+            guard let values = try? url.resourceValues(forKeys: keys) else { continue }
+            if values.isDirectory != true {
+                count(url, values)
+                continue
+            }
+            guard let enumerator = fileManager.enumerator(
+                at: url, includingPropertiesForKeys: Array(keys), options: [.skipsHiddenFiles]
+            ) else { continue }
+            for case let child as URL in enumerator {
+                if isExcluded(child) {
+                    if (try? child.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
+                        enumerator.skipDescendants()
+                    }
+                    continue
+                }
+                guard let childValues = try? child.resourceValues(forKeys: keys) else { continue }
+                count(child, childValues)
+            }
         }
         return total
     }

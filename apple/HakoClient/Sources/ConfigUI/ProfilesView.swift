@@ -553,6 +553,11 @@ final class ProfilesViewModel: ObservableObject {
             if let container {
                 let running = StorageView.tunnelIsRunning(vpn.status)
                 Task.detached(priority: .utility) {
+                     
+                     
+                     
+                     
+                    _ = try? ConfigResourceStore(containerURL: container).adoptProviderPayloads()
                     let maintenance = StorageMaintenance(containerURL: container, tunnelIsRunning: { running })
                     _ = try? maintenance.reclaim([.configurations, .geodata])
                      

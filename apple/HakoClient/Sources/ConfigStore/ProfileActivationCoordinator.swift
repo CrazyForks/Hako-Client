@@ -1456,7 +1456,8 @@ final class ProfileActivationCoordinator {
                 coreRouteSnapshots: coreRouteCache.snapshots,
                 reusedCoreFilePaths: reusedCoreFilePaths,
                 fetchOnly: fetchOnly,
-                fetchBudget: fetchBudget
+                fetchBudget: fetchBudget,
+                payloadStore: store.payloadStore
             )
             firstLoadPending = materialized.firstLoadPending
             firstLoadPendingOfLastPublication = firstLoadPending

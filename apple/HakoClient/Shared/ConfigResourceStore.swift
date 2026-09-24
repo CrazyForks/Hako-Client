@@ -122,6 +122,9 @@ enum ConfigResourceStoreFaultPoint: String {
  
 final class ConfigResourceStore {
     static let defaultMaximumConfigurationBytes = 4 * 1024 * 1024
+     
+     
+     
     static let defaultMaximumRevisions = 5
     static let defaultProfileID = "00000000-0000-0000-0000-000000000000"
     static let abandonedCandidateAge: TimeInterval = 24 * 60 * 60
@@ -164,7 +167,11 @@ final class ConfigResourceStore {
         static let compatibilityConfiguration = "config.yaml"
         static let manifest = "manifest.json"
         static let temporaryPrefix = ".tmp-"
+        static let payloads = "payloads"
     }
+
+     
+    var payloadStore: ProviderPayloadStore { ProviderPayloadStore(workingDirectory: workingURL) }
 
     private let containerURL: URL
     private let workingURL: URL
@@ -176,6 +183,11 @@ final class ConfigResourceStore {
     private let maximumRevisions: Int
     private let lockTimeout: TimeInterval
     private let faultInjector: ((ConfigResourceStoreFaultPoint) -> Bool)?
+     
+     
+     
+     
+    private var replacedActive: Pointer?
     private let fileManager: FileManager
 
     var activeConfigURL: URL {
@@ -851,6 +863,7 @@ final class ConfigResourceStore {
     }
 
     private func commitActive(_ pointer: Pointer, data: Data) throws {
+        replacedActive = try? readPointer(Name.activePointer)
         try writePointer(Name.activePointer, pointer: pointer)
         Self.forgetActivePointer(at: storeURL.appendingPathComponent(Name.activePointer))
         try inject(.currentCommitted)
@@ -996,6 +1009,13 @@ final class ConfigResourceStore {
         return pointer
     }
 
+     
+     
+     
+     
+     
+     
+     
     private func pruneProfile(_ profileID: String) throws {
         let profile = profilePaths(profileID)
         let profileCurrent = try? readProfileCurrent(profile)
@@ -1004,25 +1024,25 @@ final class ConfigResourceStore {
         var protected = Set([profileCurrent].compactMap { $0 })
         if active?.profileID == profileID { protected.insert(active!.revision) }
         if lastKnownGood?.profileID == profileID { protected.insert(lastKnownGood!.revision) }
+        if let replaced = replacedActive, replaced.profileID == profileID { protected.insert(replaced.revision) }
         let entries = try fileManager.contentsOfDirectory(
             at: profile.revisions,
             includingPropertiesForKeys: [.contentModificationDateKey],
             options: [.skipsHiddenFiles]
         )
         let revisions = entries.filter { Self.isValidRevision($0.lastPathComponent) }
-        guard revisions.count > maximumRevisions else { return }
-        let dated = revisions.map { url -> (URL, Date) in
-            let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?
-                .contentModificationDate ?? .distantPast
-            return (url, date)
-        }.sorted { $0.1 > $1.1 }
-        for item in dated where protected.count < maximumRevisions {
-            protected.insert(item.0.lastPathComponent)
+        func modified(_ url: URL) -> Date {
+            (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
         }
+        if let newest = revisions.max(by: { modified($0) < modified($1) }) {
+            protected.insert(newest.lastPathComponent)
+        }
+        var removed = false
         for url in revisions where !protected.contains(url.lastPathComponent) {
             try fileManager.removeItem(at: url)
+            removed = true
         }
-        try syncDirectory(profile.revisions)
+        if removed { try syncDirectory(profile.revisions) }
     }
 
     private func validateSyncAndDigestCandidateResources(
@@ -1468,5 +1488,157 @@ extension ConfigResourceStore {
         .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
         .filter { !protected.contains($0.lastPathComponent) }
         .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+}
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+struct ProviderPayloadStore {
+    let directory: URL
+
+    init(workingDirectory: URL) {
+        directory = workingDirectory.appendingPathComponent("payloads", isDirectory: true)
+    }
+
+    static let writeOptions: Data.WritingOptions =
+        [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+
+     
+     
+    static func blobName(for data: Data, extension ext: String) -> String {
+        let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        return ext.isEmpty ? digest : digest + "." + ext
+    }
+
+     
+     
+     
+     
+    func place(_ data: Data, at target: URL) throws {
+        let fm = FileManager.default
+        try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+        let blob = directory.appendingPathComponent(Self.blobName(for: data, extension: target.pathExtension))
+        if !fm.fileExists(atPath: blob.path) {
+            try data.write(to: blob, options: Self.writeOptions)
+        }
+        do {
+            try Self.link(blob, to: target)
+        } catch {
+            try data.write(to: target, options: Self.writeOptions)
+        }
+    }
+
+     
+     
+     
+    static func link(_ source: URL, to target: URL) throws {
+        let fm = FileManager.default
+        let temporary = target.deletingLastPathComponent()
+            .appendingPathComponent(".link-" + target.lastPathComponent)
+        try? fm.removeItem(at: temporary)
+        try fm.linkItem(at: source, to: temporary)
+        guard rename(temporary.path, target.path) == 0 else {
+            let code = errno
+            try? fm.removeItem(at: temporary)
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(code))
+        }
+    }
+
+     
+    func unreferencedBlobs() -> [URL] {
+        let fm = FileManager.default
+        let entries = (try? fm.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]
+        )) ?? []
+        return entries
+            .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
+            .filter { Self.linkCount(of: $0) <= 1 }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+    @discardableResult
+    func removeUnreferencedBlobs() -> [URL] {
+        unreferencedBlobs().filter { (try? FileManager.default.removeItem(at: $0)) != nil }
+    }
+
+    static func linkCount(of url: URL) -> Int {
+        ((try? FileManager.default.attributesOfItem(atPath: url.path))?[.referenceCount] as? Int) ?? 1
+    }
+}
+
+extension ConfigResourceStore {
+     
+     
+     
+     
+     
+     
+    @discardableResult
+    func adoptProviderPayloads() throws -> Int {
+        try withExclusiveLock {
+            guard fileManager.fileExists(atPath: profilesURL.path) else { return 0 }
+            let payloads = payloadStore
+            try fileManager.createDirectory(at: payloads.directory, withIntermediateDirectories: true)
+            var adopted = 0
+            let profiles = try fileManager.contentsOfDirectory(
+                at: profilesURL, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
+            ).filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+            for profile in profiles {
+                let revisions = profile.appendingPathComponent(Name.revisions, isDirectory: true)
+                let entries = (try? fileManager.contentsOfDirectory(
+                    at: revisions, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+                )) ?? []
+                for revision in entries where Self.isValidRevision(revision.lastPathComponent) {
+                    let providers = revision.appendingPathComponent("providers", isDirectory: true)
+                    let files = (try? fileManager.contentsOfDirectory(
+                        at: providers, includingPropertiesForKeys: [.isRegularFileKey], options: []
+                    )) ?? []
+                     
+                     
+                    for leftover in files where leftover.lastPathComponent.hasPrefix(".link-") {
+                        try? fileManager.removeItem(at: leftover)
+                    }
+                    for file in files where !file.lastPathComponent.hasPrefix(".") {
+                        guard (try? file.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
+                              ProviderPayloadStore.linkCount(of: file) <= 1,
+                              let data = try? readBoundedFile(file, maximumBytes: Self.maximumCandidateResourceBytes)
+                        else { continue }
+                        let blob = payloads.directory.appendingPathComponent(
+                            ProviderPayloadStore.blobName(for: data, extension: file.pathExtension)
+                        )
+                        if fileManager.fileExists(atPath: blob.path) {
+                            guard (try? ProviderPayloadStore.link(blob, to: file)) != nil else { continue }
+                        } else {
+                            guard (try? fileManager.linkItem(at: file, to: blob)) != nil else { continue }
+                        }
+                        adopted += 1
+                    }
+                }
+            }
+            return adopted
+        }
+    }
+
+     
+     
+     
+    @discardableResult
+    func removeUnreferencedPayloadBlobs() throws -> [URL] {
+        try withExclusiveLock { payloadStore.removeUnreferencedBlobs() }
     }
 }

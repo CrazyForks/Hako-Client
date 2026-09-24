@@ -202,6 +202,29 @@ final class ProviderMaterializer {
     private static let writeOptions: Data.WritingOptions =
         [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
 
+     
+     
+     
+     
+    static func write(
+        _ data: Data, to target: URL, reusedFrom source: URL?, payloadStore: ProviderPayloadStore?
+    ) throws {
+        if let payloadStore {
+            if let source, (try? ProviderPayloadStore.link(source, to: target)) != nil {
+                return
+            }
+            try payloadStore.place(data, at: target)
+            return
+        }
+         
+         
+         
+        if let source, (try? FileManager.default.copyItem(at: source, to: target)) != nil {
+            return
+        }
+        try data.write(to: target, options: writeOptions)
+    }
+
     private let downloader: HTTPFetching
      
      
@@ -344,7 +367,8 @@ final class ProviderMaterializer {
                      reuseDirIsOwnRevision: Bool = true,
                      forceRefresh: Set<String> = [],
                      ageSecretKeys: [String: String] = [:],
-                     userAgent: String? = nil) async throws -> [String: String] {
+                     userAgent: String? = nil,
+                     payloadStore: ProviderPayloadStore? = nil) async throws -> [String: String] {
         try await materializeDetailed(
             plan: plan,
             into: providersDir,
@@ -354,7 +378,8 @@ final class ProviderMaterializer {
             reuseDirIsOwnRevision: reuseDirIsOwnRevision,
             forceRefresh: forceRefresh,
             ageSecretKeys: ageSecretKeys,
-            userAgent: userAgent
+            userAgent: userAgent,
+            payloadStore: payloadStore
         ).paths
     }
 
@@ -399,7 +424,12 @@ final class ProviderMaterializer {
          
          
         fetchOnly: Set<String>? = nil,
-        fetchBudget: ProviderFetchBudget = .patient
+        fetchBudget: ProviderFetchBudget = .patient,
+         
+         
+         
+         
+        payloadStore: ProviderPayloadStore? = nil
     ) async throws -> ProviderMaterializationResult {
         var mapping: [String: String] = [:]
         var readPaths: [String: String] = [:]
@@ -635,7 +665,7 @@ final class ProviderMaterializer {
                     if HakoInspectProviderForIOS(provider.kind, provider.behavior, provider.format,
                                                 bytes, &count, &error) {
                         let target = providersDir.appendingPathComponent(provider.path)
-                        try bytes.write(to: target, options: Self.writeOptions)
+                        try Self.write(bytes, to: target, reusedFrom: nil, payloadStore: payloadStore)
                         readPaths[provider.name] = target.path
                         entryCounts[provider.name] = count
                         payloadSourceURLs[provider.path] = provider.url
@@ -826,12 +856,12 @@ final class ProviderMaterializer {
              
              
              
-            if let source = acquired.reusedFrom, data == acquired.data,
-               (try? FileManager.default.copyItem(at: source, to: target)) != nil {
-                 
-            } else {
-                try data.write(to: target, options: Self.writeOptions)
-            }
+             
+            try Self.write(
+                data, to: target,
+                reusedFrom: data == acquired.data ? acquired.reusedFrom : nil,
+                payloadStore: payloadStore
+            )
             mapping[provider.name] = publishedProvidersDir
                 .appendingPathComponent(provider.path).path
             readPaths[provider.name] = target.path
