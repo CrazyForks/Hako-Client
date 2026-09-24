@@ -177,6 +177,20 @@ public extension View {
                  
                 item.destination
                     .hakoProductModalRoot(title: item.title)
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    .hakoRegistersDeparture(
+                        isDirty: false,
+                        save: { $0(true) },
+                        discard: {}
+                    )
             }
         }
 #else
@@ -203,6 +217,13 @@ public extension View {
             HakoSingleColumnNavigationContainer {
                 content(route)
                     .hakoProductModalRoot(title: title(route))
+                     
+                     
+                    .hakoRegistersDeparture(
+                        isDirty: false,
+                        save: { $0(true) },
+                        discard: {}
+                    )
             }
         }
 #else
