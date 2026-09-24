@@ -928,6 +928,32 @@ private final class HakoMacSceneModel: ObservableObject {
      
     @Published var showsConfigurationWizard = false
 
+     
+     
+    @Published var configurationCenterPendingDelete: HakoMacConfigurationCenterItem?
+     
+     
+    @Published var configurationCenterRenaming: HakoClientKit.Profile.ID?
+    @Published var configurationCenterDoor: HakoMacConfigurationCenterDoor?
+    @Published var configurationCenterImport: HakoMacImportRequest?
+    @Published var configurationCenterEditingScheme: HakoMacLibrarySelection?
+
+    var configurationCenterPendingDeleteBinding: Binding<HakoMacConfigurationCenterItem?> {
+        Binding(get: { self.configurationCenterPendingDelete }, set: { self.configurationCenterPendingDelete = $0 })
+    }
+    var configurationCenterRenamingBinding: Binding<HakoClientKit.Profile.ID?> {
+        Binding(get: { self.configurationCenterRenaming }, set: { self.configurationCenterRenaming = $0 })
+    }
+    var configurationCenterDoorBinding: Binding<HakoMacConfigurationCenterDoor?> {
+        Binding(get: { self.configurationCenterDoor }, set: { self.configurationCenterDoor = $0 })
+    }
+    var configurationCenterImportBinding: Binding<HakoMacImportRequest?> {
+        Binding(get: { self.configurationCenterImport }, set: { self.configurationCenterImport = $0 })
+    }
+    var configurationCenterEditingSchemeBinding: Binding<HakoMacLibrarySelection?> {
+        Binding(get: { self.configurationCenterEditingScheme }, set: { self.configurationCenterEditingScheme = $0 })
+    }
+
     var showsConfigurationWizardBinding: Binding<Bool> {
         Binding(get: { self.showsConfigurationWizard }, set: { self.showsConfigurationWizard = $0 })
     }
@@ -1126,6 +1152,261 @@ private final class HakoMacSceneModel: ObservableObject {
         } else {
             EmptyView()
         }
+    }
+
+     
+
+     
+     
+     
+     
+    func configurationCenter(_ list: HakoProfilesListPresentation) -> some View {
+        let actions = configurationCenterListActions(list)
+        return HakoMacConfigurationCenterView(segment: configurationCenterSegmentBinding) {
+            self.configurationCenterListPage(.configurations, list: list, actions: actions)
+        } nodes: {
+            self.configurationCenterListPage(.nodes, list: list, actions: actions)
+        } rules: {
+            self.configurationCenterListPage(.rules, list: list, actions: actions)
+        }
+        .task { [weak self] in
+            guard let self, self.configurationLibrary.phase == .idle else { return }
+            await self.configurationLibrary.reload()
+        }
+        .sheet(item: configurationCenterImportBinding) { [weak self] request in
+            HakoMacSourceImportSheet(
+                purpose: request.purpose,
+                actions: self?.configurationImportActionsValue ?? .unavailable,
+                accept: { [weak self] payload in
+                    guard let self else { return }
+                    switch request.purpose {
+                    case .rules: try await self.configurationLibrary.addRuleScheme(payload)
+                    case .nodes: try await self.configurationLibrary.addSource(payload)
+                    }
+                    self.configurationCenterImport = nil
+                },
+                close: { [weak self] in self?.configurationCenterImport = nil }
+            )
+            .hakoModalPresentation(.fitted)
+        }
+        .sheet(item: configurationCenterDoorBinding) { [weak self] door in
+            if let self {
+                self.configurationDoor(door.door, profileID: door.profileID)
+                    .hakoModalPresentation(.fitted)
+            }
+        }
+        .sheet(item: configurationCenterEditingSchemeBinding) { [weak self] selection in
+            if let self {
+                HakoMacRuleEditorSheet(
+                    actions: self.ruleEditorActions(schemeID: selection.id),
+                    saved: { [weak self] in Task { await self?.configurationLibrary.reload() } }
+                )
+                .hakoModalPresentation(.fitted)
+            }
+        }
+        .sheet(isPresented: showsConfigurationWizardBinding) { [weak self] in
+            if let self {
+                HakoMacConfigurationWizardSheet(
+                    model: self.configurationLibrary,
+                    actions: self.configurationWizardActions,
+                    created: {}
+                )
+                .hakoModalPresentation(.fitted)
+            }
+        }
+    }
+
+    private func configurationCenterListPage(
+        _ segment: HakoMacConfigurationCenterSegment,
+        list: HakoProfilesListPresentation,
+        actions: HakoMacConfigurationCenterListActions
+    ) -> some View {
+        HakoMacConfigurationCenterListPage(
+            segment: segment,
+            model: configurationLibrary,
+            profiles: list.profiles,
+            pendingDelete: configurationCenterPendingDeleteBinding,
+            renaming: configurationCenterRenamingBinding,
+            actions: actions
+        ) { [weak self] item in
+            if let self {
+                AnyView(self.configurationCenterDetail(item, list: list))
+            } else {
+                AnyView(EmptyView())
+            }
+        }
+    }
+
+     
+    func requestNewConfiguration() {
+        navigationRequest = .profiles
+        configurationCenterSegment = .configurations
+        showsConfigurationWizard = true
+    }
+
+    private func configurationCenterListActions(_ list: HakoProfilesListPresentation) -> HakoMacConfigurationCenterListActions {
+        HakoMacConfigurationCenterListActions(
+             
+             
+             
+            addConfiguration: { [weak self] kind in
+                guard let self else { return }
+                switch kind {
+                case .profileURL, .file:
+                    self.showsConfigurationWizard = true
+                case .blank:
+                    Task { @MainActor in
+                        let snapshot = self.configurationLibrary.snapshot
+                        var draft = ConfigurationCreationDraft()
+                        draft.selectedRuleID = ConfigurationBuiltins.basicRuleID
+                        draft.label = HakoCopy.string("Configuration", locale: self.preferences.language.locale)
+                        let id = UUID().uuidString.lowercased()
+                        do {
+                            _ = try await self.profiles.createConfiguration(draft, generation: snapshot.generation, id: id)
+                            await self.configurationLibrary.reload()
+                            self.configurationCenterRenaming = try HakoClientKit.Profile.ID(id)
+                        } catch {
+                            self.configurationLibrary.report(error.localizedDescription)
+                        }
+                    }
+                }
+            },
+            addSource: { [weak self] in self?.configurationCenterImport = HakoMacImportRequest(purpose: .nodes) },
+            addScheme: { [weak self] in self?.configurationCenterImport = HakoMacImportRequest(purpose: .rules) },
+            activate: { id in list.select(id) },
+            rename: { id, label in list.perform(.rename(id: id, label: label)) },
+            delete: { [weak self] item in
+                guard let self else { return }
+                switch item {
+                case .configuration(let id): list.perform(.delete(id: id))
+                case .source(let id): Task { await self.configurationLibrary.deleteSource(id) }
+                case .scheme(let id): Task { await self.configurationLibrary.deleteRuleScheme(id) }
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func configurationCenterDetail(_ item: HakoMacConfigurationCenterItem, list: HakoProfilesListPresentation) -> some View {
+        let snapshot = configurationLibrary.snapshot
+        switch item {
+        case .configuration(let id):
+            if let profile = list.profiles.first(where: { $0.id == id }) {
+                let appProfile = profiles.profiles.first { $0.id == id.rawValue }
+                HakoMacConfigurationInspector(
+                    profile: profile,
+                    sources: snapshot.sources.filter(\.suppliesNodes),
+                    schemes: configurationLibrary.ruleShelves.flatMap(\.schemes),
+                    recipe: snapshot.recipes.first { $0.id == id.rawValue },
+                    scriptsActions: scriptsActions(profileID: id),
+                    profileURL: appProfile.flatMap { if case .url(let url) = $0.source { url } else { nil } },
+                    actions: configurationInspectorActions(list, profile: profile, id: id)
+                )
+                .id(id)
+                .navigationTitle(Text(verbatim: profile.label))
+                .hakoMacPopsWhenGone(!list.profiles.contains { $0.id == id })
+            }
+        case .source(let sourceID):
+            if let source = snapshot.sources.first(where: { $0.id == sourceID }) {
+                let readers = configurationLibrary.configurations(usingSource: sourceID)
+                HakoMacSourcePane(
+                    source: source,
+                    usedBy: list.profiles.filter { readers.contains($0.id.rawValue) },
+                    isUpdating: configurationLibrary.updatingSourceIDs.contains(sourceID),
+                    actions: HakoMacSourcePaneActions(
+                        rename: { [weak self] label in Task { _ = await self?.configurationLibrary.renameSource(sourceID, label: label) } },
+                        update: { [weak self] in Task { _ = await self?.configurationLibrary.updateSource(sourceID) } },
+                        delete: { [weak self] in self?.configurationCenterPendingDelete = .source(sourceID) },
+                        open: { _ in }
+                    )
+                )
+                .id(sourceID)
+                .navigationTitle(Text(verbatim: source.label))
+                .hakoMacPopsWhenGone(!snapshot.sources.contains { $0.id == sourceID })
+            }
+        case .scheme(let schemeID):
+            if let scheme = configurationLibrary.ruleShelves.flatMap(\.schemes).first(where: { $0.id == schemeID }) {
+                let readers = configurationLibrary.configurations(usingScheme: schemeID)
+                HakoMacSchemePane(
+                    scheme: scheme,
+                    source: snapshot.sources.first { $0.id == scheme.sourceID },
+                    usedBy: list.profiles.filter { readers.contains($0.id.rawValue) },
+                    actions: HakoMacSchemePaneActions(
+                        edit: { [weak self] in self?.configurationCenterEditingScheme = HakoMacLibrarySelection(id: schemeID) },
+                        duplicate: { [weak self] in
+                            Task { @MainActor in
+                                guard let self else { return }
+                                let label = HakoCopy.string("My Rules", locale: self.preferences.language.locale)
+                                _ = try? await self.configurationLibrary.copyScheme(schemeID, label: label)
+                            }
+                        },
+                        delete: { [weak self] in self?.configurationCenterPendingDelete = .scheme(schemeID) },
+                        open: { _ in }
+                    )
+                )
+                .id(schemeID)
+                .navigationTitle(Text(verbatim: scheme.label))
+                .hakoMacPopsWhenGone(!configurationLibrary.ruleShelves.flatMap(\.schemes).contains { $0.id == schemeID })
+            }
+        }
+    }
+
+    private func configurationInspectorActions(
+        _ list: HakoProfilesListPresentation, profile: HakoProfileSnapshot, id: HakoClientKit.Profile.ID
+    ) -> HakoMacConfigurationInspectorActions {
+        let profiles = self.profiles
+        let library = configurationLibrary
+         
+         
+        func edit(_ change: @escaping (inout ConfigurationCreationDraft) -> Void) {
+            Task { @MainActor in
+                let snapshot = library.snapshot
+                guard let recipe = snapshot.recipes.first(where: { $0.id == id.rawValue }) else { return }
+                var draft = ConfigurationCreationAdapter.editingDraft(recipe: recipe, label: profile.label)
+                change(&draft)
+                do {
+                    try await profiles.editConfiguration(draft, id: id.rawValue, generation: snapshot.generation)
+                    await library.reload()
+                } catch {
+                    library.report(error.localizedDescription)
+                }
+            }
+        }
+        func saveProfileURL(_ change: @escaping (inout HakoMacSubscriptionSettingsState) -> Void) {
+            guard let appProfile = profiles.profiles.first(where: { $0.id == id.rawValue }) else { return }
+            var state = Self.subscriptionState(appProfile)
+            change(&state)
+            let actions = subscriptionActions(profileID: id)
+            Task { @MainActor in
+                do { _ = try await actions.save(state) } catch { library.report(error.localizedDescription) }
+            }
+        }
+        return HakoMacConfigurationInspectorActions(
+            rename: { label in list.perform(.rename(id: id, label: label)) },
+            setSources: { ids in edit { $0.selectedSourceIDs = ids } },
+            setScheme: { scheme in edit { $0.selectedRuleID = scheme } },
+            editScheme: { [weak self] scheme in self?.configurationCenterEditingScheme = HakoMacLibrarySelection(id: scheme) },
+            addSource: { [weak self] in self?.configurationCenterImport = HakoMacImportRequest(purpose: .nodes) },
+            activate: { list.select(id) },
+            duplicate: { list.perform(.duplicate(id: id)) },
+            export: { list.perform(.export(id: id)) },
+            editSource: { [weak self] in self?.openSourceEditor(profileID: id.rawValue) },
+            delete: { [weak self] in self?.configurationCenterPendingDelete = .configuration(id) },
+            openNetwork: { [weak self] in self?.configurationCenterDoor = HakoMacConfigurationCenterDoor(door: .network, profileID: id) },
+            openTrust: { [weak self] in self?.configurationCenterDoor = HakoMacConfigurationCenterDoor(door: .trust, profileID: id) },
+            setAutoUpdate: { on in saveProfileURL { $0.autoUpdate = on } },
+            setInterval: { hours in saveProfileURL { $0.updateIntervalHours = hours } },
+            updateSource: { list.perform(.sync(id: id)) },
+            stripCredentials: { [weak self] in
+                guard let self else { return }
+                let actions = self.subscriptionActions(profileID: id)
+                Task { @MainActor in
+                    do { _ = try await actions.stripCredentials() } catch { library.report(error.localizedDescription) }
+                }
+            },
+            adoptHeldBack: { keyPath in list.perform(.adoptHeldBackUpdate(id: id, keyPath: keyPath)) },
+            dismissHeldBack: { list.perform(.dismissHeldBackUpdates(id: id)) }
+        )
     }
 
      
@@ -2065,11 +2346,7 @@ private final class HakoMacSceneModel: ObservableObject {
              
              
              
-             
-             
-             
             AnyView(
-                HakoMacConfigurationCenterView(segment: configurationCenterSegmentBinding) {
                 ProfileCenterAdapter(
                     profiles: self.profiles,
                     importRouter: self.profileImports,
@@ -2087,72 +2364,7 @@ private final class HakoMacSceneModel: ObservableObject {
                         return true
                     },
                     listPresentation: { list in
-                        AnyView(
-                            HakoMacProfilesList(
-                                profiles: list.profiles,
-                                selectingProfileID: list.selectingProfileID,
-                                selectionFailure: list.selectionFailure,
-                                select: list.select,
-                                 
-                                 
-                                openDetail: { [weak self] id in
-                                    self?.inspectedConfiguration = HakoMacConfigurationSelection(id: id)
-                                },
-                                reorder: list.reorder,
-                                 
-                                 
-                                 
-                                 
-                                addProfile: { [weak self] in
-                                    self?.showsConfigurationWizard = true
-                                },
-                                 
-                                 
-                                 
-                                 
-                                 
-                                 
-                                 
-                                 
-                                 
-                                 
-                                 
-                                 
-                                backupDestination: {
-                                    [vpn = self.vpn,
-                                     command = self.command,
-                                     preferences = self.preferences] in
-                                    AnyView(
-                                        GoldenFlowMoreDestinationAdapter(
-                                            vpn: vpn,
-                                            command: command,
-                                            preferences: preferences,
-                                            destination: .backupRestore,
-                                            usesRegularDetailLayout: true
-                                        )
-                                    )
-                                },
-                                sync: { list.perform(.sync(id: $0)) },
-                                duplicate: {
-                                    list.perform(.duplicate(id: $0))
-                                },
-                                export: { list.perform(.export(id: $0)) },
-                                delete: { list.perform(.delete(id: $0)) }
-                            )
-                            .sheet(item: self.inspectedConfigurationBinding) { selection in
-                                 
-                                self.configurationDetail(selection, in: list)
-                                    .hakoModalPresentation(.fitted)
-                            }
-                            .sheet(isPresented: self.showsConfigurationWizardBinding) {
-                                HakoMacConfigurationWizardSheet(
-                                    model: self.configurationLibrary,
-                                    actions: self.configurationWizardActions,
-                                    created: {}
-                                )
-                                .hakoModalPresentation(.fitted)
-                            }
-                        )
+                        AnyView(self.configurationCenter(list))
                     }
                 )
                 .hakoToolbarUnlessInPanel {
@@ -2169,7 +2381,7 @@ private final class HakoMacSceneModel: ObservableObject {
                      
                      
                      
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItemGroup(placement: .primaryAction) {
                         if self.profiles.hasSubscriptionProfile {
                             Button {
                                 self.profiles.syncAll()
@@ -2185,15 +2397,6 @@ private final class HakoMacSceneModel: ObservableObject {
                             .accessibilityIdentifier("profile-center.sync-all")
                         }
                     }
-                }
-                } nodes: {
-                    HakoMacNodeLibraryView(model: self.configurationLibrary, importActions: self.configurationImportActionsValue)
-                } rules: {
-                    HakoMacRuleLibraryView(
-                        model: self.configurationLibrary,
-                        importActions: self.configurationImportActionsValue,
-                        editor: { [weak self] id in self?.ruleEditorActions(schemeID: id) ?? .unavailable }
-                    )
                 }
             )
         case .proxies:
@@ -3252,6 +3455,16 @@ private struct HakoMacProductCommands: Commands {
                 Task { @MainActor in
                     guard let model = HakoMacSceneModel.current else { return }
                     model.focusMainWindow(openWindow)
+                    model.requestNewConfiguration()
+                }
+            } label: {
+                Text(hako: .copy("Add Profile"))
+            }
+            .keyboardShortcut("n", modifiers: [.command])
+            Button {
+                Task { @MainActor in
+                    guard let model = HakoMacSceneModel.current else { return }
+                    model.focusMainWindow(openWindow)
                     model.requestUpdateAllSources()
                 }
             } label: {
@@ -3573,4 +3786,17 @@ extension HakoMacSceneModel {
         }
         return actions
     }
+}
+
+ 
+struct HakoMacConfigurationCenterDoor: Identifiable {
+    let door: HakoMacConfigurationDoor
+    let profileID: HakoClientKit.Profile.ID
+    var id: String { "\(door.id)-\(profileID.rawValue)" }
+}
+
+ 
+struct HakoMacImportRequest: Identifiable {
+    let purpose: HakoMacSourceImportPurpose
+    var id: String { purpose == .rules ? "rules" : "nodes" }
 }

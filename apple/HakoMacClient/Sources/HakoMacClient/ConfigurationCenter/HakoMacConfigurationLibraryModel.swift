@@ -178,6 +178,11 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
 
     public func clearError() { lastError = nil }
 
+     
+     
+     
+    public func report(_ message: String) { lastError = message }
+
     @discardableResult
     public func renameSource(_ id: String, label: String) async -> Bool {
         await write { [actions] generation in try await actions.renameSource(id, label, generation) }
