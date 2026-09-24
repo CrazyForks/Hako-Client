@@ -2435,6 +2435,12 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
+         
+         
+         
+         
+         
+         
         func convertLegacyNow(
             sources: [String]?, scheme: String?, change: (inout ConfigurationCreationDraft) -> Void = { _ in }
         ) async throws {
@@ -2443,19 +2449,7 @@ private final class HakoMacSceneModel: ObservableObject {
             HakoMacDebugLog.note("convert \(id.rawValue): generation \(generation) sources \(sources ?? []) scheme \(scheme ?? "nil")")
             let source = try await profiles.configurationSourceFromLegacy(id.rawValue)
             var draft = ConfigurationCreationDraft()
-            let ownRules = "rules-" + source.record.id
-             
-             
-             
-             
-             
-             
-            let registeredRules = library.snapshot.rules.contains { $0.id == ownRules }
-            let hasRules = registeredRules || (source.record.hasRules && source.record.registersSuppliedRules != false)
-            let rule: ConfigurationRuleScheme? = hasRules && !registeredRules
-                ? ConfigurationRuleScheme(id: ownRules, label: source.record.label, kind: .supplied, sourceID: source.record.id)
-                : nil
-            draft.add(source, rule: rule)
+            draft.add(source, rule: nil)
              
              
              
@@ -2464,9 +2458,9 @@ private final class HakoMacSceneModel: ObservableObject {
              
              
             if let sources { draft.selectedSourceIDs = sources }
-            draft.selectedRuleID = scheme ?? (hasRules ? ownRules : ConfigurationBuiltins.basicRuleID)
+            draft.selectedRuleID = scheme ?? ConfigurationBuiltins.basicRuleID
             draft.label = profile.label
-            draft.dnsMode = .source
+            draft.dnsMode = .system
             draft.connectAfterCreation = false
             change(&draft)
             try await profiles.editConfiguration(draft, id: id.rawValue, generation: generation)
