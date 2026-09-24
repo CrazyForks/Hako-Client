@@ -85,7 +85,12 @@ final class ExtensionProvider: NSObject {
     private var desiredPathHasIPv6 = false
      
      
+     
+     
+     
     private var pathReapplyOwed = false
+    private var pathRecoveredSinceApply = false
+    private var appliedInterfaceName: String?
     private var pathReapplyTask: Task<Void, Never>?
     private var tunStrictRouteRequested = false
      
@@ -200,7 +205,7 @@ final class ExtensionProvider: NSObject {
             pathLock.lock()
             let ipv6SupportChanged = (defaultPathIsSatisfied && defaultPathSupportsIPv6)
                 != (snapshot.isReady && snapshot.supportsIPv6)
-            let interfaceChanged = physicalInterfaceIdentity.observe(
+            let interfaceChange = physicalInterfaceIdentity.observe(
                 ready: snapshot.isReady, name: snapshot.interfaceName
             )
             defaultInterfaceIndex = snapshot.interfaceIndex
@@ -230,10 +235,13 @@ final class ExtensionProvider: NSObject {
             }
             let listener = interfaceListener
             pathLock.unlock()
-            if interfaceChanged || (ipv6SupportChanged && ipStack.tunIPv6Mode.followsPath) {
+            if Self.pathSchedulesCorrection(
+                interfaceChange: interfaceChange, ipv6SupportChanged: ipv6SupportChanged,
+                followsPath: ipStack.tunIPv6Mode.followsPath
+            ) {
                 self.scheduleTunnelSettingsFollowingPath(
                     hasIPv6: snapshot.isReady && snapshot.supportsIPv6,
-                    interfaceChanged: interfaceChanged,
+                    interfaceChange: interfaceChange,
                     generation: settingsGeneration
                 )
             }
@@ -261,28 +269,50 @@ final class ExtensionProvider: NSObject {
      
      
     struct PhysicalInterfaceIdentity {
+        enum Change: Equatable { case none, renamed, recovered }
         private var lastName: String?
 
-        mutating func observe(ready: Bool, name: String) -> Bool {
+        mutating func observe(ready: Bool, name: String) -> Change {
             guard ready, !name.isEmpty else {
                 if lastName != nil { lastName = "" }
-                return false
+                return .none
             }
             defer { lastName = name }
-            return lastName.map { $0 != name } ?? false
+            switch lastName {
+            case nil, name?: return .none
+            case ""?: return .recovered
+            default: return .renamed
+            }
         }
+    }
+
+     
+     
+    static func pathSchedulesCorrection(
+        interfaceChange: PhysicalInterfaceIdentity.Change, ipv6SupportChanged: Bool, followsPath: Bool
+    ) -> Bool {
+        interfaceChange != .none || (ipv6SupportChanged && followsPath)
+    }
+
+     
+     
+    private var readyPhysicalInterfaceName: String? {
+        pathLock.lock(); defer { pathLock.unlock() }
+        return defaultPathIsSatisfied ? defaultInterfaceName : nil
     }
 
      
      
      
     private func scheduleTunnelSettingsFollowingPath(
-        hasIPv6: Bool, interfaceChanged: Bool, generation: TunnelNetworkSettingsWriter.Generation
+        hasIPv6: Bool, interfaceChange: PhysicalInterfaceIdentity.Change,
+        generation: TunnelNetworkSettingsWriter.Generation
     ) {
         settingsWriter.updateDesired(in: generation) {
             withStateLock {
                 desiredPathHasIPv6 = hasIPv6
-                if interfaceChanged { pathReapplyOwed = true }
+                if interfaceChange != .none { pathReapplyOwed = true }
+                if interfaceChange == .recovered { pathRecoveredSinceApply = true }
                 pathReapplyTask?.cancel()
                 pathReapplyTask = Task { [weak self] in
                     do {
@@ -306,6 +336,7 @@ final class ExtensionProvider: NSObject {
         let settings: NEPacketTunnelNetworkSettings
         let revision: UInt64
         let session: ProviderTunnelSessionLease.Session?
+        let interfaceName: String?
         let followsInterfaceChange: Bool
     }
 
@@ -344,16 +375,22 @@ final class ExtensionProvider: NSObject {
             let outcome = try await settingsWriter.perform(in: generation, prepare: { dirty -> SettingsPlan? in
                 let session = self.withStateLock { self.offeredTunnelSession }
                 guard self.isTunnelSessionCurrent(session) else { return nil }
+                let interfaceName = self.readyPhysicalInterfaceName
                 return self.withStateLock {
                     guard let offered = self.offeredNetworkSettings else { return nil }
                     let declares = self.desiredIPv6Declaration
-                    if !dirty, !self.pathReapplyOwed, self.appliedSettingsRevision == self.offeredSettingsRevision,
+                     
+                     
+                    let reapplyDue = self.pathReapplyOwed && interfaceName.map {
+                        self.pathRecoveredSinceApply || $0 != self.appliedInterfaceName
+                    } ?? false
+                    if !dirty, !reapplyDue, self.appliedSettingsRevision == self.offeredSettingsRevision,
                        let current = self.networkSettings,
                        (current.ipv6Settings != nil) == declares { return nil }
                     let settings = offered.copy() as! NEPacketTunnelNetworkSettings
                     if !declares { settings.ipv6Settings = nil }
                     return SettingsPlan(settings: settings, revision: self.offeredSettingsRevision, session: session,
-                                        followsInterfaceChange: self.pathReapplyOwed)
+                                        interfaceName: interfaceName, followsInterfaceChange: reapplyDue)
                 }
             }, apply: { plan in
                 try await self.tunnelProvider.setTunnelNetworkSettings(plan.settings)
@@ -363,7 +400,11 @@ final class ExtensionProvider: NSObject {
                 self.withStateLock {
                     self.networkSettings = plan.settings
                     self.appliedSettingsRevision = plan.revision
-                    self.pathReapplyOwed = false
+                    self.appliedInterfaceName = plan.interfaceName
+                    if plan.interfaceName != nil {
+                        self.pathReapplyOwed = false
+                        self.pathRecoveredSinceApply = false
+                    }
                     appliedIPv6 = plan.settings.ipv6Settings != nil
                     appliedAfterInterfaceChange = plan.followsInterfaceChange
                 }
@@ -500,6 +541,8 @@ final class ExtensionProvider: NSObject {
                 ipStackSettings = ipStack
                 desiredPathHasIPv6 = false
                 pathReapplyOwed = false
+                pathRecoveredSinceApply = false
+                appliedInterfaceName = nil
             }
         }
          
@@ -898,6 +941,8 @@ final class ExtensionProvider: NSObject {
             appliedSettingsRevision = nil
             desiredPathHasIPv6 = false
             pathReapplyOwed = false
+            pathRecoveredSinceApply = false
+            appliedInterfaceName = nil
             service = nil
             packetFlowBridge = nil
             networkSettings = nil
@@ -1635,7 +1680,7 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
             let bridge = PacketFlowBridge(
                 packetFlow: provider.packetFlow,
                 configuration: self.packetFlowConfiguration
-            ) { [weak provider] error in
+            ) { [weak provider = provider] error in
                 provider?.cancelTunnelWithError(error)
             }
             let fd = try bridge.start()
