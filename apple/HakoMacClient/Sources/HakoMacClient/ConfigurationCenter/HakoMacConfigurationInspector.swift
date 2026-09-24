@@ -196,11 +196,11 @@ public struct HakoMacConfigurationInspector: View {
                  
                 HStack(spacing: 6) {
                     Circle().fill(profile.isCurrent ? Color.green : Color.secondary).frame(width: 8, height: 8)
-                    Text(hako: profile.isCurrent ? .copy("Active") : profile.sourceSummary).lineLimit(1)
+                    Text(hako: profile.isCurrent ? .copy("In Use") : profile.sourceSummary).lineLimit(1)
                 }
                 Spacer()
                 if !profile.isCurrent {
-                    Button { actions.activate() } label: { Text(hako: .copy("Activate")) }
+                    Button { actions.activate() } label: { Text(hako: .copy("Use This Profile")) }
                         .disabled(profile.isBusy)
                         .accessibilityIdentifier("configuration-center.configuration.activate")
                 }

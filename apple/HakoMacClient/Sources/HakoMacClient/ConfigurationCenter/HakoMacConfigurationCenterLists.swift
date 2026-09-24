@@ -235,7 +235,7 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(profile.isCurrent || profile.isBusy)
-                    .accessibilityLabel(Text(hako: .copy("Activate")))
+                    .accessibilityLabel(Text(hako: .copy("Use This Profile")))
                     .accessibilityIdentifier("configuration-center.configurations.select.\(profile.id.rawValue)")
                     HakoMacRoutedRow {
                         detail(.configuration(profile.id))
@@ -258,7 +258,7 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                 }
                 .contextMenu {
                     if !profile.isCurrent {
-                        Button { actions.activate(profile.id) } label: { Text(hako: .copy("Activate")) }
+                        Button { actions.activate(profile.id) } label: { Text(hako: .copy("Use This Profile")) }
                     }
                     if let reorder = actions.reorder, profiles.count > 1 {
                         Divider()
