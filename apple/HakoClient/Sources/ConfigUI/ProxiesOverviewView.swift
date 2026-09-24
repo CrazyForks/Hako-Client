@@ -473,9 +473,29 @@ struct ProxiesOverviewAdapter: View {
              
              
              
-            .onChange(of: effectiveRuntime.resolvedNowByGroup) { _ in
+             
+             
+             
+             
+             
+             
+            .onChange(of: effectiveRuntime.resolvedNowByGroup) { resolvedNowByGroup in
                 guard !isTestingLatency else { return }
-                pulseHub.replaceIdle(currentPulse(isTesting: false))
+                pulseHub.replaceIdle(currentPulse(
+                    groupTerminals: resolvedNowByGroup,
+                    isTesting: false
+                ))
+            }
+             
+             
+             
+             
+             
+             
+             
+            .onChange(of: isConnected) { connected in
+                guard !isTestingLatency || !connected else { return }
+                pulseHub.replaceIdle(currentPulse(connected: connected, isTesting: false))
             }
             .onReceive(
                 latencyPulseGate?.opened.eraseToAnyPublisher()
@@ -545,6 +565,8 @@ struct ProxiesOverviewAdapter: View {
 
     private func currentPulse(
         results: [String: HakoProxyLatencyState]? = nil,
+        groupTerminals: [String: String]? = nil,
+        connected: Bool? = nil,
         isTesting: Bool
     ) -> HakoLatencyPulse {
         HakoLatencyPulse(
@@ -556,7 +578,9 @@ struct ProxiesOverviewAdapter: View {
              
              
              
-            groupTerminals: isConnected ? effectiveRuntime.resolvedNowByGroup : [:],
+            groupTerminals: (connected ?? isConnected)
+                ? (groupTerminals ?? effectiveRuntime.resolvedNowByGroup)
+                : [:],
             completed: latencyCompletedCount,
             total: latencyTotalCount,
             isTesting: isTesting
