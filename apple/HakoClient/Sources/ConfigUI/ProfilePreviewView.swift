@@ -207,9 +207,17 @@ struct ProfileFinalConfigurationView: View {
     private let unsupportedEmptyTitle = "No Desktop or Inbound Fields"
     private let adaptedEmptyTitle = "No Known iOS Rewrite"
 #endif
+     
+     
+     
+     
+     
+     
+    private let textFirst: Bool
 #if os(macOS)
      
     @State private var showsPreviewText = false
+    @State private var sourceOpened = false
     @Environment(\.hakoDoorMayPush) private var mayPush
 #endif
 
@@ -263,9 +271,11 @@ struct ProfileFinalConfigurationView: View {
         ownsNavigationContainer: Bool = true,
         command: ClashCommandClient? = nil,
         blockedRuleSets:
-            (@Sendable () async -> [ProviderCompileVerdicts.Blocked])? = nil
+            (@Sendable () async -> [ProviderCompileVerdicts.Blocked])? = nil,
+        textFirst: Bool = false
     ) {
         self.title = title
+        self.textFirst = textFirst
         self.ownsNavigationContainer = ownsNavigationContainer
         self.command = command
         blockedRuleSetsLoader = blockedRuleSets
@@ -276,6 +286,93 @@ struct ProfileFinalConfigurationView: View {
     }
 
     var body: some View {
+#if os(macOS)
+        if textFirst {
+            textFirstBody
+        } else {
+            fullBody
+        }
+#else
+        fullBody
+#endif
+    }
+
+#if os(macOS)
+     
+     
+     
+     
+    private var textFirstBody: some View {
+        HakoDeferredPageContent {
+             
+             
+             
+             
+             
+            ZStack {
+                residentPanel(.effective)
+                if sourceOpened || previewKind == .source {
+                    residentPanel(.source)
+                }
+            }
+            .onChange(of: previewKind) { kind in
+                if kind == .source { sourceOpened = true }
+            }
+        } placeholder: {
+            HakoPageLoadingPlaceholder(title: .copy("Opening Configuration"))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .hakoPageTitle(.copy(title))
+        .hakoToolbarUnlessInPanel {
+            ToolbarItem(placement: .principal) {
+                Picker(selection: $previewKind) {
+                    ForEach(FinalConfigurationPreviewKind.allCases.reversed()) { kind in
+                        Text(hako: .copy(kind.rawValue)).tag(kind)
+                    }
+                } label: {
+                    Text(hako: .copy("Configuration"))
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityIdentifier("final-configuration.preview-kind")
+            }
+        }
+    }
+     
+     
+     
+     
+    @ViewBuilder
+    private func residentPanel(_ kind: FinalConfigurationPreviewKind) -> some View {
+        let shown = previewKind == kind
+        let text: String? = kind == .source ? snapshot.sourceText : snapshot.effectiveText
+        Group {
+            if let text {
+                CodeEditorPanel(
+                    text: .constant(text),
+                    language: .yaml,
+                    minHeight: 360,
+                    isEditable: false,
+                    expandsVertically: true
+                )
+                .id("\(kind.rawValue)#\(text.count)#\(text.hashValue)")
+            } else {
+                HakoEmptyState(
+                    title: "Configuration Unavailable",
+                    message: "Activate or sync this profile first.",
+                    symbol: .docTextMagnifyingglass
+                )
+            }
+        }
+        .opacity(shown ? 1 : 0)
+        .allowsHitTesting(shown)
+        .accessibilityHidden(!shown)
+    }
+#endif
+
+    private var fullBody: some View {
         HakoFeatureNavigationContainer(
             ownsNavigationContainer: ownsNavigationContainer
         ) {

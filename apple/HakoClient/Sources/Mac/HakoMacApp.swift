@@ -5389,7 +5389,7 @@ private struct HakoMacRuntimeConfigurationPage: View, Equatable {
         Group {
             if let inputs {
                 ProfileFinalConfigurationView(
-                    title: "Final Configuration",
+                    title: "Runtime Configuration",
                     snapshot: inputs.snapshot,
                     sourceYAML: inputs.source,
                      
@@ -5402,7 +5402,8 @@ private struct HakoMacRuntimeConfigurationPage: View, Equatable {
                      
                     baseYAML: inputs.base,
                     ownsNavigationContainer: false,
-                    blockedRuleSets: blockedRuleSets
+                    blockedRuleSets: blockedRuleSets,
+                    textFirst: true
                 )
             } else {
                 ProgressView()
