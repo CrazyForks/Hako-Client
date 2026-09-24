@@ -206,6 +206,7 @@ public struct HakoTowerRuleCustomizationView: View {
     private enum Modal: String, Identifiable { case identity, group, local, copy, manual; var id: String { rawValue } }
     @State private var groupID: UUID?
     @State private var localID: String?
+    @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     public init(draft: ConfigurationRuleDraft, localSets: [ConfigurationLocalRuleSet], resetDocument: String, palette: HakoProductPalette, pushed: Bool = false, ruleSetKeys: Set<String> = [],
         save: @escaping (ConfigurationRuleDraft) async throws -> ConfigurationRuleDraft, download: @escaping (String) async throws -> [String],
         saveLocal: @escaping (ConfigurationLocalRuleSet) async throws -> (ConfigurationRuleDraft, [ConfigurationLocalRuleSet]), deleteLocal: @escaping (String) async throws -> (ConfigurationRuleDraft, [ConfigurationLocalRuleSet]),
@@ -290,12 +291,39 @@ public struct HakoTowerRuleCustomizationView: View {
                     }
                 }
             }
+            if insideProductModal {
+                 
+                 
+                Section("更多") {
+                    Toggle("显示策略组 Emoji", isOn: $emojis).accessibilityIdentifier("configuration.rules.emojis")
+                    Button("Edit Rules Source") { modal = .manual }
+                    Button("另存为新方案") { modal = .copy }
+                    Button("恢复初始规则", role: .destructive) { confirmsReset = true }
+                }.disabled(busy)
+            }
         }
         .modifier(HakoTowerReorderMode(active: reordering))
         .allowsHitTesting(!busy)
         .modifier(HakoTowerSearchPlacement(text: $search, palette: palette))
         .hakoPageTitle("规则定制")
-        .hakoProductModalRoot(title: "规则定制")
+         
+         
+         
+        .hakoProductModalRoot(
+            title: "规则定制",
+            actionTitle: reordering ? "结束编辑" : "编辑",
+            actionDisabled: busy,
+            action: {
+                var transaction = Transaction(); transaction.disablesAnimations = true
+                withTransaction(transaction) { reordering.toggle() }
+            }
+        )
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if insideProductModal, !pushed {
+                HakoModalActionBar(primaryTitle: "Done", primaryDisabled: busy, isBusy: busy,
+                    onPrimary: { if hasUnsavedChanges { persist(draft, then: close) } else { close() } })
+            }
+        }
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: pushed ? .primaryAction : .cancellationAction) {
                 Menu {
@@ -485,6 +513,7 @@ private struct HakoTowerNameEditor: View {
     let close: () -> Void
     @State private var busy = false
     @State private var error: String?
+    @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     init(title: String, name: String, save: @escaping (String) async throws -> Void, close: @escaping () -> Void) {
         self.title = title; initialName = name; _name = State(initialValue: name); self.save = save; self.close = close
     }
@@ -501,6 +530,11 @@ private struct HakoTowerNameEditor: View {
                 ToolbarItem(placement: .confirmationAction) { Button { commit() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(busy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
             }
             .hakoRegistersDeparture(isDirty: name != initialName, isBusy: busy, save: { commit($0) }, discard: { name = initialName })
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if insideProductModal {
+                    HakoModalActionBar(primaryTitle: "Save", primaryDisabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, isBusy: busy, onPrimary: { commit() })
+                }
+            }
     }
 }
 
@@ -512,6 +546,7 @@ private struct HakoTowerLocalRuleEditor: View {
     @State private var input: String
     @State private var busy = false
     @State private var error: String?
+    @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     init(value: ConfigurationLocalRuleSet?, save: @escaping (String, String) async throws -> Void, close: @escaping () -> Void) {
         self.value = value; self.save = save; self.close = close
         _name = State(initialValue: value?.name ?? ""); _input = State(initialValue: value?.input ?? "")
@@ -534,6 +569,11 @@ private struct HakoTowerLocalRuleEditor: View {
                 ToolbarItem(placement: .confirmationAction) { Button { commit() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(busy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
             }
             .hakoRegistersDeparture(isDirty: name != (value?.name ?? "") || input != (value?.input ?? ""), isBusy: busy, save: { commit($0) }, discard: { name = value?.name ?? ""; input = value?.input ?? "" })
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if insideProductModal {
+                    HakoModalActionBar(primaryTitle: "Save", primaryDisabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, isBusy: busy, onPrimary: { commit() })
+                }
+            }
     }
 }
 
@@ -550,6 +590,7 @@ private struct HakoTowerGroupEditor: View {
     @State private var filter: String
     @State private var busy = false
     @State private var error: String?
+    @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     init(group: ConfigurationRuleDraft.Group, all: [ConfigurationRuleDraft.Group], identityOnly: Bool,
         save: @escaping (OrderedJSON) async throws -> Void, close: @escaping () -> Void) {
         self.group = group; self.all = all; self.identityOnly = identityOnly; self.save = save; self.close = close
@@ -606,6 +647,11 @@ private struct HakoTowerGroupEditor: View {
             }
         }
         .hakoRegistersDeparture(isDirty: dirty, isBusy: busy, save: { commit($0) }, discard: { name = group.name; kind = group.type; selected = originalSelected; includeAll = originalIncludeAll; filter = originalFilter })
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if insideProductModal {
+                HakoModalActionBar(primaryTitle: "Save", primaryDisabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (!identityOnly && selected.isEmpty && !includeAll), isBusy: busy, onPrimary: { commit() })
+            }
+        }
     }
     private func commit(_ completion: @escaping (Bool) -> Void = { _ in }) {
         guard !busy, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, identityOnly || !selected.isEmpty || includeAll else { completion(false); return }
