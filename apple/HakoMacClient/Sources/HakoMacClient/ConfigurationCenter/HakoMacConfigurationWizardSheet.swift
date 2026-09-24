@@ -305,6 +305,53 @@ public struct HakoMacConfigurationWizardSheet: View {
             if model.nodeShelves.isEmpty && draft.newSources.isEmpty {
                 HakoMacCardSection { Text(hako: .copy("None")).foregroundStyle(.secondary).hakoMacCardRow(isLast: true) }
             }
+             
+             
+             
+             
+            if let candidate = originalCandidate {
+                HakoMacCardSection(.copy("Original Configuration")) {
+                    VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
+                        Text(hako: .copy("Use Original Configuration")).foregroundStyle(Color.accentColor)
+                        Text(hako: .copy("Runs the configuration as received, with its own proxy groups, rules and DNS."))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .hakoMacPressableRow { useOriginal(candidate) }
+                    .accessibilityIdentifier("configuration-center.wizard.original")
+                    .hakoMacCardRow(isLast: true)
+                }
+            }
+        }
+    }
+
+     
+     
+    private var originalCandidate: (id: String, label: String)? {
+        guard draft.selectedSourceIDs.count == 1, let id = draft.selectedSourceIDs.first else { return nil }
+        if let staged = draft.newSources.first(where: { $0.record.id == id }) {
+            return staged.record.nodeChain == nil ? (id, staged.record.label) : nil
+        }
+        guard let record = model.snapshot.sources.first(where: { $0.id == id }), record.nodeChain == nil else { return nil }
+        return (id, record.label)
+    }
+
+     
+     
+     
+    private func useOriginal(_ candidate: (id: String, label: String)) {
+        error = nil
+        if let staged = draft.newSources.first(where: { $0.record.id == candidate.id }) {
+            draft.useOriginal(staged)
+        } else {
+            var original = ConfigurationCreationDraft()
+            original.originalSourceID = candidate.id
+            original.selectedSourceIDs = [candidate.id]
+            original.label = candidate.label
+            original.dnsMode = .source
+            original.step = .finish
+            draft = original
         }
     }
 
@@ -347,6 +394,20 @@ public struct HakoMacConfigurationWizardSheet: View {
                 TextField(text: $draft.label, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.wizard.name")
+                if let originalID = draft.originalSourceID {
+                     
+                     
+                    LabeledContent {
+                        Text(verbatim: draft.newSources.first { $0.record.id == originalID }?.record.label
+                            ?? model.snapshot.sources.first { $0.id == originalID }?.label ?? "")
+                    } label: {
+                        Text(hako: .copy("Original Configuration"))
+                    }
+                    .accessibilityIdentifier("configuration-center.wizard.original-source")
+                    Text(hako: .copy("Keep the document's nodes, rules and settings."))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
                 LabeledContent {
                     Text(verbatim: (draft.newSources.map(\.record.label)
                         + HakoMacConfigurationWizardRules.chosenSources(draft, in: model.snapshot)
@@ -360,6 +421,7 @@ public struct HakoMacConfigurationWizardSheet: View {
                     Text(verbatim: model.snapshot.effectiveRuleScheme(HakoMacConfigurationWizardRules.defaultRuleID(draft))?.displayLabel ?? "")
                 } label: {
                     Text(hako: .copy("Rule Scheme"))
+                }
                 }
             }
              
@@ -394,7 +456,15 @@ public struct HakoMacConfigurationWizardSheet: View {
         switch draft.step {
         case .sources: break
         case .rules: draft.step = .sources
-        case .finish: draft.step = .rules
+        case .finish:
+            if draft.originalSourceID != nil {
+                 
+                draft.originalSourceID = nil
+                draft.dnsMode = ConfigurationCreationDraft().dnsMode
+                draft.step = .sources
+            } else {
+                draft.step = .rules
+            }
         }
     }
 

@@ -29,6 +29,10 @@ public struct HakoMacConfigurationInspectorActions {
     public var setScope: @MainActor (String, ConfigurationNodeScope?) -> Void = { _, _ in }
      
     public var copyProfileURL: @MainActor () -> Void = {}
+     
+     
+     
+    public var setOriginalUse: @MainActor (Bool) -> Void = { _ in }
     public var loadScopeChoices: @MainActor (ConfigurationSourceRecord) async throws -> HakoMacNodeScopeChoices = { _ in
         throw ConfigurationLibraryError.unreadable
     }
@@ -286,8 +290,30 @@ public struct HakoMacConfigurationInspector: View {
      
      
      
+     
+     
+     
+     
+    private var offersOriginal: Bool { recipe.map { $0.sources.count == 1 } ?? profile.canEditSource }
+     
+     
+    private var usesOriginal: Bool { recipe.map { $0.preservesOriginal == true } ?? true }
+
     private var composition: some View {
         Section {
+             
+             
+             
+             
+             
+            if offersOriginal {
+                Toggle(isOn: Binding(get: { usesOriginal }, set: { actions.setOriginalUse($0) })) {
+                    Text(hako: .copy("Use Original Configuration"))
+                }
+                .disabled(profile.isBusy)
+                .accessibilityIdentifier("configuration-center.configuration.original")
+            }
+            if !(offersOriginal && usesOriginal) {
             HakoRoutedViewLink {
                 HakoMacConfigurationSourcesPage(
                     sources: sources, chosen: $chosenSources, recipe: recipe, actions: actions,
@@ -310,6 +336,7 @@ public struct HakoMacConfigurationInspector: View {
             }
             .accessibilityValue(Text(hako: schemeValue))
             .accessibilityIdentifier("configuration-center.configuration.schemes.all")
+            }
              
              
              
@@ -322,6 +349,12 @@ public struct HakoMacConfigurationInspector: View {
                 }
                 .disabled(profile.isBusy)
                 .accessibilityIdentifier("configuration-center.configuration.source-updates")
+            }
+        } footer: {
+            if offersOriginal {
+                Text(hako: usesOriginal
+                    ? .copy("Runs the configuration as received, with its own proxy groups, rules and DNS.")
+                    : .copy("Nodes come from the chosen node sources; routing follows the rule scheme."))
             }
         }
     }

@@ -1080,23 +1080,21 @@ private final class HakoMacSceneModel: ObservableObject {
                 }.value
             },
             importOriginal: { [weak self] payload in
-                let source: Profile.Source
-                switch payload.record.origin {
-                case .subscription(let link):
-                    source = .url(link)
-                case .file(let name):
-                    source = .file(name)
-                case .customNodes, .bundled:
-                    source = .clipboard
-                }
-                profiles.add(
-                    label: payload.record.label,
-                    source: source,
-                    rawYAML: String(decoding: payload.original, as: UTF8.self)
+                guard let self else { return }
+                 
+                 
+                 
+                 
+                await self.configurationLibrary.reload()
+                var draft = ConfigurationCreationDraft()
+                draft.useOriginal(payload)
+                _ = try await profiles.createConfiguration(
+                    draft, generation: self.configurationLibrary.snapshot.generation, id: UUID().uuidString.lowercased()
                 )
+                await self.configurationLibrary.reload()
                  
                  
-                self?.configurationCenterImport = nil
+                self.configurationCenterImport = nil
             },
              
              
@@ -2154,6 +2152,22 @@ private final class HakoMacSceneModel: ObservableObject {
             adoptHeldBack: { keyPath in list.perform(.adoptHeldBackUpdate(id: id, keyPath: keyPath)) },
             dismissHeldBack: { list.perform(.dismissHeldBackUpdates(id: id)) }
         )
+         
+         
+         
+         
+         
+        actions.setOriginalUse = { uses in
+            writes.enqueue({
+                if library.snapshot.recipes.contains(where: { $0.id == id.rawValue }) {
+                    try await profiles.setUsesOriginalConfiguration(id.rawValue, enabled: uses)
+                    await library.reload()
+                    HakoMacDebugLog.note("original-use \(id.rawValue): \(uses) written, generation \(library.snapshot.generation)")
+                } else if !uses {
+                    try await convertLegacyNow(sources: nil, scheme: nil)
+                }
+            }, failure: failed)
+        }
          
          
         actions.setScope = { sourceID, scope in
