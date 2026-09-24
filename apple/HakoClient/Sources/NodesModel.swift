@@ -1479,13 +1479,27 @@ final class NodesModel: ObservableObject {
      
      
     func unfix(group: String) async {
-        guard let command else {
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        guard let command, command.isConnected else {
              
              
              
              
              
             let forgotten = preferences?.clearSelection(group: group) ?? false
+             
+             
+             
+            if forgotten { actionRefusals[group] = nil }
             HakoLogStore.shared.append(
                 "unfix  tunnel down  group=\(group)  profile pin forgotten=\(forgotten)",
                 stream: .app, level: .info
