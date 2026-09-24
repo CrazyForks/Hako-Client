@@ -319,6 +319,43 @@ targets:
             NSExtensionActivationRule: SUBQUERY(extensionItems, $extensionItem, $extensionItem.attachments.@count
               == 1 AND SUBQUERY($extensionItem.attachments, $attachment, ANY $attachment.registeredTypeIdentifiers
               UTI-CONFORMS-TO "public.yaml").@count == 1).@count == 1
+  HakoMacCore:
+    type: framework
+    platform: macOS
+    sources:
+    - path: HakoCore
+    settings:
+      configs:
+        Release:
+          DEPLOYMENT_POSTPROCESSING: true
+          STRIP_INSTALLED_PRODUCT: true
+          STRIP_STYLE: non-global
+      base:
+        PRODUCT_NAME: Hako
+        PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).core
+        DEVELOPMENT_TEAM: $(HAKO_DEVELOPMENT_TEAM)
+        CODE_SIGN_STYLE: Automatic
+        DEFINES_MODULE: true
+        MODULEMAP_FILE: HakoCore/module.modulemap
+        SKIP_INSTALL: true
+        ENABLE_USER_SCRIPT_SANDBOXING: false
+        HAKO_CORE_SLICE: macos-arm64_x86_64
+        HAKO_CORE_ARCHIVE: $(SRCROOT)/../../Hako.xcframework/$(HAKO_CORE_SLICE)/Hako.framework/Hako
+        OTHER_LDFLAGS:
+        - -Wl,-force_load,$(HAKO_CORE_ARCHIVE)
+        - -lresolv
+    preBuildScripts:
+    - name: Copy the Go core's public headers out of the locked xcframework
+      shell: /bin/sh
+      script: "set -eu\nsrc=\"$SRCROOT/../../Hako.xcframework/$HAKO_CORE_SLICE/Hako.framework/Headers\"\
+        \ndst=\"$TARGET_BUILD_DIR/$PUBLIC_HEADERS_FOLDER_PATH\"\nmkdir -p \"$dst\"\
+        \nfor h in ref.h Hako.objc.h Universe.objc.h Hako.h; do\n  cp -f \"$src/$h\"\
+        \ \"$dst/$h\"\ndone\n"
+      outputFiles:
+      - $(TARGET_BUILD_DIR)/$(PUBLIC_HEADERS_FOLDER_PATH)/ref.h
+      - $(TARGET_BUILD_DIR)/$(PUBLIC_HEADERS_FOLDER_PATH)/Hako.objc.h
+      - $(TARGET_BUILD_DIR)/$(PUBLIC_HEADERS_FOLDER_PATH)/Universe.objc.h
+      - $(TARGET_BUILD_DIR)/$(PUBLIC_HEADERS_FOLDER_PATH)/Hako.h
   HakoMac:
     type: application
     platform: macOS
@@ -372,6 +409,7 @@ targets:
         CODE_SIGN_STYLE: Automatic
         ENABLE_USER_SCRIPT_SANDBOXING: false
         ASSETCATALOG_COMPILER_APPICON_NAME: ''
+        REMOVE_HEADERS_FROM_EMBEDDED_FRAMEWORKS: true
     info:
       path: Resources/macOS/HakoMacInfo.plist
       properties:
@@ -415,8 +453,8 @@ targets:
     - package: HakoClientKit
     - package: HakoClientUI
     - package: HakoMacClient
-    - framework: ../../Hako.xcframework
-      embed: false
+    - target: HakoMacCore
+      embed: true
     - target: HakoMacExtension
       embed: true
     - target: HakoMacWidgets
@@ -509,6 +547,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).packet-tunnel
         PRODUCT_NAME: HakoMacExtension
+        LD_RUNPATH_SEARCH_PATHS:
+        - $(inherited)
+        - '@executable_path/../Frameworks'
+        - '@executable_path/../../../../Frameworks'
         MARKETING_VERSION: 1.0.11
         CURRENT_PROJECT_VERSION: '55'
         DEVELOPMENT_TEAM: $(HAKO_DEVELOPMENT_TEAM)
@@ -534,7 +576,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
     dependencies:
-    - framework: ../../Hako.xcframework
+    - target: HakoMacCore
       embed: false
     - sdk: NetworkExtension.framework
   HakoTV:
