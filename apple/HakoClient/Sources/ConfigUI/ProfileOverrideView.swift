@@ -502,39 +502,50 @@ struct ProfileOverrideView: View {
 
      
      
+     
+     
     @ViewBuilder
     private func scriptRow(_ script: ConfigScript) -> some View {
         let selected = selectedScriptID == script.id
-        HStack(spacing: HakoTheme.Spacing.row) {
+        HStack(spacing: 0) {
             Button {
                  
                  
                 selectedScriptID = selected ? nil : script.id
             } label: {
-                HStack {
+                HStack(alignment: .center, spacing: HakoTheme.Spacing.row) {
+                    Group {
+                        if selected {
+                            Image(systemName: HakoSymbol.checkmark.rawValue)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.tint)
+                        } else {
+                            Color.clear
+                        }
+                    }
+                    .frame(width: 24, height: 24)
+                    .accessibilityHidden(true)
                     Text(verbatim: script.label)
+                        .font(.body.weight(selected ? .semibold : .regular))
                         .foregroundStyle(.primary)
-                        .lineLimit(2)
+                        .lineLimit(1)
                     Spacer(minLength: HakoTheme.Spacing.compact)
-                    HakoSelectionMark(isSelected: selected)
                 }
-                .frame(
-                    maxWidth: .infinity,
-                    minHeight: HakoClientUI.HakoTheme.Control.fullWidthRowMinHeightOnItsOwnPlatform,
-                    alignment: .leading
-                )
+                .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.row))
                 .contentShape(Rectangle())
             }
-            .hakoSelectionRowStyle()
             .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityIdentifier("profile.override.script.\(script.id)")
             .accessibilityAddTraits(selected ? .isSelected : [])
             Button {
                 editingScript = script
             } label: {
                 Image(systemName: HakoSymbol.infoCircle.rawValue)
-                    .font(.body)
-                    .frame(width: HakoClientUI.HakoTheme.Control.minimumHitTarget, height: HakoClientUI.HakoTheme.Control.minimumHitTarget)
+                    .font(.title3)
+                    .foregroundStyle(.tint)
+                    .frame(width: HakoClientUI.HakoTheme.Control.minimumHitTarget,
+                           height: HakoClientUI.HakoTheme.Control.minimumHitTarget)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
