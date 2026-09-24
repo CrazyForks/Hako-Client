@@ -2,12 +2,12 @@
 
 [English](README.md) · 简体中文
 
+[![官方网站](https://img.shields.io/badge/%E5%AE%98%E7%BD%91-%E8%AE%BF%E9%97%AE-2563EB)](https://clash.md/)
+[![App Store 下载](https://img.shields.io/badge/App_Store-%E4%B8%8B%E8%BD%BD-black?logo=apple&logoColor=white)](https://apps.apple.com/app/id6794257189)
+[![Telegram 频道](https://img.shields.io/badge/Telegram-%E9%A2%91%E9%81%93-26A5E4?logo=telegram&logoColor=white)](https://t.me/clashbyhako)
+[![Telegram 交流群](https://img.shields.io/badge/Telegram-%E4%BA%A4%E6%B5%81%E7%BE%A4-26A5E4?logo=telegram&logoColor=white)](https://t.me/+t__WNRvjUbk3M2Nl)
+
 基于 Hako 内核的原生规则代理客户端，适用于 iPhone、iPad、Mac 和 Apple TV。
-
-## 官网与下载
-
-- [官方网站](https://clash.md/)
-- [在 App Store 下载 Clash](https://apps.apple.com/app/id6794257189)
 
 安装官方应用请使用 App Store 链接。以下说明面向需要从源码构建的开发者。
 
@@ -24,11 +24,13 @@
 
 当前源码分发处于预发布阶段。App Store 应用版本与本仓库检出的源码分别管理；复现构建时请固定源码提交。
 
+iOS 和 macOS 工程通过共享框架封装静态 Core；工程生成时会保留所需的头文件复制步骤。客户端使用的能力以所固定的 Kernel 和 Adapter 提交为准；iOS/tvOS 的 SDK 不包含 EasyTier。
+
 ## 从源码构建
 
 ### 环境要求
 
-- macOS、Xcode 26.6，以及 iOS、macOS、tvOS SDK。
+- macOS、Xcode 27.0，以及 iOS、macOS、tvOS SDK。
 - 可在命令行使用的 XcodeGen 和 Git。
 - 启用自动工具链选择的 Go，或安装固定内核绑定模块所选择的 Go 1.26.6 工具链。
 - Python 3 和 PyYAML。

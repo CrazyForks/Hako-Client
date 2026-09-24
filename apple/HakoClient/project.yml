@@ -57,6 +57,10 @@ targets:
       buildPhase: resources
     - path: ../../Vendor/HakoAdapter/Sources/HakoAdapter
     settings:
+      configs:
+        Debug:
+          INFOPLIST_KEY_UIFileSharingEnabled: 'YES'
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE)
         DEVELOPMENT_TEAM: $(HAKO_DEVELOPMENT_TEAM)
@@ -101,7 +105,7 @@ targets:
         - fetch
         - processing
         NSUbiquitousContainers:
-          iCloud.com.hako.network:
+          iCloud.org.example.hako:
             NSUbiquitousContainerIsDocumentScopePublic: true
             NSUbiquitousContainerName: Clash
             NSUbiquitousContainerSupportedFolderLevels: Any
@@ -149,6 +153,8 @@ targets:
       buildPhase: resources
     - path: ../../Vendor/HakoAdapter/Sources/HakoAdapter
     settings:
+      configs:
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).extension
         DEVELOPMENT_TEAM: $(HAKO_DEVELOPMENT_TEAM)
@@ -208,6 +214,8 @@ targets:
     - path: Resources/PrivacyInfo.xcprivacy
       buildPhase: resources
     settings:
+      configs:
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).controls
         IPHONEOS_DEPLOYMENT_TARGET: '17.0'
@@ -244,6 +252,8 @@ targets:
     - path: Resources/PrivacyInfo.xcprivacy
       buildPhase: resources
     settings:
+      configs:
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).share
         DEVELOPMENT_TEAM: $(HAKO_DEVELOPMENT_TEAM)
@@ -313,6 +323,8 @@ targets:
       buildPhase: resources
     - path: ../../Vendor/HakoAdapter/Sources/HakoAdapter
     settings:
+      configs:
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE)
         PRODUCT_NAME: Clash
@@ -410,6 +422,8 @@ targets:
     - path: Resources/PrivacyInfo.xcprivacy
       buildPhase: resources
     settings:
+      configs:
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).widgets
         MACOSX_DEPLOYMENT_TARGET: '14.0'
@@ -452,6 +466,8 @@ targets:
       buildPhase: resources
     - path: ../../Vendor/HakoAdapter/Sources/HakoAdapter
     settings:
+      configs:
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).packet-tunnel
         PRODUCT_NAME: HakoMacExtension
@@ -574,6 +590,9 @@ targets:
     - path: Resources/tvOS/Localization
       buildPhase: resources
     settings:
+      configs:
+        Debug: {}
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE)
         PRODUCT_NAME: HakoTV
@@ -628,6 +647,9 @@ targets:
       buildPhase: resources
     - path: ../../Vendor/HakoAdapter/Sources/HakoAdapter
     settings:
+      configs:
+        Debug: {}
+        Release: {}
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).tvextension
         PRODUCT_NAME: HakoTVExtension

@@ -2,12 +2,12 @@
 
 English · [简体中文](README.zh-CN.md)
 
+[![Website](https://img.shields.io/badge/Website-Official-2563EB)](https://clash.md/)
+[![App Store Download](https://img.shields.io/badge/App_Store-Download-black?logo=apple&logoColor=white)](https://apps.apple.com/app/id6794257189)
+[![Telegram Channel](https://img.shields.io/badge/Telegram-Channel-26A5E4?logo=telegram&logoColor=white)](https://t.me/clashbyhako)
+[![Telegram Group](https://img.shields.io/badge/Telegram-Group-26A5E4?logo=telegram&logoColor=white)](https://t.me/+t__WNRvjUbk3M2Nl)
+
 A native, rule-based proxy client for iPhone, iPad, Mac and Apple TV, powered by the Hako kernel.
-
-## Official website and download
-
-- [Official website](https://clash.md/)
-- [Download Clash on the App Store](https://apps.apple.com/app/id6794257189)
 
 Use the App Store link to install the official app. The instructions below are for building from source.
 
@@ -24,11 +24,13 @@ This repository contains the Apple applications, their extensions, shared librar
 
 The source distribution is pre-release. The App Store app version and a checkout of this repository are separate artifacts; pin a source revision when reproducing a build.
 
+The iOS and macOS projects wrap the static Core in a shared framework, with the required header-copy build step included in project generation. Available features depend on the pinned Kernel and Adapter revisions; the iOS/tvOS SDK does not include EasyTier.
+
 ## Build from source
 
 ### Requirements
 
-- macOS with Xcode 26.6 and the iOS, macOS and tvOS SDKs.
+- macOS with Xcode 27.0 and the iOS, macOS and tvOS SDKs.
 - XcodeGen and Git available on your command path.
 - Go with automatic toolchain selection enabled, or the Go 1.26.6 toolchain selected by the pinned kernel's binding module.
 - Python 3 with PyYAML.
