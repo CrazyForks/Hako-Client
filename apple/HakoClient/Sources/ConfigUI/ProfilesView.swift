@@ -1084,11 +1084,20 @@ final class ProfilesViewModel: ObservableObject {
         do {
             if let rawYAML {
                 try ConfigTransforms.validateSource(rawYAML)
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
                 let prepared = try ProfileExternalResourceImporter.prepare(
                     yaml: rawYAML,
                     profileID: profile.id,
                     source: externalResourceSource(source),
-                    files: resourceFiles
+                    files: resourceFiles,
+                    requiringAllFiles: { if case .file = source { return false } else { return true } }()
                 )
                 try ProfileExternalResourceStore.replace(
                     prepared.publicResources,
@@ -1125,6 +1134,11 @@ final class ProfilesViewModel: ObservableObject {
             )
             planErrors = failure.map { [$0.localizedDescription] } ?? []
             statusMessage = failure.map { .copy($0.title) } ?? "Profile was not added"
+             
+             
+             
+             
+            recordFailure(error, context: .localImport, operation: nil, preservesLastKnownGood: false)
             try? profileStore.remove(id: profile.id)
             try? FileManager.default.removeItem(
                 at: workingDir.appendingPathComponent("store/\(profile.id)")
