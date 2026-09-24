@@ -27,6 +27,25 @@ extension View {
      
      
      
+     
+     
+     
+     
+    @ViewBuilder
+    func hakoSelectionRowFill(_ chosen: Bool) -> some View {
+#if os(iOS)
+        listRowBackground(chosen ? Color(uiColor: .systemFill) : nil)
+#else
+        self
+#endif
+    }
+
+     
+     
+     
+     
+     
+     
     @ViewBuilder
     public func hakoBackButtonHidden(_ hidden: Bool) -> some View {
 #if os(macOS)

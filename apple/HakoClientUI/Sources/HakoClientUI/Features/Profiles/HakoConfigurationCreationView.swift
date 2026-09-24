@@ -248,14 +248,19 @@ public struct HakoConfigurationCreationView: View {
         })
     }
 
+    private func toggleSource(_ id: String) {
+        var selected = sourceSelection.wrappedValue
+        if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
+        sourceSelection.wrappedValue = selected
+    }
+
     private var sourceList: some View {
-        List(selection: sourceSelection) {
+        List {
             if let error { Section { Text(verbatim: error).foregroundStyle(.red) } }
             if isBusy && !isReady { Section { ProgressView() } }
             if !isReady && !isBusy { Section { Button("Retry", action: reload) } }
             sourceSections
         }
-        .hakoAlwaysEditing()
         .hakoConfigurationFormSpacing()
     }
 
@@ -279,11 +284,20 @@ public struct HakoConfigurationCreationView: View {
             if !availableLegacy.isEmpty {
                 Section {
                     ForEach(availableLegacy) { item in
-                        selectionLabel(item.label, detail: sourceSummary(.init(id: "legacy-" + item.id,
-                            label: item.label, origin: .file(item.label), nodeCount: item.nodeCount,
-                            providerCount: item.providerCount)))
-                            .tag("legacy-" + item.id)
-                            .accessibilityIdentifier("configuration.create.legacy.\(item.id)")
+                        let id = "legacy-" + item.id
+                        let chosen = draft.selectedSourceIDs.contains(id)
+                        Button { toggleSource(id) } label: {
+                            HStack(spacing: HakoTheme.Spacing.row) {
+                                HakoSelectionCircle(isSelected: chosen)
+                                selectionLabel(item.label, detail: sourceSummary(.init(id: id,
+                                    label: item.label, origin: .file(item.label), nodeCount: item.nodeCount,
+                                    providerCount: item.providerCount)), chosen: chosen)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(chosen ? .isSelected : [])
+                        .hakoSelectionRowFill(chosen)
+                        .accessibilityIdentifier("configuration.create.legacy.\(item.id)")
                     }
                 } header: { Text("Existing Profiles") }
             }
@@ -313,15 +327,23 @@ public struct HakoConfigurationCreationView: View {
         if !items.isEmpty {
             Section {
                 ForEach(items) { source in
-                    HStack {
-                        selectionLabel(source.label, detail: sourceSummary(source))
+                    let chosen = draft.selectedSourceIDs.contains(source.id)
+                    HStack(spacing: HakoTheme.Spacing.row) {
+                        Button { toggleSource(source.id) } label: {
+                            HStack(spacing: HakoTheme.Spacing.row) {
+                                HakoSelectionCircle(isSelected: chosen)
+                                selectionLabel(source.label, detail: sourceSummary(source), chosen: chosen)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(chosen ? .isSelected : [])
                         Button { sourceDetails(source.id) } label: {
                             Image(systemName: "info.circle").foregroundStyle(.tint)
                                 .frame(minWidth: 44, minHeight: 44)
                         }.buttonStyle(.borderless).accessibilityLabel("Source Details")
                             .accessibilityIdentifier("configuration.create.info.\(source.id)")
                     }
-                    .tag(source.id)
+                    .hakoSelectionRowFill(chosen)
                     .accessibilityIdentifier("configuration.create.source.\(source.id)")
                 }
             } header: { Text(HakoCopy.key(title)) }
@@ -1895,25 +1917,22 @@ public struct HakoConfigurationNodeScopeView: View {
                      inlineNodeNames: allNodes ? nil : selectedNodes.sorted())
     }
     public var body: some View {
-        List(selection: $selectedChoices) {
+        List {
             if !collections.isEmpty {
                 Section("Node Collections") {
                     ForEach(collections.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { collection in
-                        choiceLabel(collection.name, detail: nil)
-                            .tag(Choice.provider(collection.name))
+                        choiceRow(.provider(collection.name), label: collection.name, detail: nil)
                             .accessibilityIdentifier("configuration.scope.collection.\(collection.name)")
                     }
                 }
             }
             Section("Nodes") {
                 ForEach(nodes.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) || $0.type.localizedCaseInsensitiveContains(search) }) { node in
-                    choiceLabel(node.name, detail: node.type)
-                        .tag(Choice.node(node.name))
+                    choiceRow(.node(node.name), label: node.name, detail: node.type)
                         .accessibilityIdentifier("configuration.scope.node.\(node.name)")
                 }
             }
         }
-        .hakoAlwaysEditing()
         .hakoConfigurationFormSpacing()
         .hakoProductModalSearchable(text: $search, prompt: Text("Search Nodes"))
         .hakoPageTitle(.verbatim(source.label), watchAs: "Source Nodes")
@@ -1934,6 +1953,24 @@ public struct HakoConfigurationNodeScopeView: View {
         .hakoUnsavedChangesAlert(isPresented: $confirmsDiscard, message: .copy("This selection has not been saved."),
             isBusy: false, save: { save(selection) }, discard: close)
     }
+     
+     
+     
+    private func choiceRow(_ choice: Choice, label: String, detail: String?) -> some View {
+        let chosen = selectedChoices.contains(choice)
+        return Button {
+            if chosen { selectedChoices.remove(choice) } else { selectedChoices.insert(choice) }
+        } label: {
+            HStack(spacing: HakoTheme.Spacing.row) {
+                HakoSelectionCircle(isSelected: chosen)
+                choiceLabel(label, detail: detail)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(chosen ? .isSelected : [])
+        .hakoSelectionRowFill(chosen)
+    }
+
     private func choiceLabel(_ name: String, detail: String?) -> some View {
         VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
             Text(verbatim: name).foregroundStyle(.primary)
