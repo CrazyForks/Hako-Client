@@ -2546,7 +2546,7 @@ extension ConfigurationCreationAdapter {
         draft.nodeScopes = recipe.nodeScopes
         draft.selectedRuleID = selectedRuleID ?? recipe.ruleSchemeID
         draft.label = label
-        draft.dnsMode = recipe.dnsMode ?? .source
+        draft.dnsMode = recipe.dnsMode ?? .system
         draft.nodeNameservers = recipe.nodeNameservers
         draft.customDNSJSON = recipe.customDNSJSON
         return draft

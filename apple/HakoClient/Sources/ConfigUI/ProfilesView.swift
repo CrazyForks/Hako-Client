@@ -1075,19 +1075,17 @@ final class ProfilesViewModel: ObservableObject {
         try await recoverConfigurationPublications()
         let snapshot = try await Task.detached { try library.snapshot() }.value
         let source = try await configurationSourceFromLegacy(id)
-        let ownRules = "rules-" + source.record.id
          
          
          
-        let registered = snapshot.rules.contains { $0.id == ownRules }
-        let hasRules = registered || (source.record.hasRules && source.record.registersSuppliedRules != false)
+         
+         
+         
         var draft = ConfigurationCreationDraft()
-        draft.add(source, rule: hasRules && !registered
-            ? ConfigurationRuleScheme(id: ownRules, label: source.record.label, kind: .supplied, sourceID: source.record.id)
-            : nil)
-        draft.selectedRuleID = hasRules ? ownRules : ConfigurationBuiltins.basicRuleID
+        draft.add(source, rule: nil)
+        draft.selectedRuleID = ConfigurationBuiltins.basicRuleID
         draft.label = profile.label
-        draft.dnsMode = .source
+        draft.dnsMode = .system
         draft.connectAfterCreation = false
         try await editConfiguration(draft, id: id, generation: snapshot.generation)
     }

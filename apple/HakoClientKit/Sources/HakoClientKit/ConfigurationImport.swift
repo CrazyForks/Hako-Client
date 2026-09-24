@@ -156,20 +156,19 @@ public extension ConfigurationLibraryStore {
         guard uses else {
              
              
+             
+             
+             
             var draft = ConfigurationCreationDraft()
             draft.step = .finish
             draft.selectedSourceIDs = [reference.id]
-            let supplied = "rules-" + reference.id
-             
-             
             let remembered = existing.composedRuleSchemeID.flatMap { id in
                 current.rules.first { $0.id == id && $0.isRetainedSnapshot != true } ?? ConfigurationBuiltins.schemes.first { $0.id == id }
             }
-            draft.selectedRuleID = remembered?.id
-                ?? (current.rules.contains { $0.id == supplied } ? current.effectiveRuleScheme(supplied)?.id : nil)
-                ?? ConfigurationBuiltins.basicRuleID
+            draft.selectedRuleID = remembered?.id ?? ConfigurationBuiltins.basicRuleID
             draft.label = existing.label
-            draft.dnsMode = existing.dnsMode ?? .source
+             
+            draft.dnsMode = existing.dnsMode == .custom ? .custom : .system
             draft.customDNSJSON = existing.customDNSJSON
             draft.nodeNameservers = existing.nodeNameservers
             return try prepareEditing(draft, profileID: profileID, expectedGeneration: expectedGeneration,
