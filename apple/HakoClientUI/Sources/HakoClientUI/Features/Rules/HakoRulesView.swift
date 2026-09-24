@@ -3013,6 +3013,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
             String(src), String(rawMode), rawText,
             String(noResolve), comment,
             String(describing: logicConditions), String(enabled),
+            String(describing: additionalParams),
         ].joined(separator: "\u{1F}")
     }
 
@@ -3595,6 +3596,36 @@ public enum HakoRulePolicyBuiltIns {
     ]
 }
 
+ 
+ 
+ 
+ 
+private struct HakoRulePolicyGroupCreationPage: View {
+    let make: (@escaping (String?) -> Void) -> AnyView
+    let onCreated: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.hakoPopRoute) private var popRoute
+
+    var body: some View {
+        make { name in
+            leave()
+            if let name, !name.isEmpty { onCreated(name) }
+        }
+    }
+
+    private func leave() {
+#if os(macOS)
+        if let popRoute {
+            popRoute(HakoPopToken())
+        } else {
+            dismiss()
+        }
+#else
+        dismiss()
+#endif
+    }
+}
+
 public struct HakoRulePolicyPickerView<Icon: View>: View {
     let title: String
     let builtIns: [(name: String, caption: String)]
@@ -3610,7 +3641,6 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
     let createGroup: ((@escaping (String?) -> Void) -> AnyView)?
     let icon: (HakoSymbol) -> Icon
     let pick: (String) -> Void
-    @State private var creatingGroup = false
 
     private static var ruleBuiltIns: [(name: String, caption: String)] {
         HakoRulePolicyBuiltIns.rule
@@ -3661,23 +3691,6 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
                 searchText: $query
             )
             .hakoCapturesDismiss(dismiss)
-            .background {
-                if let createGroup {
-                     
-                     
-                     
-                    HakoRoutedViewDestination(isPresented: $creatingGroup) {
-                        createGroup { name in
-                            creatingGroup = false
-                            if let name, !name.isEmpty {
-                                pick(name)
-                                dismissRoute()
-                            }
-                        }
-                        .hakoPushedDetailPage()
-                    }
-                }
-            }
     }
 
      
@@ -3733,11 +3746,27 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
                         caption: "Kernel built-in group"
                     )
                 }
-                if createGroup != nil, query.isEmpty {
+                if let createGroup, query.isEmpty {
                      
                      
-                    HakoAddRow(Text(hako: .copy("Add Policy Group"))) { creatingGroup = true }
-                        .accessibilityIdentifier("\(axPrefix).group.add")
+                     
+                     
+                     
+                     
+                    HakoRoutedViewLink {
+                        HakoRulePolicyGroupCreationPage(make: createGroup) { name in
+                            pick(name)
+                            dismissRoute()
+                        }
+                        .hakoPushedDetailPage()
+                    } label: {
+                        Label {
+                            Text(hako: .copy("Add Policy Group"))
+                        } icon: {
+                            Image(systemName: HakoSymbol.plus.rawValue)
+                        }
+                    }
+                    .accessibilityIdentifier("\(axPrefix).group.add")
                 }
             }
         }
