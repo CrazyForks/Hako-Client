@@ -1847,43 +1847,6 @@ private final class HakoMacSceneModel: ObservableObject {
                         case .nodes:
                              
                              
-                             
-                             
-                             
-                             
-                             
-                             
-                             
-                            Button {
-                                self.configurationCenterImport = HakoMacImportRequest(purpose: .nodes, tab: .nodes)
-                            } label: {
-                                Label {
-                                    Text(hako: .copy("Add Nodes"))
-                                } icon: {
-                                    Image(systemName: HakoSymbol.plus.name)
-                                }
-                            }
-                            .help(Text(hako: .copy("Add Nodes")))
-                            .accessibilityIdentifier("configuration-center.nodes.add")
-                        case .rules:
-                             
-                             
-                             
-                            if payload.record.ruleCount > 0 {
-                                try await self.configurationLibrary.addRuleScheme(payload)
-                            } else {
-                                let collections = try ConfigurationCollection.read(
-                                    sourceID: payload.record.id, document: try OrderedJSON.parse(payload.documentJSON), kind: .rules
-                                )
-                                guard !collections.isEmpty else { throw ConfigurationLibraryError.missingRules }
-                                var source = payload
-                                source.record.suppliesNodes = false
-                                source.record.registersSuppliedRules = false
-                                try await self.configurationLibrary.addSource(source)
-                            }
-                        case .nodes:
-                             
-                             
                             guard payload.record.suppliesNodes, payload.record.nodeCount > 0 || payload.record.providerCount > 0 else {
                                 throw ConfigurationLibraryError.missingNodes
                             }
