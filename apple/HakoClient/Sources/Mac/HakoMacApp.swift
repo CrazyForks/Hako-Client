@@ -905,6 +905,100 @@ private final class HakoMacSceneModel: ObservableObject {
             }
             .store(in: &menuGate)
     }
+     
+
+     
+    @Published var configurationCenterSegment: HakoMacConfigurationCenterSegment = .configurations
+     
+     
+    @Published var inspectedConfiguration: HakoMacConfigurationSelection?
+     
+     
+     
+    lazy var configurationLibrary = HakoMacConfigurationLibraryModel(actions: configurationLibraryActions())
+
+    var configurationCenterSegmentBinding: Binding<HakoMacConfigurationCenterSegment> {
+        Binding(get: { self.configurationCenterSegment }, set: { self.configurationCenterSegment = $0 })
+    }
+
+    var inspectedConfigurationBinding: Binding<HakoMacConfigurationSelection?> {
+        Binding(get: { self.inspectedConfiguration }, set: { self.inspectedConfiguration = $0 })
+    }
+
+     
+     
+    private func configurationLibraryActions() -> HakoMacConfigurationLibraryActions {
+        let profiles = self.profiles
+        return HakoMacConfigurationLibraryActions(
+            load: {
+                guard let store = await MainActor.run(body: { profiles.configurationLibraryStore }) else {
+                    throw ConfigurationLibraryError.unreadable
+                }
+                return try await Task.detached { try store.snapshot() }.value
+            },
+            renameSource: { id, label, generation in
+                try await profiles.renameConfigurationSource(id, label: label, generation: generation)
+            },
+            deleteSource: { id, generation in
+                try await profiles.deleteConfigurationSource(id, generation: generation)
+            },
+            updateSource: { id in
+                try await profiles.refreshConfigurationSource(id)
+            },
+            deleteRuleScheme: { id, generation in
+                try await profiles.deleteConfigurationRuleScheme(id, generation: generation)
+            }
+        )
+    }
+
+     
+     
+    @ViewBuilder
+    func configurationDetail(
+        _ selection: HakoMacConfigurationSelection,
+        in list: HakoProfilesListPresentation
+    ) -> some View {
+        if let profile = list.profiles.first(where: { $0.id == selection.id }) {
+            HakoMacConfigurationDetailSheet(
+                profile: profile,
+                perform: list.perform,
+                openSourceEditor: { [weak self] in
+                    self?.inspectedConfiguration = nil
+                    self?.openSourceEditor(profileID: profile.id.rawValue)
+                },
+                door: { [weak self] door in
+                    AnyView(self?.configurationDoor(door, profileID: profile.id))
+                }
+            )
+        }
+    }
+
+     
+     
+    @ViewBuilder
+    private func configurationDoor(
+        _ door: HakoMacConfigurationDoor,
+        profileID: HakoClientKit.Profile.ID
+    ) -> some View {
+        if let profile = profiles.profiles.first(where: { $0.id == profileID.rawValue }) {
+            switch door {
+            case .network:
+                ProfileNetworkSettingsView(profile: profile, sourceYAML: profiles.baseYAML(for: profile)) { [profiles] draft in
+                    try profiles.updateNetwork(draft)
+                }
+            case .trust:
+                ProfileTrustPage(profile: profile, sourceYAML: profiles.sourceYAML(for: profile),
+                                 patchJSON: profile.override.patchJSON) { [profiles] patchJSON in
+                    var draft = ProfileAdvancedOverridesDraft(profile: profile)
+                    draft.rawPatchJSON = patchJSON
+                    try profiles.updateAdvancedOverrides(draft)
+                }
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
     @Published var navigationRequest: HakoMacSecondaryDestination?
      
      
@@ -1653,9 +1747,10 @@ private final class HakoMacSceneModel: ObservableObject {
              
              
             AnyView(
+                HakoMacConfigurationCenterView(segment: configurationCenterSegmentBinding) {
                 ProfileCenterAdapter(
-                    profiles: profiles,
-                    importRouter: profileImports,
+                    profiles: self.profiles,
+                    importRouter: self.profileImports,
                     ownsNavigationContainer: false,
                     palette: HakoMacPlatformPresentation.palette,
                     onActiveRuntimeChanged: {
@@ -1676,7 +1771,11 @@ private final class HakoMacSceneModel: ObservableObject {
                                 selectingProfileID: list.selectingProfileID,
                                 selectionFailure: list.selectionFailure,
                                 select: list.select,
-                                openDetail: list.openDetail,
+                                 
+                                 
+                                openDetail: { [weak self] id in
+                                    self?.inspectedConfiguration = HakoMacConfigurationSelection(id: id)
+                                },
                                 reorder: list.reorder,
                                  
                                  
@@ -1714,6 +1813,9 @@ private final class HakoMacSceneModel: ObservableObject {
                                 export: { list.perform(.export(id: $0)) },
                                 delete: { list.perform(.delete(id: $0)) }
                             )
+                            .sheet(item: self.inspectedConfigurationBinding) { selection in
+                                self.configurationDetail(selection, in: list)
+                            }
                         )
                     }
                 )
@@ -1747,6 +1849,11 @@ private final class HakoMacSceneModel: ObservableObject {
                             .accessibilityIdentifier("profile-center.sync-all")
                         }
                     }
+                }
+                } nodes: {
+                    HakoMacNodeLibraryView(model: self.configurationLibrary)
+                } rules: {
+                    HakoMacRuleLibraryView(model: self.configurationLibrary)
                 }
             )
         case .proxies:
