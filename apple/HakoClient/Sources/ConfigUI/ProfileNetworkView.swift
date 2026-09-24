@@ -180,11 +180,27 @@ struct ProfileNetworkSettingsView: View {
                          
                          
                          
+                         
+                         
+                         
+                         
+                         
+                         
+                        .safeAreaInset(edge: .bottom, spacing: 0) {
+                            HakoModalActionBar(primaryTitle: "Save",
+                                primaryDisabled: draft == openedWith,
+                                onPrimary: { if commit() { sectionSelection = nil } })
+                        }
+                         
+                         
+                         
+                         
+                         
+                         
                         .hakoRegistersDeparture(
                             isDirty: draft != openedWith,
                             save: { completion in
-                                persist()
-                                completion(true)
+                                completion(commit())
                             },
                             discard: { draft = openedWith }
                         )
@@ -298,6 +314,15 @@ struct ProfileNetworkSettingsView: View {
     }
 
     private func persist() {
+        if commit() { closePage() }
+    }
+
+     
+     
+     
+     
+    @discardableResult
+    private func commit() -> Bool {
         do {
             draft.timePort = try Self.positiveNumber(
                 timePortText,
@@ -308,12 +333,14 @@ struct ProfileNetworkSettingsView: View {
                 invalid: .invalidTimeInterval
             )
             try save(draft)
-            closePage()
+            openedWith = draft
+            return true
         } catch let bounded as ProfileNetworkDraftError {
             error = bounded.localizedDescription
         } catch {
             self.error = "Network settings could not be saved. The previous configuration is still available."
         }
+        return false
     }
 
     private static func positiveNumber(
