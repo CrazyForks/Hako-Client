@@ -15,7 +15,6 @@ struct ProfileOverrideView: View {
      
      
      
-    @State private var overrideDeviations: ConfigDeviationReport?
     let save: (Profile) -> Void
     private let settingsFacade: ProfileSettingsFacade
 
@@ -350,24 +349,10 @@ struct ProfileOverrideView: View {
                 if !error.isEmpty {
                     HakoStatusMessage(text: .copy(error), kind: .error)
                 }
-
-                ConfigDeviationSection(
-                    report: overrideDeviations,
-                    fields: RunningCoreDeviations.fields(
-                        for: [.mode, .routingRules, .proxySources, .ruleSets, .advancedTrust]
-                    ),
-                    identifierPrefix: "profile-override.deviation"
-                )
-            }
-            .task(id: profile.id) {
-                let profile = profile
-                overrideDeviations = await Task.detached(priority: .utility) {
-                    RunningCoreDeviations.report(
-                        profile: profile,
-                        sidecarYAML: RunningCoreDeviations.sidecarYAML(for: profile),
-                        locale: .current
-                    )
-                }.value
+                 
+                 
+                 
+                 
             }
             .hakoPageTitle(.copy(configurationCenter ? "Overrides and Scripts" : "Profile Override"))
              
@@ -417,7 +402,12 @@ struct ProfileOverrideView: View {
                 }
 #if !os(macOS)
                 ToolbarItem(placement: .bottomBar) {
-                    HakoEditButton()
+                     
+                     
+                     
+                    if mode == .standard, !rules.isEmpty {
+                        HakoEditButton()
+                    }
                 }
 #endif
             }
