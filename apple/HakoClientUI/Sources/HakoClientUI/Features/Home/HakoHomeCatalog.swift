@@ -72,7 +72,12 @@ public enum HakoHomeCatalog {
      
      
      
-    public static func visibleCards(_ cards: [HakoHomeCard], mode: AppleClientOutboundMode) -> [HakoHomeCard] {
+     
+     
+     
+    public enum HakoHomeCardMode: String { case rule, global, direct }
+
+    public static func visibleCards(_ cards: [HakoHomeCard], mode: HakoHomeCardMode) -> [HakoHomeCard] {
         switch mode {
         case .rule: return cards
         case .global: return cards.filter { $0 != .rules }

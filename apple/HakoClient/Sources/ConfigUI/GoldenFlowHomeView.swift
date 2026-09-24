@@ -1812,6 +1812,7 @@ struct GoldenFlowHomeAdapter: View {
         guard ModeIntentClock.isCurrent(observedIntent) else { return }
         switch GlobalModeConfirmation.verdict(
             groupCount: nodes.groups.count,
+            hasGlobalGroup: nodes.groups.contains { $0.name == GlobalProxySelectionPolicy.groupName },
             selectionConfirmed: confirmed
         ) {
         case .confirmed:
@@ -1891,7 +1892,7 @@ struct GoldenFlowHomeAdapter: View {
         for profile: Profile,
         generation requestedGeneration: UInt64
     ) async {
-        let sourceYAML = profiles.uiProjectedYAML(for: profile)
+        let sourceYAML = await profiles.loadPresentedProxiesYAML(for: profile)
         let selectedMap = profile.selectedMap
         let preparedModel = await Task.detached(
             priority: .userInitiated

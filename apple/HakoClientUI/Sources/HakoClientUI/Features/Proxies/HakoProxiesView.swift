@@ -2022,7 +2022,10 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
         guard let name = HakoProxyBrowsing.groupToKeepOpen(
             visible: visibleGroupNames,
             expanded: expanded,
-            lastOpened: lastExpandedGroup,
+             
+             
+             
+            lastOpened: lastExpandedGroup ?? snapshot.proxies.initiallyExpandedGroup,
             isSearching: isSearching
         ) else { return }
         HakoPerf.emit("proxies keep-open group=\(name)")

@@ -1616,6 +1616,7 @@ private struct HakoProfileDetailView<
             {
                 manageSection(profile)
             }
+            networkSection(profile)
             if profile.canOpenRuntimePreview
                 || profile.canRestoreLastKnownGood
             {
@@ -2047,6 +2048,34 @@ private struct HakoProfileDetailView<
         }
     }
 
+     
+     
+     
+     
+    private func networkSection(
+        _ profile: HakoProfileSnapshot
+    ) -> some View {
+        HakoProfileGroup(
+            title: "Network",
+            palette: palette,
+            presentationClass: presentationClass
+        ) {
+            Button { activeCapability = .network(profile.id) } label: {
+                HakoProfileActionRow(title: "Sniffer & NTP",
+                    symbol: .network, tint: .primary, icon: icon)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("profile.detail.network")
+            HakoRowDivider()
+            Button { activeCapability = .trust(profile.id) } label: {
+                HakoProfileActionRow(title: "Compatibility & Trust",
+                    symbol: .lockShield, tint: .primary, icon: icon)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("profile.detail.trust")
+        }
+    }
+
     private func manageSection(
         _ profile: HakoProfileSnapshot
     ) -> some View {
@@ -2071,23 +2100,6 @@ private struct HakoProfileDetailView<
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("profile.detail.override")
-             
-             
-             
-            HakoRowDivider()
-            Button { activeCapability = .network(profile.id) } label: {
-                HakoProfileActionRow(title: "Sniffer & NTP",
-                    symbol: .network, tint: .primary, icon: icon)
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("profile.detail.network")
-            HakoRowDivider()
-            Button { activeCapability = .trust(profile.id) } label: {
-                HakoProfileActionRow(title: "Compatibility & Trust",
-                    symbol: .lockShield, tint: .primary, icon: icon)
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("profile.detail.trust")
             if profile.canDuplicate || profile.canExport { HakoRowDivider() }
 
             if profile.canDuplicate {

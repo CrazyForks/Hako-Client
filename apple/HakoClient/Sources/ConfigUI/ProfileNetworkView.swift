@@ -120,16 +120,6 @@ struct ProfileNetworkSettingsView: View {
         ) {
             HakoMacSettingsFormContainer {
                 Section {
-                    HakoProfileContextHeader(
-                        profileName: profileName,
-                        message:
-                            "Sniffer and NTP belong to this profile. App-wide network behavior is under More > Core Settings."
-                    ) {
-                        HakoSymbolImage(symbol: .profileClipboard)
-                    }
-                }
-
-                Section {
                     sectionRow(.sniffer) {
                         DNSHubRow(title: "Sniffer",
                                   detail: "Finds the domain behind each connection before rules run",

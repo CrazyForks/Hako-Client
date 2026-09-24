@@ -1750,13 +1750,14 @@ struct HakoConfigurationLibraryCard<Content: View>: View {
 
  
 public enum HakoConfigurationAddition {
-    case configuration, nodes, rules, scripts
+    case configuration, nodes, rules, scripts, certificates
     public var title: String {
         switch self {
         case .configuration: "Create Configuration"
         case .nodes: "Create Nodes"
         case .rules: "Create Rules"
         case .scripts: "Add Script"
+        case .certificates: "Add Certificate"
         }
     }
     public var entryTitle: String { title }
@@ -1766,6 +1767,7 @@ public enum HakoConfigurationAddition {
         case .nodes: "Import from a configuration link or Clash configuration file, or create nodes manually"
         case .rules: "Import from a configuration link or Clash configuration file, or edit rules manually"
         case .scripts: "Import from a link or file, or write one by hand"
+        case .certificates: "Import from a link or file, or paste the PEM"
         }
     }
 }

@@ -225,6 +225,7 @@
 "AdGuard Default" = "AdGuard Default";
 "Add" = "Add";
 "Add Category" = "Add Category";
+"Add Certificate" = "Add Certificate";
 "Add Condition" = "Add Condition";
 "Add Configuration" = "Add Configuration";
 "Add Configuration File" = "Add Configuration File";
@@ -477,6 +478,7 @@
 "Cert Verify Hostname" = "Cert Verify Hostname";
 "Certificate Authority" = "Certificate Authority";
 "Certificate Fingerprint" = "Certificate Fingerprint";
+"Certificate URL" = "Certificate URL";
 "Certificate Verification" = "Certificate Verification";
 "Certificate and Private Key" = "Certificate and Private Key";
 "Certificate and private key must be configured together." = "Certificate and private key must be configured together.";
@@ -1386,7 +1388,6 @@
 "Import File…" = "Import File…";
 "Import Original Configuration" = "Import Original Configuration";
 "Import Preview" = "Import Preview";
-"Import Public Certificate" = "Import Public Certificate";
 "Import Rule Set" = "Import Rule Set";
 "Import Rules" = "Import Rules";
 "Import Script" = "Import Script";
@@ -1404,6 +1405,7 @@
 "Import from a configuration link or Clash configuration file, or edit rules manually" = "Import from a configuration link or Clash configuration file, or edit rules manually";
 "Import from a configuration link or Clash configuration file, or use custom nodes" = "Import from a configuration link or Clash configuration file, or use custom nodes";
 "Import from a link or file" = "Import from a link or file";
+"Import from a link or file, or paste the PEM" = "Import from a link or file, or paste the PEM";
 "Import from a link or file, or write one by hand" = "Import from a link or file, or write one by hand";
 "Import one or more YAML configurations into Clash." = "Import one or more YAML configurations into Clash.";
 "Import public PEM certificates only. Private keys are never accepted here." = "Import public PEM certificates only. Private keys are never accepted here.";
@@ -1946,7 +1948,6 @@
 "Only nodes and proxy providers belong here. Edit rules in Rule Library." = "Only nodes and proxy providers belong here. Edit rules in Rule Library.";
 "Only one security layer can be used at a time. Remove the others." = "Only one security layer can be used at a time. Remove the others.";
 "Only private, unique-local, and link-local source addresses are accepted. Sharing closes when the VPN stops, and credentials never enter profiles, backups, logs, or diagnostics." = "Only private, unique-local, and link-local source addresses are accepted. Sharing closes when the VPN stops, and credentials never enter profiles, backups, logs, or diagnostics.";
-"Only public PEM certificates are accepted. Private keys are rejected and never stored by this editor." = "Only public PEM certificates are accepted. Private keys are rejected and never stored by this editor.";
 "Only rules and policy groups belong here. Add nodes in Node Library." = "Only rules and policy groups belong here. Add nodes in Node Library.";
 "Only this configuration. Website DNS and original sources stay unchanged. Preview includes launch settings; it does not test DNS requests." = "Only this configuration. Website DNS and original sources stay unchanged. Preview includes launch settings; it does not test DNS requests.";
 "Open %@ in Proxies" = "Open %@ in Proxies";
@@ -2628,7 +2629,6 @@
 "Sniff pure-IP traffic" = "Sniff pure-IP traffic";
 "Sniffer" = "Sniffer";
 "Sniffer & NTP" = "Sniffer & NTP";
-"Sniffer and NTP belong to this profile. App-wide network behavior is under More > Core Settings." = "Sniffer and NTP belong to this profile. App-wide network behavior is under More > Core Settings.";
 "Sniffer discovers domains before this profile's rules are evaluated." = "Sniffer discovers domains before this profile's rules are evaluated.";
 "Sniffing changes rule matching and therefore belongs beside profile networking." = "Sniffing changes rule matching and therefore belongs beside profile networking.";
 "Some references are unavailable. Previous versions were kept:" = "Some references are unavailable. Previous versions were kept:";

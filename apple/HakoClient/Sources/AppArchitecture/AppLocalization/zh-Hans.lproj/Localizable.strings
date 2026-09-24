@@ -225,6 +225,7 @@
 "AdGuard Default" = "AdGuard Default";
 "Add" = "添加";
 "Add Category" = "添加分类";
+"Add Certificate" = "添加证书";
 "Add Condition" = "添加条件";
 "Add Configuration" = "添加配置";
 "Add Configuration File" = "添加配置文件";
@@ -477,6 +478,7 @@
 "Cert Verify Hostname" = "证书校验主机名";
 "Certificate Authority" = "证书颁发机构";
 "Certificate Fingerprint" = "证书指纹";
+"Certificate URL" = "证书 URL";
 "Certificate Verification" = "证书校验";
 "Certificate and Private Key" = "证书与私钥";
 "Certificate and private key must be configured together." = "证书与私钥必须同时配置。";
@@ -1386,7 +1388,6 @@
 "Import File…" = "导入文件…";
 "Import Original Configuration" = "按原配置导入";
 "Import Preview" = "读取完成";
-"Import Public Certificate" = "导入公开证书";
 "Import Rule Set" = "导入规则集";
 "Import Rules" = "导入规则";
 "Import Script" = "导入脚本";
@@ -1404,6 +1405,7 @@
 "Import from a configuration link or Clash configuration file, or edit rules manually" = "从配置链接或 Clash 配置文件导入，也可手动编辑";
 "Import from a configuration link or Clash configuration file, or use custom nodes" = "从配置链接或 Clash 配置文件导入，也可使用自建节点";
 "Import from a link or file" = "从链接或文件导入";
+"Import from a link or file, or paste the PEM" = "从链接或文件导入，也可粘贴 PEM";
 "Import from a link or file, or write one by hand" = "从链接或文件导入，也可手动编写";
 "Import one or more YAML configurations into Clash." = "向 Clash 导入一个或多个 YAML 配置。";
 "Import public PEM certificates only. Private keys are never accepted here." = "只导入公开的 PEM 证书。此处绝不接受私钥。";
@@ -1946,7 +1948,6 @@
 "Only nodes and proxy providers belong here. Edit rules in Rule Library." = "这里只能编辑节点和节点订阅，规则请到规则库编辑。";
 "Only one security layer can be used at a time. Remove the others." = "一次只能用一个安全层，去掉其余的。";
 "Only private, unique-local, and link-local source addresses are accepted. Sharing closes when the VPN stops, and credentials never enter profiles, backups, logs, or diagnostics." = "只接受私有、唯一本地与链路本地来源地址。VPN 停止时共享随之关闭，凭据不会进入配置、备份、日志或诊断。";
-"Only public PEM certificates are accepted. Private keys are rejected and never stored by this editor." = "只接受公开的 PEM 证书。私钥会被拒绝，本编辑器不会保存它。";
 "Only rules and policy groups belong here. Add nodes in Node Library." = "这里只能编辑规则和策略组，节点请到节点库添加。";
 "Only this configuration. Website DNS and original sources stay unchanged. Preview includes launch settings; it does not test DNS requests." = "仅作用于此配置，不更改网站 DNS 和原始来源。预览包含启动设置，不代表实际 DNS 请求。";
 "Open %@ in Proxies" = "在代理页打开 %@";
@@ -2628,7 +2629,6 @@
 "Sniff pure-IP traffic" = "嗅探纯 IP 流量";
 "Sniffer" = "Sniffer";
 "Sniffer & NTP" = "Sniffer 与 NTP";
-"Sniffer and NTP belong to this profile. App-wide network behavior is under More > Core Settings." = "Sniffer 与 NTP 属于本配置。全局网络行为在「更多 > 内核设置」下。";
 "Sniffer discovers domains before this profile's rules are evaluated." = "嗅探在本配置规则求值前找出域名。";
 "Sniffing changes rule matching and therefore belongs beside profile networking." = "嗅探会改变规则匹配，因此归入配置级网络设置。";
 "Some references are unavailable. Previous versions were kept:" = "部分引用已失效，以下项目保留旧版本：";

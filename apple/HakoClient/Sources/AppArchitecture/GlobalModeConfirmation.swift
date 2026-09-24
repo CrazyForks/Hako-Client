@@ -61,11 +61,17 @@ enum GlobalModeConfirmation {
      
      
      
+     
+     
+     
+     
+     
     static func verdict(
         groupCount: Int,
+        hasGlobalGroup: Bool = true,
         selectionConfirmed: Bool
     ) -> Verdict {
-        guard groupCount > 0 else { return .notYetKnown }
+        guard groupCount > 0, hasGlobalGroup else { return .notYetKnown }
         return selectionConfirmed ? .confirmed : .refused
     }
 }

@@ -137,6 +137,8 @@ final class ProfilesViewModel: ObservableObject {
     private var baseYAMLCache: [String: (key: String, value: String?)] = [:]
     private var projectedYAMLCache: [String: (key: String, value: String?)] = [:]
      
+    private var presentedProxiesYAMLCache: [String: (key: String, value: String?)] = [:]
+     
      
      
     private var effectiveYAMLCache: [String: (key: String, value: String?)] = [:]
@@ -2996,6 +2998,23 @@ final class ProfilesViewModel: ObservableObject {
             )
         }.value
         rememberUIProjectedYAML(value, key: key, for: profile)
+        return value
+    }
+
+     
+     
+     
+     
+    func loadPresentedProxiesYAML(for profile: Profile) async -> String? {
+        let scriptBody = ScriptLibrary.load().first { $0.id == profile.selectedScriptID }?.body
+        let key = ProxiesPresentedDocument.key(projectionKey: projectionKey(for: profile), profile: profile, scriptBody: scriptBody)
+        if let cached = presentedProxiesYAMLCache[profile.id], cached.key == key { return cached.value }
+        let source = await loadSourceYAML(for: profile)
+        let fallback = await loadUIProjectedYAML(for: profile)
+        let value = await Task.detached(priority: .userInitiated) {
+            ProxiesPresentedDocument.make(source: source, profile: profile, fallback: fallback)
+        }.value
+        presentedProxiesYAMLCache[profile.id] = (key, value)
         return value
     }
 

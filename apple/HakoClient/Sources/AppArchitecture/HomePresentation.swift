@@ -732,3 +732,32 @@ enum HomeProxiesCardPolicy {
         )
     }
 }
+
+ 
+ 
+ 
+ 
+ 
+enum ProxiesPresentedDocument {
+    static func make(
+        source: String?,
+        profile: Profile,
+        fallback: String?,
+        build: (String, Profile) throws -> String = { try ProfileRuntimeConfigBuilder.buildProduction(raw: $0, profile: $1) }
+    ) -> String? {
+        guard let source else { return fallback }
+        return (try? build(source, profile)) ?? fallback
+    }
+
+     
+     
+     
+    static func key(projectionKey: String, profile: Profile, scriptBody: String?) -> String {
+        var parts = [projectionKey, String(describing: profile.overwriteMode), profile.selectedScriptID ?? "-", String(scriptBody?.hashValue ?? 0)]
+         
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        if let encoded = try? encoder.encode(profile) { parts.append(String(encoded.hashValue)) }
+        if let runtime = try? encoder.encode(FlClashRuntimeConfig.load()) { parts.append(String(runtime.hashValue)) }
+        return parts.joined(separator: "|")
+    }
+}
