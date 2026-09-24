@@ -1924,7 +1924,13 @@ final class NodesModel: ObservableObject {
          
          
         let latencyPolicy = Self.activeLatencyPolicy
-        announceLatencyRoster(Set(urlsByMember.keys), total: totalCount)
+         
+         
+         
+         
+         
+         
+        announceLatencyRoster(Set(orderedNames), total: totalCount)
         let subscriptionHealth = SubscriptionHealthRuns(
             providerNamesByProxy: providerNamesByProxy,
             usesBulkHealth: latencyPolicy.usesBulkProviderHealth(
