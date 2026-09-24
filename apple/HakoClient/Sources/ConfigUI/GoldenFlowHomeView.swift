@@ -576,7 +576,10 @@ struct GoldenFlowHomeAdapter: View {
                                 mode: ProxyBrowsingVisibility.Mode(coreValue: command.mode),
                                 name: \.name,
                                 isHidden: \.hidden
-                            )
+                            ),
+                             
+                             
+                            readerFoldedAll: nodes.readerFoldedAllGroups
                         )
                     )
                 } else {

@@ -719,8 +719,21 @@ typealias HomeConnectionPresenter =
  
  
 enum HomeProxiesEntryPolicy {
-    static func groupToOpen(pending: String?, lastOpened: String?, groups: [String]) -> String? {
+     
+     
+     
+     
+     
+     
+     
+    static func groupToOpen(
+        pending: String?,
+        lastOpened: String?,
+        groups: [String],
+        readerFoldedAll: Bool = false
+    ) -> String? {
         if let pending { return pending }
+        if readerFoldedAll { return nil }
         if let lastOpened, groups.contains(lastOpened) { return lastOpened }
         return groups.first
     }
