@@ -48,6 +48,7 @@
 "%@ is not a list of named definitions" = "%@ is not a list of named definitions";
 "%@ is not a valid domain." = "%@ is not a valid domain.";
 "%@ is not used here: this platform picks the physical network itself." = "%@ is not used here: this platform picks the physical network itself.";
+"%@ is still updating — try again when it finishes." = "%@ is still updating — try again when it finishes.";
 "%@ is up to date" = "%@ is up to date";
 "%@ items" = "%@ items";
 "%@ matches" = "%@ matches";

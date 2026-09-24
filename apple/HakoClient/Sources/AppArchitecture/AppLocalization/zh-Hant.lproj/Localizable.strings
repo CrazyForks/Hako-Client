@@ -48,6 +48,7 @@
 "%@ is not a list of named definitions" = "%@ 不是一組帶名字的定義";
 "%@ is not a valid domain." = "%@ 不是有效的網域。";
 "%@ is not used here: this platform picks the physical network itself." = "%@ 在這裡用不上：這個平台自己選擇物理網路。";
+"%@ is still updating — try again when it finishes." = "%@ 還在更新中，完成後再試。";
 "%@ is up to date" = "%@ 已是最新";
 "%@ items" = "%@ 個";
 "%@ matches" = "%@ 條符合";

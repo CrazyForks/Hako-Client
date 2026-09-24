@@ -150,11 +150,15 @@ enum ConfigurationCenterSourceBridge {
                      
                      
                     let recomposedIDs = Set(prepared.0.compositions.keys)
-                    try await MainActor.run {
-                        try Task.checkCancellation()
-                        try ConfigurationCenterPublicationBridge.replace(prepared.1, candidate: prepared.0.candidate,
-                            payloads: prepared.0.payloads, library: library, workingDir: working, expectedGeneration: current.generation)
-                    }
+                     
+                     
+                     
+                     
+                     
+                     
+                    try Task.checkCancellation()
+                    try await ConfigurationCenterPublicationBridge.replaceOffMain(prepared.1, candidate: prepared.0.candidate,
+                        payloads: prepared.0.payloads, library: library, workingDir: working, expectedGeneration: current.generation)
                     outcome.updated += 1
                      
                      

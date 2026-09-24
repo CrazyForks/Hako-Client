@@ -48,6 +48,7 @@
 "%@ is not a list of named definitions" = "%@ 不是一组带名字的定义";
 "%@ is not a valid domain." = "%@ 不是有效的域名。";
 "%@ is not used here: this platform picks the physical network itself." = "%@ 在这里用不上：这个平台自己选择物理网络。";
+"%@ is still updating — try again when it finishes." = "%@ 还在更新中，完成后再试。";
 "%@ is up to date" = "%@ 已是最新";
 "%@ items" = "%@ 个";
 "%@ matches" = "%@ 条匹配";

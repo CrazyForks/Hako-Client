@@ -3522,13 +3522,26 @@ final class ProfilesViewModel: ObservableObject {
              
              
              
-            guard busyProfileID == nil else { return }
+            guard busyProfileID == nil else {
+                 
+                 
+                 
+                 
+                if let busy = busyProfileID, busy != profile.id {
+                    let label = profiles.first(where: { $0.id == busy })?.label ?? busy
+                    statusMessage = .format("%@ is still updating — try again when it finishes.", [label])
+                }
+                return
+            }
             busyProfileID = profile.id
             clearFailure()
             statusMessage = .format("Syncing %@…", [profile.label])
             Task { [weak self] in
                 guard let self else { return }
-                defer { self.busyProfileID = nil }
+                 
+                 
+                 
+                defer { if self.busyProfileID == profile.id { self.busyProfileID = nil } }
                 do {
                     let outcome = try await self.refreshConfigurationSources(references)
                      
