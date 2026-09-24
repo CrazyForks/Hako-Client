@@ -1443,8 +1443,11 @@ struct GoldenFlowHomeAdapter: View {
          
          
          
-        let omittedRules = ((try? profiles.configurationLibraryStore?.snapshot()) ?? nil)?
-            .recipes.first(where: { $0.id == profile.id })?.droppedRules ?? []
+         
+         
+        let omittedRules = (((try? profiles.configurationLibraryStore?.snapshot()) ?? nil)?
+            .recipes.first(where: { $0.id == profile.id })?.droppedRules ?? [])
+            + ProfileRuntimeConfigBuilder.droppedPersonalRules(for: profile.id)
         let began = DispatchTime.now().uptimeNanoseconds
         let snapshot = await Task.detached(priority: .userInitiated) {
             ProfileFinalConfigurationSnapshot.make(

@@ -478,6 +478,11 @@ public struct HakoConfigurationCreationView: View {
         guard canAdvance, !isBusy else { return }
         if usesWizard && draft.step != .finish {
             draft.step = draft.step == .sources ? .rules : .finish
+        } else if !usesWizard, !dirty {
+             
+             
+             
+            cancel()
         } else {
             finish { _ in }
         }

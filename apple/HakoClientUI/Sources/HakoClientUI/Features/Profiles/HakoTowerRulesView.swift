@@ -339,7 +339,11 @@ public struct HakoTowerRuleCustomizationView: View {
              
              
             HakoTowerInlineRules(rows: draft.rows, version: draft.version,
-                query: search, palette: palette, remove: { draft.remove([$0]) },
+                 
+                 
+                query: search, palette: palette, remove: { id in
+                    draft.remove([id]); installedRuleSets = draft.referencedRuleSets; hasUnsavedChanges = true
+                },
                 move: { offsets, destination in
                     var transaction = Transaction(); transaction.disablesAnimations = true
                     withTransaction(transaction) { draft.moveRows(fromOffsets: offsets, toOffset: destination) }
@@ -449,7 +453,7 @@ public struct HakoTowerRuleCustomizationView: View {
         )
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if insideProductModal, !pushed {
-                HakoModalActionBar(primaryTitle: "Done", primaryDisabled: busy, isBusy: busy,
+                HakoModalActionBar(primaryTitle: "Done", primaryDisabled: busy || !loadingRuleSets.isEmpty, isBusy: busy,
                     onPrimary: { if hasUnsavedChanges { persist(draft, then: close) } else { close() } })
             }
         }
@@ -469,7 +473,9 @@ public struct HakoTowerRuleCustomizationView: View {
                     withTransaction(transaction) { reordering.toggle() }
                 } label: { HakoActionProgressLabel(.copy(reordering ? "结束编辑" : "编辑"), isBusy: busy && pushed) }.foregroundStyle(.tint).disabled(busy)
                 if !pushed {
-                    Button { if hasUnsavedChanges { persist(draft, then: close) } else { close() } } label: { HakoActionProgressLabel(.copy("Done"), isBusy: busy) }.foregroundStyle(.tint).disabled(busy)
+                     
+                     
+                    Button { if hasUnsavedChanges { persist(draft, then: close) } else { close() } } label: { HakoActionProgressLabel(.copy("Done"), isBusy: busy) }.foregroundStyle(.tint).disabled(busy || !loadingRuleSets.isEmpty)
                 }
             }
         }
@@ -487,6 +493,9 @@ public struct HakoTowerRuleCustomizationView: View {
             save: { persist(draft, then: close) },
             discard: { draft = baseline; installedRuleSets = baselineRuleSets; hasUnsavedChanges = false; close() })
         .hakoRegistersDeparture(isDirty: hasUnsavedChanges, isBusy: busy, save: { completion in persist(draft, completion: completion) }, discard: { draft = baseline; installedRuleSets = baselineRuleSets; hasUnsavedChanges = false })
+         
+         
+        .interactiveDismissDisabled(hasUnsavedChanges || busy || !loadingRuleSets.isEmpty)
         .task { if let nodeCandidates, nodeSections.isEmpty { nodeSections = await nodeCandidates() } }
         .hakoProductModal(item: $modal, role: .form) { kind in
             HakoSingleColumnNavigationContainer {
@@ -533,7 +542,9 @@ public struct HakoTowerRuleCustomizationView: View {
                             localSets = updated.1; modal = nil
                         }, close: { modal = nil })
                 case .copy:
-                    HakoTowerNameEditor(title: "Save as New Scheme", name: draft.label + " · 自定义", save: { name in try await copy(draft, name); modal = nil; close() }, close: { modal = nil })
+                     
+                     
+                    HakoTowerNameEditor(title: "Save as New Scheme", name: draft.label + " · 自定义", save: { name in try await copy(draft, name); modal = nil; hasUnsavedChanges = false; close() }, close: { modal = nil })
                 case .manual:
                     manualEditor(draft) { value in let result = try await save(value); await receiveSaved(result) }
                 case .rule:
@@ -730,7 +741,10 @@ public struct HakoTowerRuleCustomizationView: View {
         try await ordered.run {
             guard hasUnsavedChanges else { await receiveSaved(stored); return }
             let snapshot = draft
-            let value = try await Task.detached { var value = snapshot; try change(&value); return value }.value
+             
+             
+             
+            let value = try await Task.detached { var value = snapshot; try change(&value); return value.rebased(onto: stored).draft }.value
             let keys = await Task.detached { value.referencedRuleSets }.value
             let storedKeys = await Task.detached { stored.referencedRuleSets }.value
             var transaction = Transaction(); transaction.disablesAnimations = true

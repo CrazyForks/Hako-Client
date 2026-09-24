@@ -109,8 +109,17 @@ enum ConfigurationCenterSourceBridge {
                 let resources = try ProfileExternalResourceImporter.prepare(yaml: yaml, profileID: id,
                     source: .localFile, files: files, requiringAllFiles: false)
                 next.externalResources = resources.references.isEmpty ? nil : resources.references
-                let runtime = try ProfileRuntimeConfigBuilder.runtimePreview(raw: resources.yaml, profile: next)
-                try ConfigurationCenterSourceBridge.withValidationResources(yaml: runtime, files: files,
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                try ConfigurationCenterSourceBridge.withValidationResources(yaml: resources.yaml, files: files,
                     directory: workingDir) { resolved in
                     do { try coreGate(resolved, container) }
                     catch { guard ProfilesViewModel.refusalBelongsToActivation(error.localizedDescription) else { throw error } }

@@ -196,6 +196,18 @@ struct ConfigurationCreationAdapter: View {
         baseline.selectedSourceIDs.removeAll { removedSources.contains($0) }
         if let selected = draft.selectedRuleID, removedRules.contains(selected) { draft.selectedRuleID = ConfigurationBuiltins.basicRuleID }
         if let selected = baseline.selectedRuleID, removedRules.contains(selected) { baseline.selectedRuleID = ConfigurationBuiltins.basicRuleID }
+         
+         
+         
+         
+         
+         
+        if let id = editingProfileID, draft.selectedRuleID == baseline.selectedRuleID,
+           let current = updated.recipes.first(where: { $0.id == id })?.ruleSchemeID, current != draft.selectedRuleID,
+           updated.rules.contains(where: { $0.id == current }) || ConfigurationBuiltins.schemes.contains(where: { $0.id == current }) {
+            draft.selectedRuleID = current
+            baseline.selectedRuleID = current
+        }
         library = updated
     }
 
@@ -266,7 +278,11 @@ struct ConfigurationCreationAdapter: View {
                 }
                 completion(true)
                 close()
-            } catch { errorMessage = error.localizedDescription; completion(false) }
+            } catch {
+                errorMessage = error.localizedDescription
+                hakoLogConfigurationWriteFailure(error)  
+                completion(false)
+            }
         }
     }
 
@@ -857,9 +873,10 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
                         save: save, download: { try await ConfigurationTowerRuleReader.rules($0) },
                         saveLocal: { value in apply(try await model.saveConfigurationLocalRuleSet(value)); return (try await reloadDraft(), library.localRuleSets ?? []) },
                         deleteLocal: { id in apply(try await model.saveConfigurationLocalRuleSet(nil, deleting: id)); return (try await reloadDraft(), library.localRuleSets ?? []) },
+                         
+                         
                         copy: { draft, name in
-                            let saved = try await save(draft)
-                            apply(try await model.copyConfigurationRuleScheme(saved.schemeID, label: name, generation: library.generation))
+                            apply(try await model.copyConfigurationRuleScheme(draft: draft, label: name, generation: library.generation))
                         }, close: close,
                         manualEditor: { draft, accept in AnyView(ConfigurationTowerManualRuleEditor(draft: draft, accept: accept)) },
                          
@@ -1571,6 +1588,11 @@ private struct ConfigurationNewRuleAdapter: View {
             var edit = ConfigurationCreationAdapter.editingDraft(recipe: recipe,
                 label: model.profiles.first(where: { $0.id == active })?.label ?? recipe.label)
             edit.selectedRuleID = schemeID
+             
+             
+             
+             
+            edit.step = .rules
             try await model.editConfiguration(edit, id: active, generation: snapshot.generation)
             snapshot = try await Task.detached { try store.snapshot() }.value
         }

@@ -194,6 +194,11 @@ final class ProfilesViewModel: ObservableObject {
         let profile: Profile
         let applyToTunnel: Bool
         let preferCachedSource: Bool
+         
+         
+         
+         
+        let requestedWhileTunnelUp: Bool
     }
 
     private enum FailedOperation {
@@ -941,6 +946,19 @@ final class ProfilesViewModel: ObservableObject {
         defer { changingConfigurationLibrary = false }
         return try await Task.detached(priority: .userInitiated) {
             try library.addRuleScheme(source, expectedGeneration: generation)
+        }.value
+    }
+
+     
+     
+    func copyConfigurationRuleScheme(draft: ConfigurationRuleDraft, label: String, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
+        guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
+        guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+        changingConfigurationLibrary = true
+        defer { changingConfigurationLibrary = false }
+        return try await Task.detached(priority: .userInitiated) {
+            try library.copyRuleScheme(draft, label: label, expectedGeneration: generation)
         }.value
     }
 
@@ -4470,7 +4488,8 @@ final class ProfilesViewModel: ObservableObject {
         let request = ActivationRequest(
             profile: profile,
             applyToTunnel: applyToTunnel,
-            preferCachedSource: preferCachedSource
+            preferCachedSource: preferCachedSource,
+            requestedWhileTunnelUp: ProfileSelectionRuntimePolicy.shouldApplyToTunnel(vpnStatus: vpn.status)
         )
         clearFailure()
         guard activationTask == nil else {
@@ -4504,7 +4523,8 @@ final class ProfilesViewModel: ObservableObject {
             await self.activate(
                 request.profile,
                 applyToTunnel: request.applyToTunnel,
-                preferCachedSource: request.preferCachedSource
+                preferCachedSource: request.preferCachedSource,
+                requestedWhileTunnelUp: request.requestedWhileTunnelUp
             )
             self.activationTask = nil
             if let pending = self.pendingActivation {
@@ -4568,7 +4588,8 @@ final class ProfilesViewModel: ObservableObject {
     private func activate(
         _ profile: Profile,
         applyToTunnel: Bool,
-        preferCachedSource: Bool
+        preferCachedSource: Bool,
+        requestedWhileTunnelUp: Bool = false
     ) async {
         guard let container, busyProfileID == nil else { return }
         busyProfileID = profile.id
@@ -4608,13 +4629,22 @@ final class ProfilesViewModel: ObservableObject {
             }.value
             notices = preflight.0
             let outcome = preflight.1
-            if applyToTunnel,
+             
+             
+             
+            let tunnelStillUp = ProfileSelectionRuntimePolicy.shouldApplyToTunnel(vpnStatus: vpn.status)
+            let applies = applyToTunnel && !(requestedWhileTunnelUp && !tunnelStillUp)
+            var applied = false
+            if applies,
                let intentJSON = outcome.intentJSON,
                let intent = try? JSONDecoder().decode(PlatformConfigIntent.self,
                                                       from: Data(intentJSON.utf8)) {
                 await vpn.applyActiveConfiguration(nextIntent: intent)
+                applied = true
             }
-            statusMessage = applyToTunnel
+             
+             
+            statusMessage = applied
                 ? .format("%@ is active", [profile.label])
                 : .format("%@ saved for the next connection", [profile.label])
             clearFailure()

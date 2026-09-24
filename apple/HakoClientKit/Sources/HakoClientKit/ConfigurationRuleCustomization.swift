@@ -46,8 +46,20 @@ public extension ConfigurationLibrarySnapshot {
      
      
      
+     
+     
+     
+     
+     
+     
+     
     func effectiveRuleScheme(_ id: String) -> ConfigurationRuleScheme? {
-        if ConfigurationBuiltins.isNative(id) { return ConfigurationBuiltins.schemes.first { $0.id == id } }
+        if ConfigurationBuiltins.isNative(id) {
+            if let running = availableRules.first(where: { derivative in
+                derivative.baseSchemeID == id && recipes.contains { $0.ruleSchemeID == derivative.id }
+            }) { return running }
+            return ConfigurationBuiltins.schemes.first { $0.id == id }
+        }
         if let own = rules.first(where: { $0.id == id }), own.isRetainedSnapshot != true,
            own.collectionKey == nil, own.kind == .custom || own.kind == .imported {
             return own

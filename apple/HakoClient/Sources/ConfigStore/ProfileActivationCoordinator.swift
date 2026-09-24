@@ -212,6 +212,7 @@ enum ProfileRuntimeConfigBuilder {
         applyLegacyRelayMigration: Bool = true
     ) throws -> RuntimeBuildStages {
         let profileWorking: String
+        var droppedPersonal: [String] = []
         switch profile.overwriteMode ?? .standard {
         case .standard, .script:
             var spec = profile.override
@@ -224,10 +225,8 @@ enum ProfileRuntimeConfigBuilder {
              
              
             let muted = Set(spec.disabledAppendRules ?? [])
-            spec.appendRules.removeAll { muted.contains($0) }
-            spec.appendRules = try resolvedFallbackTargets(
-                spec.appendRules, mergedInto: raw
-            )
+            var personalRules = spec.appendRules.filter { !muted.contains($0) }
+            spec.appendRules = []
             let patched = try ConfigTransforms.mergeOverride(
                 raw: raw,
                 overrideJSON: overrideJSON(from: spec)
@@ -235,9 +234,23 @@ enum ProfileRuntimeConfigBuilder {
              
              
              
-            profileWorking = profile.overwriteMode == .script
+            let scripted = profile.overwriteMode == .script
                 ? try profileScript(profile.selectedScriptID, patched, profile.label)
                 : patched
+             
+             
+             
+             
+             
+             
+             
+            personalRules = try resolvedFallbackTargets(personalRules, mergedInto: scripted)
+            let personal = droppingUnknownTargets(personalRules, mergedInto: scripted)
+            droppedPersonal = personal.dropped
+            profileWorking = personal.kept.isEmpty ? scripted : try ConfigTransforms.mergeOverride(
+                raw: scripted,
+                overrideJSON: overrideJSON(from: OverrideSpec(appendRules: personal.kept, prependRules: spec.prependRules))
+            )
         case .custom:
             profileWorking = try (profile.customOverwrite ?? CustomOverwriteSpec())
                 .applyForFinalRuntimeMigration(to: raw)
@@ -260,6 +273,16 @@ enum ProfileRuntimeConfigBuilder {
         effectiveGlobal.appendRules = try resolvedFallbackTargets(
             effectiveGlobal.appendRules, mergedInto: profileWorking
         )
+        let global = droppingUnknownTargets(effectiveGlobal.appendRules, mergedInto: profileWorking)
+        effectiveGlobal.appendRules = global.kept
+        droppedPersonal += global.dropped
+        recordDroppedPersonalRules(droppedPersonal, for: profile.id)
+        for rule in droppedPersonal {
+             
+            HakoLogStore.shared.append(
+                "personal rule left out of the runtime: \(rule) names a policy this configuration does not define",
+                stream: .app, level: .warning)
+        }
         let merged = try ConfigTransforms.mergeOverride(
             raw: profileWorking,
             overrideJSON: overrideJSON(from: effectiveGlobal)
@@ -458,6 +481,73 @@ enum ProfileRuntimeConfigBuilder {
      
      
      
+    static let builtinPolicies: Set<String> = [
+        "DIRECT", "REJECT", "REJECT-DROP", "PASS", "PASS-RULE", "COMPATIBLE", "GLOBAL", "MATCH",
+    ]
+
+     
+     
+     
+    static func knownPolicies(in yaml: String) -> Set<String>? {
+        guard let json = try? ConfigTransforms.yamlToJSON(yaml),
+              let root = try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+        else { return nil }
+        var names = builtinPolicies
+        for key in ["proxies", "proxy-groups"] {
+            for case let entry as [String: Any] in (root[key] as? [Any]) ?? [] {
+                if let name = entry["name"] as? String { names.insert(name) }
+            }
+        }
+        return names
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static func droppingUnknownTargets(
+        _ rules: [String],
+        mergedInto yaml: String
+    ) -> (kept: [String], dropped: [String]) {
+        guard !rules.isEmpty, let known = knownPolicies(in: yaml) else { return (rules, []) }
+        var kept: [String] = []
+        var dropped: [String] = []
+        for rule in rules {
+            if let target = StructuredRule.parse(rule)?.target, !target.isEmpty, !known.contains(target) {
+                dropped.append(rule)
+            } else {
+                kept.append(rule)
+            }
+        }
+        return (kept, dropped)
+    }
+
+     
+     
+     
+    private static let droppedLock = NSLock()
+    nonisolated(unsafe) private static var droppedByProfile: [String: [String]] = [:]
+    static func droppedPersonalRules(for profileID: String) -> [String] {
+        droppedLock.lock(); defer { droppedLock.unlock() }
+        return droppedByProfile[profileID] ?? []
+    }
+    private static func recordDroppedPersonalRules(_ rules: [String], for profileID: String) {
+        droppedLock.lock(); defer { droppedLock.unlock() }
+        if rules.isEmpty { droppedByProfile.removeValue(forKey: profileID) } else { droppedByProfile[profileID] = rules }
+    }
+
+     
+     
+     
+     
+     
+     
+     
      
      
     static func resolvedFallbackTargets(
@@ -473,7 +563,6 @@ enum ProfileRuntimeConfigBuilder {
                 as? [String: Any],
               let sourceRules = root["rules"] as? [Any] else { return rules }
         let fallback = sourceRules.lazy
-            .reversed()
             .compactMap { entry -> String? in
                 guard let line = entry as? String,
                       let parsed = StructuredRule.parse(line),
@@ -481,8 +570,7 @@ enum ProfileRuntimeConfigBuilder {
                       parsed.target != "MATCH" else { return nil }
                 return parsed.target
             }
-            .first
-        guard let fallback else { return rules }
+            .first ?? "DIRECT"
         return rules.map { rule in
             guard var parsed = StructuredRule.parse(rule),
                   parsed.target == "MATCH" else { return rule }
