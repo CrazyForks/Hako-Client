@@ -209,6 +209,8 @@ public struct HakoMacRuleEditorSheet: View {
                 case .rule(let id):
                     HakoMacRuleRowEditor(
                         draft: state.draft, rowID: id,
+                        nodeCandidates: nodeCandidates,
+                        createGroup: { document in try mutateThrowing { draft in try draft.setGroup(document, groupID: nil) } },
                         commit: { raw, enabled, note in mutate { draft in
                             if let id {
                                 draft.setRule(raw, enabled: enabled, note: note, rowID: id)
@@ -552,6 +554,13 @@ public struct HakoMacRuleEditorSheet: View {
      
      
      
+     
+     
+    static func groupName(in document: OrderedJSON) -> String? {
+        guard case let .string(name)? = document.topLevelValue("name"), !name.isEmpty else { return nil }
+        return name
+    }
+
     static func policyCandidates(
         groups: [ConfigurationRuleDraft.Group], nodes: ConfigurationRuleTargetCandidates
     ) -> ConfigurationRuleTargetCandidates {
@@ -696,31 +705,77 @@ public struct HakoMacRuleEditorSheet: View {
 
  
  
+ 
+ 
+ 
+ 
 struct HakoMacRuleRowEditor: View {
     let draft: ConfigurationRuleDraft
+     
+     
+     
+    let nodeCandidates: ConfigurationRuleTargetCandidates
     let rowID: UUID?
+     
+     
+     
+     
+     
+    let createGroup: ((OrderedJSON) throws -> Void)?
     let commit: (String, Bool, String) -> Void
     let close: () -> Void
     @State private var raw: String
     @State private var enabled: Bool
     @State private var note: String
-    @State private var action: HakoStructuredRule.Action = .domainSuffix
-    @State private var content = ""
-    @State private var target = "DIRECT"
+    @State private var action: HakoStructuredRule.Action
+    @State private var content: String
+    @State private var target: String
+     
+     
+     
+    @State private var src: Bool
+    @State private var noResolve: Bool
+    @State private var additionalParams: [String]
+     
+     
+     
+    @State private var structured: Bool
     @State private var pickingTarget = false
+    @State private var addingGroup = false
 
     init(draft: ConfigurationRuleDraft, rowID: UUID?,
+         nodeCandidates: ConfigurationRuleTargetCandidates = .init(sections: []),
+         createGroup: ((OrderedJSON) throws -> Void)? = nil,
          commit: @escaping (String, Bool, String) -> Void, close: @escaping () -> Void) {
         self.draft = draft
+        self.nodeCandidates = nodeCandidates
         self.rowID = rowID
+        self.createGroup = createGroup
         self.commit = commit
         self.close = close
         let row = rowID.flatMap { id in draft.rows.first { $0.id == id } }
         _raw = State(initialValue: row?.raw ?? "")
         _enabled = State(initialValue: row.map { draft.isEnabled($0.raw) } ?? true)
         _note = State(initialValue: row.map { draft.note(for: $0.raw) } ?? "")
+        let parsed = row.flatMap { HakoStructuredRule.parse($0.raw) }
+        _action = State(initialValue: parsed?.action ?? .domainSuffix)
+        _content = State(initialValue: parsed?.content ?? "")
+        _target = State(initialValue: parsed?.target ?? "DIRECT")
+        _src = State(initialValue: parsed?.src ?? false)
+        _noResolve = State(initialValue: parsed?.noResolve ?? false)
+        _additionalParams = State(initialValue: parsed?.additionalParams ?? [])
+        _structured = State(initialValue: row == nil || parsed != nil)
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
      
      
      
@@ -728,14 +783,18 @@ struct HakoMacRuleRowEditor: View {
      
      
     private var candidates: ConfigurationRuleTargetCandidates {
-        ConfigurationRuleTargetCandidates.make(groups: draft.groups.map(\.name), sources: [])
+        HakoMacRuleEditorSheet.policyCandidates(groups: draft.groups, nodes: nodeCandidates)
     }
 
     private var assembled: String {
-        var parts = [action.rawValue]
-        if action.needsContent { parts.append(content.trimmingCharacters(in: .whitespacesAndNewlines)) }
-        parts.append(target)
-        return parts.joined(separator: ",")
+        HakoStructuredRule(
+            action: action,
+            content: action.needsContent ? content.trimmingCharacters(in: .whitespaces) : "",
+            target: target,
+            noResolve: noResolve,
+            src: src,
+            additionalParams: additionalParams
+        ).rawValue
     }
 
     private var canSave: Bool { !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -745,16 +804,23 @@ struct HakoMacRuleRowEditor: View {
             title: rowID == nil ? .copy("Add Rule") : .copy("Rule"),
             subtitle: .verbatim(raw),
             width: 560,
-            height: rowID == nil ? 480 : 340
+            height: structured ? 480 : 340
         ) {
             if pickingTarget {
-                HakoMacTargetPickerPage(candidates: candidates, current: target, identifier: "configuration-center.rule-editor.rule.target") { picked in
+                HakoMacTargetPickerPage(
+                    candidates: candidates, current: target,
+                    identifier: "configuration-center.rule-editor.rule.target",
+                     
+                     
+                     
+                    addGroup: createGroup == nil ? nil : { addingGroup = true }
+                ) { picked in
                     target = picked
                     pickingTarget = false
                 }
             } else {
             HakoMacSheetForm {
-                if rowID == nil {
+                if structured {
                     Section {
                         Picker(selection: $action) {
                             ForEach(HakoStructuredRule.Action.allCases, id: \.self) { item in
@@ -810,7 +876,26 @@ struct HakoMacRuleRowEditor: View {
                 onPrimary: { commit(raw.trimmingCharacters(in: .whitespacesAndNewlines), enabled, note); close() }
             )
         }
+         
+         
+         
         .onAppear { if rowID == nil { raw = assembled } }
+         
+         
+         
+        .sheet(isPresented: $addingGroup) {
+            HakoMacRuleGroupEditor(
+                group: nil, all: draft.groups, nodeCandidates: nodeCandidates,
+                commit: { document in
+                    try createGroup?(document)
+                    if let name = HakoMacRuleEditorSheet.groupName(in: document) {
+                        target = name
+                        pickingTarget = false
+                    }
+                },
+                close: { addingGroup = false }
+            )
+        }
     }
 }
 

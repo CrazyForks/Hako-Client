@@ -38,6 +38,11 @@ struct HakoMacTargetPickerPage: View {
     let candidates: ConfigurationRuleTargetCandidates
     let current: String
     let identifier: String
+     
+     
+     
+     
+    var addGroup: (() -> Void)?
     let pick: (String) -> Void
     @State private var query = ""
 
@@ -86,6 +91,18 @@ struct HakoMacTargetPickerPage: View {
                     }
                 }
                 .hakoMacSettingsList(minRowHeight: HakoMacSettingsMetrics.listRowMinHeight)
+            }
+             
+             
+             
+             
+             
+            if let addGroup {
+                Divider()
+                HakoMacListAddRow(.copy("Add Policy Group"), action: addGroup)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .accessibilityIdentifier("\(identifier).add-group")
             }
         }
     }
