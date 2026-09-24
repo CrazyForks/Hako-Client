@@ -606,7 +606,11 @@ struct ProfileCenterAdapter: View {
         case .runtimePreview(let id):
             if let profile = appProfile(id) {
                 ProfilePreviewView(title: .verbatim(profile.label), load: {
-                    try await model.loadAppliedConfigurationPreview(for: profile.id)
+                     
+                     
+                     
+                     
+                    try await model.loadSavedConfigurationPreview(for: profile.id)
                 })
             } else {
                 EmptyView()

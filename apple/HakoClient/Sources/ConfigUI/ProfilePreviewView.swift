@@ -46,8 +46,8 @@ struct ProfilePreviewView: View {
                         }
                     } else {
                         HakoEmptyState(
-                            title: "Not Applied Yet",
-                            message: "This profile has no previously applied configuration.",
+                            title: "Nothing to Show",
+                            message: "This profile has no configuration document yet.",
                             symbol: .docTextMagnifyingglass)
                     }
                 }

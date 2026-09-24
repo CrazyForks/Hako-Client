@@ -32,6 +32,14 @@ enum ConfigurationCenterSourceBridge {
         .init(upload: info.upload, download: info.download, total: info.total, expire: info.expire)
     }
 
+     
+     
+    static func profileOrigin(recipe: ConfigurationRecipe, in snapshot: ConfigurationLibrarySnapshot) -> Profile.Source {
+        guard recipe.sources.count == 1, let reference = recipe.sources.first,
+              let record = snapshot.sources.first(where: { $0.id == reference.id }),
+              case let .subscription(link) = record.origin, !link.isEmpty else { return .clipboard }
+        return .url(link)
+    }
     static func prepareReplacements(compositions: [String: ConfigurationComposition], planned: ConfigurationLibrarySnapshot,
                                     payloads: [ConfigurationSourcePayload], library: ConfigurationLibraryStore,
                                     originals: [Profile], workingDir: URL, container: URL, rename: String? = nil,
@@ -45,7 +53,12 @@ enum ConfigurationCenterSourceBridge {
                 var next = previous
                  
                  
-                next.source = .clipboard
+                 
+                 
+                 
+                 
+                 
+                next.source = ConfigurationCenterSourceBridge.profileOrigin(recipe: recipe, in: planned)
                 next.autoUpdate = false
                 next.subscriptionInfo = nil
                 if id == rename { next.label = recipe.label; next.labelIsUserAssigned = true }

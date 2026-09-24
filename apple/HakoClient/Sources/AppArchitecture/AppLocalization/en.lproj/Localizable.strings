@@ -1933,6 +1933,7 @@
 "Nothing in this configuration was removed, replaced or left inert by the core that is running." = "Nothing in this configuration was removed, replaced or left inert by the core that is running.";
 "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to." = "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to.";
 "Nothing needed an update." = "Nothing needed an update.";
+"Nothing to Show" = "Nothing to Show";
 "Nothing to do — you can leave it or remove it." = "Nothing to do — you can leave it or remove it.";
 "OK" = "OK";
 "OK — script returned a valid config object." = "OK — script returned a valid config object.";
@@ -3222,6 +3223,7 @@
 "This profile chooses the route automatically" = "This profile chooses the route automatically";
 "This profile does not declare routing rules or rule providers." = "This profile does not declare routing rules or rule providers.";
 "This profile has changes that have not been saved." = "This profile has changes that have not been saved.";
+"This profile has no configuration document yet." = "This profile has no configuration document yet.";
 "This profile has no previously applied configuration." = "This profile has no previously applied configuration.";
 "This profile has no proxies that can be linked." = "This profile has no proxies that can be linked.";
 "This profile has no proxy groups or nodes." = "This profile has no proxy groups or nodes.";

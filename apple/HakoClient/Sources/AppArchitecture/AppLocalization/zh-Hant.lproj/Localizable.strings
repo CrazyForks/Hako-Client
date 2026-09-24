@@ -1933,6 +1933,7 @@
 "Nothing in this configuration was removed, replaced or left inert by the core that is running." = "正在執行的核心沒有移除、取代或擱置這份設定裡的任何欄位。";
 "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to." = "不再洩漏。此前靠備援直連跑通的遊戲、語音與影片通話會停止工作，除非有規則把它們送往 DIRECT——它們沒有 TCP 可以回落。";
 "Nothing needed an update." = "沒有需要更新的內容。";
+"Nothing to Show" = "沒有可顯示的內容";
 "Nothing to do — you can leave it or remove it." = "不用處理——留著或刪掉都可以。";
 "OK" = "好";
 "OK — script returned a valid config object." = "OK — 指令碼回傳了有效的 config 物件。";
@@ -3222,6 +3223,7 @@
 "This profile chooses the route automatically" = "本設定檔自動選擇線路";
 "This profile does not declare routing rules or rule providers." = "本設定檔沒有宣告分流規則或規則集合。";
 "This profile has changes that have not been saved." = "目前設定有尚未儲存的更改。";
+"This profile has no configuration document yet." = "這份設定檔還沒有設定文件。";
 "This profile has no previously applied configuration." = "此設定尚無已套用的版本。";
 "This profile has no proxies that can be linked." = "本設定檔沒有可串聯的代理。";
 "This profile has no proxy groups or nodes." = "此設定檔沒有代理群組或節點。";

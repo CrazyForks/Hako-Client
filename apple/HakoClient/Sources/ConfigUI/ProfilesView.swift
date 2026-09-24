@@ -3204,6 +3204,28 @@ final class ProfilesViewModel: ObservableObject {
             return
         }
         guard case .url = profile.source else { return }
+         
+         
+         
+         
+         
+        if let recipe = try? configurationLibraryStore?.snapshot().recipes.first(where: { $0.id == profile.id }),
+           let reference = recipe.sources.first {
+            clearFailure()
+            statusMessage = .format("Syncing %@…", [profile.label])
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    try await self.refreshConfigurationSource(reference.id)
+                    self.load()
+                    self.statusMessage = .format("%@ synced", [profile.label])
+                    self.clearFailure()
+                } catch {
+                    self.recordFailure(error, context: .subscription, operation: nil, preservesLastKnownGood: true)
+                }
+            }
+            return
+        }
         clearFailure()
         statusMessage = .format("Syncing %@…", [profile.label])
         Task { [weak self] in
