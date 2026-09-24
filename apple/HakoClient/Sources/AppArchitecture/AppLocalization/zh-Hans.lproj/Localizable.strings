@@ -2986,6 +2986,7 @@
 "The backup contains both app-wide and profile-owned settings, so it was not restored." = "备份同时包含全局与配置级设置，因此未恢复。";
 "The backup contains invalid or duplicate script metadata." = "备份包含无效或重复的脚本元数据。";
 "The built-in Geo data manifest is missing." = "内置 Geo 数据清单缺失。";
+"The built-in Geo data resource could not be decoded." = "内置 Geo 数据资源无法解码。";
 "The bundled profile URL must be HTTPS." = "内置配置链接必须是 HTTPS。";
 "The captured source is what you pasted. Runtime is the config iOS actually runs — overrides applied and desktop-only surfaces removed — with your own credentials shown. For a profile that is already running, it is the revision that was activated: later edits appear here once you activate it again." = "捕获的源是你粘贴进来的内容。运行时是 iOS 实际运行的配置——已应用覆写、已移除仅桌面端的字段——并显示你自己的凭据。对已经在运行的配置，它是当时激活的那个修订：之后的改动要再激活一次才会出现在这里。";
 "The captured source is what you pasted. Runtime is the config macOS actually runs — overrides applied, with your own credentials shown. For a profile that is already running, it is the revision that was activated: later edits appear here once you activate it again." = "捕获的源是你粘贴进来的内容。运行时是 macOS 实际运行的配置——已应用覆写——并显示你自己的凭据。对已经在运行的配置，它是当时激活的那个修订：之后的改动要再激活一次才会出现在这里。";
@@ -3611,7 +3612,7 @@
 "Your traffic goes here first. Clearing it removes the chain." = "你的流量先到这里。清空即删除这条链。";
 "ZeroTier Demo" = "ZeroTier Demo";
 "[private proxy]" = "[private proxy]";
-"a descriptor has an unsafe name, size, or SHA-256" = "某个描述项的名称、大小或 SHA-256 不安全";
+"a descriptor has an unsafe name, size, encoding, or SHA-256" = "某个描述项的名称、大小、编码或 SHA-256 不安全";
 "a lone + matches nothing" = "单独一个 + 匹配不到任何东西";
 "a trailing dot" = "结尾多了一个点";
 "active proxy and rule source" = "活动的代理与规则来源";
@@ -3709,6 +3710,7 @@
 "removed by the platform" = "被平台移除";
 "request in this session" = "本会话请求";
 "requests in this session" = "本会话请求";
+"resources must name distinct Core lookup files" = "资源必须分别指向不同的内核查找文件";
 "rules" = "条规则";
 "runtime setup reload timed out" = "运行时装载超时";
 "s" = "秒";
@@ -3733,9 +3735,9 @@
 "the core rejected the YAML" = "内核拒绝了该 YAML";
 "the current network is restricted" = "当前网络受限";
 "the current network may charge for data" = "当前网络可能按流量计费";
+"the decoder could not be initialised" = "解码器无法初始化";
 "the download was empty" = "下载内容为空";
 "the file is not a MaxMind database" = "该文件不是 MaxMind 数据库";
-"the four required Core lookup files are not described exactly once" = "四个必需的内核查找文件未被恰好描述一次";
 "the other inbound listeners run as written, including the mixed port" = "其余入站监听器按你写的运行，包括 mixed 端口。";
 "the profile is no longer available" = "该配置已不可用";
 "the reload built a second configuration beside the running one and iOS likely enforced the memory ceiling." = "这次 reload 在运行中的配置旁又构建了一份配置，iOS 很可能执行了内存上限。";
@@ -3746,6 +3748,7 @@
 "the server returned a document, not a database" = "服务器返回的是网页而不是数据库";
 "the shared configuration store is unavailable" = "共享配置存储不可用";
 "the shared profile store is unavailable" = "共享配置库不可用";
+"the stream ends before its end marker" = "数据流在结束标记之前就终止了";
 "the value this platform uses" = "这个平台使用的值";
 "there is no selected profile to edit" = "没有可编辑的选中配置";
 "this is an app-wide setting rather than a per-configuration one, so what the app holds is what runs" = "这是 App 级设置而不是单份配置的设置，所以 App 里存的那份才是运行的。";

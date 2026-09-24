@@ -2986,6 +2986,7 @@
 "The backup contains both app-wide and profile-owned settings, so it was not restored." = "The backup contains both app-wide and profile-owned settings, so it was not restored.";
 "The backup contains invalid or duplicate script metadata." = "The backup contains invalid or duplicate script metadata.";
 "The built-in Geo data manifest is missing." = "The built-in Geo data manifest is missing.";
+"The built-in Geo data resource could not be decoded." = "The built-in Geo data resource could not be decoded.";
 "The bundled profile URL must be HTTPS." = "The bundled profile URL must be HTTPS.";
 "The captured source is what you pasted. Runtime is the config iOS actually runs — overrides applied and desktop-only surfaces removed — with your own credentials shown. For a profile that is already running, it is the revision that was activated: later edits appear here once you activate it again." = "The captured source is what you pasted. Runtime is the config iOS actually runs — overrides applied and desktop-only surfaces removed — with your own credentials shown. For a profile that is already running, it is the revision that was activated: later edits appear here once you activate it again.";
 "The captured source is what you pasted. Runtime is the config macOS actually runs — overrides applied, with your own credentials shown. For a profile that is already running, it is the revision that was activated: later edits appear here once you activate it again." = "The captured source is what you pasted. Runtime is the config macOS actually runs — overrides applied, with your own credentials shown. For a profile that is already running, it is the revision that was activated: later edits appear here once you activate it again.";
@@ -3611,7 +3612,7 @@
 "Your traffic goes here first. Clearing it removes the chain." = "Your traffic goes here first. Clearing it removes the chain.";
 "ZeroTier Demo" = "ZeroTier Demo";
 "[private proxy]" = "[private proxy]";
-"a descriptor has an unsafe name, size, or SHA-256" = "a descriptor has an unsafe name, size, or SHA-256";
+"a descriptor has an unsafe name, size, encoding, or SHA-256" = "a descriptor has an unsafe name, size, encoding, or SHA-256";
 "a lone + matches nothing" = "a lone + matches nothing";
 "a trailing dot" = "a trailing dot";
 "active proxy and rule source" = "active proxy and rule source";
@@ -3709,6 +3710,7 @@
 "removed by the platform" = "removed by the platform";
 "request in this session" = "request in this session";
 "requests in this session" = "requests in this session";
+"resources must name distinct Core lookup files" = "resources must name distinct Core lookup files";
 "rules" = "rules";
 "runtime setup reload timed out" = "runtime setup reload timed out";
 "s" = "s";
@@ -3733,9 +3735,9 @@
 "the core rejected the YAML" = "the core rejected the YAML";
 "the current network is restricted" = "the current network is restricted";
 "the current network may charge for data" = "the current network may charge for data";
+"the decoder could not be initialised" = "the decoder could not be initialised";
 "the download was empty" = "the download was empty";
 "the file is not a MaxMind database" = "the file is not a MaxMind database";
-"the four required Core lookup files are not described exactly once" = "the four required Core lookup files are not described exactly once";
 "the other inbound listeners run as written, including the mixed port" = "the other inbound listeners run as written, including the mixed port";
 "the profile is no longer available" = "the profile is no longer available";
 "the reload built a second configuration beside the running one and iOS likely enforced the memory ceiling." = "the reload built a second configuration beside the running one and iOS likely enforced the memory ceiling.";
@@ -3746,6 +3748,7 @@
 "the server returned a document, not a database" = "the server returned a document, not a database";
 "the shared configuration store is unavailable" = "the shared configuration store is unavailable";
 "the shared profile store is unavailable" = "the shared profile store is unavailable";
+"the stream ends before its end marker" = "the stream ends before its end marker";
 "the value this platform uses" = "the value this platform uses";
 "there is no selected profile to edit" = "there is no selected profile to edit";
 "this is an app-wide setting rather than a per-configuration one, so what the app holds is what runs" = "this is an app-wide setting rather than a per-configuration one, so what the app holds is what runs";
