@@ -692,3 +692,43 @@ enum HomeProxiesEntryPolicy {
         return groups.first
     }
 }
+
+ 
+ 
+ 
+enum HomeProxiesCardPolicy {
+    static func domainSnapshot(
+        mode: Profile.OutboundMode,
+        standard: HakoHomeDomainSnapshot,
+        globalNode: String?
+    ) -> HakoHomeDomainSnapshot {
+        guard mode == .global else { return standard }
+        return HakoHomeDomainSnapshot(
+            count: nil,
+            countUnit: nil,
+            breakdown: ProxyBrowsingVisibility.kernelGlobalGroupName,
+            names: globalNode.map { [$0] } ?? []
+        )
+    }
+}
+
+
+ 
+ 
+ 
+ 
+ 
+enum QuickRulePlan: Equatable {
+    case reuse(String)
+    case copy(base: String)
+
+    static func make(activeSchemeID: String?, schemes: [ConfigurationRuleScheme], myRulesLabel: String) -> QuickRulePlan {
+        if let activeSchemeID, schemes.contains(where: { $0.id == activeSchemeID && $0.kind == .custom }) {
+            return .reuse(activeSchemeID)
+        }
+        if let mine = schemes.first(where: { $0.kind == .custom && $0.label == myRulesLabel }) {
+            return .reuse(mine.id)
+        }
+        return .copy(base: activeSchemeID ?? ConfigurationBuiltins.basicRuleID)
+    }
+}

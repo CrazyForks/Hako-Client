@@ -736,7 +736,7 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
 
     private var commonContent: some View {
         Group {
-            ForEach(favoriteCards) { card in
+            ForEach(HakoHomeCatalog.visibleCards(favoriteCards, mode: snapshot.home.routing.mode)) { card in
                  
                  
                  

@@ -68,6 +68,18 @@ public enum HakoHomeCatalog {
         .traffic, .externalIP, .lanIP,
     ]
 
+     
+     
+     
+     
+    public static func visibleCards(_ cards: [HakoHomeCard], mode: AppleClientOutboundMode) -> [HakoHomeCard] {
+        switch mode {
+        case .rule: return cards
+        case .global: return cards.filter { $0 != .rules }
+        case .direct: return cards.filter { $0 != .rules && $0 != .proxies }
+        }
+    }
+
     public static func normalized(_ cards: [HakoHomeCard]) -> [HakoHomeCard] {
         var seen = Set<HakoHomeCard>()
         var result = cards.filter { seen.insert($0).inserted }

@@ -1292,11 +1292,15 @@ struct GoldenFlowHomeAdapter: View {
                 favoriteCards: favoriteCards,
                 trafficScope:
                     trafficOnlyProxy ? .proxiedOnly : .allTraffic,
-                proxies: HakoHomeDomainSnapshot(
-                    count: timedProxyCount,
-                    countUnit: "proxies",
-                    breakdown: timedProxyBreakdown,
-                    names: timedTally?.groupNames ?? []
+                proxies: HomeProxiesCardPolicy.domainSnapshot(
+                    mode: configuredMode,
+                    standard: HakoHomeDomainSnapshot(
+                        count: timedProxyCount,
+                        countUnit: "proxies",
+                        breakdown: timedProxyBreakdown,
+                        names: timedTally?.groupNames ?? []
+                    ),
+                    globalNode: globalGroupNode
                 ),
                 rules: HakoHomeDomainSnapshot(
                     count: timedTally?.rules,
@@ -1542,6 +1546,16 @@ struct GoldenFlowHomeAdapter: View {
             .compactMap(\.count)
             .reduce(0, +)
         return total > 0 ? total : nil
+    }
+
+     
+     
+    private var globalGroupNode: String? {
+        let name = ProxyBrowsingVisibility.kernelGlobalGroupName
+        if let running = nodes.groups.first(where: { $0.name == name })?.now, !running.isEmpty {
+            return running
+        }
+        return currentProfile?.selectedMap[name]
     }
 
     private var proxiesCardBreakdown: String? {
