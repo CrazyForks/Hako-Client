@@ -329,10 +329,6 @@ private struct ConfigurationDNSSettingsAdapter: View {
                     Button("View Effective DNS") { Task { await refreshPreview() } }
                     if let result {
                         if result.dnsDiffers {
-                            Text("Advanced settings or runtime settings changed this DNS configuration.")
-                                .font(.footnote).foregroundStyle(.secondary)
-                        }
-                        if result.dnsDiffers {
                             Text("Saved DNS").font(.subheadline)
                             Text(verbatim: result.configurationDNSJSON ?? "{}")
                                 .font(.caption.monospaced()).textSelection(.enabled)

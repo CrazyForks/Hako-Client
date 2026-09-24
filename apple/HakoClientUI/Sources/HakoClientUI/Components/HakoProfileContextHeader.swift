@@ -40,10 +40,14 @@ public struct HakoProfileContextHeader<Icon: View>: View {
                 Text(profileName)
                     .font(.headline)
                     .lineLimit(2)
-                Text(hako: message)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                 
+                 
+                if !message.isBlank {
+                    Text(hako: message)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

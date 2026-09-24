@@ -1045,10 +1045,6 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                     }
                 } header: {
                     Text("Subscription")
-                } footer: {
-                    Text(
-                        "Changing the link clears cached update metadata. The current working revision remains available if the next sync fails."
-                    )
                 }
 
                 if ProfileMetadataUpdate.strippingSourceCredentials(
@@ -1062,9 +1058,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                         }
                         .accessibilityIdentifier("profile-metadata.strip-credentials")
                     } footer: {
-                        Text(
-                            "The saved link carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them."
-                        )
+                        Text("Removing them may require importing again.")
                     }
                 }
 

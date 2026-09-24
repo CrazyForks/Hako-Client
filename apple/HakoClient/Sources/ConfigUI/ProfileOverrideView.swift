@@ -303,7 +303,7 @@ struct ProfileOverrideView: View {
                 } header: {
                     Text("Proxy Identity")
                 } footer: {
-                    Text("Existing chain overrides affect this configuration. Add reusable chains in Node Library.")
+                    Text("Add chains in Node Library.")
                 }
 
                 }
@@ -873,10 +873,6 @@ struct ProfileProxyChainEditor: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else if isConfirmed(relay) {
-                Text("This profile uses the reviewed TCP-only chain; the original profile stays unchanged.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
                 Button("Remove Migration", role: .destructive) {
                     confirmingRelayRemoval = relay
                 }
@@ -903,7 +899,7 @@ struct ProfileProxyChainEditor: View {
     }
 
     private var legacyRelayFooter: some View {
-        Text("Older relay groups require review before Clash can rebuild them as supported proxy chains.")
+        EmptyView()
     }
 
     @Binding var spec: ProxyChainSpec
@@ -1054,8 +1050,6 @@ struct ProfileProxyChainEditor: View {
                             )
                         }
                         .accessibilityIdentifier("proxy-chains.row.add-node")
-                    } footer: {
-                        Text(HakoCopy.key("A chain links two nodes this profile already has. Build nodes first, then come back to link them."))
                     }
                 }
             } else if !editableInventory.isEmpty {
@@ -1232,10 +1226,8 @@ struct ProfileProxyChainEditor: View {
         ) { relay in
             Button("Enable") { setConfirmed(relay) }
             Button("Cancel", role: .cancel) {}
-        } message: { relay in
-            Text(
-                "Hako will use \(relay.pathDescription) as a TCP-only chain for this profile. UDP stays off and the original profile is not changed."
-            )
+        } message: { _ in
+            Text("UDP is not available on this chain.")
         }
         .alert(
             "Remove TCP-only migration?",

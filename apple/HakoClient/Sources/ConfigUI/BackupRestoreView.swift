@@ -138,12 +138,6 @@ struct BackupRestoreView: View {
                 }
             } header: {
                 Text("iCloud")
-            } footer: {
-                if HakoPlatformLayout.pageUsesSystemSettingsIdiom {
-                    Text("Click any backup or prior version to preview it. Remove a current backup with its trailing −; keep a conflict copy as the iCloud version with its trailing button.")
-                } else {
-                    Text("Tap any backup or prior version to preview it. Swipe a current backup left to delete it; swipe a conflict copy right to keep it as the iCloud version.")
-                }
             }
 
             Section {
@@ -170,7 +164,7 @@ struct BackupRestoreView: View {
             } header: {
                 Text("Local")
             } footer: {
-                Text("Includes everything a profile needs to run — sources, scripts, overrides and credentials — so restoring on another device works straight away. App settings stay on this device and are not in the file. Keep the file where you keep your own private data.")
+                Text("This file carries your credentials so a restore works straight away. Treat it as private.")
             }
 
             if !status.isEmpty {
@@ -198,7 +192,7 @@ struct BackupRestoreView: View {
             Button("Turn On") { Task { await autoBackup.enable() } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Your profiles, with any links and credentials they carry, are kept in your iCloud account and updated while Clash is open. Apple TV can restore from them. Turning the switch off removes them from iCloud.")
+            Text("Turning it off removes them from iCloud.")
         }
         .fileExporter(
             isPresented: Binding(
@@ -272,8 +266,6 @@ struct BackupRestoreView: View {
         case nil:
             if let date = autoBackup.lastExportedAt {
                 Text(hako: .format("Updated %@", [Self.relativeTime(date)]))
-            } else {
-                Text("One backup of your profiles stays in your iCloud account and is updated while Clash is open. Apple TV restores from it.")
             }
         }
     }

@@ -215,6 +215,14 @@ public enum HakoDisplayText:
      
     case formatCopy(String, [String])
 
+     
+     
+    public var isBlank: Bool {
+        switch self {
+        case .copy(let key), .verbatim(let key), .format(let key, _), .formatCopy(let key, _): return key.isEmpty
+        }
+    }
+
     public init(stringLiteral value: String) {
         self = .copy(value)
     }

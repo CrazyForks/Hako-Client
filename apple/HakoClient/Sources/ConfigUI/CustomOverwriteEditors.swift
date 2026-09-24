@@ -294,8 +294,7 @@ struct CustomProxyGroupEditor: View {
                         }
                         .accessibilityIdentifier("custom.proxy-group.strategy")
                     default:
-                        Text("Routes are tried in the order shown above.")
-                            .foregroundStyle(.secondary)
+                        EmptyView()
                     }
                 } header: {
                     Text("Selection")
@@ -410,10 +409,7 @@ struct CustomProxyGroupEditor: View {
         case .remote(let host):
             echoRow("Image on") { Text(verbatim: host) }
         case .unrecognized:
-            Text("Saved with the group, but nothing draws it.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("custom.proxy-group.icon.echo")
+            EmptyView()
         case .none:
             EmptyView()
         }

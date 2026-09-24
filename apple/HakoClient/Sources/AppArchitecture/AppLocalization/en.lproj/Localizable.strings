@@ -267,6 +267,7 @@
 "Add at least one on-demand rule." = "Add at least one on-demand rule.";
 "Add at least one resolver IP address for secure bootstrap." = "Add at least one resolver IP address for secure bootstrap.";
 "Add at least two conditions." = "Add at least two conditions.";
+"Add chains in Node Library." = "Add chains in Node Library.";
 "Add from a link" = "Add from a link";
 "Add from this profile" = "Add from this profile";
 "Add match domains" = "Add match domains";
@@ -1282,6 +1283,7 @@
 "HTTP Port" = "HTTP Port";
 "HTTP and HTTPS proxies have no UDP transport. Without this, matched traffic the outbound cannot carry falls through every rule and leaves over DIRECT with your own address." = "HTTP and HTTPS proxies have no UDP transport. Without this, matched traffic the outbound cannot carry falls through every rule and leaves over DIRECT with your own address.";
 "HTTP headers must use non-empty names and string values." = "HTTP headers must use non-empty names and string values.";
+"HTTP links are sent without encryption." = "HTTP links are sent without encryption.";
 "HTTP/3 MASQUE tunnel with key-based authentication and tunnel addressing." = "HTTP/3 MASQUE tunnel with key-based authentication and tunnel addressing.";
 "HTTP/3 is unavailable in this SDK build. HTTP/1.1 and HTTP/2 remain available." = "HTTP/3 is unavailable in this SDK build. HTTP/1.1 and HTTP/2 remain available.";
 "HTTP/3 needs UDP, and nothing came back. The most likely reason is that the line in use does not carry UDP — HTTP and HTTPS proxies never do. Turn HTTP/3 off to measure over HTTP/1.1 and HTTP/2, or switch to a UDP-capable line." = "HTTP/3 needs UDP, and nothing came back. The most likely reason is that the line in use does not carry UDP — HTTP and HTTPS proxies never do. Turn HTTP/3 off to measure over HTTP/1.1 and HTTP/2, or switch to a UDP-capable line.";
@@ -2309,6 +2311,7 @@
 "Removed" = "Removed";
 "Removed by the subscription · yours: %@" = "Removed by the subscription · yours: %@";
 "Removing the override does not delete or modify the downloaded source." = "Removing the override does not delete or modify the downloaded source.";
+"Removing them may require importing again." = "Removing them may require importing again.";
 "Reopen Clash to change language?" = "Reopen Clash to change language?";
 "Reopen Now" = "Reopen Now";
 "Reorder" = "Reorder";
@@ -2527,6 +2530,7 @@
 "Search rule sets" = "Search rule sets";
 "Search rules" = "Search rules";
 "Secondary Port" = "Secondary Port";
+"Seconds." = "Seconds.";
 "Secure connection failed" = "Secure connection failed";
 "Security" = "Security";
 "Select" = "Select";
@@ -2577,6 +2581,7 @@
 "Share Log" = "Share Log";
 "Share Profile" = "Share Profile";
 "Share Report" = "Share Report";
+"Share links such as ss:// or vmess://." = "Share links such as ss:// or vmess://.";
 "Share on the Local Network" = "Share on the Local Network";
 "Shared Configuration.yaml" = "Shared Configuration.yaml";
 "Sharing stops first. The saved username and password are then removed from this device." = "Sharing stops first. The saved username and password are then removed from this device.";
@@ -3265,6 +3270,7 @@
 "Tunnel ownership, stack and DNS interception are normalized for Apple's packet-flow contract." = "Tunnel ownership, stack and DNS interception are normalized for Apple's packet-flow contract.";
 "Turn Off Auto Update" = "Turn Off Auto Update";
 "Turn On" = "Turn On";
+"Turning it off removes them from iCloud." = "Turning it off removes them from iCloud.";
 "Two spellings do not apply on this platform: the Windows named pipe is removed, and the routing mark is a Linux-only socket option that stays in the file and does nothing." = "Two spellings do not apply on this platform: the Windows named pipe is removed, and the routing mark is a Linux-only socket option that stays in the file and does nothing.";
 "Type" = "Type";
 "Type Icons" = "Type Icons";
@@ -3273,6 +3279,7 @@
 "UDP Relay" = "UDP Relay";
 "UDP Session Timeout" = "UDP Session Timeout";
 "UDP and ICMP timeouts must be zero or a positive number of seconds, or empty to use the profile default." = "UDP and ICMP timeouts must be zero or a positive number of seconds, or empty to use the profile default.";
+"UDP is not available on this chain." = "UDP is not available on this chain.";
 "UDP over Stream" = "UDP over Stream";
 "UDP over Stream Version" = "UDP over Stream Version";
 "UDP over TCP" = "UDP over TCP";

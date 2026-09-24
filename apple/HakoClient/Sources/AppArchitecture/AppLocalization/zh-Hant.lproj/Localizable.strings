@@ -267,6 +267,7 @@
 "Add at least one on-demand rule." = "請至少新增一條隨選連線規則。";
 "Add at least one resolver IP address for secure bootstrap." = "請至少新增一個解析器 IP 網址，用於安全引導。";
 "Add at least two conditions." = "至少新增兩個條件。";
+"Add chains in Node Library." = "鏈式代理請到節點庫加入。";
 "Add from a link" = "從連結新增";
 "Add from this profile" = "從本設定檔中新增";
 "Add match domains" = "新增符合網域";
@@ -1282,6 +1283,7 @@
 "HTTP Port" = "HTTP 連接埠";
 "HTTP and HTTPS proxies have no UDP transport. Without this, matched traffic the outbound cannot carry falls through every rule and leaves over DIRECT with your own address." = "HTTP 與 HTTPS 代理沒有 UDP 傳輸通道。若不設定，命中規則但出口承載不了的流量會穿過全部規則，帶著你自己的網址經 DIRECT 出門。";
 "HTTP headers must use non-empty names and string values." = "HTTP 頭必須使用非空名稱與字串值。";
+"HTTP links are sent without encryption." = "HTTP 連結會以明文傳輸。";
 "HTTP/3 MASQUE tunnel with key-based authentication and tunnel addressing." = "基於金鑰認證與通道定址的 HTTP/3 MASQUE 通道。";
 "HTTP/3 is unavailable in this SDK build. HTTP/1.1 and HTTP/2 remain available." = "此 SDK 建置不支援 HTTP/3，HTTP/1.1 與 HTTP/2 仍可用。";
 "HTTP/3 needs UDP, and nothing came back. The most likely reason is that the line in use does not carry UDP — HTTP and HTTPS proxies never do. Turn HTTP/3 off to measure over HTTP/1.1 and HTTP/2, or switch to a UDP-capable line." = "HTTP/3 需要 UDP，而沒有任何回包。最可能的原因是目前線路不帶 UDP——HTTP 與 HTTPS 代理從來都不帶。關掉 HTTP/3 改用 HTTP/1.1 與 HTTP/2 測，或換一條支援 UDP 的線路。";
@@ -2309,6 +2311,7 @@
 "Removed" = "已移除";
 "Removed by the subscription · yours: %@" = "訂閱已刪除 · 你的：%@";
 "Removing the override does not delete or modify the downloaded source." = "移除覆寫不會刪除或修改已下載的原始碼。";
+"Removing them may require importing again." = "移除後可能需要重新匯入。";
 "Reopen Clash to change language?" = "重新開啟 Clash 以更換語言？";
 "Reopen Now" = "立即重開";
 "Reorder" = "重新排序";
@@ -2527,6 +2530,7 @@
 "Search rule sets" = "搜尋規則集";
 "Search rules" = "搜尋規則";
 "Secondary Port" = "備用連接埠";
+"Seconds." = "單位：秒。";
 "Secure connection failed" = "安全連線失敗";
 "Security" = "安全";
 "Select" = "選擇";
@@ -2577,6 +2581,7 @@
 "Share Log" = "分享記錄";
 "Share Profile" = "共享設定檔";
 "Share Report" = "共享報告";
+"Share links such as ss:// or vmess://." = "支援 ss://、vmess:// 等分享連結。";
 "Share on the Local Network" = "區域網路共享";
 "Shared Configuration.yaml" = "Shared Configuration.yaml";
 "Sharing stops first. The saved username and password are then removed from this device." = "先停止共享，再從本機移除已儲存的使用者名稱與密碼。";
@@ -3265,6 +3270,7 @@
 "Tunnel ownership, stack and DNS interception are normalized for Apple's packet-flow contract." = "通道歸屬、網路堆疊與 DNS 攔截會按 Apple 的包流契約歸一化。";
 "Turn Off Auto Update" = "關閉自動更新";
 "Turn On" = "開啟";
+"Turning it off removes them from iCloud." = "關閉即從 iCloud 移除。";
 "Two spellings do not apply on this platform: the Windows named pipe is removed, and the routing mark is a Linux-only socket option that stays in the file and does nothing." = "兩個拼寫在本平台不適用：Windows 命名管道會被移除；routing mark 是僅 Linux 的socket選項，欄位保留但不起作用。";
 "Type" = "類型";
 "Type Icons" = "類型圖示";
@@ -3273,6 +3279,7 @@
 "UDP Relay" = "UDP 中繼";
 "UDP Session Timeout" = "UDP 工作階段逾時";
 "UDP and ICMP timeouts must be zero or a positive number of seconds, or empty to use the profile default." = "UDP 與 ICMP 逾時須為零或正數秒，留空則使用設定檔預設值。";
+"UDP is not available on this chain." = "這條鏈路不支援 UDP。";
 "UDP over Stream" = "UDP over Stream";
 "UDP over Stream Version" = "UDP over Stream 版本";
 "UDP over TCP" = "UDP over TCP";

@@ -1261,10 +1261,6 @@ public struct HakoConfigurationRuleGroupsView: View {
             if let error {
                 Section { Text(verbatim: error); Button("Retry", action: reload).accessibilityIdentifier("configuration.rule.groups.retry") }
             } else if !isLoading {
-                Section {
-                    Text("Groups declare how to select routes. Available nodes come from each configuration's selected sources.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
                 if groups.isEmpty { Text("No Proxy Groups") }
                 else if visible.isEmpty { Text("No results") }
                 ForEach(visible) { group in
@@ -1597,7 +1593,7 @@ public struct HakoConfigurationSubscriptionImportView: View {
             Section {
                 TextField("Subscription URL or Share Link", text: $request.url).accessibilityIdentifier("configuration.subscription.import.url").hakoConfigurationResolverInput()
             } header: { Text("Link") } footer: {
-                Text("A node share link is added to Custom Nodes. HTTP links are sent without encryption.")
+                Text("HTTP links are sent without encryption.")
             }
             if loading { Section { ProgressView() } }
             if let preview, previewRequest == request {
@@ -1823,10 +1819,11 @@ public struct HakoConfigurationCollectionView: View {
                 }
                 if let location = collection.location { Text(verbatim: location).font(.footnote).textSelection(.enabled) }
             }
-            Section {
-                if let count = collection.inlineCount { HStack { Text("Entries"); Spacer(); Text(verbatim: String(count)) } }
-                else { Text("Content is loaded by the VPN core.").foregroundStyle(.secondary) }
-            } header: { Text("Content") }
+            if let count = collection.inlineCount {
+                Section {
+                    HStack { Text("Entries"); Spacer(); Text(verbatim: String(count)) }
+                } header: { Text("Content") }
+            }
         }.hakoPageTitle(.verbatim(collection.name))
     }
 }

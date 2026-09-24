@@ -691,8 +691,6 @@ struct ProxyNodeDetailsView: View {
         HakoSection("Obfuscation packet size") {
             editableRow("Minimum", key: "obfs-min-packet-size", number: true)
             editableRow("Maximum", key: "obfs-max-packet-size", number: true)
-        } footer: {
-            Text("Packet-size bounds are used only by Gecko obfuscation.")
         }
 
         HakoSection("QUIC tuning") {
@@ -714,8 +712,6 @@ struct ProxyNodeDetailsView: View {
             editableRow("Maximum Stream Window", key: "max-stream-receive-window", number: true)
             editableRow("Initial Connection Window", key: "initial-connection-receive-window", number: true)
             editableRow("Maximum Connection Window", key: "max-connection-receive-window", number: true)
-        } footer: {
-            Text("Advanced QUIC values should normally remain unchanged.")
         }
 
          
@@ -753,7 +749,7 @@ struct ProxyNodeDetailsView: View {
             editableRow("Idle Session Timeout", key: "idle-session-timeout", placeholder: "30", number: true)
             editableRow("Minimum Idle Sessions", key: "min-idle-session", placeholder: "0", number: true)
         } footer: {
-            Text("Values are seconds. Leave them empty to use the core's AnyTLS defaults.")
+            Text("Seconds.")
         }
 
         HakoSection("Dialing") {
@@ -1089,8 +1085,6 @@ struct ProxyNodeDetailsView: View {
                 )
             }
             .accessibilityIdentifier("proxies.nodeEditor.advanced")
-        } footer: {
-            Text("This inventory follows the exact core revision pinned by this client.")
         }
     }
 
@@ -1477,13 +1471,6 @@ struct ProxyNodeDetailsView: View {
                     valueRow("Dialer Proxy", currentDialer ?? "Not set")
                 }
                 .accessibilityIdentifier("proxies.nodeEditor.dialer-proxy")
-            } footer: {
-                switch dialerRouting {
-                case .payloadField:
-                    Text("dialer-proxy: this node connects through the chosen group or proxy. Saved with the node.")
-                case .chainAssignment:
-                    Text("dialer-proxy: this node connects through the chosen group or proxy. Saved with the node; the imported source stays unchanged.")
-                }
             }
         }
     }
@@ -1823,10 +1810,7 @@ private struct DialerProxyPickerView: View {
                 title: "Dialer Proxy",
                 builtIns: [(
                     name: "None",
-                    caption: HakoCopy.string(
-                        "This node connects out through the group or proxy you pick here. None connects directly.",
-                        locale: locale
-                    )
+                    caption: ""
                 )],
                 builtInsTitle: nil,
                 axPrefix: "dialer-proxy",
@@ -3296,8 +3280,6 @@ private struct ProxyECHEditorView: View {
                     path: ["ech-opts", "query-server-name"],
                     identifier: "proxies.nodeEditor.tls.ech.query-server-name"
                 )
-            } footer: {
-                Text("When configuration is empty, the core resolves the ECH HTTPS record using DNS.")
             }
         }
         .hakoPageTitle("ECH")
@@ -3358,8 +3340,6 @@ private struct ProxyRealityEditorView: View {
                 .accessibilityIdentifier(
                     "proxies.nodeEditor.tls.reality.support-x25519mlkem768"
                 )
-            } footer: {
-                Text("Reality is supported by VMess, VLESS, and Trojan only when their Core option schema exposes reality-opts.")
             }
         }
         .hakoPageTitle("Reality")

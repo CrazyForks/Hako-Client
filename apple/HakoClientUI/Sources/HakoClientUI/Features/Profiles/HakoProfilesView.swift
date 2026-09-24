@@ -639,8 +639,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
     private var profilesEmptyState: some View {
         HakoEmptyState(
             title: "No Profiles",
-            message:
-                "Add a configuration to choose its sources and rules."
+            message: ""
         ) {
             icon(.listBulletRectangle)
         }
@@ -2034,8 +2033,6 @@ private struct HakoProfileDetailView<
                 }))
                 .disabled(isSavingSourceUpdates || profile.isBusy)
                 .accessibilityIdentifier("profile-detail.configuration-source-updates")
-                Text("When off, this configuration stops following source updates.")
-                    .font(.caption).foregroundStyle(.secondary)
                 actionFailureLine(for: .sourceUpdates)
                 }
                 .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.row))

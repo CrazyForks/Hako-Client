@@ -290,9 +290,7 @@ struct CustomNodesView: View {
     private var content: some View {
         HakoClientUI.HakoProfileCollectionPage(
             profileName: profile.label,
-            message:
-                isFirstConfigurationStep ? "Create a node, then choose how to route your traffic." : libraryDraft ? "Save custom nodes here, then select them when creating a configuration."
-                    : "Hand-built nodes and subscription-node edits belong to this profile. Its imported source stays unchanged."
+            message: ""
         ) {
             HakoSymbolImage(symbol: .profileClipboard)
         } content: {
@@ -506,7 +504,7 @@ struct CustomNodesView: View {
                 }
             }
         } footer: {
-            Text(HakoCopy.key("Paste a share link such as ss:// or vmess://. Its fields open in the editor for you to check before saving."))
+            Text(HakoCopy.key("Share links such as ss:// or vmess://."))
         }
     }
 
@@ -533,7 +531,7 @@ struct CustomNodesView: View {
          
         HakoEmptyState(
             title: "No Custom Nodes",
-            message: "A custom node is built by hand and belongs to this profile.",
+            message: "",
             symbol: .serverRack
         )
         .listRowSeparator(.hidden)
@@ -610,7 +608,7 @@ struct CustomNodesView: View {
      
      
     private var customFooter: some View {
-        Text(HakoCopy.key("Hand-built nodes appear under the Custom Nodes group, ready to pick in routes and as a rule policy."))
+        EmptyView()
     }
 
     @ViewBuilder
