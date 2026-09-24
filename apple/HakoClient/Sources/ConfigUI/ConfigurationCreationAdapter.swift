@@ -8,7 +8,6 @@ import UniformTypeIdentifiers
 struct ConfigurationCreationAdapter: View {
     @Environment(\.hakoShellLayout) private var shellLayout
     @ObservedObject var model: ProfilesViewModel
-    let legacyImport: (@escaping () -> Void) -> AnyView
     var editingProfileID: String? = nil
     var editingStep: ConfigurationCreationDraft.Step? = nil
     @State private var draft = ConfigurationCreationDraft()
@@ -22,7 +21,8 @@ struct ConfigurationCreationAdapter: View {
     @State private var errorMessage: String?
     @State private var importKind: HakoConfigurationSourceKind?
     @State private var firstStepImportKind: HakoConfigurationSourceKind?
-    @State private var showsLegacyImport = false
+     
+    @State private var importsOriginal = false
     @State private var showsSourceLibrary = false
     @State private var showsRuleLibrary = false
     @State private var dismiss = HakoDismissHandle()
@@ -62,7 +62,6 @@ struct ConfigurationCreationAdapter: View {
                 ConfigurationRuleLibraryAdapter(model: model, library: library,
                     changed: applyLibrary, close: { showsRuleLibrary = false })
             }
-            .hakoProductModal(isPresented:$showsLegacyImport,role:.page) { legacyImport { showsLegacyImport = false; close() } }
         }
     }
 
@@ -78,7 +77,13 @@ struct ConfigurationCreationAdapter: View {
                     if firstStepImportKind != nil { firstStepImportKind = nil }
                     else { close() }
                 }) { payload in
-                    try Self.acceptImportedSource(payload, into: &draft, isEditing: false)
+                     
+                     
+                     
+                     
+                    if importsOriginal { draft.useOriginal(payload) }
+                    else { try Self.acceptImportedSource(payload, into: &draft, isEditing: false) }
+                    importsOriginal = false
                     firstStepImportKind = nil
                 }
         } else {
@@ -99,7 +104,10 @@ struct ConfigurationCreationAdapter: View {
                 selectLegacy: { id in
                     if let payload = legacyPayloads[id] { accept(payload) }
                 },
-                importWholeConfiguration: { showsLegacyImport = true },
+                importWholeConfiguration: {
+                    importsOriginal = true
+                    firstStepImportKind = .subscription
+                },
                 finish:finish,
                 cancel:close, isEditing: editingProfileID != nil, baseline: baseline, editingStep: editingStep,
                 sourceDetails: { inspectedSourceID = $0 },

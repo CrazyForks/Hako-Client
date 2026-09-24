@@ -520,9 +520,7 @@ struct ProfileCenterAdapter: View {
         switch destination {
         case .importProfile:
 #if os(iOS)
-            ConfigurationCreationAdapter(model:model,legacyImport: { onSaved in
-                AnyView(legacyImportView(onSaved:onSaved))
-            })
+            ConfigurationCreationAdapter(model: model)
 #else
             legacyImportView(onSaved:{})
 #endif
@@ -586,10 +584,10 @@ struct ProfileCenterAdapter: View {
                 EmptyView()
             }
         case .configurationSources(let id):
-            ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
+            ConfigurationCreationAdapter(model: model,
                 editingProfileID: id.rawValue, editingStep: .sources)
         case .configurationRules(let id):
-            ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
+            ConfigurationCreationAdapter(model: model,
                 editingProfileID: id.rawValue, editingStep: .rules)
         case .sourceEditor(let id):
             if let profile = appProfile(id) {

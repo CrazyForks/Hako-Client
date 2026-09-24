@@ -290,6 +290,21 @@ public struct HakoConfigurationCreationView: View {
             HakoConfigurationLibraryAddCard(kind: .nodes, palette: palette, nativeList: true,
                 showsHeader: false, disabled: isBusy, action: { addSource(.subscription) })
                 .accessibilityIdentifier("configuration.create.add.subscription")
+             
+             
+             
+             
+            HakoConfigurationLibraryCard(title: nil, palette: palette, nativeList: true) {
+                Button(action: importWholeConfiguration) {
+                    HakoProfileActionRow(title: "Use Original Configuration",
+                        subtitle: .copy("Runs the configuration as received, with its own proxy groups, rules and DNS."),
+                        symbol: .docText, tint: .primary, showsDisclosure: false,
+                        icon: { Image(systemName: $0.rawValue) })
+                }
+                .buttonStyle(.plain)
+                .disabled(isBusy)
+            }
+            .accessibilityIdentifier("configuration.create.original")
         }.disabled(isBusy || !isReady)
     }
 
