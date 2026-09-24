@@ -379,6 +379,13 @@ public struct HakoMacConfigurationInspector: View {
     }
 
      
+     
+    private var librarySourceInterval: Int? {
+        guard let id = recipe?.sources.first?.id, recipe?.sources.count == 1 else { return nil }
+        return sources.first { $0.id == id }?.updateIntervalHours
+    }
+
+     
     private var schemeValue: HakoDisplayText {
         schemes.first { $0.id == chosenScheme }.map { .verbatim($0.displayLabel) } ?? .copy("Choose a rule scheme")
     }
@@ -447,20 +454,31 @@ public struct HakoMacConfigurationInspector: View {
                     Text(verbatim: profileURL).foregroundStyle(.secondary).textSelection(.enabled).lineLimit(2).multilineTextAlignment(.trailing)
                 }
             }
-            Toggle(isOn: Binding(get: { profile.autoUpdate }, set: { actions.setAutoUpdate($0) })) {
-                Text(hako: .copy("Automatic Updates"))
-            }
-            .accessibilityIdentifier("configuration-center.config-url.auto-update")
-            Picker(selection: Binding(get: { profile.updateIntervalHours }, set: { actions.setInterval($0) })) {
-                ForEach([1, 3, 6, 12, 24, 48, 72], id: \.self) { hours in
-                    Text(hako: .format("Every %@ hours", [String(hours)])).tag(hours)
+            if recipe == nil {
+                 
+                 
+                Toggle(isOn: Binding(get: { profile.autoUpdate }, set: { actions.setAutoUpdate($0) })) {
+                    Text(hako: .copy("Automatic Updates"))
                 }
-            } label: {
-                Text(hako: .copy("Interval"))
+                .accessibilityIdentifier("configuration-center.config-url.auto-update")
+                Picker(selection: Binding(get: { profile.updateIntervalHours }, set: { actions.setInterval($0) })) {
+                    ForEach([1, 3, 6, 12, 24, 48, 72], id: \.self) { hours in
+                        Text(hako: .format("Every %@ hours", [String(hours)])).tag(hours)
+                    }
+                } label: {
+                    Text(hako: .copy("Interval"))
+                }
+                .pickerStyle(.menu)
+                .disabled(!profile.autoUpdate)
+                .accessibilityIdentifier("configuration-center.config-url.interval")
+            } else if let hours = librarySourceInterval {
+                 
+                 
+                 
+                 
+                 
+                HakoMacValueRow(.copy("Update Interval"), value: .format("Every %@ hours", [String(hours)]))
             }
-            .pickerStyle(.menu)
-            .disabled(!profile.autoUpdate)
-            .accessibilityIdentifier("configuration-center.config-url.interval")
             if let usage = profile.subscription {
                 HakoMacValueRow(.copy("Traffic"), value: HakoMacSubscriptionUsageCopy.traffic(ConfigurationSubscriptionUsage(
                     upload: usage.uploadBytes, download: usage.downloadBytes, total: usage.totalBytes,
@@ -472,17 +490,27 @@ public struct HakoMacConfigurationInspector: View {
                 Spacer()
                 Text(hako: profile.lastUpdatedAt.map { .verbatim(Self.dateFormatters.formatter(for: locale).string(from: $0)) } ?? .copy("Never"))
                     .foregroundStyle(.secondary)
+                 
+                 
+                 
+                 
+                 
+                 
+                 
                 Button { actions.updateSource() } label: { Text(hako: .copy("Update Source")) }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.bordered)
+                    .tint(.primary)
                     .disabled(profile.isBusy)
                     .accessibilityIdentifier("configuration-center.config-url.update")
             }
             HStack(spacing: HakoTheme.Spacing.row) {
                 Button { actions.copyProfileURL() } label: { Text(hako: .copy("Copy Profile URL")) }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.bordered)
+                    .tint(.primary)
                     .accessibilityIdentifier("configuration-center.config-url.copy")
                 Button { confirmsCredentialRemoval = true } label: { Text(hako: .copy("Remove Stored URL Credentials")) }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.bordered)
+                    .tint(.primary)
                     .accessibilityIdentifier("configuration-center.config-url.strip")
                 Spacer()
             }

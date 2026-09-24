@@ -818,6 +818,7 @@
 "Custom Icon" = "自定义图标";
 "Custom Nodes" = "自建节点";
 "Custom Overrides" = "自定义覆写";
+"Custom Rules" = "自定义规则";
 "Custom Trust" = "自定义信任";
 "Custom address" = "自定义地址";
 "Custom mode replaces proxy-groups and rules in the runtime copy; the source remains unchanged." = "自定义模式会替换运行时副本中的 proxy-groups 与 rules，源码保持不变。";
@@ -3148,6 +3149,8 @@
 "These proxy sources and rule sets belong to this profile and update without changing the original file." = "这些代理来源与规则集属于本配置，更新时不会改动原文件。";
 "These proxy sources supply nodes to this profile without changing its imported source." = "这些代理来源为此配置提供节点，不会改动导入的源文本。";
 "These rule sets supply matching data to this profile without changing its imported source." = "这些规则集为此配置提供匹配数据，不会改动导入的源文本。";
+"These rules are added after the configuration's own rules when it is used." = "使用此配置时，这些规则加在它自己的规则之后。";
+"These rules are added in front of the configuration's own rules when it is used." = "使用此配置时，这些规则加在它自己的规则之前。";
 "These rules send traffic there." = "这些规则把流量送往那里。";
 "These rules use" = "这些规则走";
 "These scripts will be deleted. Profiles using them must choose another script before starting." = "这些脚本将被删除。使用它们的配置需要先选择其他脚本，才能启动。";

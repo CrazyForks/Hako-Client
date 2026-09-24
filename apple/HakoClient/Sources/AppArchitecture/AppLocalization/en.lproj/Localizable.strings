@@ -818,6 +818,7 @@
 "Custom Icon" = "Custom Icon";
 "Custom Nodes" = "Custom Nodes";
 "Custom Overrides" = "Custom Overrides";
+"Custom Rules" = "Custom Rules";
 "Custom Trust" = "Custom Trust";
 "Custom address" = "Custom address";
 "Custom mode replaces proxy-groups and rules in the runtime copy; the source remains unchanged." = "Custom mode replaces proxy-groups and rules in the runtime copy; the source remains unchanged.";
@@ -3148,6 +3149,8 @@
 "These proxy sources and rule sets belong to this profile and update without changing the original file." = "These proxy sources and rule sets belong to this profile and update without changing the original file.";
 "These proxy sources supply nodes to this profile without changing its imported source." = "These proxy sources supply nodes to this profile without changing its imported source.";
 "These rule sets supply matching data to this profile without changing its imported source." = "These rule sets supply matching data to this profile without changing its imported source.";
+"These rules are added after the configuration's own rules when it is used." = "These rules are added after the configuration's own rules when it is used.";
+"These rules are added in front of the configuration's own rules when it is used." = "These rules are added in front of the configuration's own rules when it is used.";
 "These rules send traffic there." = "These rules send traffic there.";
 "These rules use" = "These rules use";
 "These scripts will be deleted. Profiles using them must choose another script before starting." = "These scripts will be deleted. Profiles using them must choose another script before starting.";

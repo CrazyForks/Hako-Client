@@ -818,6 +818,7 @@
 "Custom Icon" = "自訂圖示";
 "Custom Nodes" = "自建節點";
 "Custom Overrides" = "自訂覆寫";
+"Custom Rules" = "自訂規則";
 "Custom Trust" = "自訂信任";
 "Custom address" = "自訂網址";
 "Custom mode replaces proxy-groups and rules in the runtime copy; the source remains unchanged." = "自訂模式會取代執行階段副本中的 proxy-groups 與 rules，原始碼保持不變。";
@@ -3148,6 +3149,8 @@
 "These proxy sources and rule sets belong to this profile and update without changing the original file." = "這些代理來源與規則集屬於本設定檔，更新時不會改動原檔案。";
 "These proxy sources supply nodes to this profile without changing its imported source." = "這些代理來源為此設定檔提供節點，不會改動匯入的源文字。";
 "These rule sets supply matching data to this profile without changing its imported source." = "這些規則集為此設定檔提供符合資料，不會改動匯入的源文字。";
+"These rules are added after the configuration's own rules when it is used." = "使用此設定檔時，這些規則會加在它自己的規則之後。";
+"These rules are added in front of the configuration's own rules when it is used." = "使用此設定檔時，這些規則會加在它自己的規則之前。";
 "These rules send traffic there." = "這些規則把流量送往那裡。";
 "These rules use" = "這些規則走";
 "These scripts will be deleted. Profiles using them must choose another script before starting." = "這些指令碼將被刪除。使用它們的設定需要先選擇其他指令碼，才能啟動。";
