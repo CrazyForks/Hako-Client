@@ -224,8 +224,10 @@ struct HakoActivityTable: NSViewRepresentable {
                     clip.bounds.minY - table.rect(ofRow: visible.location).minY
                 )
             }
-            rows = next
-            table.reloadData()
+            if !applyIncrementally(to: next, in: table) {
+                rows = next
+                table.reloadData()
+            }
             if !selectedIDs.isEmpty {
                 let indexes = IndexSet(rows.indices.filter { selectedIDs.contains(rows[$0].id) })
                 table.selectRowIndexes(indexes, byExtendingSelection: false)
@@ -236,6 +238,47 @@ struct HakoActivityTable: NSViewRepresentable {
                 scroll.reflectScrolledClipView(clip)
             }
             parent?.onSelectionCount(table.selectedRowIndexes.count)
+        }
+
+         
+         
+         
+         
+         
+         
+         
+         
+        private func applyIncrementally(to next: [HakoActivityTableRow], in table: NSTableView) -> Bool {
+            let old = rows
+            let newIDs = Set(next.map(\.id))
+            let oldIDs = Set(old.map(\.id))
+            let survivorsOld = old.filter { newIDs.contains($0.id) }
+            let survivorsNew = next.filter { oldIDs.contains($0.id) }
+            guard survivorsOld.map(\.id) == survivorsNew.map(\.id) else { return false }
+            let removed = IndexSet(old.indices.filter { !newIDs.contains(old[$0].id) })
+            let inserted = IndexSet(next.indices.filter { !oldIDs.contains(next[$0].id) })
+            table.beginUpdates()
+            if !removed.isEmpty { table.removeRows(at: removed, withAnimation: []) }
+            rows = next
+            if !inserted.isEmpty { table.insertRows(at: inserted, withAnimation: []) }
+            table.endUpdates()
+             
+             
+            let columns = visibleColumns()
+            let before = Dictionary(uniqueKeysWithValues: survivorsOld.map { ($0.id, $0) })
+            let visible = table.rows(in: table.visibleRect)
+            for index in next.indices where NSLocationInRange(index, visible) {
+                guard let was = before[next[index].id] else { continue }
+                let indexes = IndexSet(columns.compactMap { column in
+                    guard column.differs(was, next[index]) else { return nil }
+                    let i = table.column(withIdentifier: .init(column.rawValue))
+                    return i >= 0 ? i : nil
+                })
+                if !indexes.isEmpty {
+                    table.reloadData(forRowIndexes: IndexSet(integer: index), columnIndexes: indexes)
+                }
+            }
+            return true
         }
 
         private func sorted(_ values: [HakoActivityTableRow]) -> [HakoActivityTableRow] {
@@ -754,6 +797,7 @@ struct HakoActivityMacFilterBar: View {
         var count = 0
         var upload: Int64 = 0
         var download: Int64 = 0
+        var chains: Set<String> = []
     }
 
     private var outbounds: [Outbound] {
@@ -764,6 +808,7 @@ struct HakoActivityMacFilterBar: View {
             value.count += summary.connectionCount
             value.upload &+= summary.upload
             value.download &+= summary.download
+            value.chains.insert(summary.chains.joined(separator: " → "))
             byName[name] = value
         }
         return byName.values.sorted { ($0.count, $1.id) > ($1.count, $0.id) }
@@ -777,16 +822,24 @@ struct HakoActivityMacFilterBar: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     if !outbounds.isEmpty {
-                        word(Text("All"), count: total, on: keywords.isDisjoint(with: names)) {
+                        word(
+                            Text("All"), count: total,
+                            traffic: (outbounds.reduce(0) { $0 &+ $1.download }, outbounds.reduce(0) { $0 &+ $1.upload }),
+                            on: keywords.isDisjoint(with: names)
+                        ) {
                             keywords.subtract(names)
                         }
                         ForEach(outbounds) { outbound in
-                            word(Text(verbatim: outbound.id), count: outbound.count, on: keywords.contains(outbound.id)) {
+                            word(
+                                Text(verbatim: outbound.id), count: outbound.count,
+                                traffic: (outbound.download, outbound.upload),
+                                on: keywords.contains(outbound.id)
+                            ) {
                                 let wasOn = keywords.contains(outbound.id)
                                 keywords.subtract(names)
                                 if !wasOn { keywords.insert(outbound.id) }
                             }
-                            .help(Text(verbatim: "↓ \(HakoActivityByteFormatter.count(outbound.download))  ↑ \(HakoActivityByteFormatter.count(outbound.upload))"))
+                            .help(Text(verbatim: outbound.chains.sorted().joined(separator: "\n")))
                         }
                     }
                     ForEach(others, id: \.self) { keyword in
@@ -807,12 +860,21 @@ struct HakoActivityMacFilterBar: View {
         }
     }
 
-    private func word(_ title: Text, count: Int, on: Bool, action: @escaping () -> Void) -> some View {
+     
+     
+     
+    private func word(
+        _ title: Text, count: Int, traffic: (download: Int64, upload: Int64),
+        on: Bool, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(spacing: 5) {
                 title
                 Text(verbatim: "\(count)")
                     .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                Text(verbatim: "↓ \(HakoActivityByteFormatter.count(traffic.download))  ↑ \(HakoActivityByteFormatter.count(traffic.upload))")
+                    .foregroundStyle(.tertiary)
                     .monospacedDigit()
             }
         }

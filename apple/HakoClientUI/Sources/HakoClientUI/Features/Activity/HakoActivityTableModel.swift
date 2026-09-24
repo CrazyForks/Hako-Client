@@ -54,7 +54,12 @@ public struct HakoActivityTableRow: Identifiable, Equatable, Sendable {
             id: request.id,
             connection: request.connection,
             status: request.isActive ? .live : .closed,
-            time: request.lastSeen
+             
+             
+             
+             
+             
+            time: request.firstSeen
         )
     }
 

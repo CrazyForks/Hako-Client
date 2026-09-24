@@ -111,6 +111,14 @@ public struct HakoActivityPageView<
      
      
     @State private var query = ""
+#if os(macOS)
+     
+     
+     
+     
+     
+    @State private var shownLens: HakoActivityLens
+#endif
 
 
     @Environment(\.locale) private var locale
@@ -141,6 +149,9 @@ public struct HakoActivityPageView<
         @ViewBuilder logs: @escaping (String, Bool) -> Logs
     ) {
         _lens = lens
+#if os(macOS)
+        _shownLens = State(initialValue: lens.wrappedValue)
+#endif
         self.palette = palette
         self.searchFieldStyle = searchFieldStyle
         self.showsLensStrip = showsLensStrip
@@ -184,14 +195,42 @@ public struct HakoActivityPageView<
      
      
      
+     
+     
+     
+     
+     
+     
+     
     @ViewBuilder
     private var lensContent: some View {
+#if os(macOS)
+        ZStack {
+            resident(connections(query, shownLens == .connections), shown: shownLens == .connections)
+            resident(requests(query, shownLens == .requests), shown: shownLens == .requests)
+            if shownLens == .logs { logs(query, true) }
+        }
+        .onChange(of: lens) { next in
+            DispatchQueue.main.async { shownLens = next }
+        }
+#else
         switch lens {
         case .connections: connections(query, true)
         case .requests: requests(query, true)
         case .logs: logs(query, true)
         }
+#endif
     }
+
+#if os(macOS)
+    private func resident<Lens: View>(_ content: Lens, shown: Bool) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .allowsHitTesting(shown)
+            .accessibilityHidden(!shown)
+            .zIndex(shown ? 1 : 0)
+    }
+#endif
 
      
      

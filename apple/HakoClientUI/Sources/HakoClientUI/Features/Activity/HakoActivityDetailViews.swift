@@ -222,7 +222,13 @@ public struct HakoConnectionsView<Icon: View>: View {
              
              
              
-            .task(id: preparationKey) { await prepareConnections() }
+             
+             
+             
+            .task(id: isShown ? preparationKey : nil) {
+                guard isShown else { return }
+                await prepareConnections()
+            }
             .hakoActivityLensToolbar(active: isShown) { toolbarContent }
             .confirmationDialog(
                 "Close all active connections?",
@@ -822,6 +828,9 @@ public struct HakoRequestsView<Icon: View>: View {
     private var requestsContent: some View {
 #if os(macOS)
         macTable
+            .onChange(of: isShown) { shown in
+                frozenEntries = shown ? nil : entries
+            }
 #else
         ScrollViewReader { proxy in
             List {
@@ -937,8 +946,12 @@ public struct HakoRequestsView<Icon: View>: View {
      
      
      
+     
+     
+    @State private var frozenEntries: [HakoActivityRequestSnapshot]?
+
     private var macTable: some View {
-        let entries = entries
+        let entries = isShown ? entries : (frozenEntries ?? entries)
         return VStack(alignment: .leading, spacing: HakoTheme.Spacing.compact) {
             HakoActivityMacFilterBar(summaries: [], total: entries.count, keywords: $keywords)
             if entries.isEmpty {
