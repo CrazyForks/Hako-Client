@@ -262,7 +262,15 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
         }
         .accessibilityIdentifier("home.root")
 
-        if #available(iOS 17.0, macOS 14.0, tvOS 17.0, *) {
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, *) {
+             
+             
+             
+             
+            scroll.scrollClipDisabled()
+                .scrollEdgeEffectStyle(.soft, for: .top)
+                .hakoTracksScrollDistance { updateHeaderCompaction(for: $0) }
+        } else if #available(iOS 17.0, macOS 14.0, tvOS 17.0, *) {
             scroll.scrollClipDisabled()
                 .hakoTracksScrollDistance { updateHeaderCompaction(for: $0) }
         } else {
