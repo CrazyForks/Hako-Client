@@ -35,6 +35,9 @@ struct ProxyGroup: Identifiable, Equatable {
      
     let emptyFallback: String?
     var id: String { name }
+     
+     
+    var isEmpty: Bool { emptyFallback.map { members == [$0] } ?? false }
     var selectable: Bool { type.lowercased().contains("selector") || type.lowercased() == "select" }
 
      
@@ -1029,8 +1032,20 @@ final class NodesModel: ObservableObject {
             groups.map { ($0.name, $0.now) },
             uniquingKeysWith: { first, _ in first }
         )
-        resolvedNowByGroup = Dictionary(
-            groups.map { ($0.name, $0.resolvedNow) },
+        resolvedNowByGroup = Self.groupTerminals(groups)
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+    nonisolated static func groupTerminals(_ groups: [ProxyGroup]) -> [String: String] {
+        Dictionary(
+            groups.compactMap { $0.isEmpty ? nil : ($0.name, $0.resolvedNow) },
             uniquingKeysWith: { first, _ in first }
         )
     }
