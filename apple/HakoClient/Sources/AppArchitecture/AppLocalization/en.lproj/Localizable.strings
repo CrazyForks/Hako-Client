@@ -484,7 +484,6 @@
 "Certificate and private key must be configured together." = "Certificate and private key must be configured together.";
 "Certificate rejected" = "Certificate rejected";
 "Certificate store" = "Certificate store";
-"Certificate, private-key, client-auth and ECH server-key fields are kept in the source and handed to Clash, which serves the controller over HTTPS when this profile sets external-controller-tls." = "Certificate, private-key, client-auth and ECH server-key fields are kept in the source and handed to Clash, which serves the controller over HTTPS when this profile sets external-controller-tls.";
 "Chain Totals" = "Chain Totals";
 "Change Rule Scheme" = "Change Rule Scheme";
 "Change it in the app's own settings — this file does not decide it." = "Change it in the app's own settings — this file does not decide it.";
@@ -2514,7 +2513,6 @@
 "Saving creates an independent configuration that no longer follows source updates." = "Saving creates an independent configuration that no longer follows source updates.";
 "Saving rebuilds the current profile automatically. If VPN is off, it stays off until the next connection." = "Saving rebuilds the current profile automatically. If VPN is off, it stays off until the next connection.";
 "Saving switches this profile to Standard overrides." = "Saving switches this profile to Standard overrides.";
-"Saving switches this profile to Standard overrides. Your existing script or custom draft is kept for later use." = "Saving switches this profile to Standard overrides. Your existing script or custom draft is kept for later use.";
 "Saving…" = "Saving…";
 "Scan QR Code" = "Scan QR Code";
 "Script" = "Script";
@@ -3120,7 +3118,6 @@
 "These settings also affect the final configuration. Existing overrides and scripts are preserved." = "These settings also affect the final configuration. Existing overrides and scripts are preserved.";
 "These settings apply to every profile." = "These settings apply to every profile.";
 "These settings apply to every profile. Imported sources stay unchanged." = "These settings apply to every profile. Imported sources stay unchanged.";
-"These settings apply to this profile only." = "These settings apply to this profile only.";
 "These settings now apply to every profile. %@ values set on other profiles were replaced by the profile that was active." = "These settings now apply to every profile. %@ values set on other profiles were replaced by the profile that was active.";
 "These were downloaded but the core could not read them, so none of their rules are in effect. That alone does not stop the tunnel — but it is the commonest thing wrong with a profile that misbehaves." = "These were downloaded but the core could not read them, so none of their rules are in effect. That alone does not stop the tunnel — but it is the commonest thing wrong with a profile that misbehaves.";
 "They are removed from this profile and cannot be brought back." = "They are removed from this profile and cannot be brought back.";

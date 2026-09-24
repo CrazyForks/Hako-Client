@@ -1014,10 +1014,8 @@ private struct ProfileNTPSettingsBody: View {
     }
 
     var body: some View {
-         
         HakoMacSettingsFormContainer(
-            restoreDefaults: restoreDefaults,
-            scopeFooter: .copy("These settings apply to this profile only.")
+            restoreDefaults: restoreDefaults
         ) {
             Section {
                 DNSFieldRows.overrideMenuRow(
@@ -1134,10 +1132,8 @@ private struct ProfileSnifferSettingsBody: View {
     }
 
     var body: some View {
-         
         HakoMacSettingsFormContainer(
-            restoreDefaults: restoreDefaults,
-            scopeFooter: .copy("These settings apply to this profile only.")
+            restoreDefaults: restoreDefaults
         ) {
             Section {
                 DNSFieldRows.overrideMenuRow(

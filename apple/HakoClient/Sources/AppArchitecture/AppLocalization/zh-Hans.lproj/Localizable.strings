@@ -484,7 +484,6 @@
 "Certificate and private key must be configured together." = "证书与私钥必须同时配置。";
 "Certificate rejected" = "证书被拒绝";
 "Certificate store" = "证书库";
-"Certificate, private-key, client-auth and ECH server-key fields are kept in the source and handed to Clash, which serves the controller over HTTPS when this profile sets external-controller-tls." = "证书、私钥、客户端认证与 ECH 服务端密钥字段会原样保留并交给 Clash；当本配置设置了 external-controller-tls 时，控制器就用它们提供 HTTPS。";
 "Chain Totals" = "链路合计";
 "Change Rule Scheme" = "更换规则方案";
 "Change it in the app's own settings — this file does not decide it." = "去 App 自己的设置里改——这份配置说了不算。";
@@ -2514,7 +2513,6 @@
 "Saving creates an independent configuration that no longer follows source updates." = "保存后，此配置独立管理，不再跟随来源更新。";
 "Saving rebuilds the current profile automatically. If VPN is off, it stays off until the next connection." = "保存会自动重建当前配置。若 VPN 处于关闭状态，将保持关闭直到下次连接。";
 "Saving switches this profile to Standard overrides." = "保存会把本配置切换为标准覆写。";
-"Saving switches this profile to Standard overrides. Your existing script or custom draft is kept for later use." = "保存会把本配置切换为标准覆写。你现有的脚本或自定义草稿会保留备用。";
 "Saving…" = "保存中…";
 "Scan QR Code" = "扫描二维码";
 "Script" = "脚本";
@@ -3120,7 +3118,6 @@
 "These settings also affect the final configuration. Existing overrides and scripts are preserved." = "这些设置也会影响最终配置。已有覆写与脚本会继续保留。";
 "These settings apply to every profile." = "这一页的设置对所有配置生效。";
 "These settings apply to every profile. Imported sources stay unchanged." = "这些设置对所有配置生效，导入的源码不受影响。";
-"These settings apply to this profile only." = "这一页的设置只对当前配置生效。";
 "These settings now apply to every profile. %@ values set on other profiles were replaced by the profile that was active." = "这些设置现在对所有配置生效。你在其他配置上设过的 %@ 项已被当时正在使用的配置的值取代。";
 "These were downloaded but the core could not read them, so none of their rules are in effect. That alone does not stop the tunnel — but it is the commonest thing wrong with a profile that misbehaves." = "这些规则集下载下来了，但内核读不了，所以里面的规则一条都没生效。光凭这一点不会让隧道起不来——但配置出毛病，多半就毛病在这儿。";
 "They are removed from this profile and cannot be brought back." = "它们会从此配置中移除，且无法恢复。";

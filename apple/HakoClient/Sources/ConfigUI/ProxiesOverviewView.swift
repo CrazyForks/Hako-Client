@@ -627,7 +627,12 @@ struct ProxiesOverviewAdapter: View {
                 HakoProxyGroupSnapshot(
                     name: group.name,
                     type: group.type,
-                    members: projections.members(of: group),
+                    members: ProxyBrowsingVisibility.members(
+                        projections.members(of: group),
+                        of: group.name,
+                        mode: outboundMode,
+                        name: \.name
+                    ),
                     configuredSelection:
                         group.configuredSelection,
                     runtimeSelection:

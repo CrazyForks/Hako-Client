@@ -734,32 +734,6 @@ struct ProfileRuntimeTrustEditor: View {
                 .accessibilityIdentifier("profile-runtime-trust.server-tls")
             } header: {
                 Text("External Controller TLS")
-            } footer: {
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                Text("Certificate, private-key, client-auth and ECH server-key fields are kept in the source and handed to Clash, which serves the controller over HTTPS when this profile sets external-controller-tls.")
-            }
-
-            if draft.originalOverwriteMode != .standard {
-                Section {
-                    Label(
-                        "Saving switches this profile to Standard overrides. Your existing script or custom draft is kept for later use.",
-                        systemImage: HakoSymbol.infoCircle.name
-                    )
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                }
             }
 
             if !error.isEmpty {

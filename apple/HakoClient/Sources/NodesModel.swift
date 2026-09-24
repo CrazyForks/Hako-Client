@@ -488,6 +488,12 @@ enum BuiltinProxyName {
 enum GlobalProxySelectionPolicy {
     static let groupName = "GLOBAL"
 
+     
+     
+     
+     
+    static func remembers(group: String) -> Bool { group != groupName }
+
     static func target(
         groups: [ProxyGroup],
         preferredGroupName: String?
@@ -1299,7 +1305,7 @@ final class NodesModel: ObservableObject {
             "node switched  group=\(group) -> \(name)",
             stream: .app
         )
-        currentGroupName = group
+        if GlobalProxySelectionPolicy.remembers(group: group) { currentGroupName = group }
         if !command.isConnected {
             applyOfflineSelection(group: group, name: name)
         }
@@ -1481,7 +1487,8 @@ final class NodesModel: ObservableObject {
          
          
          
-        guard currentGroupName != group else { return }
+        guard GlobalProxySelectionPolicy.remembers(group: group),
+              currentGroupName != group else { return }
         currentGroupName = group
         preferences?.savePresentation(
             currentGroup: group,

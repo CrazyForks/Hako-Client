@@ -484,7 +484,6 @@
 "Certificate and private key must be configured together." = "憑證與私鑰必須同時設定。";
 "Certificate rejected" = "憑證被拒絕";
 "Certificate store" = "憑證庫";
-"Certificate, private-key, client-auth and ECH server-key fields are kept in the source and handed to Clash, which serves the controller over HTTPS when this profile sets external-controller-tls." = "憑證、私鑰、用戶端認證與 ECH 服務端金鑰欄位會原樣保留並交給 Clash；當本設定檔設定了 external-controller-tls 時，控制器就用它們提供 HTTPS。";
 "Chain Totals" = "鏈路合計";
 "Change Rule Scheme" = "更換規則方案";
 "Change it in the app's own settings — this file does not decide it." = "去 App 自己的設定裡改——這份設定說了不算。";
@@ -2514,7 +2513,6 @@
 "Saving creates an independent configuration that no longer follows source updates." = "儲存後，此設定檔獨立管理，不再跟隨來源更新。";
 "Saving rebuilds the current profile automatically. If VPN is off, it stays off until the next connection." = "儲存會自動重建目前設定檔。若 VPN 處於關閉狀態，將保持關閉直到下次連線。";
 "Saving switches this profile to Standard overrides." = "儲存會把本設定檔切換為標準覆寫。";
-"Saving switches this profile to Standard overrides. Your existing script or custom draft is kept for later use." = "儲存會把本設定檔切換為標準覆寫。你現有的指令碼或自訂草稿會保留備用。";
 "Saving…" = "儲存中…";
 "Scan QR Code" = "掃描 QR Code";
 "Script" = "指令碼";
@@ -3120,7 +3118,6 @@
 "These settings also affect the final configuration. Existing overrides and scripts are preserved." = "這些設定也會影響最終設定。既有覆寫與指令稿會繼續保留。";
 "These settings apply to every profile." = "這一頁的設定對所有設定檔生效。";
 "These settings apply to every profile. Imported sources stay unchanged." = "這些設定對所有設定檔生效，匯入的原始碼不受影響。";
-"These settings apply to this profile only." = "這一頁的設定只對目前設定檔生效。";
 "These settings now apply to every profile. %@ values set on other profiles were replaced by the profile that was active." = "這些設定現在對所有設定檔生效。你在其他設定檔上設過的 %@ 項已被當時正在使用的設定檔的值取代。";
 "These were downloaded but the core could not read them, so none of their rules are in effect. That alone does not stop the tunnel — but it is the commonest thing wrong with a profile that misbehaves." = "這些規則集下載下來了，但核心讀不了，所以裡面的規則一條都沒生效。光憑這一點不會讓通道起不來——但設定檔出毛病，多半就毛病在這兒。";
 "They are removed from this profile and cannot be brought back." = "它們會從此設定檔中移除，且無法恢復。";
