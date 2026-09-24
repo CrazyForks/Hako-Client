@@ -1212,7 +1212,34 @@ final class ProfilesViewModel: ObservableObject {
         noteLibraryFetchability(candidate)
         load()
         savedConfigurationGeneration &+= 1
-
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        if let active = activeProfileID, compositions.keys.contains(active),
+           let latest = profiles.first(where: { $0.id == active }) {
+            startActivation(
+                latest,
+                applyToTunnel: ProfileSelectionRuntimePolicy.shouldApplyToTunnel(vpnStatus: vpn.status),
+                preferCachedSource: true,
+                because: HakoPerf.Reason.configurationSaved
+            )
+            await waitForPendingActivation()
+        }
     }
 
      

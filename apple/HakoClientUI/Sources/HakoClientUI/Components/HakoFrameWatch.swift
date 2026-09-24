@@ -190,6 +190,8 @@ public enum HakoPerf {
         public static let globalConfiguration = "updateGlobalConfiguration"
         public static let profileSync = "sync"
          
+        public static let configurationSaved = "configuration saved"
+         
         public static let bridgeOnMain = "bridge.main "
     }
 
