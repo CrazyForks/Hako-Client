@@ -775,6 +775,7 @@ final class HakoTVTunnelController: ObservableObject {
         state.ruleProvidersTotal = 0
         state.ruleProvidersLoaded = 0
         state.proxyGroups = []
+        state.hiddenProxyGroups = []
         state.nodeCount = 0
         state.nodeGroup = ""
         state.nodeName = ""
@@ -861,6 +862,9 @@ final class HakoTVTunnelController: ObservableObject {
         if !state.isConnected {
             state.observations.proxies.useConfiguration()
             state.proxyGroups = facts.proxyGroups
+             
+             
+            state.hiddenProxyGroups = []
             state.nodeCount = facts.nodeCount
             if let first = facts.proxyGroups.first {
                 state.nodeGroup = first.name
@@ -1156,6 +1160,7 @@ final class HakoTVTunnelController: ObservableObject {
             let decoded = try HakoTVKernelSnapshots.proxies(from: reply, groupOrder: groupOrder)
             guard accepts(context) else { return }
             state.proxyGroups = decoded.groups
+            state.hiddenProxyGroups = decoded.hiddenGroups
             state.latency = HakoTVNodesScreen.merge(
                 polled: decoded.latency, over: state.latency, sweeping: sweepingMembers
             )

@@ -181,6 +181,8 @@ struct HakoTVShell: View {
          
          
         if stage == .welcome { fixtureState.iCloudRestoreLine = String(localized: "Restore from iCloud") }
+
+
         _fixture = State(initialValue: fixtureState)
 
         _tunnel = StateObject(wrappedValue: HakoTVTunnelController())

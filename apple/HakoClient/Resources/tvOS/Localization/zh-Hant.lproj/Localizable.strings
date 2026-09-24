@@ -390,3 +390,4 @@
 "download failed: %@" = "下載失敗：%@";
 "easytier · Not supported" = "easytier · 不支援";
 "tvOS guarantees 500 KB of storage and may discard the rest. A profile URL survives that; a file does not." = "tvOS 只保證 500 KB 的儲存空間，其餘隨時可能被清掉。連結能挺過去；檔案不能。";
+"· No nodes" = "· 無節點";

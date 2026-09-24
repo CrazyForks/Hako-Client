@@ -73,6 +73,12 @@ struct HakoTVProductState {
      
     var proxyGroups: [HakoProxyGroupSnapshot]
      
+     
+     
+     
+     
+    var hiddenProxyGroups: [HakoProxyGroupSnapshot] = []
+     
     var latency: [String: HakoProxyLatencyState]
      
      
@@ -156,6 +162,7 @@ struct HakoTVProductState {
         state.sessionBytes = 0
         state.connectionCount = 0
         state.proxyGroups = []
+        state.hiddenProxyGroups = []
         state.latency = [:]
         state.rules = []
         state.connections = []

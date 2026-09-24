@@ -100,7 +100,7 @@ struct HakoTVNodesScreen: View {
                         shownGroupName = group.name
                     } label: {
                         LabeledContent {
-                            Text(group.currentSelection ?? "—")
+                            Text(Self.groupRowValue(for: group))
                         } label: {
                             Text(group.name)
                             Text(Self.groupRowSubtitle(for: group, state: state))
@@ -418,31 +418,49 @@ struct HakoTVNodesScreen: View {
      
      
      
-    static func isEmptyGroup(_ member: HakoProxyMemberSnapshot, in groups: [HakoProxyGroupSnapshot]) -> Bool {
-        member.isGroup && groups.first { $0.name == member.name }?.isEmpty == true
+     
+    static func group(named name: String, state: HakoTVProductState) -> HakoProxyGroupSnapshot? {
+        state.proxyGroups.first { $0.name == name } ?? state.hiddenProxyGroups.first { $0.name == name }
     }
 
+     
+     
+     
+    static func isEmptyGroup(_ member: HakoProxyMemberSnapshot, state: HakoTVProductState) -> Bool {
+        member.isGroup && group(named: member.name, state: state)?.isEmpty == true
+    }
+
+     
+     
+     
+     
      
      
      
      
      
     static func displayedLatency(for member: HakoProxyMemberSnapshot, state: HakoTVProductState) -> HakoProxyLatencyState {
-        if isEmptyGroup(member, in: state.proxyGroups) { return .untested }
+        if isEmptyGroup(member, state: state) { return .untested }
         let direct = state.latency[member.name] ?? .untested
         guard direct == .untested, member.isGroup,
-              let group = state.proxyGroups.first(where: { $0.name == member.name }),
-              let route = group.runtimeSelection
+              let group = group(named: member.name, state: state),
+              let route = group.resolvedRuntimeRoute ?? group.runtimeSelection
         else { return direct }
         return state.latency[route] ?? .untested
     }
 
      
      
+     
+    static func displayedLatency(forGroup group: HakoProxyGroupSnapshot, state: HakoTVProductState) -> HakoProxyLatencyState {
+        displayedLatency(for: HakoProxyMemberSnapshot(name: group.name, type: group.type, isGroup: true), state: state)
+    }
+
+     
+     
+     
     static func readingLabel(for member: HakoProxyMemberSnapshot, state: HakoTVProductState) -> String {
-         
-         
-        if isEmptyGroup(member, in: state.proxyGroups) { return "" }
+        if isEmptyGroup(member, state: state) { return "" }
         return latencyLabel(
             displayedLatency(for: member, state: state),
             failureCategory: state.failureReasons[member.name] ?? ""
@@ -456,10 +474,9 @@ struct HakoTVNodesScreen: View {
      
      
     static func groupRowSubtitle(for group: HakoProxyGroupSnapshot, state: HakoTVProductState) -> String {
-        guard !group.isEmpty, let selection = group.currentSelection,
-              let member = group.members.first(where: { $0.name == selection })
-        else { return group.type }
-        if case .measured(let milliseconds) = displayedLatency(for: member, state: state) {
+        if group.isEmpty { return "\(group.type) \(noNodes)" }
+        guard let selection = group.currentSelection else { return group.type }
+        if case .measured(let milliseconds) = displayedLatency(forGroup: group, state: state) {
             return "\(group.type) · \(selection) (\(latencyLabel(.measured(milliseconds: milliseconds))))"
         }
         return "\(group.type) · \(selection)"
@@ -468,19 +485,35 @@ struct HakoTVNodesScreen: View {
      
      
      
+    static func groupRowValue(for group: HakoProxyGroupSnapshot) -> String {
+        group.isEmpty ? "—" : (group.currentSelection ?? "—")
+    }
+
+     
+     
+     
+     
      
     static func typeLabel(for member: HakoProxyMemberSnapshot, state: HakoTVProductState) -> String {
-        state.easyTierNodeNames.contains(member.name)
-            ? String(localized: "easytier · Not supported")
-            : member.type
+        if state.easyTierNodeNames.contains(member.name) {
+            return String(localized: "easytier · Not supported")
+        }
+        if isEmptyGroup(member, state: state) {
+            return "\(member.type) \(noNodes)"
+        }
+        return member.type
     }
+
+     
+     
+    private static var noNodes: String { String(localized: "· No nodes") }
 
      
      
      
     static func sweepMembers(of group: HakoProxyGroupSnapshot, state: HakoTVProductState) -> [HakoProxyMemberSnapshot] {
         guard !group.isEmpty else { return [] }
-        return group.members.filter { !isEmptyGroup($0, in: state.proxyGroups) }
+        return group.members.filter { !isEmptyGroup($0, state: state) }
     }
 
     static func isTesting(_ group: HakoProxyGroupSnapshot, state: HakoTVProductState) -> Bool {

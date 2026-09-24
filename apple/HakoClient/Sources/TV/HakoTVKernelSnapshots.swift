@@ -43,6 +43,12 @@ enum HakoTVKernelSnapshots {
 
     struct Proxies: Equatable {
         let groups: [HakoProxyGroupSnapshot]
+         
+         
+         
+         
+         
+        let hiddenGroups: [HakoProxyGroupSnapshot]
         let latency: [String: HakoProxyLatencyState]
          
         let nodeCount: Int
@@ -83,6 +89,8 @@ enum HakoTVKernelSnapshots {
      
      
      
+     
+     
     static func proxies(from data: Data, groupOrder: [String]) throws -> Proxies {
         let root = try object(data, what: "proxies")
         guard let entries = root["proxies"] as? [String: [String: Any]] else {
@@ -90,6 +98,20 @@ enum HakoTVKernelSnapshots {
         }
         func isGroup(_ name: String) -> Bool { entries[name]?["all"] is [Any] }
         func type(of name: String) -> String { entries[name]?["type"] as? String ?? "" }
+         
+         
+         
+         
+         
+        func resolve(_ selection: String) -> String {
+            var current = selection
+            var visited = Set<String>()
+            while isGroup(current), visited.insert(current).inserted,
+                  let next = entries[current]?["now"] as? String, !next.isEmpty {
+                current = next
+            }
+            return current
+        }
 
         var latency: [String: HakoProxyLatencyState] = [:]
         for (name, entry) in entries {
@@ -98,15 +120,17 @@ enum HakoTVKernelSnapshots {
             latency[name] = delay > 0 ? .measured(milliseconds: delay) : .failed
         }
 
-        let groupNames = entries.keys.filter { isGroup($0) && entries[$0]?["hidden"] as? Bool != true }
+        let hiddenNames = entries.keys.filter { isGroup($0) && entries[$0]?["hidden"] as? Bool == true }
+        let groupNames = entries.keys.filter { isGroup($0) && !hiddenNames.contains($0) }
         let ordered = groupOrder.filter { groupNames.contains($0) }
             + groupNames.filter { !groupOrder.contains($0) && $0 != "GLOBAL" }.sorted()
             + (groupNames.contains("GLOBAL") ? ["GLOBAL"] : [])
-        let groups = ordered.compactMap { name -> HakoProxyGroupSnapshot? in
+        func snapshot(_ name: String) -> HakoProxyGroupSnapshot? {
             guard let entry = entries[name], let all = entry["all"] as? [String] else { return nil }
             let members = all.map { member in
                 HakoProxyMemberSnapshot(name: member, type: type(of: member), isGroup: isGroup(member))
             }
+            let now = entry["now"] as? String
              
              
              
@@ -115,10 +139,13 @@ enum HakoTVKernelSnapshots {
                 name: name,
                 type: entry["type"] as? String ?? "",
                 members: members,
-                runtimeSelection: entry["now"] as? String,
+                runtimeSelection: now,
+                resolvedRuntimeRoute: now.map(resolve),
                 emptyFallback: entry["emptyFallback"] as? String
             )
         }
+        let groups = ordered.compactMap(snapshot)
+        let hiddenGroups = hiddenNames.sorted().compactMap(snapshot)
          
          
          
@@ -127,7 +154,10 @@ enum HakoTVKernelSnapshots {
         let placeholders = Set(entries.compactMap { name, entry -> String? in
             (entry["placeholderType"] as? String)?.lowercased() == "easytier" ? name : nil
         })
-        return Proxies(groups: groups, latency: latency, nodeCount: nodeCount, easyTierPlaceholders: placeholders)
+        return Proxies(
+            groups: groups, hiddenGroups: hiddenGroups, latency: latency,
+            nodeCount: nodeCount, easyTierPlaceholders: placeholders
+        )
     }
 
      
