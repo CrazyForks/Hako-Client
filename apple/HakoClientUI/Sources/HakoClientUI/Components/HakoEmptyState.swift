@@ -39,11 +39,15 @@ public struct HakoEmptyState<Icon: View>: View {
                 .font(.headline)
                 .multilineTextAlignment(.center)
 
-            Text(LocalizedStringKey(message))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+             
+             
+            if !message.isEmpty {
+                Text(LocalizedStringKey(message))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, HakoTheme.Spacing.section)

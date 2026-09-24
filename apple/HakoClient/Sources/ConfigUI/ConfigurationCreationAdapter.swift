@@ -322,7 +322,7 @@ private struct ConfigurationDNSSettingsAdapter: View {
                             showsSource = true
                         } catch { errorMessage = error.localizedDescription }
                     } label: { Label("Edit DNS Source", systemImage: HakoSymbol.curlybraces.name) }
-                } footer: { Text("These DNS settings belong only to this configuration.") }
+                }
             }
             if ready {
                 Section {
@@ -344,7 +344,7 @@ private struct ConfigurationDNSSettingsAdapter: View {
                         Text(verbatim: result.runtimeDNSJSON ?? "{}")
                             .font(.caption.monospaced()).textSelection(.enabled)
                     }
-                } footer: { Text("Calculated for the next start. This does not run a DNS query.") }
+                }
             }
             if !ready { Section { ProgressView() } }
             if let errorMessage {

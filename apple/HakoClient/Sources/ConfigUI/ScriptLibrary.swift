@@ -383,7 +383,7 @@ struct ScriptLibraryView: View {
                 Section {
                 HakoEmptyState(
                     title: "No Scripts",
-                    message: "Create a reusable main(config) transform, then select it in a profile override.",
+                    message: "",
                     symbol: .curlybraces
                 )
                 .listRowSeparator(.hidden)
@@ -420,7 +420,7 @@ struct ScriptLibraryView: View {
             if scripts.isEmpty {
                 HakoEmptyState(
                     title: "No Scripts",
-                    message: "Create a reusable main(config) transform, then select it in a profile override.",
+                    message: "",
                     symbol: .curlybraces
                 )
                 .listRowSeparator(.hidden)
@@ -802,8 +802,6 @@ struct ScriptEditorView: View {
                 HakoStatusMessage(text: .copy(importResult), kind: .error)
                     .accessibilityIdentifier("scripts.editor.import.result")
             }
-        } footer: {
-            Text("Paste the link to the script file. Its text replaces what is in the editor.")
         }
     }
 
@@ -815,8 +813,6 @@ struct ScriptEditorView: View {
                 HakoStatusMessage(text: .copy(importResult), kind: .error)
                     .accessibilityIdentifier("scripts.editor.import.result")
             }
-        } footer: {
-            Text("Pick a .js file. Its text replaces what is in the editor.")
         }
     }
 

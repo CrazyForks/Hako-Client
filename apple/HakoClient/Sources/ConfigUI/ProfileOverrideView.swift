@@ -154,8 +154,6 @@ struct ProfileOverrideView: View {
                         )
                     } header: {
                         Text("Patch JSON")
-                    } footer: {
-                        Text("Use {} to leave fields unchanged.")
                     }
 
                     if !configurationCenter {
@@ -189,12 +187,6 @@ struct ProfileOverrideView: View {
                             .accessibilityIdentifier("profile.override.prepend-rules")
                     } header: {
                         Text("Added Rules")
-                    } footer: {
-                        Text(
-                            HakoPlatformLayout.pageUsesSystemSettingsIdiom
-                                ? "Click a rule to edit it; use Edit to reorder or delete."
-                                : "Tap to edit; use Edit to reorder or delete."
-                        )
                     }
                     }
                 } else if mode == .script {
@@ -216,8 +208,6 @@ struct ProfileOverrideView: View {
                         .accessibilityIdentifier("profile.override.script.add")
                     } header: {
                         Text("Script")
-                    } footer: {
-                        Text("Global overrides apply after this script.")
                     }
                 } else {
                     Section {
@@ -290,8 +280,6 @@ struct ProfileOverrideView: View {
                         .hakoMacFormActionChrome()
                     } header: {
                         Text("Custom Configuration")
-                    } footer: {
-                        Text("Custom mode replaces proxy-groups and rules in the runtime copy; the source remains unchanged.")
                     }
                 }
 
@@ -339,10 +327,6 @@ struct ProfileOverrideView: View {
                         }
                     } header: {
                         Text("Migrated Rules")
-                    } footer: {
-                        Text(
-                            "Rules preserved for this profile during the app-wide settings migration."
-                        )
                     }
                 }
 
@@ -1099,8 +1083,6 @@ struct ProfileProxyChainEditor: View {
                     }
                     Section {
                         addChainRow
-                    } footer: {
-                        Text("Each row reads the way the traffic goes: entry first, exit last. The site you open sees the exit. Tap a chain to change or remove it.")
                     }
                 } else {
                     Section {
@@ -1108,8 +1090,6 @@ struct ProfileProxyChainEditor: View {
                         addChainRow
                     } header: {
                         chainsHeader
-                    } footer: {
-                        Text("Each row reads the way the traffic goes: entry first, exit last. The site you open sees the exit. Tap a chain to change or remove it.")
                     }
                 }
             }
@@ -1302,7 +1282,7 @@ struct ProfileProxyChainEditor: View {
         if chainedProxies.isEmpty {
             HakoEmptyState(
                 title: "No Proxy Chains",
-                message: "A chain sends your traffic in through one proxy and out through another. The site you open sees the exit.",
+                message: "",
                 symbol: .link
             )
             .listRowSeparator(.hidden)
@@ -1835,8 +1815,6 @@ private struct ChainBuilder: View {
                         allowsNone: false
                     )
                     .accessibilityIdentifier("proxy-chain.builder.entry")
-                } footer: {
-                    Text("Your traffic goes here first.")
                 }
 
                 Section {
@@ -1848,8 +1826,6 @@ private struct ChainBuilder: View {
                         allowsNone: false
                     )
                     .accessibilityIdentifier("proxy-chain.builder.exit")
-                } footer: {
-                    Text("The site you open sees this one.")
                 }
 
                  
@@ -2125,15 +2101,11 @@ private struct ProxyDialerEditor: View {
                         allowsNone: true
                     )
                     .accessibilityIdentifier("proxy-chain.dialer-picker")
-                } footer: {
-                    Text("Your traffic goes here first. Clearing it removes the chain.")
                 }
 
                 Section {
                      
                     keyValue("Exit", proxy.name)
-                } footer: {
-                    Text("The site you open sees this one.")
                 }
 
                 if case .failure(let pathError) = previewedPath {
@@ -2367,8 +2339,6 @@ private struct ProxyIdentityMigrationView: View {
                         dismissPresentation()
                     }
                     .accessibilityIdentifier("proxy-chain.orphan.remove")
-                } footer: {
-                    Text("Removing the override does not delete or modify the downloaded source.")
                 }
 
                 if !error.isEmpty {

@@ -43,7 +43,7 @@ struct CustomProxyGroupsEditor: View {
                 Section {
                 HakoEmptyState(
                     title: "No Custom Groups",
-                    message: "Add a group or return and use Quick Fill.",
+                    message: "",
                     symbol: .point3ConnectedTrianglepathDotted
                 )
                 .listRowSeparator(.hidden)
@@ -94,7 +94,7 @@ struct CustomProxyGroupsEditor: View {
             if groups.isEmpty {
                 HakoEmptyState(
                     title: "No Custom Groups",
-                    message: "Add a group or return and use Quick Fill.",
+                    message: "",
                     symbol: .point3ConnectedTrianglepathDotted
                 )
                 .listRowSeparator(.hidden)
@@ -236,8 +236,6 @@ struct CustomProxyGroupEditor: View {
                 if let validationError = group.validationError {
                     Section {
                         HakoStatusMessage(text: .copy(validationError.localizedDescription), kind: .error)
-                    } footer: {
-                        Text("Choose a supported group type. Proxy chaining is configured with dialer-proxy on each proxy.")
                     }
                 }
 
@@ -353,8 +351,6 @@ struct CustomProxyGroupEditor: View {
                     }
                 } header: {
                     Text("Icon")
-                } footer: {
-                    Text("Recent icons are stored locally for reuse. An emoji or a bundled name is drawn here; a URL is kept with the group but never loaded, so a subscription cannot learn when you open the app.")
                 }
 
                 if !error.isEmpty {
@@ -573,7 +569,7 @@ struct CustomRulesEditor: View {
                 Section {
                 HakoEmptyState(
                     title: "No Custom Rules",
-                    message: "Add a rule or return and use Quick Fill.",
+                    message: "",
                     symbol: .listBulletRectangle
                 )
                 .listRowSeparator(.hidden)
@@ -607,7 +603,7 @@ struct CustomRulesEditor: View {
             if rules.isEmpty {
                 HakoEmptyState(
                     title: "No Custom Rules",
-                    message: "Add a rule or return and use Quick Fill.",
+                    message: "",
                     symbol: .listBulletRectangle
                 )
                 .listRowSeparator(.hidden)

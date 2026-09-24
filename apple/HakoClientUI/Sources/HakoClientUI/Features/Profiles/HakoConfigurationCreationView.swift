@@ -361,7 +361,7 @@ public struct HakoConfigurationCreationView: View {
                 Section {
                     Button("This Configuration's Exceptions", action: editPersonalRules)
                         .accessibilityIdentifier("configuration.create.personal-rules")
-                } footer: { Text("Only affects this configuration. Does not change Rule Library. Personal rules apply in Standard override mode.") }
+                }
             }
             Section {
                 Button("Manage Rule Schemes", action: manageRules)
@@ -1081,7 +1081,6 @@ public struct HakoConfigurationRuleEditingView: View {
                 Button("Add Rule") { editing = .init(rowID: nil, raw: "") }.buttonStyle(.plain).foregroundStyle(.primary)
                     .accessibilityIdentifier("configuration.rule.editor.add")
             } header: { Text("Rules") }
-              footer: { Text("Rules match from top to bottom. MATCH stays last.") }
             if let error { Section { Text(verbatim: error).foregroundStyle(.red) } }
         }
         .hakoAlwaysEditing()
@@ -1508,7 +1507,7 @@ private struct HakoConfigurationSubscriptionFields: View {
                         Text(hako: .format("Every %@ hours", [String(draft.intervalHours)])).tag(draft.intervalHours)
                     }
                 }.accessibilityIdentifier("configuration.source.subscription.interval")
-            } header: { Text("Update") } footer: { Text("Automatic updates run when the system permits. The interval is not a guaranteed update time.") }
+            } header: { Text("Update") }
         }
     }
 }
@@ -1827,7 +1826,7 @@ public struct HakoConfigurationCollectionView: View {
             Section {
                 if let count = collection.inlineCount { HStack { Text("Entries"); Spacer(); Text(verbatim: String(count)) } }
                 else { Text("Content is loaded by the VPN core.").foregroundStyle(.secondary) }
-            } header: { Text("Content") } footer: { Text("This page shows the collection definition, not its current members.") }
+            } header: { Text("Content") }
         }.hakoPageTitle(.verbatim(collection.name))
     }
 }
