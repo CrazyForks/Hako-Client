@@ -46,6 +46,10 @@ enum HakoTVKernelSnapshots {
         let latency: [String: HakoProxyLatencyState]
          
         let nodeCount: Int
+         
+         
+         
+        let easyTierPlaceholders: Set<String>
     }
 
     struct Traffic: Equatable {
@@ -120,7 +124,10 @@ enum HakoTVKernelSnapshots {
          
         let builtIn: Set<String> = ["DIRECT", "REJECT", "REJECT-DROP", "PASS", "PASS-RULE", "COMPATIBLE"]
         let nodeCount = entries.keys.filter { !isGroup($0) && !builtIn.contains($0) }.count
-        return Proxies(groups: groups, latency: latency, nodeCount: nodeCount)
+        let placeholders = Set(entries.compactMap { name, entry -> String? in
+            (entry["placeholderType"] as? String)?.lowercased() == "easytier" ? name : nil
+        })
+        return Proxies(groups: groups, latency: latency, nodeCount: nodeCount, easyTierPlaceholders: placeholders)
     }
 
      

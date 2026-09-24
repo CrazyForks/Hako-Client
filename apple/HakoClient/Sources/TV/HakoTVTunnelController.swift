@@ -1160,6 +1160,9 @@ final class HakoTVTunnelController: ObservableObject {
                 polled: decoded.latency, over: state.latency, sweeping: sweepingMembers
             )
             state.nodeCount = decoded.nodeCount
+             
+             
+            if !decoded.easyTierPlaceholders.isEmpty { state.easyTierNodeNames.formUnion(decoded.easyTierPlaceholders) }
             state.groupCount = decoded.groups.filter { $0.name != "GLOBAL" }.count
             let root = state.outboundMode == .global
                 ? decoded.groups.first { $0.name == "GLOBAL" }
