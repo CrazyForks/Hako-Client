@@ -302,7 +302,7 @@ public struct HakoMacRootView: View {
                      .setCards, .setTrafficScope, .refreshExternalIP,
                      .refreshLANIP:
                     destination = nil
-                case .openAdjustment, .openRuntimeConfiguration:
+                case .openRuntimeConfiguration:
                     destination = nil
                 }
             }
@@ -352,7 +352,7 @@ public struct HakoMacRootView: View {
 private extension HakoMacSecondaryDestination {
     var isConfigurationDestination: Bool {
         switch self {
-        case .homeAdjustment, .runtimeConfiguration, .configuration:
+        case .runtimeConfiguration, .configuration:
             true
         case .profiles, .proxies, .rules, .activeRules, .dnsQuery,
              .utility, .more:
@@ -372,7 +372,7 @@ private extension HakoMacSecondaryDestination {
             .activeRules
         case .dnsQuery:
             .dnsQuery
-        case .homeAdjustment, .runtimeConfiguration, .configuration:
+        case .runtimeConfiguration, .configuration:
             .configuration
         case .utility(let destination):
             .utilities(destination)

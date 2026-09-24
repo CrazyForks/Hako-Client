@@ -1791,8 +1791,6 @@ private final class HakoMacSceneModel: ObservableObject {
             AnyView(ActiveRulesView(command: command))
         case .dnsQuery:
             AnyView(DNSQueryView(command: command))
-        case .homeAdjustment(let action):
-            homeAdjustmentContent(action)
         case .runtimeConfiguration:
             runtimeConfigurationContent()
         case .configuration:
@@ -1881,170 +1879,6 @@ private final class HakoMacSceneModel: ObservableObject {
             )
             .equatable()
         )
-    }
-
-    private func homeAdjustmentContent(
-        _ action: HakoHomeAdjustmentAction
-    ) -> AnyView {
-        guard let profile = currentProfile else {
-            return AnyView(
-                HakoMacSecondaryUnavailableView(
-                    destination: .homeAdjustment(action)
-                )
-            )
-        }
-
-        switch action {
-        case .customNodes:
-            return AnyView(
-                CustomNodesView(
-                    profile: profile,
-                    sourceYAML: profiles.uiProjectedYAML(for: profile),
-                    ownsNavigationContainer: false,
-                    loadDraft: {
-                        try self.profiles.providerDefinitionsDraft(
-                            for: profile
-                        )
-                    },
-                    prepareDraft: {
-                        try await self.profiles.providerDefinitionsDraftAsync(
-                            for: profile
-                        )
-                    },
-                    saveDraft: {
-                        try self.profiles.updateProviderDefinitions($0)
-                    },
-                    renameNode: {
-                        try self.profiles.renameProxyNode(
-                            profileID: profile.id, from: $0, to: $1
-                        )
-                    }
-                )
-            )
-        case .proxyChains:
-            return AnyView(
-                HakoMacDeferredSourcePage(
-                    profile: profile,
-                    fetch: { [weak self, profile] in
-                        self?.profiles.runtimeSourceYAML(for: profile)
-                    }
-                ) { rawYAML in
-                AnyView(ProfileProxyChainsView(
-                    profile: profile,
-                    rawYAML: rawYAML,
-                    ownsNavigationContainer: false,
-                    save: {
-                        try self.profiles.updateProxyChains($0)
-                    },
-                    measure: false
-                        ? { name in
-                            name == "Review Entry" ? 12 : 34
-                        }
-                        : self.command.isConnected ? { name in
-                            let outcome =
-                                await self.command.urlTestQuietly(name: name)
-                            return outcome.succeeded ? outcome.delay : 0
-                        }
-                        : nil,
-                    savePayloadDialers: { edits in
-                        try self.savePayloadDialerEdits(
-                            edits,
-                            profileID: profile.id
-                        )
-                    },
-                    openCustomNodes: { [weak self] in
-                         
-                         
-                         
-                        self?.navigationRequest =
-                            .homeAdjustment(.customNodes)
-                    }
-                ))
-                }
-                .equatable()
-            )
-        case .routingRules:
-            return AnyView(
-                ProfileRulesAdapter(
-                    profile: profile,
-                    sourceYAML: profiles.uiProjectedYAML(for: profile),
-                    ownsNavigationContainer: false
-                ) {
-                    try self.profiles.updateRules($0)
-                }
-            )
-        case .connection:
-            return AnyView(
-                ProfileNetworkSettingsView(
-                    profile: profile,
-                    sourceYAML: self.profiles.uiProjectedYAML(for: profile),
-                    ownsNavigationContainer: false
-                ) {
-                    try self.profiles.updateNetwork($0)
-                }
-            )
-        case .proxySources:
-            return AnyView(
-                ProfileProviderDefinitionsView(
-                    profile: profile,
-                    kind: .proxy,
-                    ownsNavigationContainer: false,
-                    load: {
-                        try await self.profiles.providerDefinitionsDraftAsync(
-                            for: profile
-                        )
-                    },
-                    save: {
-                        try self.profiles.updateProviderDefinitions($0)
-                    }
-                )
-            )
-        case .ruleSets:
-            return AnyView(
-                ProfileProviderDefinitionsView(
-                    profile: profile,
-                    kind: .rule,
-                    ownsNavigationContainer: false,
-                    load: {
-                        try await self.profiles.providerDefinitionsDraftAsync(
-                            for: profile
-                        )
-                    },
-                    save: {
-                        try self.profiles.updateProviderDefinitions($0)
-                    }
-                )
-            )
-        case .advancedOverrides:
-            return AnyView(
-                HakoMacDeferredSourcePage(
-                    profile: profile,
-                    fetch: { [weak self, profile] in
-                        self?.profiles.sourceYAML(for: profile)
-                    }
-                ) { sourceYAML in
-                AnyView(ProfileAdvancedOverridesView(
-                    profile: profile,
-                    sourceYAML: sourceYAML,
-                    ownsNavigationContainer: false,
-                    save: {
-                        try self.profiles.updateAdvancedOverrides($0)
-                    }
-                ))
-                }
-                .equatable()
-            )
-        case .rawFields:
-            return AnyView(
-                ProfileAdditionalFieldsView(
-                    profile: profile,
-                    ownsNavigationContainer: false,
-                    save: {
-                        try self.profiles.updateAdvancedOverrides($0)
-                    }
-                )
-            )
-        }
     }
 
     private func savePayloadDialerEdits(
@@ -2240,12 +2074,6 @@ private final class HakoMacSceneModel: ObservableObject {
                  
                 egress: egressSnapshot,
                 lanAddress: lanAddress,
-                adjustments: HakoHomeAdjustmentModule.allCases.map {
-                    HakoHomeAdjustmentSnapshot(
-                        module: $0,
-                        summary: adjustmentSummary($0)
-                    )
-                },
                 isProfileActionInFlight:
                     profiles.isActivationInFlight
             ),
@@ -2442,87 +2270,6 @@ private final class HakoMacSceneModel: ObservableObject {
      
      
      
-     
-     
-    private func adjustmentSummary(
-        _ module: HakoHomeAdjustmentModule
-    ) -> String {
-        guard let profile = currentProfile else { return module.subtitle }
-        switch module {
-        case .nodes:
-            let chains = profile.proxyChain?.assignments.count ?? 0
-            return chains == 0
-                ? module.subtitle
-                : HakoCopy.format("%d proxy chains", locale: locale, chains)
-        case .rules:
-            let count = profile.override.appendRules.count
-            return count == 0
-                ? module.subtitle
-                : HakoCopy.format("%d personal rules", locale: locale, count)
-        case .network:
-            let count = ProfileNetworkDraft(profile: profile)
-                .customizedProfileFieldCount
-            return count == 0
-                ? module.subtitle
-                : HakoCopy.format(
-                    "%d profile network settings",
-                    locale: locale,
-                    count
-                )
-        case .resources:
-            guard let counts = homeResourceCounts, counts.hasResources else {
-                return module.subtitle
-            }
-            if counts.providers > 0 {
-                return HakoCopy.format(
-                    "%d proxy sources · %d rule sets",
-                    locale: locale,
-                    counts.proxyProviders,
-                    counts.ruleProviders
-                )
-            }
-            return HakoCopy.format(
-                "%d supporting files",
-                locale: locale,
-                counts.supportingFiles
-            )
-        case .advancedOverrides:
-            switch profile.overwriteMode ?? .standard {
-            case .standard:
-                let count = ProfileAdvancedOverridesDraft(profile: profile)
-                    .rawPatchFieldCount
-                return count == 0
-                    ? HakoCopy.string("Visual settings only", locale: locale)
-                    : HakoCopy.format(
-                        "%d additional fields",
-                        locale: locale,
-                        count
-                    )
-            case .script:
-                return profile.selectedScriptID == nil
-                    ? HakoCopy.string("Choose a local script", locale: locale)
-                    : HakoCopy.string("Local script selected", locale: locale)
-            case .custom:
-                let custom = profile.customOverwrite ?? CustomOverwriteSpec()
-                return HakoCopy.format(
-                    "%d custom groups · %d rules",
-                    locale: locale,
-                    custom.proxyGroups.count,
-                    custom.rules.count
-                )
-            }
-        }
-    }
-
-     
-     
-     
-     
-     
-     
-     
-     
-     
     private func perform(_ command: HakoHomeCommand) async {
         switch command {
         case .performPrimaryAction(let action):
@@ -2539,8 +2286,6 @@ private final class HakoMacSceneModel: ObservableObject {
             navigationRequest = .proxies
         case .openRules:
             navigationRequest = .rules
-        case .openAdjustment(let action):
-            navigationRequest = .homeAdjustment(action)
         case .openRuntimeConfiguration:
             navigationRequest = .runtimeConfiguration
         case .setCards(let cards):
@@ -2794,10 +2539,6 @@ private final class HakoMacSceneModel: ObservableObject {
      
      
     private var homeRuleTally: (count: Int, targets: [String])?
-     
-     
-     
-    private var homeResourceCounts: HomeResourceCounts?
 
     private func recomputeHomeRuleTally() {
         let profile = currentProfile
@@ -2812,17 +2553,12 @@ private final class HakoMacSceneModel: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             let tally = ProfileConfigTally.make(sourceYAML: projected)
             let overview = RulesOverviewModel.make(sourceYAML: projected)
-            let resources = HomeResourceCounts.make(
-                profile: profile,
-                sourceYAML: projected
-            )
             let targets = overview.buckets.prefix(3).map {
                 "\($0.target) \($0.rules.count)"
             }
             await MainActor.run {
                 guard let self else { return }
                 self.homeRuleTally = tally.map { ($0.rules, Array(targets)) }
-                self.homeResourceCounts = resources
                 self.refreshSnapshot()
             }
         }

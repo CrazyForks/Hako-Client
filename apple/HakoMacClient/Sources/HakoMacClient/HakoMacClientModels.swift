@@ -395,7 +395,6 @@ public enum HakoMacSecondaryDestination: Hashable, Sendable {
     case rules
     case activeRules
     case dnsQuery
-    case homeAdjustment(HakoHomeAdjustmentAction)
     case runtimeConfiguration
     case configuration
     case utility(HakoUtilityDestination)
@@ -408,7 +407,6 @@ public enum HakoMacSecondaryDestination: Hashable, Sendable {
         .activeRules,
         .dnsQuery,
     ]
-        + HakoHomeAdjustmentAction.allCases.map(Self.homeAdjustment)
         + [
             .runtimeConfiguration,
             .configuration,
@@ -432,8 +430,6 @@ public enum HakoMacSecondaryDestination: Hashable, Sendable {
             "Active Rules"
         case .dnsQuery:
             "DNS Query"
-        case .homeAdjustment(let action):
-            action.title
         case .runtimeConfiguration:
             "Runtime Configuration"
         case .configuration:
@@ -447,8 +443,6 @@ public enum HakoMacSecondaryDestination: Hashable, Sendable {
 
     public init?(homeCommand: HakoHomeCommand) {
         switch homeCommand {
-        case .openAdjustment(let action):
-            self = .homeAdjustment(action)
         case .openRuntimeConfiguration:
             self = .runtimeConfiguration
         case .openProfiles, .performPrimaryAction, .showConnectionIssue,
@@ -496,7 +490,7 @@ public extension AppleClientActions {
                     openProxies()
                 case .openRules:
                     openRules()
-                case .openAdjustment, .openRuntimeConfiguration:
+                case .openRuntimeConfiguration:
                     customizeHome()
                 case .showConnectionIssue,
                      .setCards,

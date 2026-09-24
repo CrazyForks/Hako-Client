@@ -44,7 +44,7 @@ public struct HakoMacSecondaryUnavailableView: View {
 
     private var unavailableMessage: String {
         switch destination {
-        case .rules, .activeRules, .dnsQuery, .homeAdjustment,
+        case .rules, .activeRules, .dnsQuery,
              .runtimeConfiguration, .configuration:
             "This page needs the active profile configuration surface before it can make changes."
         case .utility:
@@ -68,19 +68,6 @@ public struct HakoMacSecondaryUnavailableView: View {
             .listBulletRectangle
         case .dnsQuery:
             .globeAsiaAustralia
-        case .homeAdjustment(let action):
-            switch action {
-            case .customNodes, .proxyChains:
-                .serverRack
-            case .routingRules:
-                .ruleDomain
-            case .connection:
-                .network
-            case .proxySources, .ruleSets:
-                .shippingbox
-            case .advancedOverrides, .rawFields:
-                .curlybraces
-            }
         case .runtimeConfiguration:
             .docText
         case .configuration:
@@ -104,8 +91,6 @@ public struct HakoMacSecondaryUnavailableView: View {
             "active-rules"
         case .dnsQuery:
             "dns-query"
-        case .homeAdjustment(let action):
-            "home-adjustment.\(action.rawValue)"
         case .runtimeConfiguration:
             "runtime-configuration"
         case .configuration:
