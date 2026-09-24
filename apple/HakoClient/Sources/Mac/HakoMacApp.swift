@@ -3094,6 +3094,9 @@ private final class HakoMacSceneModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
      
      
+    private var egressRecheck = EgressRecheckDebt()
+     
+     
      
      
      
@@ -4893,6 +4896,11 @@ private final class HakoMacSceneModel: ObservableObject {
             connections.objectWillChange,
             networkQuality.objectWillChange,
             stun.objectWillChange,
+             
+             
+             
+             
+            stats.objectWillChange,
             proxyShare.objectWillChange,
             preferences.objectWillChange,
              
@@ -4956,6 +4964,34 @@ private final class HakoMacSceneModel: ObservableObject {
                  
                  
                 WidgetCenter.shared.reloadAllTimelines()
+                 
+                 
+                 
+                 
+                 
+                guard status == "connected" || status == "disconnected" else { return }
+                 
+                 
+                 
+                stats.bind(session: vpn.session, command: command)
+                nodes.noteRouteChanged()
+            }
+            .store(in: &cancellables)
+
+         
+         
+         
+         
+         
+        nodes.$routeGeneration
+            .dropFirst()
+            .sink { [weak self] _ in
+                guard let self else { return }
+                 
+                 
+                 
+                guard egressRecheck.routeMoved(channelUp: command.isConnected) else { return }
+                Task { await self.stats.checkEgressIP() }
             }
             .store(in: &cancellables)
 
@@ -4970,6 +5006,24 @@ private final class HakoMacSceneModel: ObservableObject {
                         await self.nodes.refresh()
                         await self.proxyShare.refresh()
                     }
+                }
+            }
+            .store(in: &cancellables)
+
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        command.$isConnected.removeDuplicates()
+            .sink { [weak self] connected in
+                guard let self else { return }
+                if egressRecheck.channelChanged(up: connected) {
+                    Task { await self.stats.checkEgressIP() }
                 }
             }
             .store(in: &cancellables)
