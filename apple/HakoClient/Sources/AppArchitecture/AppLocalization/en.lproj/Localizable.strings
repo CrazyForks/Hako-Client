@@ -14,6 +14,7 @@
 "%1$d rules will not take effect on %2$@" = "%1$d rules will not take effect on %2$@";
 "%@\n%@" = "%@\n%@";
 "%@ Last full refresh: %@." = "%@ Last full refresh: %@.";
+"%@ The previous rule is unchanged." = "%@ The previous rule is unchanged.";
 "%@ active proxy and rule source" = "%@ active proxy and rule source";
 "%@ active proxy and rule sources" = "%@ active proxy and rule sources";
 "%@ active session" = "%@ active session";
@@ -49,6 +50,7 @@
 "%@ is not a list of named definitions" = "%@ is not a list of named definitions";
 "%@ is not a valid domain." = "%@ is not a valid domain.";
 "%@ is not used here: this platform picks the physical network itself." = "%@ is not used here: this platform picks the physical network itself.";
+"%@ is required." = "%@ is required.";
 "%@ is still updating — try again when it finishes." = "%@ is still updating — try again when it finishes.";
 "%@ is up to date" = "%@ is up to date";
 "%@ items" = "%@ items";
@@ -206,6 +208,7 @@
 "A resource in this configuration cannot be prepared on iOS: %@" = "A resource in this configuration cannot be prepared on iOS: %@";
 "A route is chosen for each connection" = "A route is chosen for each connection";
 "A rule provider declared by this profile." = "A rule provider declared by this profile.";
+"A rule set cannot carry MATCH or a logic rule. Pick another type." = "A rule set cannot carry MATCH or a logic rule. Pick another type.";
 "A rule set supplies reusable matching data to this profile’s routing rules." = "A rule set supplies reusable matching data to this profile’s routing rules.";
 "A rule-based proxy client for Apple platforms, powered by the Hako core." = "A rule-based proxy client for Apple platforms, powered by the Hako core.";
 "A rule-based proxy kernel" = "A rule-based proxy kernel";

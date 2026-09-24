@@ -14,6 +14,7 @@
 "%1$d rules will not take effect on %2$@" = "%1$d 条规则在 %2$@ 上不会生效";
 "%@\n%@" = "%@\n%@";
 "%@ Last full refresh: %@." = "%@ 上次完整刷新：%@。";
+"%@ The previous rule is unchanged." = "%@ 原规则未改动。";
 "%@ active proxy and rule source" = "%@ 个生效的代理与规则来源";
 "%@ active proxy and rule sources" = "%@ 个生效的代理与规则来源";
 "%@ active session" = "%@ 条活动会话";
@@ -49,6 +50,7 @@
 "%@ is not a list of named definitions" = "%@ 不是一组带名字的定义";
 "%@ is not a valid domain." = "%@ 不是有效的域名。";
 "%@ is not used here: this platform picks the physical network itself." = "%@ 在这里用不上：这个平台自己选择物理网络。";
+"%@ is required." = "%@ 必填。";
 "%@ is still updating — try again when it finishes." = "%@ 还在更新中，完成后再试。";
 "%@ is up to date" = "%@ 已是最新";
 "%@ items" = "%@ 个";
@@ -206,6 +208,7 @@
 "A resource in this configuration cannot be prepared on iOS: %@" = "这份配置里有一项资源无法在 iOS 上准备：%@";
 "A route is chosen for each connection" = "每个连接单独选择线路";
 "A rule provider declared by this profile." = "本配置声明的一个规则集合。";
+"A rule set cannot carry MATCH or a logic rule. Pick another type." = "规则集里不能放 MATCH 或逻辑规则，请换一种类型。";
 "A rule set supplies reusable matching data to this profile’s routing rules." = "规则集为此配置的路由规则提供可复用的匹配数据。";
 "A rule-based proxy client for Apple platforms, powered by the Hako core." = "基于 Hako 内核的 Apple 平台按规则分流代理客户端。";
 "A rule-based proxy kernel" = "按规则分流的代理内核";

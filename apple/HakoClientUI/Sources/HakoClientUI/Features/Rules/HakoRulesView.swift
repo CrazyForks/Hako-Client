@@ -2163,7 +2163,14 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         content: "tcp"
     )
     @State private var addingCondition = false
-    @State private var error = ""
+     
+     
+     
+    @State private var error: HakoDisplayText?
+     
+     
+     
+    @State private var additionalParams: [String]
     @State private var lastAction: HakoStructuredRule.Action
     @State private var autoRoute: HakoRuleBuilderRoute?
     @FocusState private var contentFieldFocused: Bool
@@ -2212,6 +2219,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         )
         _noResolve = State(initialValue: parsed?.noResolve ?? false)
         _src = State(initialValue: parsed?.src ?? false)
+        _additionalParams = State(initialValue: parsed?.additionalParams ?? [])
         _rawMode = State(
             initialValue: !rule.raw.isEmpty && parsed == nil
         )
@@ -2255,6 +2263,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                 }
                 noResolve = false
                 src = false
+                additionalParams = []
                 lastAction = updated
             }
             .background(autoRouteLinks.opacity(0))
@@ -2315,9 +2324,9 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         } else {
             structuredSections
         }
-        if !error.isEmpty {
+        if let error {
             Section {
-                Text(error)
+                Text(hako: error)
                     .foregroundStyle(.red)
                     .fixedSize(
                         horizontal: false,
@@ -3026,14 +3035,14 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                 guard conditions.count >= minimum else {
                     error =
                         minimum == 1
-                        ? "Add the condition first."
-                        : "Add at least two conditions."
+                        ? .copy("Add the condition first.")
+                        : .copy("Add at least two conditions.")
                     return false
                 }
                 guard conditions.allSatisfy({
                     !$0.content.isEmpty
                 }) else {
-                    error = "Every condition needs a value."
+                    error = .copy("Every condition needs a value.")
                     return false
                 }
                 effectiveContent =
@@ -3049,21 +3058,22 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                     in: .whitespaces
                 ),
                 noResolve: noResolve,
-                src: src
+                src: src,
+                additionalParams: additionalParams
             )
             guard !action.needsContent || !rule.content.isEmpty
             else {
-                error = "\(action.contentLabel) is required."
+                error = .formatCopy("%@ is required.", [action.contentLabel])
                 return false
             }
             guard !showsTarget || !rule.target.isEmpty else {
-                error = "\(action.targetLabel) is required."
+                error = .formatCopy("%@ is required.", [action.targetLabel])
                 return false
             }
              
              
             guard showsTarget || action.category != .logic else {
-                error = "A rule set cannot carry MATCH or a logic rule. Pick another type."
+                error = .copy("A rule set cannot carry MATCH or a logic rule. Pick another type.")
                 return false
             }
             candidate = showsTarget ? rule.rawValue : Self.payloadLine(rule)
@@ -3083,8 +3093,10 @@ private struct HakoRuleBuilderView<Icon: View>: View {
             )
         if let reason = disallowReason
         {
-            error =
-                "\(reason) The previous rule is unchanged."
+             
+             
+             
+            error = .formatCopy("%@ The previous rule is unchanged.", [reason])
             return false
         }
         save(
