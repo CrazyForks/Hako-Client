@@ -206,12 +206,15 @@ public struct HakoActivityPageView<
         case .phoneBottomBar:
             #if os(iOS)
             if #available(iOS 26, *) {
-                content
-                    .searchable(
-                        text: $query, placement: .toolbar,
-                        prompt: lens.searchPrompt
-                    )
-                    .searchToolbarBehavior(.minimize)
+                 
+                 
+                 
+                 
+                 
+                content.searchable(
+                    text: $query, placement: .automatic,
+                    prompt: lens.searchPrompt
+                )
             } else {
                 content.searchable(
                     text: $query,
