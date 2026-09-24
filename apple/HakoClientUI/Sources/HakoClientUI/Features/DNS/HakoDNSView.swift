@@ -781,6 +781,12 @@ public struct HakoDNSLocalMappingsView<Icon: View>: View {
      
      
     @State private var dismiss = HakoDismissHandle()
+     
+     
+     
+     
+    @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
+    @Environment(\.hakoPopRoute) private var popRoute
     @State private var mappings: [HakoDNSLocalMapping]
     @State private var editing: HakoDNSMappingEdit?
     @State private var error = ""
@@ -911,6 +917,18 @@ public struct HakoDNSLocalMappingsView<Icon: View>: View {
                 .accessibilityIdentifier("profile-hosts.save")
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if insideProductModal {
+                HakoModalActionBar(
+                    primaryTitle: "Save",
+                    primaryDisabled: isSaving || mappings == snapshot.dns.localMappings,
+                    primaryHint: mappings == snapshot.dns.localMappings
+                        ? "Change something to save it." : nil,
+                    isBusy: isSaving,
+                    onPrimary: persist
+                )
+            }
+        }
         .sheet(item: $editing) { request in
             HakoDNSMappingEditor(
                 mapping: request.mapping
@@ -1013,7 +1031,11 @@ public struct HakoDNSLocalMappingsView<Icon: View>: View {
                     allowedBy: snapshot
                 )
                 isSaving = false
-                dismiss()
+                if let popRoute {
+                    popRoute(HakoPopToken())
+                } else {
+                    dismiss()
+                }
             } catch {
                 isSaving = false
                  
