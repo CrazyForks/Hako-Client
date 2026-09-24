@@ -142,7 +142,12 @@ struct ProfileCenterAdapter: View {
             if let request = importRouter.take() { consume(request) }
         }
         .onReceive(model.$profiles) { _ in
-#if os(iOS)
+             
+             
+             
+             
+             
+             
             Task { @MainActor in
                 guard let store = model.configurationLibraryStore else { return }
                 if let snapshot = try? await Task.detached(operation: { try store.snapshot() }).value {
@@ -152,7 +157,6 @@ struct ProfileCenterAdapter: View {
                     if snapshot != configurationLibrary { configurationLibrary = snapshot }
                 }
             }
-#endif
         }
         .task(id: activeRevisionKey) {
             await loadAdaptationNoticeCount()
