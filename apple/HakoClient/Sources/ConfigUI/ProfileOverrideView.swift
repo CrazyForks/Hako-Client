@@ -127,24 +127,12 @@ struct ProfileOverrideView: View {
                 }
             } else {
             Form {
-                Section {
-                    Picker("Mode", selection: $mode) {
-                        ForEach(Profile.OverwriteMode.allCases) { mode in
-                             
-                             
-                             
-                             
-                            Text(HakoCopy.key(mode.rawValue.capitalized))
-                                .tag(mode)
-                        }
-                    }
-                    .hakoIdiomFormPickerStyle()
-                    .accessibilityIdentifier("profile.override.mode")
-                } header: {
-                    Text("Override Mode")
-                }
 
-                if mode == .standard {
+                 
+                 
+                 
+                 
+                if mode != .custom {
                     Section {
                         CodeEditorPanel(
                             text: $patchText,
@@ -189,7 +177,7 @@ struct ProfileOverrideView: View {
                         Text("Added Rules")
                     }
                     }
-                } else if mode == .script {
+                }
                      
                      
                      
@@ -209,7 +197,7 @@ struct ProfileOverrideView: View {
                     } header: {
                         Text("Script")
                     }
-                } else {
+                if mode == .custom {
                     Section {
                         HakoRoutedViewLink {
                             HakoLazyView {
@@ -277,6 +265,13 @@ struct ProfileOverrideView: View {
                             }
                         }
                         .accessibilityIdentifier("profile-override.quick-fill")
+                        .hakoMacFormActionChrome()
+                        Button("Remove Custom Overrides", role: .destructive) {
+                            customGroups = []
+                            customRules = []
+                            mode = .standard
+                        }
+                        .accessibilityIdentifier("profile.override.custom.remove")
                         .hakoMacFormActionChrome()
                     } header: {
                         Text("Custom Configuration")
@@ -389,7 +384,7 @@ struct ProfileOverrideView: View {
                      
                      
                      
-                    if mode == .standard, !rules.isEmpty {
+                    if mode != .custom, !rules.isEmpty {
                         HakoEditButton()
                     }
                 }
@@ -604,7 +599,7 @@ struct ProfileOverrideView: View {
     private func draftProfile() throws -> Profile {
         let trimmed = patchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let patchJSON: String
-        if mode != .standard || trimmed.isEmpty || trimmed == "{}" {
+        if mode == .custom || trimmed.isEmpty || trimmed == "{}" {
             patchJSON = ""
         } else {
             let value = try JSONSerialization.jsonObject(with: Data(trimmed.utf8))
@@ -628,7 +623,7 @@ struct ProfileOverrideView: View {
         settings.override.prependRules = prependRules
         settings.override.disabledGlobalRules = globalRules.filter(disabledGlobalRules.contains)
         settings.selectedScriptID = selectedScriptID
-        settings.overwriteMode = mode
+        settings.overwriteMode = ProfileOverrideModePolicy.mode(stored: mode, selectedScriptID: selectedScriptID)
         settings.customOverwrite = customOverwrite
         settings.proxyChain = proxyChain.isEmpty ? nil : proxyChain
         settings.legacyRelayMigrations = legacyRelayMigrations.isEmpty
@@ -2392,5 +2387,15 @@ private struct ProxyIdentityMigrationView: View {
         } catch {
             self.error = error.localizedDescription
         }
+    }
+}
+
+ 
+ 
+ 
+enum ProfileOverrideModePolicy {
+    static func mode(stored: Profile.OverwriteMode, selectedScriptID: String?) -> Profile.OverwriteMode {
+        if stored == .custom { return .custom }
+        return selectedScriptID == nil ? .standard : .script
     }
 }

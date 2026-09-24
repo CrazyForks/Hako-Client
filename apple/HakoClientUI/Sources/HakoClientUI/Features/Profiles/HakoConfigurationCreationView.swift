@@ -318,24 +318,17 @@ public struct HakoConfigurationCreationView: View {
 
      
      
-    private var ruleSelection: Binding<Set<String>> {
-        Binding(get: { Set(draft.selectedRuleID.map { [$0] } ?? []) }, set: { selected in
-            if let added = selected.first(where: { $0 != draft.selectedRuleID }) {
-                draft.selectedRuleID = added
-            } else if selected.isEmpty {
-                draft.selectedRuleID = nil
-            }
-        })
-    }
-
+     
+     
+     
+     
     private var ruleList: some View {
-        List(selection: ruleSelection) {
+        List {
             if let error { Section { Text(verbatim: error).foregroundStyle(.red) } }
             if isBusy && !isReady { Section { ProgressView() } }
             if !isReady && !isBusy { Section { Button("Retry", action: reload) } }
             ruleSections
         }
-        .hakoAlwaysEditing()
         .hakoConfigurationFormSpacing()
     }
 
@@ -347,12 +340,22 @@ public struct HakoConfigurationCreationView: View {
                     Section {
                         ForEach(items) { rule in
                             let baseID = rule.id
-                            selectionLabel(rule.displayLabel, detail: baseID == ConfigurationBuiltins.basicRuleID
-                                ? HakoCopy.string("China and local traffic use Direct; other traffic uses your selected nodes.", locale: locale)
-                                : baseID == ConfigurationBuiltins.lazyRuleID
-                                    ? HakoCopy.string("Ready-made routing for AI, streaming, social and gaming services.", locale: locale) : nil)
-                                .tag(rule.id)
-                                .accessibilityIdentifier("configuration.create.rule.\(baseID == ConfigurationBuiltins.basicRuleID ? "basic" : baseID == ConfigurationBuiltins.lazyRuleID ? "lazy" : rule.id)")
+                            let chosen = draft.selectedRuleID == rule.id
+                            Button {
+                                draft.selectedRuleID = chosen ? nil : rule.id
+                            } label: {
+                                HStack(spacing: HakoTheme.Spacing.row) {
+                                    HakoSelectionMark(isSelected: chosen)
+                                    selectionLabel(rule.displayLabel, detail: baseID == ConfigurationBuiltins.basicRuleID
+                                        ? HakoCopy.string("China and local traffic use Direct; other traffic uses your selected nodes.", locale: locale)
+                                        : baseID == ConfigurationBuiltins.lazyRuleID
+                                            ? HakoCopy.string("Ready-made routing for AI, streaming, social and gaming services.", locale: locale) : nil,
+                                        chosen: chosen)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(chosen ? .isSelected : [])
+                            .accessibilityIdentifier("configuration.create.rule.\(baseID == ConfigurationBuiltins.basicRuleID ? "basic" : baseID == ConfigurationBuiltins.lazyRuleID ? "lazy" : rule.id)")
                         }
                     } header: { Text(HakoCopy.key(group.title)) }
                 }
@@ -466,10 +469,10 @@ public struct HakoConfigurationCreationView: View {
         guard !isEditing, draft.selectedRuleID == nil, !draft.selectedSourceIDs.isEmpty else { return }
         draft.selectedRuleID = ConfigurationBuiltins.basicRuleID
     }
-    private func selectionLabel(_ label: String, detail: String?) -> some View {
+    private func selectionLabel(_ label: String, detail: String?, chosen: Bool = false) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
-                Text(verbatim: label).foregroundStyle(.primary).lineLimit(2)
+                Text(verbatim: label).font(.body.weight(chosen ? .semibold : .regular)).foregroundStyle(.primary).lineLimit(2)
                 if let detail { Text(verbatim: detail).font(.caption).foregroundStyle(.secondary) }
             }
             Spacer(minLength: 0)

@@ -957,7 +957,7 @@ struct ProfileResourceSummary: Equatable {
              
              
              
-            if (profile.overwriteMode ?? .standard) == .standard {
+            if (profile.overwriteMode ?? .standard) != .custom {
                 try Self.collectPatch(
                     profile.override.patchJSON,
                     proxyProviders: &proxyProviders,

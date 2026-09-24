@@ -207,7 +207,7 @@ enum ProfileRuntimeConfigBuilder {
     ) throws -> RuntimeBuildStages {
         let profileWorking: String
         switch profile.overwriteMode ?? .standard {
-        case .standard:
+        case .standard, .script:
             var spec = profile.override
              
              
@@ -222,12 +222,16 @@ enum ProfileRuntimeConfigBuilder {
             spec.appendRules = try resolvedFallbackTargets(
                 spec.appendRules, mergedInto: raw
             )
-            profileWorking = try ConfigTransforms.mergeOverride(
+            let patched = try ConfigTransforms.mergeOverride(
                 raw: raw,
                 overrideJSON: overrideJSON(from: spec)
             )
-        case .script:
-            profileWorking = try profileScript(profile.selectedScriptID, raw, profile.label)
+             
+             
+             
+            profileWorking = profile.overwriteMode == .script
+                ? try profileScript(profile.selectedScriptID, patched, profile.label)
+                : patched
         case .custom:
             profileWorking = try (profile.customOverwrite ?? CustomOverwriteSpec())
                 .applyForFinalRuntimeMigration(to: raw)

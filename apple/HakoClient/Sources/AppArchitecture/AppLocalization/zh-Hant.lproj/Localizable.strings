@@ -2302,6 +2302,7 @@
 "Remote subscription" = "遠端訂閱";
 "Remove Bundle Path" = "移除歸檔路徑";
 "Remove Chain Override" = "移除鏈式覆寫";
+"Remove Custom Overrides" = "移除自訂覆寫";
 "Remove DNS & Return to VPN" = "移除 DNS 並回到 VPN";
 "Remove DNS Server" = "移除 DNS 伺服器";
 "Remove Migration" = "移除遷移";
