@@ -34,6 +34,7 @@ struct HakoTVSubscriptionDetailScreen: View {
         case update
         case updateScript
         case rules
+        case autoUpdate
         case edit
         case use
         case remove
@@ -43,6 +44,7 @@ struct HakoTVSubscriptionDetailScreen: View {
             case .update: String(localized: "Update now")
             case .updateScript: String(localized: "Update Script")
             case .rules: String(localized: "Rules")
+            case .autoUpdate: String(localized: "Auto update")
             case .edit: String(localized: "Edit")
             case .use: String(localized: "Use this profile")
             case .remove: String(localized: "Remove")
@@ -54,6 +56,7 @@ struct HakoTVSubscriptionDetailScreen: View {
             case .update: "update"
             case .updateScript: "update-script"
             case .rules: "rules"
+            case .autoUpdate: "auto-update"
             case .edit: "edit"
             case .use: "use"
             case .remove: "remove"
@@ -79,6 +82,7 @@ struct HakoTVSubscriptionDetailScreen: View {
     var onEdit: () -> Void = {}
      
     var onRules: () -> Void = {}
+    var onAutoUpdate: () -> Void = {}
 
     @State private var asksToRemove = false
 
@@ -136,6 +140,13 @@ struct HakoTVSubscriptionDetailScreen: View {
                                 Text(subscription?.effectiveRules.title ?? "")
                                     .foregroundStyle(.secondary)
                             }
+                        } else if verb == .autoUpdate {
+                            HStack {
+                                Text(verb.title)
+                                Spacer()
+                                Text(HakoTVAutoUpdateScreen.title(forHours: subscription?.updateIntervalHours ?? 0))
+                                    .foregroundStyle(.secondary)
+                            }
                         } else {
                             Text(verb.title)
                         }
@@ -162,6 +173,8 @@ struct HakoTVSubscriptionDetailScreen: View {
             onUpdateScript?()
         case .rules:
             onRules()
+        case .autoUpdate:
+            onAutoUpdate()
         case .edit:
             onEdit()
         case .use:
@@ -233,8 +246,8 @@ struct HakoTVSubscriptionDetailScreen: View {
     }
 
     static func verbs(isCurrent: Bool, isFetchable: Bool = true, hasScript: Bool = false) -> [Verb] {
-        var verbs: [Verb] = isCurrent ? [.update, .updateScript, .rules, .edit, .remove] : [.updateScript, .rules, .edit, .use, .remove]
-        if !isFetchable { verbs.removeAll { $0 == .rules } }
+        var verbs: [Verb] = isCurrent ? [.update, .updateScript, .rules, .autoUpdate, .edit, .remove] : [.updateScript, .rules, .autoUpdate, .edit, .use, .remove]
+        if !isFetchable { verbs.removeAll { $0 == .rules || $0 == .autoUpdate } }
         if !hasScript { verbs.removeAll { $0 == .updateScript } }
         return verbs
     }

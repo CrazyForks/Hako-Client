@@ -55,6 +55,11 @@ struct HakoTVShell: View {
      
     @State private var editDoor: EditDoor?
     @State private var rulesDoor: RulesDoor?
+    @State private var autoUpdateDoor: AutoUpdateDoor?
+
+    struct AutoUpdateDoor: Identifiable, Hashable {
+        let id: HakoTVSubscription.ID
+    }
 
     struct EditDoor: Identifiable, Hashable {
         let id: HakoTVSubscription.ID
@@ -259,8 +264,15 @@ struct HakoTVShell: View {
                             }
                         } : nil,
                         onEdit: { editDoor = EditDoor(id: id) },
-                        onRules: { rulesDoor = RulesDoor(id: id) }
+                        onRules: { rulesDoor = RulesDoor(id: id) },
+                        onAutoUpdate: { autoUpdateDoor = AutoUpdateDoor(id: id) }
                     )
+                }
+                .navigationDestination(item: $autoUpdateDoor) { door in
+                    HakoTVAutoUpdateScreen(store: $store, id: door.id) { _ in
+                        autoUpdateDoor = nil
+                        scheduleBackgroundRefresh()
+                    }
                 }
                 .navigationDestination(item: $rulesDoor) { door in
                     HakoTVProfileRulesScreen(store: $store, id: door.id) { row in
@@ -430,6 +442,7 @@ struct HakoTVShell: View {
             if live {
                 await runMatrixPreparation()
                 if connectsOnLaunch { primaryAction() }
+                await scanForDueUpdate()
                 await runMatrixProbes()
                 if updatesOnLaunch, let current = store.current {
                     showsSubscriptions = true
@@ -626,6 +639,19 @@ struct HakoTVShell: View {
         case .connectionDetail: .utilities(.connections)
         default: nil
         }
+    }
+
+     
+     
+    private func scanForDueUpdate() async {
+        await HakoTVAutoUpdate.scanOnForegroundIfDue(store: store) { row in
+            await tunnel.refresh(subscription: row)
+        }
+        scheduleBackgroundRefresh()
+    }
+
+    private func scheduleBackgroundRefresh() {
+        HakoTVAutoUpdate.schedule(earliest: HakoTVAutoUpdate.nextEligibility(rows: store.subscriptions, now: Date()))
     }
 
     private var pollingPresentation: HakoTVPollingPresentation {

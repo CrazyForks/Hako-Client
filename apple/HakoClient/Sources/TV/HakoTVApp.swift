@@ -3,6 +3,7 @@ import SwiftUI
 
 @main
 struct HakoTVApp: App {
+    @UIApplicationDelegateAdaptor(HakoTVAppDelegate.self) private var appDelegate
 
     private let launchOverrides = HakoTVLaunchOverrides(environment: [:])
 
@@ -11,6 +12,17 @@ struct HakoTVApp: App {
         WindowGroup {
             HakoTVLaunchRoot(overrides: launchOverrides)
         }
+    }
+}
+
+ 
+ 
+ 
+final class HakoTVAppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        HakoTVAutoUpdate.register { await HakoTVAutoUpdate.refreshInBackground() }
+        return true
     }
 }
 

@@ -705,6 +705,10 @@ targets:
           NSAllowsArbitraryLoads: true
         HakoSourceRevision: $(HAKO_SOURCE_REVISION)
         UILaunchScreen: {}
+        BGTaskSchedulerPermittedIdentifiers:
+        - $(HAKO_BUNDLE_BASE).refresh
+        UIBackgroundModes:
+        - fetch
     entitlements:
       path: Resources/tvOS/HakoTV.entitlements
       properties:

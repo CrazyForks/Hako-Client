@@ -36,20 +36,32 @@ struct HakoTVSubscription: Codable, Equatable, Identifiable {
      
      
     let scriptURL: URL?
+     
+     
+     
+     
+     
+    let updateIntervalHours: Int?
 
     init(requestURL: URL, name: String, updatedAt: Date? = nil, restored: Restored? = nil,
-         rules: HakoTVProfileRules? = nil, scriptURL: URL? = nil) {
+         rules: HakoTVProfileRules? = nil, scriptURL: URL? = nil, updateIntervalHours: Int? = nil) {
         self.requestURL = requestURL
         self.name = name
         self.updatedAt = updatedAt
         self.restored = restored
         self.rules = rules
         self.scriptURL = scriptURL
+        self.updateIntervalHours = updateIntervalHours
     }
 
      
     func withScriptURL(_ scriptURL: URL?) -> HakoTVSubscription {
-        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules, scriptURL: scriptURL)
+        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules, scriptURL: scriptURL, updateIntervalHours: updateIntervalHours)
+    }
+
+     
+    func withUpdateInterval(hours: Int?) -> HakoTVSubscription {
+        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules, scriptURL: scriptURL, updateIntervalHours: hours)
     }
 
     var effectiveRules: HakoTVProfileRules { rules ?? .own }
@@ -57,7 +69,7 @@ struct HakoTVSubscription: Codable, Equatable, Identifiable {
      
      
     func withRules(_ rules: HakoTVProfileRules) -> HakoTVSubscription {
-        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules, scriptURL: scriptURL)
+        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules, scriptURL: scriptURL, updateIntervalHours: updateIntervalHours)
     }
 
     struct Restored: Codable, Equatable {
@@ -189,10 +201,10 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
             subscriptions[index] = HakoTVSubscription(
                 requestURL: url, name: typedName.isEmpty ? existing.name : name,
                 updatedAt: existing.updatedAt, restored: existing.restored, rules: rules,
-                scriptURL: existing.scriptURL
+                scriptURL: existing.scriptURL, updateIntervalHours: existing.updateIntervalHours
             )
         } else {
-            subscriptions.append(HakoTVSubscription(requestURL: url, name: name, rules: rules))
+            subscriptions.append(HakoTVSubscription(requestURL: url, name: name, rules: rules, updateIntervalHours: Self.defaultUpdateIntervalHours))
         }
         chosenID = url
         persist()
@@ -218,7 +230,7 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
             updatedAt: existing.updatedAt,
             restored: existing.restored,
             rules: existing.rules,
-            scriptURL: existing.scriptURL
+            scriptURL: existing.scriptURL, updateIntervalHours: existing.updateIntervalHours
         )
         persist()
     }
@@ -231,8 +243,17 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
         let existing = subscriptions[index]
         subscriptions[index] = HakoTVSubscription(
             requestURL: existing.requestURL, name: existing.name, updatedAt: existing.updatedAt,
-            restored: existing.restored, rules: rules, scriptURL: existing.scriptURL
+            restored: existing.restored, rules: rules, scriptURL: existing.scriptURL, updateIntervalHours: existing.updateIntervalHours
         )
+        persist()
+    }
+
+     
+    static let defaultUpdateIntervalHours = 12
+
+    mutating func setUpdateInterval(_ id: HakoTVSubscription.ID, hours: Int?) {
+        guard let index = subscriptions.firstIndex(where: { $0.id == id }) else { return }
+        subscriptions[index] = subscriptions[index].withUpdateInterval(hours: hours)
         persist()
     }
 
@@ -290,7 +311,7 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             updatedAt: nil,
             rules: subscriptions[index].rules,
-            scriptURL: subscriptions[index].scriptURL
+            scriptURL: subscriptions[index].scriptURL, updateIntervalHours: subscriptions[index].updateIntervalHours
         )
         if chosenID == id { chosenID = url }
         persist()
@@ -313,7 +334,7 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
             updatedAt: existing.updatedAt,
             restored: existing.restored,
             rules: existing.rules,
-            scriptURL: existing.scriptURL
+            scriptURL: existing.scriptURL, updateIntervalHours: existing.updateIntervalHours
         )
         persist()
     }
@@ -325,7 +346,7 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
         let existing = subscriptions[index]
         subscriptions[index] = HakoTVSubscription(
             requestURL: existing.requestURL, name: existing.name, updatedAt: date, restored: existing.restored,
-            rules: existing.rules, scriptURL: existing.scriptURL
+            rules: existing.rules, scriptURL: existing.scriptURL, updateIntervalHours: existing.updateIntervalHours
         )
         persist()
     }
@@ -342,7 +363,7 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
                 updatedAt: subscriptions[index].updatedAt,
                 restored: item.restored,
                 rules: subscriptions[index].rules,
-                scriptURL: subscriptions[index].scriptURL
+                scriptURL: subscriptions[index].scriptURL, updateIntervalHours: subscriptions[index].updateIntervalHours
             )
         } else {
             subscriptions.append(item)

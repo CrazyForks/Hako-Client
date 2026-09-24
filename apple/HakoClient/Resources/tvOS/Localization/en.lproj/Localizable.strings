@@ -31,6 +31,7 @@
 "Applying IP Stack settings…" = "Applying IP Stack settings…";
 "Asked when the first answer looks wrong or is not trusted for the destination." = "Asked when the first answer looks wrong or is not trusted for the destination.";
 "Asynchronous reload is not supported here." = "Asynchronous reload is not supported here.";
+"Auto update" = "Auto update";
 "Bad HTTP" = "Bad HTTP";
 "Branches into the named sub-rule list when the condition matches." = "Branches into the named sub-rule list when the condition matches.";
 "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back." = "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back.";
@@ -84,6 +85,7 @@
 "Edit" = "Edit";
 "Ended" = "Ended";
 "Enter a name." = "Enter a name.";
+"Every %lld hours" = "Every %lld hours";
 "Every rule in the profile, in the order the tunnel tries them. Read-only here: see what a connection will do, then edit on your phone." = "Every rule in the profile, in the order the tunnel tries them. Read-only here: see what a connection will do, then edit on your phone.";
 "Failed" = "Failed";
 "Follow Configuration" = "Follow Configuration";
@@ -118,6 +120,7 @@
 "Let profiles listen on the local network" = "Let profiles listen on the local network";
 "Live" = "Live";
 "Logic" = "Logic";
+"Manually" = "Manually";
 "Matches destination IPv4 addresses inside this network." = "Matches destination IPv4 addresses inside this network.";
 "Matches destination IPv6 addresses inside this network." = "Matches destination IPv6 addresses inside this network.";
 "Matches domains listed in this built-in GeoSite category." = "Matches domains listed in this built-in GeoSite category.";
@@ -300,6 +303,7 @@
 "The profile could not be downloaded: %@" = "The profile could not be downloaded: %@";
 "The profile did not come back as text." = "The profile did not come back as text.";
 "The profile in use fetches its configuration again right away. Another profile applies the choice when it is next used." = "The profile in use fetches its configuration again right away. Another profile applies the choice when it is next used.";
+"The profile in use is fetched again once this long has passed since it last updated — when Clash opens, and in the background when tvOS allows it. The interval is the earliest a fetch may happen, not a promised time." = "The profile in use is fetched again once this long has passed since it last updated — when Clash opens, and in the background when tvOS allows it. The interval is the earliest a fetch may happen, not a promised time.";
 "The profile in use. Press to see its address or remove it." = "The profile in use. Press to see its address or remove it.";
 "The profile is larger than this Apple TV accepts." = "The profile is larger than this Apple TV accepts.";
 "The profile is not something the tunnel can read: %@" = "The profile is not something the tunnel can read: %@";

@@ -31,6 +31,7 @@
 "Applying IP Stack settings…" = "正在App IP Stack 設定…";
 "Asked when the first answer looks wrong or is not trusted for the destination." = "當第一組解析器的答案看起來不對、或對該目標不可信時，改問這些。";
 "Asynchronous reload is not supported here." = "此處不支援非同步重新載入。";
+"Auto update" = "自動更新";
 "Bad HTTP" = "異常";
 "Branches into the named sub-rule list when the condition matches." = "條件符合時，跳到指定的 sub-rule 列表。";
 "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back." = "把 iPhone 或 Mac 存在 iCloud 裡的設定檔帶到這台 Apple TV，並保持最新。不會寫回任何內容。";
@@ -84,6 +85,7 @@
 "Edit" = "編輯";
 "Ended" = "已結束";
 "Enter a name." = "請輸入名稱。";
+"Every %lld hours" = "每 %lld 小時";
 "Every rule in the profile, in the order the tunnel tries them. Read-only here: see what a connection will do, then edit on your phone." = "設定檔中的全部規則，按通道嘗試它們的順序排列。這裡唯讀：看清一條連線會怎麼走，再到手機上編輯。";
 "Failed" = "失敗";
 "Follow Configuration" = "跟隨設定檔";
@@ -118,6 +120,7 @@
 "Let profiles listen on the local network" = "允許設定檔在區域網路上監聽";
 "Live" = "即時";
 "Logic" = "邏輯";
+"Manually" = "手動";
 "Matches destination IPv4 addresses inside this network." = "符合該網段內的目標 IPv4 位址。";
 "Matches destination IPv6 addresses inside this network." = "符合該網段內的目標 IPv6 位址。";
 "Matches domains listed in this built-in GeoSite category." = "符合內建 GeoSite 分類中列出的網域。";
@@ -300,6 +303,7 @@
 "The profile could not be downloaded: %@" = "設定檔下載失敗：%@";
 "The profile did not come back as text." = "設定檔回傳的不是文字。";
 "The profile in use fetches its configuration again right away. Another profile applies the choice when it is next used." = "使用中的設定檔會立即重新取得；其他設定檔在下次使用時生效。";
+"The profile in use is fetched again once this long has passed since it last updated — when Clash opens, and in the background when tvOS allows it. The interval is the earliest a fetch may happen, not a promised time." = "距上次更新超過這段時間後，使用中的設定檔會在 Clash 開啟時重新擷取，tvOS 允許時也會在背景擷取。這個間隔是最早可能擷取的時間，不是承諾的時間。";
 "The profile in use. Press to see its address or remove it." = "正在使用的設定檔。按下可檢視它的網址或將其移除。";
 "The profile is larger than this Apple TV accepts." = "設定檔內容超過了這台 Apple TV 接受的大小。";
 "The profile is not something the tunnel can read: %@" = "這份設定檔不是通道能讀取的內容：%@";
