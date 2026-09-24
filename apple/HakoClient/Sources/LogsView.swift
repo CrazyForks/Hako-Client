@@ -141,6 +141,9 @@ struct LogSettingsView: View {
         }
         
         .hakoPageTitle("Log Settings")
+         
+         
+        .hakoProductModalRoot(title: "Log Settings")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 if !insideProductModal {

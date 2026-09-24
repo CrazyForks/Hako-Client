@@ -847,111 +847,78 @@ public struct HakoLogsView<Icon: View>: View {
         }
          
         .hakoActivityLensToolbar(active: isShown) { toolbarContent }
+         
+         
+         
+         
+         
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("logs.overview")
     }
 
+     
+     
+     
+     
+     
     @ViewBuilder
     private var listBody: some View {
-        ScrollViewReader { proxy in
-            List {
-                if !severities.isEmpty {
-                    Section("Filters") {
-                        ScrollView(
-                            .horizontal,
-                            showsIndicators: false
-                        ) {
-                            HStack(
-                                spacing:
-                                    HakoTheme.Spacing.compact
-                            ) {
-                                ForEach(
-                                    severities.sorted {
-                                        $0.title < $1.title
-                                    }
-                                ) { severity in
-                                    HakoActivityKeywordButton(
-                                        title: .copy(severity.title)
-                                    ) {
-                                        severities.remove(
-                                            severity
-                                        )
-                                    }
-                                }
+        VStack(spacing: 0) {
+            if !severities.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: HakoTheme.Spacing.compact) {
+                        ForEach(severities.sorted { $0.title < $1.title }) { severity in
+                            HakoActivityKeywordButton(title: .copy(severity.title)) {
+                                severities.remove(severity)
                             }
                         }
                     }
+                    .padding(.horizontal, HakoTheme.Spacing.standard)
+                    .padding(.vertical, HakoTheme.Spacing.compact)
                 }
+                .accessibilityIdentifier("logs.filters")
+            }
 
-                if entries.isEmpty {
+            if entries.isEmpty {
+                List {
                     HakoCardSurface(
                         fill: palette.card,
                         separator: palette.separator,
-                        cornerRadius:
-                            HakoTheme.Radius.groupedSection
+                        cornerRadius: HakoTheme.Radius.groupedSection
                     ) {
                         HakoEmptyState(
                             title: logEmptyTitle,
                             message: logEmptyMessage,
-                            isLoading:
-                                snapshot.activity.phase
-                                    == .loading
+                            isLoading: snapshot.activity.phase == .loading
                         ) {
                             icon(
-                                query.isEmpty
-                                    && severities.isEmpty
+                                query.isEmpty && severities.isEmpty
                                     ? .textAlignleft
                                     : .magnifyingglass
                             )
                         }
-                        .padding(
-                            .vertical,
-                            HakoTheme.Spacing.section
-                        )
+                        .padding(.vertical, HakoTheme.Spacing.section)
                     }
                     .listRowBackground(Color.clear)
                 }
-
-                ForEach(entries) { entry in
-                    HakoActivityLogRow(
-                        entry: entry,
-                        palette: palette,
-                        onSeverity: {
-                            severities.insert($0)
-                        },
-                        onCopy: {
-                            send(.copyText(entry.message))
-                        }
-                    )
-                    .id(entry.id)
-                }
+                .hakoGroupedList()
+            } else {
+                HakoLogTextView(entries: entries, followsEnd: autoScrollToEnd)
             }
-            .hakoGroupedList()
-            .hakoActivityListCanvas(palette.canvas)
-             
-             
-             
-             
-            .onChange(of: snapshot.activity.logLines.last) { _ in
-                guard autoScrollToEnd, let lastID = entries.last?.id else {
-                    return
-                }
-                withAnimation {
-                    proxy.scrollTo(lastID, anchor: .bottom)
-                }
-            }
-             
-             
-             
-             
-            .onChange(of: severities) { severities in
-                send(
-                    .setLogSeverityFilter(
-                        HakoActivityLogSeverity.allCases
-                            .filter(severities.contains)
-                            .map(\.rawValue)
-                    )
+        }
+        .hakoActivityListCanvas(palette.canvas)
+         
+         
+         
+         
+        .onChange(of: severities) { severities in
+            send(
+                .setLogSeverityFilter(
+                    HakoActivityLogSeverity.allCases
+                        .filter(severities.contains)
+                        .map(\.rawValue)
                 )
-            }
+            )
         }
     }
 
@@ -1404,85 +1371,6 @@ private struct HakoActivityRequestRow: View {
         .padding(.vertical, HakoTheme.Spacing.compact)
 
         .accessibilityElement(children: .combine)
-    }
-}
-
-private struct HakoActivityLogRow: View {
-    let entry: HakoActivityLogEntry
-    let palette: HakoProductPalette
-    let onSeverity: (HakoActivityLogSeverity) -> Void
-    let onCopy: () -> Void
-
-    var body: some View {
-        VStack(
-            alignment: .leading,
-            spacing: HakoTheme.Spacing.compact
-        ) {
-             
-             
-             
-             
-             
-             
-            Text(entry.message)
-                .font(
-                    .system(
-                        .caption,
-                        design: .monospaced
-                    )
-                )
-                .fixedSize(
-                    horizontal: false,
-                    vertical: true
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            if let severity = entry.severity {
-                Button {
-                    onSeverity(severity)
-                } label: {
-                    HakoStatusBadge(
-                        title: severity.title,
-                        tint: tint(for: severity),
-                        categoryFill: palette.raisedFill,
-                        requirementFill: palette.raisedFill,
-                        separator: palette.separator
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(
-                    Text(hako: .format("Filter by %@", [severity.title]))
-                )
-            }
-        }
-        .padding(.vertical, HakoTheme.Spacing.tight)
-        .contextMenu {
-             
-             
-             
-             
-            Button {
-                onCopy()
-            } label: {
-                Label("Copy", systemImage: HakoSymbol.docOnDoc.rawValue)
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private func tint(
-        for severity: HakoActivityLogSeverity
-    ) -> Color {
-        switch severity {
-        case .debug:
-            .purple
-        case .info:
-            .blue
-        case .warning:
-            .orange
-        case .error:
-            .red
-        }
     }
 }
 
