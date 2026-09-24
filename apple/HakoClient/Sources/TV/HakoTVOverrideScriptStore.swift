@@ -22,8 +22,13 @@ enum HakoTVOverrideScriptStore {
         try Data(body.utf8).write(to: url(container: container, profileID: profileID), options: .atomic)
     }
 
+     
+     
     static func read(container: URL, profileID: String) -> String? {
-        try? String(contentsOf: url(container: container, profileID: profileID), encoding: .utf8)
+        guard let body = try? String(contentsOf: url(container: container, profileID: profileID), encoding: .utf8),
+              !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else { return nil }
+        return body
     }
 
     static func remove(container: URL, profileID: String) {
