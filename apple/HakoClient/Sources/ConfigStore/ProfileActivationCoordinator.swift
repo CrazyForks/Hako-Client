@@ -1,4 +1,5 @@
 import Foundation
+import HakoClientUI
 
 enum PipelineError: LocalizedError {
     case planRejected([RemoteResourcePlan.Failure])
@@ -151,6 +152,10 @@ enum ProfileRuntimeConfigBuilder {
          
          
          
+        var excludeAPNsRoute = false
+         
+         
+         
          
         var providerMerge = ProviderDefinitionMergeReport()
 
@@ -158,7 +163,8 @@ enum ProfileRuntimeConfigBuilder {
         func finished() throws -> String {
             try ConfigTransforms.applyClientRuntimePolicy(
                 beforeClientRuntimePolicy,
-                udpFallback: udpFallback
+                udpFallback: udpFallback,
+                excludeAPNsRoute: excludeAPNsRoute
             )
         }
     }
@@ -322,6 +328,9 @@ enum ProfileRuntimeConfigBuilder {
                 profile: profile.udpFallbackPolicy,
                 global: UDPFallbackSettings.policy()
             ),
+            excludeAPNsRoute: HakoTunnelRouteShaping.Switches.read(
+                from: UDPFallbackSettings.appGroupDefaults
+            ).excludeAPNsRoute,
             providerMerge: providerMerge
         )
     }

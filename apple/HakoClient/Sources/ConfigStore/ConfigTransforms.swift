@@ -654,11 +654,54 @@ enum ConfigTransforms {
 
     static func applyClientRuntimePolicy(
         _ yaml: String,
-        udpFallback: UDPFallbackPolicy
+        udpFallback: UDPFallbackPolicy,
+        excludeAPNsRoute: Bool = false
     ) throws -> String {
         var root = try clientRuntimeRootBeforeUDPFallbackGuard(yaml)
         try appendUDPFallbackGuard(udpFallback, to: &root)
+        if excludeAPNsRoute {
+            appendAPNsFakeIPFilter(to: &root)
+        }
         return try jsonToYAML(root.serialized())
+    }
+
+     
+     
+     
+    static let kernelDefaultFakeIPFilter = [
+        "dns.msftnsci.com", "www.msftnsci.com", "www.msftconnecttest.com",
+    ]
+
+     
+     
+     
+     
+     
+    static let apnsFakeIPFilterEntry = "+.push.apple.com"
+
+     
+     
+     
+     
+     
+     
+     
+    private static func appendAPNsFakeIPFilter(to root: inout OrderedJSON) {
+        let dns = root.topLevelValue("dns")
+        if case let .string(mode)? = dns?.topLevelValue("fake-ip-filter-mode"),
+           mode.lowercased() == "whitelist" {
+            return
+        }
+        let entry = OrderedJSON.string(apnsFakeIPFilterEntry)
+        var filter: [OrderedJSON]
+        if case let .array(existing)? = dns?.topLevelValue("fake-ip-filter") {
+            filter = existing
+        } else {
+            filter = kernelDefaultFakeIPFilter.map { .string($0) }
+        }
+        guard !filter.contains(entry) else { return }
+        filter.append(entry)
+        root = root.setting(path: ["dns", "fake-ip-filter"], to: .array(filter))
     }
 
      

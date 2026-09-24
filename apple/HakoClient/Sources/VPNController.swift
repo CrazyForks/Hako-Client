@@ -263,6 +263,11 @@ struct VPNTunnelSettings: Equatable {
      
     var hideVPNIcon = false
     var homeKitCompatibility = false
+     
+     
+     
+     
+    var excludeAPNsRoute = false
 
     enum Key {
         static let enforceRoutes = "vpn.tunnel.enforceRoutes"
@@ -272,6 +277,7 @@ struct VPNTunnelSettings: Equatable {
         static let includeCellularServices = "vpn.tunnel.includeCellularServices"
         static let hideVPNIcon = "vpn.tunnel.hideVPNIcon"
         static let homeKitCompatibility = "vpn.tunnel.homeKitCompatibility"
+        static let excludeAPNsRoute = "vpn.tunnel.excludeAPNsRoute"
     }
 
     static func load(from defaults: UserDefaults) -> Self {
@@ -282,7 +288,8 @@ struct VPNTunnelSettings: Equatable {
             includeAPNs: defaults.bool(forKey: Key.includeAPNs),
             includeCellularServices: defaults.bool(forKey: Key.includeCellularServices),
             hideVPNIcon: defaults.bool(forKey: Key.hideVPNIcon),
-            homeKitCompatibility: defaults.bool(forKey: Key.homeKitCompatibility)
+            homeKitCompatibility: defaults.bool(forKey: Key.homeKitCompatibility),
+            excludeAPNsRoute: defaults.bool(forKey: Key.excludeAPNsRoute)
         )
     }
 
@@ -294,6 +301,7 @@ struct VPNTunnelSettings: Equatable {
         defaults.set(includeCellularServices, forKey: Key.includeCellularServices)
         defaults.set(hideVPNIcon, forKey: Key.hideVPNIcon)
         defaults.set(homeKitCompatibility, forKey: Key.homeKitCompatibility)
+        defaults.set(excludeAPNsRoute, forKey: Key.excludeAPNsRoute)
     }
 }
 

@@ -1271,7 +1271,7 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
             strictRoute: options.getStrictRoute(), switches: routeSwitches
         )
         HakoLogStore.shared.append(
-            "route shaping: hideVPNIcon=\(routeSwitches.hideVPNIcon) homeKitCompatibility=\(routeSwitches.homeKitCompatibility) splitTable=\(splitTable)",
+            "route shaping: hideVPNIcon=\(routeSwitches.hideVPNIcon) homeKitCompatibility=\(routeSwitches.homeKitCompatibility) excludeAPNsRoute=\(routeSwitches.excludeAPNsRoute) splitTable=\(splitTable)",
             stream: .app
         )
         if !v4Addr.isEmpty {

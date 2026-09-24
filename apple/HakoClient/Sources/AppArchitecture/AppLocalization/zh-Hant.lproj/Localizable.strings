@@ -340,6 +340,7 @@
 "Already up to date." = "已是最新。";
 "Alter ID" = "Alter ID";
 "Always On" = "始終開啟";
+"Always On is on, so On Demand and its rules do not apply." = "「始終開啟」已開啟，隨選連線及其規則不再生效。";
 "Always sniff · Domain" = "始終嗅探 · 網域";
 "Always stays on Home" = "始終顯示在首頁";
 "An IP address, or another domain. Separate several with |." = "一個 IP 網址，或另一個網域。多個之間用 | 分隔。";
@@ -1097,6 +1098,7 @@
 "Example Transit · AS64500" = "Example Transit · AS64500";
 "Exception behavior" = "例外行為";
 "Exceptions" = "例外";
+"Exclude APNs Route" = "排除 APNs 路由";
 "Exclude Filter" = "排除過濾 (exclude-filter)";
 "Exclude Wi-Fi (Disconnect)" = "排除 Wi-Fi（中斷）";
 "Exclude filter" = "排除過濾";
@@ -1365,6 +1367,8 @@
 "Idle Timeout" = "空閒逾時";
 "Idle before probing" = "探測前空閒";
 "Idle latency" = "空閒延遲";
+"If YES, 17.0.0.0/8 stays outside the tunnel and push.apple.com resolves to its real address, so Apple push notifications reach this Mac directly instead of through the proxy. Takes effect on the next connection." = "開啟後 17.0.0.0/8 不進通道，push.apple.com 解析為真實位址，Apple 推播通知直接送達這台 Mac 而不經過代理。下次連線生效。";
+"If YES, 17.0.0.0/8 stays outside the tunnel and push.apple.com resolves to its real address, so Apple push notifications reach this device directly instead of through the proxy. Takes effect on the next connection." = "開啟後 17.0.0.0/8 不進通道，push.apple.com 解析為真實位址，Apple 推播通知直接送達本裝置而不經過代理。下次連線生效。";
 "If YES, The internet-routable network traffic for cellular services (VoLTE, Wi-Fi Calling, IMS, MMS, Visual Voicemail, etc.) will be included from the tunnel." = "如果是，來自行動網路服務的網際網路可路由網路流量（VoLTE、Wi-Fi通話、IMS、MMS、視覺語音信箱等）將包括在通道中。";
 "If YES, all network traffic is routed through the tunnel, with some exclusions." = "如果是，所有網路流量都會透過通道路由，但有一些排除項。";
 "If YES, all traffic destined for local networks will be included from the tunnel." = "如果是，所有傳送到區域網路的流量將包括在通道中。";

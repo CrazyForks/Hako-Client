@@ -20,21 +20,31 @@ import Foundation
 public enum HakoTunnelRouteShaping {
     public static let hideVPNIconKey = "vpn.tunnel.hideVPNIcon"
     public static let homeKitCompatibilityKey = "vpn.tunnel.homeKitCompatibility"
+     
+     
+     
+     
+     
+     
+    public static let excludeAPNsRouteKey = "vpn.tunnel.excludeAPNsRoute"
 
     public struct Switches: Equatable, Sendable {
         public var hideVPNIcon: Bool
         public var homeKitCompatibility: Bool
+        public var excludeAPNsRoute: Bool
 
-        public init(hideVPNIcon: Bool = false, homeKitCompatibility: Bool = false) {
+        public init(hideVPNIcon: Bool = false, homeKitCompatibility: Bool = false, excludeAPNsRoute: Bool = false) {
             self.hideVPNIcon = hideVPNIcon
             self.homeKitCompatibility = homeKitCompatibility
+            self.excludeAPNsRoute = excludeAPNsRoute
         }
 
          
         public static func read(from defaults: UserDefaults?) -> Switches {
             Switches(
                 hideVPNIcon: defaults?.bool(forKey: hideVPNIconKey) ?? false,
-                homeKitCompatibility: defaults?.bool(forKey: homeKitCompatibilityKey) ?? false
+                homeKitCompatibility: defaults?.bool(forKey: homeKitCompatibilityKey) ?? false,
+                excludeAPNsRoute: defaults?.bool(forKey: excludeAPNsRouteKey) ?? false
             )
         }
     }
@@ -87,15 +97,36 @@ public enum HakoTunnelRouteShaping {
 
      
      
+     
+    public static let v4APNsRange = V4(address: "17.0.0.0", mask: "255.0.0.0")
+
+     
+     
+     
+     
+     
+     
+    public static let apnsFakeIPFilterEntry = "+.push.apple.com"
+
+     
+     
     public static func usesSplitTable(strictRoute: Bool, switches: Switches) -> Bool {
         strictRoute || switches.homeKitCompatibility
     }
 
      
      
+     
     public static func v4Excluded(_ configured: [V4], includedIsEmpty: Bool, switches: Switches) -> [V4] {
-        guard switches.hideVPNIcon, !includedIsEmpty, !configured.contains(v4IconHole) else { return configured }
-        return configured + [v4IconHole]
+        guard !includedIsEmpty else { return configured }
+        var excluded = configured
+        if switches.hideVPNIcon, !excluded.contains(v4IconHole) {
+            excluded.append(v4IconHole)
+        }
+        if switches.excludeAPNsRoute, !excluded.contains(v4APNsRange) {
+            excluded.append(v4APNsRange)
+        }
+        return excluded
     }
 
     public static func v6Excluded(_ configured: [V6], includedIsEmpty: Bool, switches: Switches) -> [V6] {

@@ -340,6 +340,7 @@
 "Already up to date." = "Already up to date.";
 "Alter ID" = "Alter ID";
 "Always On" = "Always On";
+"Always On is on, so On Demand and its rules do not apply." = "Always On is on, so On Demand and its rules do not apply.";
 "Always sniff · Domain" = "Always sniff · Domain";
 "Always stays on Home" = "Always stays on Home";
 "An IP address, or another domain. Separate several with |." = "An IP address, or another domain. Separate several with |.";
@@ -1097,6 +1098,7 @@
 "Example Transit · AS64500" = "Example Transit · AS64500";
 "Exception behavior" = "Exception behavior";
 "Exceptions" = "Exceptions";
+"Exclude APNs Route" = "Exclude APNs Route";
 "Exclude Filter" = "Exclude Filter";
 "Exclude Wi-Fi (Disconnect)" = "Exclude Wi-Fi (Disconnect)";
 "Exclude filter" = "Exclude filter";
@@ -1365,6 +1367,8 @@
 "Idle Timeout" = "Idle Timeout";
 "Idle before probing" = "Idle before probing";
 "Idle latency" = "Idle latency";
+"If YES, 17.0.0.0/8 stays outside the tunnel and push.apple.com resolves to its real address, so Apple push notifications reach this Mac directly instead of through the proxy. Takes effect on the next connection." = "If YES, 17.0.0.0/8 stays outside the tunnel and push.apple.com resolves to its real address, so Apple push notifications reach this Mac directly instead of through the proxy. Takes effect on the next connection.";
+"If YES, 17.0.0.0/8 stays outside the tunnel and push.apple.com resolves to its real address, so Apple push notifications reach this device directly instead of through the proxy. Takes effect on the next connection." = "If YES, 17.0.0.0/8 stays outside the tunnel and push.apple.com resolves to its real address, so Apple push notifications reach this device directly instead of through the proxy. Takes effect on the next connection.";
 "If YES, The internet-routable network traffic for cellular services (VoLTE, Wi-Fi Calling, IMS, MMS, Visual Voicemail, etc.) will be included from the tunnel." = "If YES, The internet-routable network traffic for cellular services (VoLTE, Wi-Fi Calling, IMS, MMS, Visual Voicemail, etc.) will be included from the tunnel.";
 "If YES, all network traffic is routed through the tunnel, with some exclusions." = "If YES, all network traffic is routed through the tunnel, with some exclusions.";
 "If YES, all traffic destined for local networks will be included from the tunnel." = "If YES, all traffic destined for local networks will be included from the tunnel.";
