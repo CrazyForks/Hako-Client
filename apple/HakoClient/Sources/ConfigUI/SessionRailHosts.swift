@@ -247,6 +247,10 @@ struct ProxiesOverviewHost: View {
             inspectMember: { name in inspectingNode = ProxyNodeInspection(name: name) },
             initiallyExpandedGroup: initiallyExpandedGroup,
             rememberedExpandedGroups: nodes.unfoldedGroups,
+             
+             
+            rememberedOpenGroup: nodes.currentGroupName,
+            readerFoldedAll: nodes.readerFoldedAllGroups,
             ownsNavigationContainer: ownsNavigationContainer
         )
         .alert(

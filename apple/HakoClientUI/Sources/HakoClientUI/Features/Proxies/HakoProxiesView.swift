@@ -2062,8 +2062,13 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
              
              
              
-            lastOpened: lastExpandedGroup ?? snapshot.proxies.initiallyExpandedGroup,
-            isSearching: isSearching
+             
+             
+            lastOpened: lastExpandedGroup
+                ?? snapshot.proxies.initiallyExpandedGroup
+                ?? snapshot.proxies.rememberedOpenGroup,
+            isSearching: isSearching,
+            readerFoldedAll: snapshot.proxies.readerFoldedAll ?? false
         ) else { return }
         HakoPerf.emit("proxies keep-open group=\(name)")
         expanded = [name]

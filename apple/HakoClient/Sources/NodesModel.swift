@@ -1034,6 +1034,13 @@ final class NodesModel: ObservableObject {
     @Published private(set) var unfoldedGroups = Set<String>() {
         didSet { HakoPerf.count("pub.nodes.unfolded") }
     }
+     
+     
+     
+     
+     
+    @Published private(set) var foldStateRecorded = false
+    var readerFoldedAllGroups: Bool { foldStateRecorded && unfoldedGroups.isEmpty }
     @Published private(set) var isSwitchingProxy = false {
         didSet { HakoPerf.count("pub.nodes.switching") }
     }
@@ -1464,6 +1471,7 @@ final class NodesModel: ObservableObject {
     }
 
     func setExpanded(_ expanded: Bool, group: String) {
+        foldStateRecorded = true
         if expanded {
             unfoldedGroups.insert(group)
             currentGroupName = group
@@ -1488,6 +1496,7 @@ final class NodesModel: ObservableObject {
      
     func setExpanded(_ expanded: Bool, groups names: [String]) {
         guard !names.isEmpty else { return }
+        foldStateRecorded = true
         if expanded {
             unfoldedGroups.formUnion(names)
         } else {
@@ -2839,6 +2848,7 @@ final class NodesModel: ObservableObject {
         } ?? state.profileID) + "|" + selectionFingerprint
         guard runtimeKey != restoredRuntimeKey else { return }
         currentGroupName = state.currentGroupName
+        foldStateRecorded = state.unfoldedGroups != nil
         unfoldedGroups = state.unfoldedGroups ?? Set(groups.map(\.name))
 
          

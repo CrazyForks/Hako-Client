@@ -514,6 +514,15 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
      
      
     public let rememberedExpandedGroups: Set<String>
+     
+     
+     
+    public var rememberedOpenGroup: String? = nil
+     
+     
+     
+     
+    public var readerFoldedAll: Bool? = nil
     public let displayPreferences: HakoProxiesDisplayPreferences
      
      
@@ -588,7 +597,9 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
         canRefreshCatalog: Bool? = nil,
         canUnpinGroups: Bool? = nil,
         actionRefusals: [String: String] = [:],
-        editableMembers: Set<String> = []
+        editableMembers: Set<String> = [],
+        rememberedOpenGroup: String? = nil,
+        readerFoldedAll: Bool? = nil
     ) {
         self.groups = groups
         self.hiddenGroups = hiddenGroups
@@ -621,6 +632,8 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
         let declared = Set(groups.map(\.name))
         self.rememberedExpandedGroups =
             rememberedExpandedGroups.intersection(declared)
+        self.rememberedOpenGroup = rememberedOpenGroup.flatMap { declared.contains($0) ? $0 : nil }
+        self.readerFoldedAll = readerFoldedAll
         self.displayPreferences = displayPreferences
         self.catalogState = catalogState.map {
             switch $0 {
@@ -899,10 +912,15 @@ public enum HakoProxyBrowsing {
         visible: [String],
         expanded: Set<String>,
         lastOpened: String?,
-        isSearching: Bool
+        isSearching: Bool,
+        readerFoldedAll: Bool = false
     ) -> String? {
         guard !isSearching, !visible.isEmpty else { return nil }
         guard !visible.contains(where: expanded.contains) else { return nil }
+         
+         
+         
+        guard !readerFoldedAll else { return nil }
         if let lastOpened, visible.contains(lastOpened) { return lastOpened }
         return visible.first
     }

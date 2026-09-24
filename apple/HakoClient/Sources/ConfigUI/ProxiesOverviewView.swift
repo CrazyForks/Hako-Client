@@ -138,6 +138,8 @@ struct ProxiesOverviewAdapter: View {
      
      
     private let rememberedExpandedGroups: Set<String>
+    private let rememberedOpenGroup: String?
+    private let readerFoldedAll: Bool
 
     @State private var preferences:
         HakoProxiesDisplayPreferences
@@ -312,6 +314,8 @@ struct ProxiesOverviewAdapter: View {
         inspectMember: ((String) -> Void)? = nil,
         initiallyExpandedGroup: String? = nil,
         rememberedExpandedGroups: Set<String> = [],
+        rememberedOpenGroup: String? = nil,
+        readerFoldedAll: Bool = false,
         ownsNavigationContainer: Bool = true
     ) {
         self.ownsNavigationContainer = ownsNavigationContainer
@@ -340,6 +344,8 @@ struct ProxiesOverviewAdapter: View {
         self.inspectMember = inspectMember
         self.initiallyExpandedGroup = initiallyExpandedGroup
         self.rememberedExpandedGroups = rememberedExpandedGroups
+        self.rememberedOpenGroup = rememberedOpenGroup
+        self.readerFoldedAll = readerFoldedAll
         _preferences = State(
             initialValue:
                 HakoProxiesDisplayPreferences.uiTestOverride()
@@ -774,7 +780,9 @@ struct ProxiesOverviewAdapter: View {
                  
                 canUnpinGroups: unpinGroup != nil,
                 actionRefusals: actionRefusals,
-                editableMembers: editableMembers
+                editableMembers: editableMembers,
+                rememberedOpenGroup: rememberedOpenGroup,
+                readerFoldedAll: readerFoldedAll
             ),
             capabilities: AppleClientCapabilities([
                 .proxies: .available,
