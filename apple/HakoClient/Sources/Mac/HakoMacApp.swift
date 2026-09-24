@@ -2481,7 +2481,7 @@ private final class HakoMacSceneModel: ObservableObject {
     private func scriptsActions(profileID: HakoClientKit.Profile.ID) -> HakoMacScriptsActions {
         func state() throws -> HakoMacScriptsState {
             let profile = try appProfile(profileID)
-            let scripts = ScriptLibrary.load().map { HakoMacScriptEntry(id: $0.id, label: $0.label, canRefresh: $0.sourceURL != nil) }
+            let scripts = ScriptLibrary.load().map { HakoMacScriptEntry(id: $0.id, label: $0.label, canRefresh: $0.sourceURL != nil, sourceHost: $0.sourceURL.flatMap { URL(string: $0)?.host }) }
             var fields = 0
             if let data = profile.override.patchJSON.data(using: .utf8),
                let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {

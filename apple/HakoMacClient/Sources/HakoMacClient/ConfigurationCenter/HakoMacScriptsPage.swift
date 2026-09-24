@@ -10,10 +10,14 @@ public struct HakoMacScriptEntry: Identifiable, Equatable, Sendable {
     public let label: String
      
     public let canRefresh: Bool
-    public init(id: String, label: String, canRefresh: Bool = false) {
+     
+     
+    public let sourceHost: String?
+    public init(id: String, label: String, canRefresh: Bool = false, sourceHost: String? = nil) {
         self.id = id
         self.label = label
         self.canRefresh = canRefresh
+        self.sourceHost = sourceHost
     }
 }
 
@@ -114,6 +118,7 @@ public struct HakoMacScriptsPage: View {
     @State private var deleting: HakoMacScriptEntry?
      
     @State private var updateMessage: String?
+    @Environment(\.locale) private var locale
 
     public init(actions: HakoMacScriptsActions, initial: HakoMacScriptsState = .empty) {
         self.actions = actions
@@ -126,7 +131,9 @@ public struct HakoMacScriptsPage: View {
     private func scriptRow(_ script: HakoMacScriptEntry) -> some View {
         HakoMacChoiceRow(
             title: .verbatim(script.label),
-            subtitle: .copy("Script"),
+             
+             
+            subtitle: script.sourceHost.map { .format("From %@", [$0]) } ?? .copy("Manual"),
             style: .single,
             isSelected: state.selectedID == script.id,
             identifier: "configuration-center.scripts.row.\(script.id)",
@@ -172,16 +179,16 @@ public struct HakoMacScriptsPage: View {
                 }
                 .accessibilityIdentifier(chosen == nil ? "configuration-center.scripts.all" : "configuration-center.scripts.other")
             }
-            HakoMacCardSection(chosen == nil && others.isEmpty ? .copy("Scripts") : nil) {
-                HakoMacListAddRow(.copy("Add Script")) { adding = true }
-                    .disabled(busy)
-                    .accessibilityIdentifier("configuration-center.scripts.add")
-                    .hakoMacCardRow()
+            if state.scripts.isEmpty {
+                HakoMacCardSection(.copy("Scripts")) {
+                    Text(hako: .copy("None")).foregroundStyle(.secondary).hakoMacCardRow(isLast: true)
+                }
+            }
+             
+             
+            HakoMacCardButtons {
                 if let updateAll = actions.updateAll {
-                     
-                     
-                     
-                    HakoMacListAddRow(.copy("Update All")) {
+                    Button {
                         guard !busy else { return }
                         busy = true
                         error = nil
@@ -193,23 +200,26 @@ public struct HakoMacScriptsPage: View {
                                 updateMessage = result.message
                             } catch { self.error = error.localizedDescription }
                         }
-                    }
+                    } label: { Text(hako: .copy("Update All")) }
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.scripts.update-all")
-                    .hakoMacCardRow()
                 }
+            } trailing: {
+                Button { adding = true } label: { Text(hako: .opens("Add Script", locale: locale)) }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.scripts.add")
             }
             if state.patchFieldCount > 0 {
                 HakoMacCardSection {
-                    LabeledContent {
-                        Button { perform { try await actions.clearPatch() } } label: { Text(hako: .copy("Clear Field Patch")) }
-                            .disabled(busy)
-                            .accessibilityIdentifier("configuration-center.scripts.patch")
-                    } label: {
-                        Text(hako: .copy("Field Patch"))
+                    HakoMacActionRow(.copy("Field Patch"), actionTitle: .copy("Clear Field Patch")) {
+                        perform { try await actions.clearPatch() }
+                    } trailing: {
                         Text(hako: .format("%@ fields", [String(state.patchFieldCount)]))
+                            .foregroundStyle(.secondary)
                     }
-                    .hakoMacCardRow()
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.scripts.patch")
+                    .hakoMacCardRow(isLast: true)
                 }
             }
             if !state.exceptions.isEmpty {
