@@ -340,8 +340,12 @@ struct HakoMacApp: App {
         WindowGroup("Runtime Configuration", id: "runtime-preview", for: HakoMacRuntimePreviewRequest.self) { $request in
             if let request, let profile = model.profiles.profiles.first(where: { $0.id == request.profileID }) {
                  
+                 
+                 
+                 
+                 
                 ProfilePreviewView(title: .verbatim(profile.label)) { [profiles = model.profiles] in
-                    try await profiles.loadAppliedConfigurationPreview(for: profile.id)
+                    try await profiles.loadSavedConfigurationPreview(for: profile.id)
                 }
                 .frame(minWidth: 640, minHeight: 480)
             }
