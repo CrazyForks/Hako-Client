@@ -1945,11 +1945,14 @@ private final class HakoMacSceneModel: ObservableObject {
         case .configuration(let id):
             if let profile = list.profiles.first(where: { $0.id == id }) {
                 let appProfile = profiles.profiles.first { $0.id == id.rawValue }
+                let recipe = snapshot.recipes.first { $0.id == id.rawValue }
                 HakoMacConfigurationInspector(
                     profile: profile,
                     sources: snapshot.sources.filter(\.suppliesNodes),
-                    ruleShelves: configurationLibrary.ruleShelves,
-                    recipe: snapshot.recipes.first { $0.id == id.rawValue },
+                     
+                     
+                    ruleShelves: HakoMacConfigurationLibraryModel.ruleShelves(snapshot, keeping: recipe?.ruleSchemeID),
+                    recipe: recipe,
                     scriptsActions: scriptsActions(profileID: id),
                     profileURL: appProfile.flatMap { if case .url(let url) = $0.source { url } else { nil } },
                     actions: configurationInspectorActions(list, profile: profile, id: id),

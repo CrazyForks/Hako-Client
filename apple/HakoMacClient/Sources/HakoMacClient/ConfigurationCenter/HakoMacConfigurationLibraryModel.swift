@@ -447,9 +447,33 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
 
      
      
-    nonisolated public static func ruleShelves(_ snapshot: ConfigurationLibrarySnapshot) -> [HakoMacRuleLibraryShelf] {
-        let schemes = snapshot.availableRules
-            + ConfigurationBuiltins.schemes.filter { builtin in !snapshot.rules.contains { $0.id == builtin.id } }
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    nonisolated public static func ruleShelves(
+        _ snapshot: ConfigurationLibrarySnapshot, keeping selectedID: String? = nil
+    ) -> [HakoMacRuleLibraryShelf] {
+        var schemes = snapshot.visibleRuleSchemes
+        if let selectedID, !schemes.contains(where: { $0.id == selectedID }),
+           let selected = snapshot.rules.first(where: { $0.id == selectedID }) {
+            let family = selected.baseSchemeID ?? selected.id
+            if let index = schemes.firstIndex(where: {
+                ConfigurationBuiltins.isNative(family) ? $0.id == selected.id : ($0.baseSchemeID ?? $0.id) == family
+            }) {
+                schemes[index] = selected
+            } else {
+                schemes.append(selected)
+            }
+        }
         return HakoConfigurationRuleLibrarySection.allCases.compactMap { section in
             let members = schemes.filter { section.contains($0, library: snapshot) }
             return members.isEmpty ? nil : HakoMacRuleLibraryShelf(section: section, schemes: members)
