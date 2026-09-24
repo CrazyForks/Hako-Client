@@ -15,7 +15,7 @@
 "A node in this chain is missing or ambiguous. Edit the chain before updating this source." = "链里有节点缺失或不唯一，先编辑链式代理再更新这个来源。";
 "A relay sends traffic through its members in order, so there is no one member to choose." = "relay 组会按顺序把流量依次经过各成员，因此没有单独可选的成员。";
 "A selected source is not a configuration object." = "所选来源不是一份配置。";
-"A selected source needs a proxy that no selected source supplies." = "所选来源需要一个节点，但没有任何所选来源提供它。";
+"A selected source needs “%@”, which no selected source supplies." = "所选来源需要「%@」，但没有任何所选来源提供它。";
 "A source was selected more than once." = "同一个来源被选了不止一次。";
 "A valid memory sample was not included in the reply." = "回复未包含有效的内存样本。";
 "About" = "关于";

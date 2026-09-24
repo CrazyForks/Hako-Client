@@ -232,6 +232,21 @@ struct OnDemandConfiguration: Codable, Equatable {
         copy.rules = rules.map { $0.normalized() }
         return copy
     }
+
+     
+     
+     
+     
+     
+     
+     
+     
+    func withOnDemandOffWhenItHasNoRules() -> Self {
+        guard enabled, rules.isEmpty else { return self }
+        var copy = self
+        copy.enabled = false
+        return copy
+    }
 }
 
 enum OnDemandValidationError: Error, Equatable, LocalizedError {
@@ -273,7 +288,7 @@ enum OnDemandSettings {
     ) -> OnDemandConfiguration {
         if let data = defaults.data(forKey: configurationKey),
            let decoded = try? JSONDecoder().decode(OnDemandConfiguration.self, from: data) {
-            return decoded.normalized()
+            return decoded.normalized().withOnDemandOffWhenItHasNoRules()
         }
 
         let enabled = defaults.bool(forKey: enabledKey)
@@ -293,7 +308,16 @@ enum OnDemandSettings {
         in defaults: UserDefaults = appGroupDefaults
     ) throws {
         let configuration = configuration.normalized()
-        _ = try rules(configuration: configuration)
+         
+         
+         
+         
+         
+         
+         
+        var withoutAlwaysOn = configuration
+        withoutAlwaysOn.alwaysOn = false
+        _ = try rules(configuration: withoutAlwaysOn)
         let data = try JSONEncoder().encode(configuration)
         defaults.set(data, forKey: configurationKey)
         defaults.set(configuration.enabled, forKey: enabledKey)

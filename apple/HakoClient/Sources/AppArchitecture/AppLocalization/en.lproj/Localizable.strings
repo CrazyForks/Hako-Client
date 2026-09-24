@@ -218,7 +218,7 @@
 "A script in the library uses the name reserved for the previous version's script." = "A script in the library uses the name reserved for the previous version's script.";
 "A script library conflict prevents the settings upgrade. Rename the conflicting script, then retry." = "A script library conflict prevents the settings upgrade. Rename the conflicting script, then retry.";
 "A selected source is not a configuration object." = "A selected source is not a configuration object.";
-"A selected source needs a proxy that no selected source supplies." = "A selected source needs a proxy that no selected source supplies.";
+"A selected source needs “%@”, which no selected source supplies." = "A selected source needs “%@”, which no selected source supplies.";
 "A source was selected more than once." = "A source was selected more than once.";
 "A text, YAML or MRS rule set the app downloads and keeps updated." = "A text, YAML or MRS rule set the app downloads and keeps updated.";
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other.";

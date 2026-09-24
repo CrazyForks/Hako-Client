@@ -55,6 +55,10 @@ public struct ConfigurationNodeScope: Codable, Equatable, Sendable {
         func missing(_ name: String) -> ConfigurationCompositionError { .unresolvedDependency(source: input.id, name: name) }
         let availableNodes = Set(allNodes.compactMap { string($0.topLevelValue("name")) })
         if let unavailable = publicNodes.subtracting(availableNodes).sorted().first { throw missing(unavailable) }
+        func isOutbound(_ name: String) -> Bool {
+            availableNodes.contains(name) || ConfigurationComposer.builtins.contains(name)
+                || allGroups.contains { string($0.topLevelValue("name")) == name }
+        }
         func walk(_ kind: String, _ name: String) throws {
             let identity = kind + ":" + name
             guard !visiting.contains(identity) else { throw missing("cycle: " + name) }
@@ -64,7 +68,12 @@ public struct ConfigurationNodeScope: Codable, Equatable, Sendable {
             if kind == "provider" {
                 guard let value = allProviders.first(where: { $0.key == name })?.value else { throw missing(name) }
                 providers.insert(name)
-                for target in [string(value.topLevelValue("proxy")), string(value.topLevelValue("override")?.topLevelValue("dialer-proxy"))].compactMap({ $0 }) where !target.isEmpty {
+                 
+                 
+                 
+                 
+                for target in [string(value.topLevelValue("proxy")), string(value.topLevelValue("override")?.topLevelValue("dialer-proxy"))].compactMap({ $0 })
+                where !target.isEmpty && isOutbound(target) {
                     try walk("outbound", target)
                 }
             } else if ["DIRECT", "REJECT", "REJECT-DROP", "PASS", "COMPATIBLE", "GLOBAL"].contains(name) {

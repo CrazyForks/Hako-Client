@@ -218,7 +218,7 @@
 "A script in the library uses the name reserved for the previous version's script." = "脚本库里有一个脚本占用了旧版全局脚本的名字。";
 "A script library conflict prevents the settings upgrade. Rename the conflicting script, then retry." = "脚本库冲突导致设置升级失败。请重命名冲突脚本后重试。";
 "A selected source is not a configuration object." = "所选来源不是一份配置。";
-"A selected source needs a proxy that no selected source supplies." = "所选来源需要一个节点，但没有任何所选来源提供它。";
+"A selected source needs “%@”, which no selected source supplies." = "所选来源需要「%@」，但没有任何所选来源提供它。";
 "A source was selected more than once." = "同一个来源被选了不止一次。";
 "A text, YAML or MRS rule set the app downloads and keeps updated." = "一个文本、YAML 或 MRS 规则集链接，App 会下载并保持更新。";
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "填了 token 就是 TUIC v4，它会忽略 UUID 和密码。二者留一个。";

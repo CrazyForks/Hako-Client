@@ -1417,13 +1417,32 @@ enum ConfigurationTowerRuleReader {
             .flatMap { ["https", "http"].contains($0.scheme?.lowercased() ?? "") ? $0.absoluteString : nil }
         let parsed = try await Task.detached {
             let lines: [String]
-            if raw.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("payload:") {
+             
+             
+             
+             
+             
+             
+             
+            let isYAMLPayload = raw.split(whereSeparator: \.isNewline).contains { $0.hasPrefix("payload:") }
+            if isYAMLPayload {
                 let object = try OrderedJSON.parse(ConfigTransforms.yamlToJSON(raw))
                 guard case .array(let values) = object.topLevelValue("payload") else { throw ConfigurationLibraryError.missingRules }
                 lines = try values.map { guard case .string(let value) = $0 else { throw ConfigurationLibraryError.missingRules }; return value }
             } else {
+                 
+                 
                 lines = raw.split(whereSeparator: \.isNewline).map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty && !$0.hasPrefix("#") && !$0.hasPrefix("//") }
+                    .map { line -> String in
+                        var value = Substring(line)
+                        if value.hasPrefix("- ") { value = value.dropFirst(2).drop(while: { $0 == " " }) }
+                        if value.count >= 2, let first = value.first, first == "\"" || first == "'", value.last == first {
+                            value = value.dropFirst().dropLast()
+                        }
+                        return String(value)
+                    }
+                    .filter { !$0.isEmpty }
             }
             guard !lines.isEmpty else { throw ConfigurationLibraryError.missingRules }
             let document = OrderedJSON.object([

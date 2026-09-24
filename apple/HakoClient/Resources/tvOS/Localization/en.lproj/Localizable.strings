@@ -15,7 +15,7 @@
 "A node in this chain is missing or ambiguous. Edit the chain before updating this source." = "A node in this chain is missing or ambiguous. Edit the chain before updating this source.";
 "A relay sends traffic through its members in order, so there is no one member to choose." = "A relay sends traffic through its members in order, so there is no one member to choose.";
 "A selected source is not a configuration object." = "A selected source is not a configuration object.";
-"A selected source needs a proxy that no selected source supplies." = "A selected source needs a proxy that no selected source supplies.";
+"A selected source needs “%@”, which no selected source supplies." = "A selected source needs “%@”, which no selected source supplies.";
 "A source was selected more than once." = "A source was selected more than once.";
 "A valid memory sample was not included in the reply." = "A valid memory sample was not included in the reply.";
 "About" = "About";

@@ -50,8 +50,12 @@ public enum ConfigurationCompositionError: LocalizedError, Equatable {
         case .duplicateSource: return "A source was selected more than once."
         case .invalidDocument: return "A selected source is not a configuration object."
         case .duplicateName: return "Two entries in one source share a name. Rename one of them."
-        case .unresolvedDependency(let source, let name):
-            return "A selected source needs a proxy that no selected source supplies."
+        case .unresolvedDependency(_, let name):
+             
+             
+             
+             
+            return String(format: "A selected source needs \u{201C}%@\u{201D}, which no selected source supplies.", name)
         }
     }
 }
@@ -134,15 +138,23 @@ public enum ConfigurationComposer {
             for pair in source.document.topLevelValue("proxy-providers")?.compositionObject ?? [] {
                 guard let name = providerNames[source.id]?[pair.key] else { continue }
                 var value = pair.value
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
                 if let proxy = value.topLevelValue("proxy")?.compositionString {
                     value = value.settingTopLevel("proxy", to: .string(
-                        try dependencyGroups.resolve(proxy, source: source.id)
+                        try dependencyGroups.resolveOrPassThrough(proxy, source: source)
                     ))
                 }
                 if let dialer = value.topLevelValue("override")?.topLevelValue("dialer-proxy")?.compositionString,
                    let override = value.topLevelValue("override") {
                     value = value.settingTopLevel("override", to: override.settingTopLevel("dialer-proxy", to:
-                        .string(try dependencyGroups.resolve(dialer, source: source.id))))
+                        .string(try dependencyGroups.resolveOrPassThrough(dialer, source: source))))
                 }
                  
                  
@@ -152,9 +164,15 @@ public enum ConfigurationComposer {
                 }
                 if value.topLevelValue("type")?.compositionString == "file",
                    let original = value.topLevelValue("path")?.compositionString {
-                    guard let path = source.resourcePaths[original] else {
-                        throw ConfigurationCompositionError.unresolvedDependency(source: source.id, name: original)
-                    }
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    let path = source.resourcePaths[original] ?? original
                     if let owner = localPaths[path], owner != source.id {
                         throw ConfigurationCompositionError.unresolvedDependency(source: source.id, name: original)
                     }
@@ -364,6 +382,21 @@ public enum ConfigurationComposer {
         var names: [String: [String: String]] = [:]
         var output: [OrderedJSON] = []
         var visited: Set<String> = []
+
+         
+         
+         
+         
+        mutating func resolveOrPassThrough(_ name: String, source: ConfigurationInput) throws -> String {
+            do { return try resolve(name, source: source.id) }
+            catch ConfigurationCompositionError.unresolvedDependency(_, let missing) where missing == name {
+                let ownGroups = source.document.topLevelValue("proxy-groups")?.compositionArray ?? []
+                guard !ownGroups.contains(where: { $0.topLevelValue("name")?.compositionString == name }) else {
+                    throw ConfigurationCompositionError.unresolvedDependency(source: source.id, name: name)
+                }
+                return name
+            }
+        }
 
         mutating func resolve(_ name: String, source id: String) throws -> String {
             if let node = nodes[id]?[name] { return node }

@@ -218,7 +218,7 @@
 "A script in the library uses the name reserved for the previous version's script." = "指令碼庫裡有一個指令碼佔用了舊版全域指令碼的名字。";
 "A script library conflict prevents the settings upgrade. Rename the conflicting script, then retry." = "指令碼庫衝突導致設定升級失敗。請重新命名衝突指令碼後重試。";
 "A selected source is not a configuration object." = "所選來源不是一份設定。";
-"A selected source needs a proxy that no selected source supplies." = "所選來源需要一個節點，但沒有任何所選來源提供它。";
+"A selected source needs “%@”, which no selected source supplies." = "所選來源需要「%@」，但沒有任何所選來源提供它。";
 "A source was selected more than once." = "同一個來源被選了不只一次。";
 "A text, YAML or MRS rule set the app downloads and keeps updated." = "一個文字、YAML 或 MRS 規則集連結，App 會下載並保持更新。";
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "填了 token 就是 TUIC v4，它會忽略 UUID 和密碼。二者留一個。";

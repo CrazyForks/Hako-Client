@@ -49,6 +49,10 @@ struct OnDemandConfigView: View {
              
              
              
+             
+             
+             
+             
             Section {
                 Toggle("On Demand", isOn: setting(\.enabled))
                     .accessibilityIdentifier("onDemand.enabled")
@@ -100,6 +104,8 @@ struct OnDemandConfigView: View {
                         }
                         .accessibilityElement(children: .combine)
                     }
+                    .deleteDisabled(draft.alwaysOn)
+                    .moveDisabled(draft.alwaysOn)
                      
                      
                      
