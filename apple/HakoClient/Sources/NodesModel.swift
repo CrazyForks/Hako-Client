@@ -1199,6 +1199,17 @@ final class NodesModel: ObservableObject {
         didSet { HakoPerf.count("pub.nodes.traffic") }
     }
     @Published private(set) var isTestingLatency = false
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static var postSweepSelectionSyncNanoseconds: UInt64 = 11_000_000_000
+    private var postSweepSelectionSync: Task<Void, Never>?
     @Published private(set) var latencyCompletedCount = 0
     @Published private(set) var latencyTotalCount = 0
 
@@ -1765,6 +1776,8 @@ final class NodesModel: ObservableObject {
     }
 
     func cancelLatencyTests(reason: LatencyProbeCancellationReason) async {
+        postSweepSelectionSync?.cancel()
+        postSweepSelectionSync = nil
         await cancelLatencyTests(reason: reason, expectedOperation: nil)
     }
 
@@ -2012,6 +2025,10 @@ final class NodesModel: ObservableObject {
 
         latencyRunID &+= 1
         let runID = latencyRunID
+         
+         
+        postSweepSelectionSync?.cancel()
+        postSweepSelectionSync = nil
         let previousTask = latencyTask
         await latencyCancellation?.cancel(reason: .superseded)
         previousTask?.cancel()
@@ -2485,6 +2502,7 @@ final class NodesModel: ObservableObject {
                 completed: summary.completedCount,
                 total: summary.totalCount
             )
+            schedulePostSweepSelectionSync()
              
              
              
@@ -2568,6 +2586,29 @@ final class NodesModel: ObservableObject {
         latencyCompletedCount = completed
         latencyTotalCount = total
         isTestingLatency = false
+    }
+
+     
+     
+     
+     
+     
+     
+    private func schedulePostSweepSelectionSync() {
+        postSweepSelectionSync?.cancel()
+        postSweepSelectionSync = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: Self.postSweepSelectionSyncNanoseconds)
+            guard !Task.isCancelled, let self, let command = self.command,
+                  command.isConnected, !self.isTestingLatency
+            else { return }
+            await command.refreshMetadata()
+            guard !Task.isCancelled, command.isConnected, !self.isTestingLatency else { return }
+            await self.reloadInventoryOffMain(command: command)
+            let groupCount = self.groups.count
+            HakoLogStore.shared.append(
+                "sweep follow-up  group selections re-read  groups=\(groupCount)",
+                stream: .app, level: .info)
+        }
     }
 
      
