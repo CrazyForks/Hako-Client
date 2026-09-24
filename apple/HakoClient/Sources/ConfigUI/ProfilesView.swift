@@ -363,7 +363,12 @@ final class ProfilesViewModel: ObservableObject {
         }
         if !hasAttemptedConfigurationRecovery {
             hasAttemptedConfigurationRecovery = true
-            Task { [weak self] in
+             
+             
+             
+             
+             
+            launchHousekeeping = Task { [weak self] in
                 do {
                     try await self?.recoverConfigurationPublications()
                     try await self?.registerLegacyConfigurationSources()
@@ -523,8 +528,12 @@ final class ProfilesViewModel: ObservableObject {
      
      
     private func settleLibraryHousekeeping() async {
+        if let launch = launchHousekeeping { await launch.value }
         if let registration = legacyRegistration { _ = try? await registration.task.value }
     }
+     
+     
+    private var launchHousekeeping: Task<Void, Never>?
 
      
      
@@ -583,6 +592,12 @@ final class ProfilesViewModel: ObservableObject {
             do {
                 try await register { current in ConfigurationBuiltins.retiringCommunitySchemes(in: current) }
             } catch { failures.append(error.localizedDescription) }
+             
+             
+             
+             
+            do { try await recomposeForCurrentCompositionRevision() }
+            catch { failures.append(error.localizedDescription) }
             if !failures.isEmpty { throw PipelineError.sourceUnavailable(failures.joined(separator: "\n")) }
              
              
@@ -610,6 +625,45 @@ final class ProfilesViewModel: ObservableObject {
         legacyRegistration = (registrationID, task)
         defer { if legacyRegistration?.id == registrationID { legacyRegistration = nil } }
         try await task.value
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func recomposeForCurrentCompositionRevision() async throws {
+        guard let library = configurationLibraryStore else { return }
+        let current = try await Task.detached { try library.snapshot() }.value
+        let prepared: PreparedConfigurationSourceUpdate?
+        do {
+            prepared = try await Task.detached(priority: .utility) {
+                try library.prepareRecompositionForCurrentRevision(expectedGeneration: current.generation,
+                    resolveInput: ConfigurationCenterSourceBridge.boundInput)
+            }.value
+        } catch ConfigurationLibraryError.busy, ConfigurationLibraryError.staleGeneration {
+             
+             
+             
+             
+             
+            return
+        }
+        guard let prepared else { return }
+         
+         
+         
+         
+         
+         
+        try await saveConfigurationPlan(candidate: prepared.candidate, payloads: prepared.payloads,
+            compositions: prepared.compositions, generation: current.generation, restagesConfigurationInUse: false)
     }
 
      
@@ -1485,7 +1539,8 @@ final class ProfilesViewModel: ObservableObject {
     private func saveConfigurationPlan(candidate initial: ConfigurationLibrarySnapshot,
                                        payloads: [ConfigurationSourcePayload],
                                        compositions: [String: ConfigurationComposition],
-                                       generation: UInt64, rename: String? = nil) async throws {
+                                       generation: UInt64, rename: String? = nil,
+                                       restagesConfigurationInUse: Bool = true) async throws {
         guard let library = configurationLibraryStore, let workingDir, let container, let profileStore else {
             throw ConfigurationLibraryError.unreadable
         }
@@ -1542,7 +1597,7 @@ final class ProfilesViewModel: ObservableObject {
          
          
          
-        if let active = activeProfileID, compositions.keys.contains(active),
+        if restagesConfigurationInUse, let active = activeProfileID, compositions.keys.contains(active),
            let latest = profiles.first(where: { $0.id == active }) {
             startActivation(
                 latest,

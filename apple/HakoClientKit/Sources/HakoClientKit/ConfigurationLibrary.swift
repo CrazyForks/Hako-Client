@@ -225,6 +225,14 @@ public struct ConfigurationLibrarySnapshot: Codable, Equatable, Sendable {
     public var updateIssues: [ConfigurationUpdateIssue]? = nil
     public var selectedRuleSchemeID: String? = nil
     public var localRuleSets: [ConfigurationLocalRuleSet]? = nil
+     
+     
+     
+     
+     
+     
+     
+    public var compositionRevision: Int? = nil
     public init() {}
 }
 
@@ -518,6 +526,15 @@ public final class ConfigurationLibraryStore: Sendable {
             for publication in publications { try writePublication(publication) }
             var committed = candidate
             committed.generation = previous.generation + 1
+             
+             
+             
+             
+             
+            if committed.compositionRevision == nil,
+               !previous.recipes.contains(where: { $0.preservesOriginal != true }) {
+                committed.compositionRevision = Self.currentCompositionRevision
+            }
             try writeSnapshot(committed)
              
              

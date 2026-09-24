@@ -290,6 +290,72 @@ extension ConfigurationLibraryStore {
 
      
      
+     
+     
+    public static let currentCompositionRevision = 1
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    public func prepareRecompositionForCurrentRevision(expectedGeneration: UInt64,
+        resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput = {
+            .init(id: $0.record.id, document: try OrderedJSON.parse($0.documentJSON))
+        }) throws -> PreparedConfigurationSourceUpdate? {
+        var candidate = try snapshot()
+        guard candidate.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
+        guard candidate.compositionRevision ?? 0 < Self.currentCompositionRevision else { return nil }
+         
+         
+         
+         
+         
+         
+        guard candidate.recipes.contains(where: { $0.preservesOriginal != true }) else { return nil }
+        guard candidate.pendingPublications?.isEmpty ?? true else { throw ConfigurationLibraryError.busy }
+        var compositions: [String: ConfigurationComposition] = [:]
+        var issues = (candidate.updateIssues ?? []).filter { $0.sourceID != Self.recompositionIssueSource }
+        for index in candidate.recipes.indices where candidate.recipes[index].preservesOriginal != true {
+            var recipe = candidate.recipes[index]
+            do {
+                try freezeSettings(in: &recipe, resolveInput: resolveInput)
+                func input(_ reference: ConfigurationSourceVersion) throws -> ConfigurationInput {
+                    let resolved = try resolveInput(payload(reference))
+                    guard resolved.id == reference.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
+                    return resolved
+                }
+                let composition = try composeInputs(recipe.sources.map(input), ruleInput: input(recipe.ruleSource),
+                    schemeID: recipe.ruleSchemeID, scheme: candidate.rules.first { $0.id == recipe.ruleSchemeID },
+                    nodeNameservers: recipe.nodeNameservers, dnsMode: recipe.dnsMode ?? .system,
+                    customDNSJSON: recipe.customDNSJSON, settingsJSON: recipe.settingsJSON ?? "{}", nodeScopes: recipe.nodeScopes,
+                    settingsProviders: try settingsProviders(recipe.settingsRuleDependencies, resolveInput: resolveInput))
+                recipe.droppedRules = composition.droppedRules.isEmpty ? nil : composition.droppedRules
+                compositions[recipe.id] = composition
+                candidate.recipes[index] = recipe
+            } catch {
+                issues.append(.init(sourceID: Self.recompositionIssueSource, itemID: recipe.id, message: error.localizedDescription))
+            }
+        }
+        candidate.updateIssues = issues.isEmpty ? nil : issues
+        candidate.compositionRevision = Self.currentCompositionRevision
+        return .init(candidate: candidate, payloads: [], compositions: compositions)
+    }
+
+     
+     
+    public static let recompositionIssueSource = "hako-composition-revision"
+
+     
+     
     public func prepareSourceRemoval(_ id: String, expectedGeneration: UInt64,
                                      resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput = {
                                          .init(id: $0.record.id, document: try OrderedJSON.parse($0.documentJSON))
