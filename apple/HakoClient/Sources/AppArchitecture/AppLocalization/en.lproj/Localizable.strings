@@ -3403,6 +3403,7 @@
 "Use New Value" = "Use New Value";
 "Use Node Value" = "Use Node Value";
 "Use Original Configuration" = "Use Original Configuration";
+"Use Original Configuration keeps the source's own DNS. Turn it off to choose DNS for this configuration." = "Use Original Configuration keeps the source's own DNS. Turn it off to choose DNS for this configuration.";
 "Use Previous" = "Use Previous";
 "Use Profile URL Rules" = "Use Profile URL Rules";
 "Use System DNS" = "Use System DNS";

@@ -3403,6 +3403,7 @@
 "Use New Value" = "采用新值";
 "Use Node Value" = "使用节点的值";
 "Use Original Configuration" = "使用原始配置";
+"Use Original Configuration keeps the source's own DNS. Turn it off to choose DNS for this configuration." = "「使用原始配置」开着时用来源自己的 DNS。要自选 DNS，先关掉它。";
 "Use Previous" = "用旧版那份";
 "Use Profile URL Rules" = "使用链接规则";
 "Use System DNS" = "使用系统 DNS";

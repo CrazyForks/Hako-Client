@@ -154,6 +154,27 @@ extension ConfigurationLibraryStore {
         guard var existing = current.recipes.first(where: { $0.id == profileID }) else {
             throw ConfigurationLibraryError.missingDependency(profileID)
         }
+        if existing.preservesOriginal == true {
+             
+             
+             
+             
+             
+             
+             
+             
+            let block: OrderedJSON
+            if let frozen = existing.settingsJSON {
+                block = try OrderedJSON.parse(frozen)
+            } else {
+                block = try originalSettingsBaseline(of: existing, resolveInput: resolveInput)
+                if !((try? payload(existing.ruleSource))?.resourceFiles ?? [:]).isEmpty { existing.settingsSource = existing.ruleSource }
+            }
+            let delta = try OrderedJSON.parse(existing.originalSettingsJSON ?? "{}")
+            existing.settingsJSON = Self.settingsExpanded(baseline: block, delta: delta).serialized()
+            existing.originalSettingsJSON = nil
+            existing.preservesOriginal = nil
+        }
         try freezeSettings(in: &existing, resolveInput: resolveInput)
         current.recipes.removeAll { $0.id == profileID }
         var draft = draft
@@ -257,7 +278,8 @@ extension ConfigurationLibraryStore {
             }
             if recipe.preservesOriginal == true {
                 let original = try input(recipe.ruleSource)
-                compositions[recipe.id] = .init(document: original.document, sourceIDs: [original.id])
+                compositions[recipe.id] = .init(document: try overlayingAdvancedSettings(of: recipe, onto: original.document),
+                                                sourceIDs: [original.id])
             } else {
             compositions[recipe.id] = try composeInputs(recipe.sources.map(input),
                 ruleInput: input(recipe.ruleSource), schemeID: recipe.ruleSchemeID, nodeNameservers: recipe.nodeNameservers, dnsMode: recipe.dnsMode ?? .source, customDNSJSON: recipe.customDNSJSON, settingsJSON: recipe.settingsJSON ?? "{}", nodeScopes: recipe.nodeScopes, settingsProviders: try settingsProviders(recipe.settingsRuleDependencies, resolveInput: resolveInput))
@@ -441,6 +463,19 @@ extension ConfigurationLibraryStore {
 
     private func freezeSettings(in recipe: inout ConfigurationRecipe,
         resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws {
+        if recipe.preservesOriginal == true {
+             
+             
+             
+             
+             
+             
+             
+             
+            if recipe.originalSettingsJSON == nil { recipe.originalSettingsJSON = "{}" }
+            try captureSettingsDependencies(in: &recipe, settingsJSON: recipe.originalSettingsJSON, resolveInput: resolveInput)
+            return
+        }
         if recipe.settingsJSON == nil {
             if let reference = recipe.sources.first {
                 let source = try payload(reference)
@@ -453,9 +488,9 @@ extension ConfigurationLibraryStore {
         try captureSettingsDependencies(in: &recipe, resolveInput: resolveInput)
     }
 
-    private func captureSettingsDependencies(in recipe: inout ConfigurationRecipe,
+    private func captureSettingsDependencies(in recipe: inout ConfigurationRecipe, settingsJSON: String? = nil,
         resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws {
-        let settings = try ConfigurationSettingsDocument.parse(recipe.settingsJSON ?? "{}")
+        let settings = try ConfigurationSettingsDocument.parse(settingsJSON ?? recipe.settingsJSON ?? "{}")
         let dns: OrderedJSON? = recipe.dnsMode == .system ? ConfigurationDNSSettings.automatic
             : (recipe.dnsMode == .custom ? try ConfigurationDNSSettings.custom(recipe.customDNSJSON) : nil)
         let names = ConfigurationSettingsDependencies.names(settings: settings, dns: dns)
@@ -484,6 +519,56 @@ extension ConfigurationLibraryStore {
             entries.append((name, definition))
         }
         return .object(entries)
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func originalSettingsBaseline(of recipe: ConfigurationRecipe,
+                                  resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws -> OrderedJSON {
+        let input = try resolveInput(payload(recipe.ruleSource))
+        guard input.id == recipe.ruleSource.id else { throw ConfigurationLibraryError.invalidIdentifier }
+        return ConfigurationSettingsDocument.project(input.document)
+    }
+
+     
+     
+     
+     
+     
+     
+    static func settingsDelta(full: OrderedJSON, baseline: OrderedJSON) -> OrderedJSON {
+        guard case .object(let entries) = full else { return .object([]) }
+        return .object(entries.filter { entry in
+            entry.key != "dns" && baseline.topLevelValue(entry.key) != entry.value
+        })
+    }
+
+     
+     
+    static func settingsExpanded(baseline: OrderedJSON, delta: OrderedJSON) -> OrderedJSON {
+        guard case .object(let entries) = delta else { return baseline }
+        var result = baseline
+        for entry in entries { result = result.settingTopLevel(entry.key, to: entry.value) }
+        return result
+    }
+
+    func overlayingAdvancedSettings(of recipe: ConfigurationRecipe, onto document: OrderedJSON) throws -> OrderedJSON {
+        guard let json = recipe.originalSettingsJSON,
+              case .object(let entries) = try ConfigurationSettingsDocument.parse(json) else { return document }
+        var result = document
+        for entry in entries where entry.key != "dns" {
+            result = result.settingTopLevel(entry.key, to: entry.value)
+        }
+        return result
     }
 
     private func composeInputs(_ allInputs: [ConfigurationInput], ruleInput original: ConfigurationInput,
@@ -798,12 +883,31 @@ public extension ConfigurationLibraryStore {
         }
         var recipe = candidate.recipes[index]
         try freezeSettings(in: &recipe, resolveInput: resolveInput)
+        if recipe.preservesOriginal == true {
+             
+             
+             
+             
+            if includingDNS {
+                let running = try resolveInput(payload(recipe.ruleSource)).document.topLevelValue("dns")
+                if running != edited.topLevelValue("dns") { throw ConfigurationLibraryError.originalKeepsSourceDNS }
+            }
+            let baseline = try originalSettingsBaseline(of: recipe, resolveInput: resolveInput)
+            recipe.originalSettingsJSON = Self.settingsDelta(full: edited, baseline: baseline).serialized()
+            try captureSettingsDependencies(in: &recipe, settingsJSON: recipe.originalSettingsJSON, resolveInput: resolveInput)
+            let original = try resolveInput(payload(recipe.ruleSource))
+            guard original.id == recipe.ruleSource.id else { throw ConfigurationLibraryError.invalidIdentifier }
+            candidate.recipes[index] = recipe
+            return .init(candidate: candidate, payloads: [],
+                         compositions: [profileID: .init(document: try overlayingAdvancedSettings(of: recipe, onto: original.document),
+                                                         sourceIDs: [original.id])])
+        }
         let original = try OrderedJSON.parse(recipe.settingsJSON ?? "{}")
         if includingDNS {
              
              
-            let previous = try advancedSourceDocument(recipe).topLevelValue("dns")
             let updated = edited.topLevelValue("dns")
+            let previous = try advancedSourceDocument(recipe).topLevelValue("dns")
             if previous != updated {
                 recipe.dnsMode = updated == nil ? .system : .custom
                 recipe.customDNSJSON = updated?.serialized()
@@ -852,7 +956,15 @@ public extension ConfigurationLibraryStore {
             throw ConfigurationLibraryError.missingDependency(profileID)
         }
         try freezeSettings(in: &recipe, resolveInput: resolveInput)
-        let document = try includingDNS ? advancedSourceDocument(recipe) : OrderedJSON.parse(recipe.settingsJSON ?? "{}")
+        let document: OrderedJSON
+        if recipe.preservesOriginal == true {
+             
+             
+            document = try Self.settingsExpanded(baseline: originalSettingsBaseline(of: recipe, resolveInput: resolveInput),
+                                                 delta: OrderedJSON.parse(recipe.originalSettingsJSON ?? "{}"))
+        } else {
+            document = try includingDNS ? advancedSourceDocument(recipe) : OrderedJSON.parse(recipe.settingsJSON ?? "{}")
+        }
         return (ConfigurationAdvancedSettingsDocument.project(document, includingDNS: includingDNS).serialized(), current.generation)
     }
 }

@@ -901,10 +901,15 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
             .foregroundStyle(.secondary)
     }
 
+     
+     
+     
+     
+     
     private var hasRemoteProfile: Bool {
         snapshot.profiles.profiles.contains {
             $0.source == .remote
-        }
+        } || snapshot.profiles.libraryHasFetchableSource
     }
 
     private var syncAllButton: some View {
@@ -2080,10 +2085,6 @@ private struct HakoProfileDetailView<
                     }
                     .disabled(isSavingOriginalConfiguration || profile.isBusy)
                     .accessibilityIdentifier("profile-detail.uses-original-configuration")
-                    Text(usesOriginal
-                        ? "Runs the configuration as received, with its own proxy groups, rules and DNS."
-                        : "Nodes come from the chosen node sources; routing follows the rule scheme.")
-                        .font(.footnote).foregroundStyle(.secondary)
                     actionFailureLine(for: .originalConfiguration)
                 }
                 .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.row))

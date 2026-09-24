@@ -372,6 +372,10 @@ public struct HakoProfilesSnapshot: Codable, Equatable, Sendable {
     public let batchReport: HakoProfileBatchReportSnapshot?
     public let featureAvailability:
         HakoProfilesFeatureAvailabilitySnapshot?
+     
+     
+     
+    public let libraryHasFetchableSource: Bool
 
     public init(
         profiles: [HakoProfileSnapshot] = [],
@@ -379,13 +383,31 @@ public struct HakoProfilesSnapshot: Codable, Equatable, Sendable {
         statusMessage: HakoDisplayText = .copy(""),
         batchReport: HakoProfileBatchReportSnapshot? = nil,
         featureAvailability:
-            HakoProfilesFeatureAvailabilitySnapshot? = nil
+            HakoProfilesFeatureAvailabilitySnapshot? = nil,
+        libraryHasFetchableSource: Bool = false
     ) {
         self.profiles = Array(profiles.prefix(1_024))
         self.failure = failure
         self.statusMessage = statusMessage.bounded(to: 512)
         self.batchReport = batchReport
         self.featureAvailability = featureAvailability
+        self.libraryHasFetchableSource = libraryHasFetchableSource
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case profiles, failure, statusMessage, batchReport, featureAvailability, libraryHasFetchableSource
+    }
+
+     
+     
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        profiles = try container.decode([HakoProfileSnapshot].self, forKey: .profiles)
+        failure = try container.decodeIfPresent(HakoProfilesFailureSnapshot.self, forKey: .failure)
+        statusMessage = try container.decode(HakoDisplayText.self, forKey: .statusMessage)
+        batchReport = try container.decodeIfPresent(HakoProfileBatchReportSnapshot.self, forKey: .batchReport)
+        featureAvailability = try container.decodeIfPresent(HakoProfilesFeatureAvailabilitySnapshot.self, forKey: .featureAvailability)
+        libraryHasFetchableSource = try container.decodeIfPresent(Bool.self, forKey: .libraryHasFetchableSource) ?? false
     }
 
     public func profile(id: Profile.ID) -> HakoProfileSnapshot? {

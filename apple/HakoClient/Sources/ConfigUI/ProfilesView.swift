@@ -135,6 +135,12 @@ final class ProfilesViewModel: ObservableObject {
     @Published private(set) var notices: [String] = []
     @Published private(set) var planErrors: [String] = []
     @Published private(set) var lastFailure: ConfigurationFailure?
+     
+     
+     
+     
+    @Published private(set) var libraryHasFetchableSource = false
+    private var hasNotedLibraryFetchability = false
     @Published private(set) var batchReport: BatchUpdateReport?
     @Published private(set) var isBatchSyncing = false
 
@@ -262,6 +268,7 @@ final class ProfilesViewModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             self?.hasAttemptedConfigurationRecovery = false
+            self?.hasNotedLibraryFetchability = false
             self?.load()
         }
          
@@ -318,6 +325,14 @@ final class ProfilesViewModel: ObservableObject {
                 recordFailure(error, context: .localImport, operation: nil, preservesLastKnownGood: true)
                 return
             }
+        }
+         
+         
+         
+         
+        if !hasNotedLibraryFetchability {
+            hasNotedLibraryFetchability = true
+            noteLibraryFetchability((try? configurationLibraryStore?.snapshot()) ?? nil)
         }
         if !hasAttemptedConfigurationRecovery {
             hasAttemptedConfigurationRecovery = true
@@ -467,6 +482,16 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
+     
+    private func settleLibraryHousekeeping() async {
+        if let registration = legacyRegistration { _ = try? await registration.task.value }
+    }
+
+     
+     
+     
+     
+     
     func registerLegacyConfigurationSources() async throws {
         if let registration = legacyRegistration {
             defer { if legacyRegistration?.id == registration.id { legacyRegistration = nil } }
@@ -474,6 +499,14 @@ final class ProfilesViewModel: ObservableObject {
         }
         let registrationID = UUID()
         let task = Task { @MainActor in
+             
+             
+             
+             
+            var waited = 0
+            while changingConfigurationLibrary, waited < 100 {
+                try await Task.sleep(nanoseconds: 50_000_000); waited += 1
+            }
             guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
             guard let store = configurationLibraryStore, let workingDir else { throw ConfigurationLibraryError.unreadable }
             changingConfigurationLibrary = true
@@ -587,6 +620,7 @@ final class ProfilesViewModel: ObservableObject {
         guard let library = configurationLibraryStore, let workingDir, let container, let profileStore else {
             throw PipelineError.sourceUnavailable("The configuration store is unavailable.")
         }
+        await settleLibraryHousekeeping()
         let current = try await Task.detached { try library.snapshot() }.value
         if current.recipes.contains(where: { $0.id == id }) {
              
@@ -646,6 +680,10 @@ final class ProfilesViewModel: ObservableObject {
         }.value
         if !profileStore.load().contains(where: { $0.id == id }) { try profileStore.upsert(staged) }
         try await Task.detached { try library.acknowledgePublication(publication.reference) }.value
+         
+         
+         
+        noteLibraryFetchability(candidate)
         load()
          
         return (id,nil)
@@ -654,6 +692,7 @@ final class ProfilesViewModel: ObservableObject {
     private var changingConfigurationLibrary = false
 
     func editConfiguration(_ draft: ConfigurationCreationDraft, id: String, generation: UInt64) async throws {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -677,6 +716,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func editConfigurationAdvancedSettings(_ id: String, json: String, generation: UInt64) async throws {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary, let library = configurationLibraryStore else { throw ConfigurationLibraryError.busy }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
@@ -689,6 +729,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func setConfigurationSourceUpdates(_ id: String, enabled: Bool) async throws {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -719,6 +760,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func setUsesOriginalConfiguration(_ id: String, enabled: Bool) async throws {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
          
@@ -744,6 +786,16 @@ final class ProfilesViewModel: ObservableObject {
         }.value
         try await saveConfigurationPlan(candidate: prepared.candidate, payloads: prepared.payloads,
             compositions: [id: prepared.composition], generation: generation)
+    }
+
+     
+     
+    private func noteLibraryFetchability(_ snapshot: ConfigurationLibrarySnapshot?) {
+         
+         
+         
+        guard let snapshot else { libraryHasFetchableSource = false; return }
+        libraryHasFetchableSource = snapshot.recipes.contains { !Self.fetchableSources(of: $0, in: snapshot).isEmpty }
     }
 
      
@@ -785,6 +837,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func saveConfigurationRuleCustomization(_ draft: ConfigurationRuleDraft, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary, let store = configurationLibraryStore else { throw ConfigurationLibraryError.busy }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
@@ -800,6 +853,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func saveConfigurationLocalRuleSet(_ value: ConfigurationLocalRuleSet?, deleting id: String? = nil) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary, let store = configurationLibraryStore else { throw ConfigurationLibraryError.busy }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
@@ -814,6 +868,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func createConfigurationRuleScheme(_ draft: ConfigurationNewRuleDraft, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -824,6 +879,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func saveConfigurationRuleDraft(_ draft: ConfigurationRuleDraft, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -840,6 +896,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func addConfigurationRuleScheme(_ source: ConfigurationSourcePayload, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -850,6 +907,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func copyConfigurationRuleScheme(_ id: String, label: String, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -860,6 +918,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func deleteConfigurationRuleScheme(_ id: String, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -874,27 +933,36 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func addConfigurationSource(_ source: ConfigurationSourcePayload, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
-        return try await Task.detached(priority: .userInitiated) {
+        let result = try await Task.detached(priority: .userInitiated) {
             try library.addSource(source, expectedGeneration: generation)
         }.value
+         
+         
+        noteLibraryFetchability(result)
+        return result
     }
 
     func renameConfigurationSource(_ id: String, label: String, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
-        return try await Task.detached(priority: .userInitiated) {
+        let result = try await Task.detached(priority: .userInitiated) {
             try library.renameSource(id, label: label, expectedGeneration: generation)
         }.value
+        noteLibraryFetchability(result)
+        return result
     }
 
     func saveConfigurationSourceSettings(_ id: String, draft: ConfigurationSourceSettingsDraft,
                                          label: String? = nil, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -903,10 +971,12 @@ final class ProfilesViewModel: ObservableObject {
             try library.updateSourceSettings(id, draft: draft, label: label, expectedGeneration: generation)
         }.value
         BackgroundRefresh.schedule(earliest: BackgroundRefresh.nextEligibility())
+        noteLibraryFetchability(result)
         return result
     }
 
     func deleteConfigurationSource(_ id: String, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -921,6 +991,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func saveConfigurationChain(_ version: ConfigurationSourceVersion, replacement: ConfigurationSourcePayload) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -942,6 +1013,7 @@ final class ProfilesViewModel: ObservableObject {
 
      
     func saveConfigurationNodeSource(_ version: ConfigurationSourceVersion, yaml: String) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -983,6 +1055,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func saveConfigurationCollection(_ entry: ConfigurationCollectionEntry, definitionJSON: String?) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary, let library = configurationLibraryStore else { throw ConfigurationLibraryError.busy }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
@@ -1026,6 +1099,7 @@ final class ProfilesViewModel: ObservableObject {
      
      
     private func changeConfigurationCustomNode(_ version: ConfigurationSourceVersion, nodeJSON: String?, index: Int?) async throws -> ConfigurationLibrarySnapshot {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -1063,6 +1137,7 @@ final class ProfilesViewModel: ObservableObject {
 
     func refreshConfigurationSource(_ id: String, replaceEditedRules: Bool = false,
                                     expectedVersion: String? = nil) async throws {
+        await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
@@ -1109,6 +1184,10 @@ final class ProfilesViewModel: ObservableObject {
             _ = try await Task.detached {
                 try library.commit(initial, payloads: payloads, expectedGeneration: generation)
             }.value
+             
+             
+             
+            noteLibraryFetchability(initial)
             return
         }
         let originals = profileStore.load()
@@ -1130,6 +1209,7 @@ final class ProfilesViewModel: ObservableObject {
         try Task.checkCancellation()
         try await ConfigurationCenterPublicationBridge.replaceOffMain(replacements, candidate: candidate,
             payloads: payloads, library: library, workingDir: workingDir, expectedGeneration: generation)
+        noteLibraryFetchability(candidate)
         load()
         savedConfigurationGeneration &+= 1
 
@@ -1366,6 +1446,19 @@ final class ProfilesViewModel: ObservableObject {
         guard let profileStore else {
             throw PipelineError.sourceUnavailable("the shared profile store is unavailable")
         }
+        var autoUpdate = autoUpdate, subscriptionURL = subscriptionURL, updateIntervalHours = updateIntervalHours
+        if ((try? configurationLibraryStore?.snapshot()) ?? nil)?.recipes.contains(where: { $0.id == profile.id }) == true {
+             
+             
+             
+             
+             
+             
+             
+            autoUpdate = false
+            updateIntervalHours = profile.updateIntervalHours
+            if case let .url(stored) = profile.source { subscriptionURL = stored }
+        }
         do {
             let updated = try ProfileMetadataUpdate.apply(
                 to: profile,
@@ -1563,6 +1656,9 @@ final class ProfilesViewModel: ObservableObject {
              
             if let library = configurationLibraryStore {
                 try ConfigurationCenterPublicationBridge.removeProfile(profile, library: library, profileStore: profileStore)
+                 
+                 
+                noteLibraryFetchability(try? library.snapshot())
             } else { try profileStore.remove(id: profile.id) }
             if let workingDir {
                 try? FileManager.default.removeItem(
@@ -2872,6 +2968,7 @@ final class ProfilesViewModel: ObservableObject {
         if let sourceYAML, let library = configurationLibraryStore {
             let snapshot = try await Task.detached { try library.snapshot() }.value
             if let recipe = snapshot.recipes.first(where: { $0.id == profile.id }), recipe.preservesOriginal != true {
+                await settleLibraryHousekeeping()
                 guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
                 changingConfigurationLibrary = true
                 defer { changingConfigurationLibrary = false }
@@ -2888,6 +2985,7 @@ final class ProfilesViewModel: ObservableObject {
                 return
             }
             if let recipe = snapshot.recipes.first(where: { $0.id == profile.id }), recipe.preservesOriginal == true {
+                await settleLibraryHousekeeping()
                 guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
                 changingConfigurationLibrary = true
                 defer { changingConfigurationLibrary = false }
@@ -3282,6 +3380,11 @@ final class ProfilesViewModel: ObservableObject {
     func configurationLibrarySources(for profile: Profile) -> [String]? {
         guard let snapshot = try? configurationLibraryStore?.snapshot(),
               let recipe = snapshot.recipes.first(where: { $0.id == profile.id }) else { return nil }
+        return Self.fetchableSources(of: recipe, in: snapshot)
+    }
+
+    private static func fetchableSources(of recipe: ConfigurationRecipe,
+                                         in snapshot: ConfigurationLibrarySnapshot) -> [String] {
         var seen = Set<String>()
         return (recipe.sources + [recipe.ruleSource]).compactMap { reference -> String? in
             guard seen.insert(reference.id).inserted,
@@ -3289,6 +3392,45 @@ final class ProfilesViewModel: ObservableObject {
                   case .subscription = record.origin, record.isRetainedSnapshot != true else { return nil }
             return reference.id
         }
+    }
+
+     
+     
+    private struct LibraryConfigurationEntry {
+        let profile: Profile
+        let sources: [String]
+    }
+
+     
+     
+     
+     
+     
+     
+    private struct UpdateAllPlan {
+        var legacy: [Profile] = []
+        var configurations: [LibraryConfigurationEntry] = []
+        var sources: [ConfigurationSourceRecord] = []
+        var count: Int { legacy.count + configurations.count }
+    }
+
+    private func planUpdateAll() -> UpdateAllPlan {
+        var plan = UpdateAllPlan()
+        let snapshot = (try? configurationLibraryStore?.snapshot()) ?? nil
+        var seen = Set<String>()
+        for profile in profiles {
+            if let snapshot, let recipe = snapshot.recipes.first(where: { $0.id == profile.id }) {
+                let ids = Self.fetchableSources(of: recipe, in: snapshot)
+                guard !ids.isEmpty else { continue }
+                plan.configurations.append(.init(profile: profile, sources: ids))
+                for id in ids where seen.insert(id).inserted {
+                    if let record = snapshot.sources.first(where: { $0.id == id }) { plan.sources.append(record) }
+                }
+            } else if case .url = profile.source {
+                plan.legacy.append(profile)
+            }
+        }
+        return plan
     }
 
      
@@ -3474,12 +3616,13 @@ final class ProfilesViewModel: ObservableObject {
 
     func syncAll() {
         guard batchTask == nil else { return }
-        let candidates = Self.subscriptionProfiles(in: profiles)
+        let plan = planUpdateAll()
+        let candidates = plan.legacy
         batchReport = BatchUpdateReport(
             title: "Profile Sync",
-            expectedCount: candidates.count
+            expectedCount: plan.count
         )
-        guard !candidates.isEmpty else { return }
+        guard plan.count > 0 else { return }
         isBatchSyncing = true
         clearFailure()
         let runID = UUID()
@@ -3535,6 +3678,67 @@ final class ProfilesViewModel: ObservableObject {
                 }
                 self.busyProfileID = nil
                 self.load()
+            }
+             
+             
+             
+             
+            if !plan.sources.isEmpty {
+                let before = (try? self.configurationLibraryStore?.snapshot()) ?? nil
+                let versions = Dictionary(uniqueKeysWithValues: (before?.sources ?? []).map { ($0.id, $0.version) })
+                var failures: [String: ProviderDownloadFailure] = [:]
+                var cancelled = false
+                for source in plan.sources {
+                    guard self.batchRunID == runID else { return }
+                    if Task.isCancelled { self.markBatchCancelled(); cancelled = true; break }
+                    self.statusMessage = .format("Syncing %@…", [source.label])
+                    do {
+                        try await withThrowingTaskGroup(of: Void.self) { group in
+                            group.addTask { try await self.refreshConfigurationSource(source.id) }
+                            group.addTask {
+                                try await Task.sleep(nanoseconds: UInt64(Self.batchItemLimit * 1_000_000_000))
+                                throw URLError(.timedOut)
+                            }
+                            defer { group.cancelAll() }
+                            try await group.next()
+                        }
+                    } catch is CancellationError {
+                        guard self.batchRunID == runID else { return }
+                        self.markBatchCancelled(); cancelled = true; break
+                    } catch {
+                        var link: String?
+                        if case let .subscription(url) = source.origin { link = url }
+                        failures[source.id] = .init(provider: source.label, url: link, underlying: error)
+                    }
+                }
+                guard self.batchRunID == runID else { return }
+                 
+                 
+                self.load()
+                let after = (try? self.configurationLibraryStore?.snapshot()) ?? nil
+                let changed = Set(plan.sources.map(\.id).filter { id in
+                    guard let now = after?.sources.first(where: { $0.id == id })?.version else { return false }
+                    return versions[id] != now
+                })
+                if let activeProfileID = self.activeProfileID,
+                   let active = plan.configurations.first(where: { $0.profile.id == activeProfileID }) {
+                    await self.restageAfterSourceRefresh(activeProfileID, changed: active.sources.filter(changed.contains))
+                }
+                guard self.batchRunID == runID else { return }
+                if !cancelled {
+                    for entry in plan.configurations {
+                        let failed = entry.sources.compactMap { failures[$0] }
+                        if !failed.isEmpty {
+                            self.recordBatchFailure(ProviderDownloadFailuresError(failures: failed), profile: entry.profile)
+                        } else if entry.sources.contains(where: changed.contains) {
+                            self.recordBatchItem(id: entry.profile.id, label: entry.profile.label,
+                                                 state: .updated, message: "The validated source was saved.")
+                        } else {
+                            self.recordBatchItem(id: entry.profile.id, label: entry.profile.label,
+                                                 state: .unchanged, message: "Already up to date.")
+                        }
+                    }
+                }
             }
             guard self.batchRunID == runID else { return }
             self.busyProfileID = nil

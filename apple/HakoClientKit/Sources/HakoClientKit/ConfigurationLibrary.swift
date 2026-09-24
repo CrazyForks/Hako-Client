@@ -166,6 +166,14 @@ public struct ConfigurationRecipe: Codable, Equatable, Identifiable, Sendable {
      
     public var settingsJSON: String?
      
+     
+     
+     
+     
+     
+     
+    public var originalSettingsJSON: String? = nil
+     
     public var settingsSource: ConfigurationSourceVersion?
     public var dependencies: [ConfigurationSourceVersion] {
         sources + [ruleSource] + (settingsSource.map { [$0] } ?? []) + Array((settingsRuleDependencies ?? [:]).values)
@@ -298,8 +306,13 @@ public enum ConfigurationLibraryError: LocalizedError, Equatable {
     case missingDependency(String)
     case immutableVersion
     case busy
+     
+     
+     
+    case originalKeepsSourceDNS
     public var errorDescription: String? {
         switch self {
+        case .originalKeepsSourceDNS: return "Use Original Configuration keeps the source's own DNS. Turn it off to choose DNS for this configuration."
         case .invalidAdvancedSettings: return NSLocalizedString("Edit nodes and rules in their own settings.", comment: "Advanced settings field ownership")
         case .readOnlyRuleScheme: return "Copy this rule scheme before editing it."
         case .invalidFinalRule: return "Keep exactly one MATCH rule at the end."

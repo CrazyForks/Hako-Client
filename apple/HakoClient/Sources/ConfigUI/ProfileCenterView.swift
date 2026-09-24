@@ -172,6 +172,21 @@ struct ProfileCenterAdapter: View {
         applyCenterLibrary(updated)
     }
 
+     
+     
+     
+     
+     
+     
+     
+    private func librarySubscriptionFacts(for profile: Profile) -> ProfileSubscriptionSettingsAdapter.LibraryFacts? {
+        guard let recipe = configurationLibrary.recipes.first(where: { $0.id == profile.id }),
+              recipe.sources.count == 1, let reference = recipe.sources.first,
+              let record = configurationLibrary.sources.first(where: { $0.id == reference.id }),
+              case .subscription = record.origin else { return nil }
+        return .init(intervalHours: record.updateIntervalHours ?? 0)
+    }
+
     private func applyCenterLibrary(_ snapshot: ConfigurationLibrarySnapshot) {
         configurationLibrary = snapshot
         composedProfileIDs = Set(snapshot.recipes.filter { $0.preservesOriginal != true }.map(\.id))
@@ -288,7 +303,8 @@ struct ProfileCenterAdapter: View {
                  
                 failure: nil,
                 statusMessage: model.statusMessage,
-                batchReport: model.batchReport.map(batchSnapshot)
+                batchReport: model.batchReport.map(batchSnapshot),
+                libraryHasFetchableSource: model.libraryHasFetchableSource
             ),
             capabilities: AppleClientCapabilities([
                 .profiles: .available,
@@ -537,7 +553,8 @@ struct ProfileCenterAdapter: View {
             if let profile = appProfile(id) {
                 ProfileSubscriptionSettingsAdapter(
                     profile: profile,
-                    model: model
+                    model: model,
+                    library: librarySubscriptionFacts(for: profile)
                 )
             } else {
                 EmptyView()
@@ -1005,8 +1022,25 @@ enum ProfileAdaptationPresenter {
  
  
 private struct ProfileSubscriptionSettingsAdapter: View {
+     
+     
+     
+     
+     
+    struct LibraryFacts: Equatable {
+         
+        var intervalHours: Int
+    }
+
     let profile: Profile
     @ObservedObject var model: ProfilesViewModel
+     
+     
+     
+     
+     
+     
+    let library: LibraryFacts?
 
      
      
@@ -1029,9 +1063,10 @@ private struct ProfileSubscriptionSettingsAdapter: View {
      
     @State private var openedWith: (url: String, auto: Bool, hours: Int)?
 
-    init(profile: Profile, model: ProfilesViewModel) {
+    init(profile: Profile, model: ProfilesViewModel, library: LibraryFacts? = nil) {
         self.profile = profile
         self.model = model
+        self.library = library
         if case .url(let url) = profile.source {
              
              
@@ -1051,6 +1086,33 @@ private struct ProfileSubscriptionSettingsAdapter: View {
     var body: some View {
         HakoFeatureNavigationContainer {
             Form {
+                if let library {
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    Section {
+                        Text(verbatim: subscriptionURL)
+                            .textSelection(.enabled)
+                            .accessibilityIdentifier("profile-metadata.url")
+                        HStack {
+                            Text("Update Interval")
+                            Spacer()
+                            if library.intervalHours > 0 {
+                                Text(hako: .format("Every %@ hours", [String(library.intervalHours)]))
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("Manually").foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityIdentifier("profile-metadata.interval")
+                    } header: {
+                        Text("Profile URL")
+                    }
+                } else {
                 Section {
                      
                      
@@ -1097,6 +1159,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                 } header: {
                     Text("Profile URL")
                 }
+                }
 
                 if ProfileMetadataUpdate.strippingSourceCredentials(
                     from: profile
@@ -1139,7 +1202,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if !insideProductModal {
+                    if !insideProductModal, library == nil {
                         Button("Save") {
                             save()
                         }
@@ -1151,7 +1214,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
             }
             .hakoProductModalRoot(title: "Profile URL Settings")
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if insideProductModal {
+                if insideProductModal, library == nil {
                      
                     HakoModalActionBar(
                         primaryTitle: "Save",

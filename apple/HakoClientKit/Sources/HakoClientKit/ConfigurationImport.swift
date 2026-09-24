@@ -153,7 +153,12 @@ public extension ConfigurationLibraryStore {
         let prepared = try prepareOriginal(draft, profileID: profileID, starting: current, resolveInput: resolveInput)
         var recipe = prepared.recipe
         recipe.followsUpdates = existing.followsUpdates
+         
+         
+         
+         
         recipe.settingsJSON = existing.settingsJSON
+        recipe.originalSettingsJSON = nil
         recipe.settingsSource = existing.settingsSource
         recipe.settingsRuleDependencies = existing.settingsRuleDependencies
          
