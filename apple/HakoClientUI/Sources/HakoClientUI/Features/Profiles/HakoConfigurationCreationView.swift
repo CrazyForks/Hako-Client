@@ -16,7 +16,25 @@ public struct HakoConfigurationCenterSections<Profiles: View, Nodes: View, Rules
         self.profiles = profiles; self.nodes = nodes; self.rules = rules
     }
     public var body: some View {
-        VStack(spacing: 0) {
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        Group {
+            switch section {
+            case 1: nodes()
+            case 2: rules()
+            default: profiles()
+            }
+        }
+        .hakoPinnedTopBar {
             HakoFullWidthSegmentedPicker(selection: Binding(get: { section }, set: { next in
                 guard next != section else { return }
                 HakoDeparture.request(departureGuard) { section = next }
@@ -24,12 +42,8 @@ public struct HakoConfigurationCenterSections<Profiles: View, Nodes: View, Rules
                 HakoFullWidthSegmentedOption(selection: index, title: HakoCopy.string(title, locale: locale),
                     accessibilityIdentifier: "configuration.center.tab.\(index)")
             }, role: .pageStrip)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, HakoTheme.Spacing.standard)
-            switch section {
-            case 1: nodes()
-            case 2: rules()
-            default: profiles()
-            }
         }
         .hakoPageTitle("Profile Center")
         .hakoToolbarUnlessInPanel {
