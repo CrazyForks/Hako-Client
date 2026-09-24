@@ -44,13 +44,65 @@ enum ProfileCenterPolicy {
      
      
      
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
     static func catalog(_ profiles: [Profile]) -> [Profile] {
-        profiles
+        profiles.filter { $0.id != LocalDefaultProfileProvisioner.profileID }
     }
 
-    static func canDelete(profileID: String, activeProfileID: String?) -> Bool {
-        profileID != LocalDefaultProfileProvisioner.profileID
-            && profileID != activeProfileID
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static func canDelete(profileID: String, activeProfileID: String?,
+                          profiles: [Profile]) -> Bool {
+        guard profileID != LocalDefaultProfileProvisioner.profileID else { return false }
+        guard profileID == activeProfileID else { return true }
+         
+         
+         
+         
+        guard profiles.contains(where: { $0.id == LocalDefaultProfileProvisioner.profileID })
+        else { return false }
+        let own = profiles.filter { $0.id != LocalDefaultProfileProvisioner.profileID }
+        return own.count == 1 && own[0].id == profileID
     }
 }
 

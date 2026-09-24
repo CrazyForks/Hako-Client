@@ -616,6 +616,7 @@
 "Clash reads Geo data with the standard filesystem loader on macOS; the memory-conservative mode is an iOS memory-budget measure." = "macOS 上 Clash 使用标准的文件系统加载器读取 Geo 数据；省内存模式是 iOS 的内存预算措施。";
 "Clash replaces your data only after everything is ready; if the restore fails, your current data stays in place." = "Clash 只在一切就绪后才替换你的数据；若恢复失败，当前数据保持不变。";
 "Clash returned an invalid LAN proxy status. Sharing remains unavailable." = "Clash 返回了无效的局域网代理状态。共享仍不可用。";
+"Clash returns to its built-in profile" = "删除后使用内置配置";
 "Clash runs DNS inside the packet tunnel and removes raw listener settings." = "Clash 在隧道内运行 DNS，并移除原始监听设置。";
 "Clash wrote the switch but could not read it back as the active configuration. Try again." = "Clash 已写入切换结果，但无法读回为生效配置。请重试。";
 "Clash's shared import storage is unavailable." = "Clash 的共享导入存储不可用。";

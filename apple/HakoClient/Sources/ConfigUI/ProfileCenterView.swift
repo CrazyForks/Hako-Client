@@ -377,7 +377,8 @@ struct ProfileCenterAdapter: View {
         let libraryFacts = Self.libraryFacts(for: profile, in: configurationLibrary)
         let canDelete = ProfileCenterPolicy.canDelete(
             profileID: profile.id,
-            activeProfileID: model.activeProfileID
+            activeProfileID: model.activeProfileID,
+            profiles: model.profiles
         )
 
         return HakoProfileSnapshot(
@@ -500,6 +501,13 @@ struct ProfileCenterAdapter: View {
     ) -> HakoDisplayText {
         if profile.id == LocalDefaultProfileProvisioner.profileID {
             return "Clash keeps Direct as a safe system fallback"
+        }
+         
+         
+         
+         
+        if canDelete, profile.id == model.activeProfileID {
+            return "Clash returns to its built-in profile"
         }
         return canDelete
             ? "Remove this profile from Clash"

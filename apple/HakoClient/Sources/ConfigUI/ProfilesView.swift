@@ -1930,16 +1930,39 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func delete(_ profile: Profile) {
-        guard let profileStore else { return }
+        guard profileStore != nil else { return }
         guard ProfileCenterPolicy.canDelete(
             profileID: profile.id,
-            activeProfileID: activeProfileID
+            activeProfileID: activeProfileID,
+            profiles: profiles
         ) else {
             statusMessage = profile.id == LocalDefaultProfileProvisioner.profileID
                 ? "Direct is Clash's system fallback and cannot be deleted"
                 : "Switch to another profile before deleting"
             return
         }
+         
+         
+         
+         
+         
+         
+         
+        if profile.id == activeProfileID,
+           let fallback = profiles.first(where: { $0.id == LocalDefaultProfileProvisioner.profileID }) {
+            Task { @MainActor in
+                _ = await selectAndWait(fallback)
+                performDelete(profile)
+            }
+            return
+        }
+        performDelete(profile)
+    }
+
+     
+     
+    private func performDelete(_ profile: Profile) {
+        guard let profileStore else { return }
         let clearsOwnedFailure = failureProfile?.id == profile.id
         do {
              
