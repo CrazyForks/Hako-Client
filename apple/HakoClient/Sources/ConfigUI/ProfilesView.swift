@@ -894,13 +894,17 @@ final class ProfilesViewModel: ObservableObject {
         return try await Task.detached { try store.snapshot() }.value
     }
 
-    func saveConfigurationLocalRuleSet(_ value: ConfigurationLocalRuleSet?, deleting id: String? = nil) async throws -> ConfigurationLibrarySnapshot {
+     
+     
+     
+     
+    func saveConfigurationLocalRuleSet(_ value: ConfigurationLocalRuleSet?, deleting id: String? = nil, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
         await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary, let store = configurationLibraryStore else { throw ConfigurationLibraryError.busy }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
         let prepared = try await Task.detached {
-            let prepared = try store.prepareLocalRuleSet(value, deleting: id, expectedGeneration: try store.snapshot().generation,
+            let prepared = try store.prepareLocalRuleSet(value, deleting: id, expectedGeneration: generation,
                                                          resolveInput: ConfigurationCenterSourceBridge.boundInput)
             for payload in prepared.payloads { try ConfigTransforms.validateSource(payload.documentJSON) }
             return prepared

@@ -25,14 +25,25 @@ public extension ConfigurationLibrarySnapshot {
             guard let base = $0.baseSchemeID else { return true }
             return ConfigurationBuiltins.isNative(base) || !baseIDs.contains(base)
         }
-        var firstDerivative: [String: ConfigurationRuleScheme] = [:]
-        for scheme in available {
-            if let base = scheme.baseSchemeID, firstDerivative[base] == nil { firstDerivative[base] = scheme }
-        }
         var seen = Set<String>()
         return bases.filter { seen.insert($0.id).inserted }.map { base in
-            ConfigurationBuiltins.isNative(base.id) ? base : (firstDerivative[base.id] ?? base)
+            ConfigurationBuiltins.isNative(base.id) ? base : (familyRepresentative(of: base.id, in: available) ?? base)
         }
+    }
+
+     
+     
+     
+     
+     
+     
+    func familyRepresentative(of baseID: String) -> ConfigurationRuleScheme? {
+        familyRepresentative(of: baseID, in: availableRules)
+    }
+
+    private func familyRepresentative(of baseID: String, in available: [ConfigurationRuleScheme]) -> ConfigurationRuleScheme? {
+        let derivatives = available.filter { $0.baseSchemeID == baseID }
+        return derivatives.first { derivative in recipes.contains { $0.ruleSchemeID == derivative.id } } ?? derivatives.last
     }
      
      
@@ -54,21 +65,17 @@ public extension ConfigurationLibrarySnapshot {
      
      
     func effectiveRuleScheme(_ id: String) -> ConfigurationRuleScheme? {
+        let available = availableRules
         if ConfigurationBuiltins.isNative(id) {
-            if let running = availableRules.first(where: { derivative in
-                derivative.baseSchemeID == id && recipes.contains { $0.ruleSchemeID == derivative.id }
-            }) { return running }
+            let representative = familyRepresentative(of: id, in: available)
+            if let representative, recipes.contains(where: { $0.ruleSchemeID == representative.id }) { return representative }
             return ConfigurationBuiltins.schemes.first { $0.id == id }
         }
         if let own = rules.first(where: { $0.id == id }), own.isRetainedSnapshot != true,
            own.collectionKey == nil, own.kind == .custom || own.kind == .imported {
             return own
         }
-        let derivatives = availableRules.filter { $0.baseSchemeID == id }
-        if let running = derivatives.first(where: { derivative in recipes.contains { $0.ruleSchemeID == derivative.id } }) {
-            return running
-        }
-        return derivatives.last ?? rules.first { $0.id == id } ?? ConfigurationBuiltins.schemes.first { $0.id == id }
+        return familyRepresentative(of: id, in: available) ?? rules.first { $0.id == id } ?? ConfigurationBuiltins.schemes.first { $0.id == id }
     }
 
      
@@ -79,6 +86,6 @@ public extension ConfigurationLibrarySnapshot {
            own.collectionKey == nil, own.kind == .custom || own.kind == .imported {
             return own
         }
-        return availableRules.last { $0.baseSchemeID == id } ?? effectiveRuleScheme(id)
+        return familyRepresentative(of: id) ?? effectiveRuleScheme(id)
     }
 }

@@ -871,8 +871,8 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
                     HakoTowerRuleCustomizationView(draft: initial.draft, localSets: library.localRuleSets ?? [],
                         resetDocument: initial.resetDocument, palette: .hakoProduct, pushed: pushed, ruleSetKeys: initial.ruleSetKeys,
                         save: save, download: { try await ConfigurationTowerRuleReader.rules($0) },
-                        saveLocal: { value in apply(try await model.saveConfigurationLocalRuleSet(value)); return (try await reloadDraft(), library.localRuleSets ?? []) },
-                        deleteLocal: { id in apply(try await model.saveConfigurationLocalRuleSet(nil, deleting: id)); return (try await reloadDraft(), library.localRuleSets ?? []) },
+                        saveLocal: { value in apply(try await model.saveConfigurationLocalRuleSet(value, generation: library.generation)); return (try await reloadDraft(), library.localRuleSets ?? []) },
+                        deleteLocal: { id in apply(try await model.saveConfigurationLocalRuleSet(nil, deleting: id, generation: library.generation)); return (try await reloadDraft(), library.localRuleSets ?? []) },
                          
                          
                         copy: { draft, name in

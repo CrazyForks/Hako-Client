@@ -935,7 +935,10 @@ public extension ConfigurationLibraryStore {
         var payloads: [ConfigurationSourcePayload] = []
         var compositions: [String: ConfigurationComposition] = [:]
         var changedSources = Set<String>()
-        for scheme in original.availableRules where scheme.kind == .custom || scheme.kind == .imported {
+         
+         
+         
+        for scheme in original.availableRules where (scheme.kind == .custom || scheme.kind == .imported) && scheme.collectionKey == nil {
             var draft = try ConfigurationRuleDraft(scheme: scheme, payload: ruleSchemePayload(scheme.id))
             guard draft.containsRuleSet("local-" + targetID) else { continue }
             if let value { try draft.updateLocalRuleSet(value) } else { draft.removeRuleSet("local-" + targetID) }

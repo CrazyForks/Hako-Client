@@ -2372,11 +2372,11 @@ private final class HakoMacSceneModel: ObservableObject {
             load: { try await load(previous: nil) },
             save: { draft in try await save(draft) },
             saveLocal: { value in
-                library.apply(try await profiles.saveConfigurationLocalRuleSet(value))
+                library.apply(try await profiles.saveConfigurationLocalRuleSet(value, generation: library.snapshot.generation))
                 return try await load(previous: nil)
             },
             deleteLocal: { id in
-                library.apply(try await profiles.saveConfigurationLocalRuleSet(nil, deleting: id))
+                library.apply(try await profiles.saveConfigurationLocalRuleSet(nil, deleting: id, generation: library.snapshot.generation))
                 return try await load(previous: nil)
             },
             copy: { draft, name in
