@@ -3469,6 +3469,14 @@ private final class HakoMacSceneModel: ObservableObject {
                         self.profiles.sourceYAML(for: profile)
                     )
                 },
+                 
+                 
+                fetchOmittedRules: { [weak self] in
+                    guard let self,
+                          let snapshot = try? self.profiles.configurationLibraryStore?.snapshot()
+                    else { return [] }
+                    return snapshot.recipes.first { $0.id == profile.id }?.droppedRules ?? []
+                },
                 blockedRuleSets: isActive
                     ? { [verdictsHome] in
                         guard let verdictsHome else { return [] }
@@ -4531,6 +4539,12 @@ private struct HakoMacRuntimeConfigurationPage: View, Equatable {
      
      
     let fetchTexts: () -> (source: String?, effective: String?, raw: String?)
+     
+     
+     
+     
+     
+    let fetchOmittedRules: () -> [String]
     let blockedRuleSets:
         (@Sendable () async -> [ProviderCompileVerdicts.Blocked])?
 
@@ -4572,6 +4586,7 @@ private struct HakoMacRuntimeConfigurationPage: View, Equatable {
         }
         .task(id: profile) {
             let texts = fetchTexts()
+            let omittedRules = fetchOmittedRules()
              
              
              
@@ -4590,7 +4605,8 @@ private struct HakoMacRuntimeConfigurationPage: View, Equatable {
             ) {
                 ProfileFinalConfigurationSnapshot.make(
                     sourceYAML: texts.source,
-                    effectiveYAML: texts.effective
+                    effectiveYAML: texts.effective,
+                    omittedRules: omittedRules
                 )
             }.value
             inputs = await Inputs(
