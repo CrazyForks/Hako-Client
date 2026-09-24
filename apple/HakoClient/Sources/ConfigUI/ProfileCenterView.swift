@@ -584,10 +584,10 @@ struct ProfileCenterAdapter: View {
                 EmptyView()
             }
         case .configurationSources(let id):
-            ConfigurationCreationAdapter(model: model,
+            ConfigurationCreationAdapter(model: model, changed: applyCenterLibrary,
                 editingProfileID: id.rawValue, editingStep: .sources)
         case .configurationRules(let id):
-            ConfigurationCreationAdapter(model: model,
+            ConfigurationCreationAdapter(model: model, changed: applyCenterLibrary,
                 editingProfileID: id.rawValue, editingStep: .rules)
         case .sourceEditor(let id):
             if let profile = appProfile(id) {

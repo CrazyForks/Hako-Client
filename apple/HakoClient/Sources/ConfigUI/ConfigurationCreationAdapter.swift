@@ -8,6 +8,12 @@ import UniformTypeIdentifiers
 struct ConfigurationCreationAdapter: View {
     @Environment(\.hakoShellLayout) private var shellLayout
     @ObservedObject var model: ProfilesViewModel
+     
+     
+     
+     
+     
+    var changed: ((ConfigurationLibrarySnapshot) -> Void)? = nil
     var editingProfileID: String? = nil
     var editingStep: ConfigurationCreationDraft.Step? = nil
     @State private var draft = ConfigurationCreationDraft()
@@ -218,6 +224,10 @@ struct ConfigurationCreationAdapter: View {
                  
                  
                 baseline = draft
+                if let changed, let store = model.configurationLibraryStore,
+                   let saved = try? await Task.detached(operation: { try store.snapshot() }).value {
+                    changed(saved)
+                }
                 completion(true)
                 close()
             } catch { errorMessage = error.localizedDescription; completion(false) }
