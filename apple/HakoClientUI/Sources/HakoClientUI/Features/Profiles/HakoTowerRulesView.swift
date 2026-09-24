@@ -713,13 +713,13 @@ enum HakoTowerGroupCandidates {
  
  
  
-enum HakoTowerGroupIcon {
-    static func read(_ document: OrderedJSON) -> String {
+public enum HakoTowerGroupIcon {
+    public static func read(_ document: OrderedJSON) -> String {
         if case .string(let value) = document.topLevelValue("icon") { return value }
         return ""
     }
 
-    static func apply(_ icon: String, to document: OrderedJSON) -> OrderedJSON {
+    public static func apply(_ icon: String, to document: OrderedJSON) -> OrderedJSON {
         let trimmed = icon.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? document.removingTopLevel("icon") : document.settingTopLevel("icon", to: .string(trimmed))
     }
