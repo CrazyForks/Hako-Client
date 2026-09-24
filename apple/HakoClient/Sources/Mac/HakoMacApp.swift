@@ -947,6 +947,12 @@ private final class HakoMacSceneModel: ObservableObject {
     @Published var configurationCenterImport: HakoMacImportRequest?
     @Published var configurationCenterEditingScheme: HakoMacLibrarySelection?
      
+     
+    let configurationWrites = HakoMacSerialWrites()
+     
+     
+    @Published var configurationWriteError: String?
+     
     @Published var configurationCenterChain: HakoMacChainRequest?
      
     @Published var configurationCenterInspectedNode: HakoMacInspectedNode?
@@ -1598,6 +1604,20 @@ private final class HakoMacSceneModel: ObservableObject {
             guard let self, self.configurationLibrary.phase == .idle else { return }
             await self.configurationLibrary.reload()
         }
+         
+         
+         
+        .alert(
+            Text(hako: .copy("Could Not Save")),
+            isPresented: Binding(get: { [weak self] in self?.configurationWriteError != nil },
+                                 set: { [weak self] shown in if !shown { self?.configurationWriteError = nil } }),
+            presenting: configurationWriteError
+        ) { _ in
+            Button { [weak self] in self?.configurationWriteError = nil } label: { Text(hako: .copy("OK")) }
+                .accessibilityIdentifier("configuration-center.configuration.write-error.dismiss")
+        } message: { message in
+            Text(verbatim: message)
+        }
         .sheet(item: configurationCenterImportBinding) { [weak self] request in
             HakoMacSourceImportSheet(
                 purpose: request.purpose,
@@ -1896,21 +1916,37 @@ private final class HakoMacSceneModel: ObservableObject {
     ) -> HakoMacConfigurationInspectorActions {
         let profiles = self.profiles
         let library = configurationLibrary
+        let writes = configurationWrites
          
          
+         
+         
+         
+         
+        func editNow(_ change: (inout ConfigurationCreationDraft) -> Void) async throws {
+             
+             
+             
+            await library.reload()
+            let snapshot = library.snapshot
+            guard let recipe = snapshot.recipes.first(where: { $0.id == id.rawValue }) else { return }
+            var draft = ConfigurationCreationAdapter.editingDraft(recipe: recipe, label: profile.label)
+            change(&draft)
+            try await profiles.editConfiguration(draft, id: id.rawValue, generation: snapshot.generation)
+            await library.reload()
+        }
+         
+         
+         
+         
+        let failed: @MainActor (Error) -> Void = { [weak self] error in
+            NSLog("configuration-centre.edit-failed:%@", error.localizedDescription)
+            library.report(error.localizedDescription)
+            self?.configurationWriteError = error.localizedDescription
+            Task { @MainActor in await library.reload() }
+        }
         func edit(_ change: @escaping (inout ConfigurationCreationDraft) -> Void) {
-            Task { @MainActor in
-                let snapshot = library.snapshot
-                guard let recipe = snapshot.recipes.first(where: { $0.id == id.rawValue }) else { return }
-                var draft = ConfigurationCreationAdapter.editingDraft(recipe: recipe, label: profile.label)
-                change(&draft)
-                do {
-                    try await profiles.editConfiguration(draft, id: id.rawValue, generation: snapshot.generation)
-                    await library.reload()
-                } catch {
-                    library.report(error.localizedDescription)
-                }
-            }
+            writes.enqueue({ try await editNow(change) }, failure: failed)
         }
         func saveProfileURL(_ change: @escaping (inout HakoMacSubscriptionSettingsState) -> Void) {
             guard let appProfile = profiles.profiles.first(where: { $0.id == id.rawValue }) else { return }
@@ -1928,46 +1964,43 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
-        func convertLegacy(sources: [String]?, scheme: String?) {
-            Task { @MainActor in
-                do {
-                    let generation = library.snapshot.generation
-                    let source = try await profiles.configurationSourceFromLegacy(id.rawValue)
-                    var draft = ConfigurationCreationDraft()
-                    let hasRules = source.record.hasRules && source.record.registersSuppliedRules != false
-                    let ownRules = "rules-" + source.record.id
-                    let rule: ConfigurationRuleScheme? = hasRules
-                        ? ConfigurationRuleScheme(id: ownRules, label: source.record.label, kind: .supplied, sourceID: source.record.id)
-                        : nil
-                    draft.add(source, rule: rule)
-                    if let sources { draft.selectedSourceIDs = sources.filter { $0 != source.record.id } }
-                    draft.selectedRuleID = scheme ?? (hasRules ? ownRules : ConfigurationBuiltins.basicRuleID)
-                    draft.label = profile.label
-                    draft.dnsMode = .source
-                    draft.connectAfterCreation = false
-                    try await profiles.editConfiguration(draft, id: id.rawValue, generation: generation)
-                    await library.reload()
-                } catch {
-                    library.report(error.localizedDescription)
+        func convertLegacyNow(sources: [String]?, scheme: String?) async throws {
+            await library.reload()
+            let generation = library.snapshot.generation
+            let source = try await profiles.configurationSourceFromLegacy(id.rawValue)
+            var draft = ConfigurationCreationDraft()
+            let hasRules = source.record.hasRules && source.record.registersSuppliedRules != false
+            let ownRules = "rules-" + source.record.id
+            let rule: ConfigurationRuleScheme? = hasRules
+                ? ConfigurationRuleScheme(id: ownRules, label: source.record.label, kind: .supplied, sourceID: source.record.id)
+                : nil
+            draft.add(source, rule: rule)
+            if let sources { draft.selectedSourceIDs = sources.filter { $0 != source.record.id } }
+            draft.selectedRuleID = scheme ?? (hasRules ? ownRules : ConfigurationBuiltins.basicRuleID)
+            draft.label = profile.label
+            draft.dnsMode = .source
+            draft.connectAfterCreation = false
+            try await profiles.editConfiguration(draft, id: id.rawValue, generation: generation)
+            await library.reload()
+        }
+         
+         
+        func setComposition(sources: [String]?, scheme: String?) {
+            writes.enqueue({
+                if library.snapshot.recipes.contains(where: { $0.id == id.rawValue }) {
+                    try await editNow { draft in
+                        if let sources { draft.selectedSourceIDs = sources }
+                        if let scheme { draft.selectedRuleID = scheme }
+                    }
+                } else {
+                    try await convertLegacyNow(sources: sources, scheme: scheme)
                 }
-            }
+            }, failure: failed)
         }
         var actions = HakoMacConfigurationInspectorActions(
             rename: { label in list.perform(.rename(id: id, label: label)) },
-            setSources: { ids in
-                if library.snapshot.recipes.contains(where: { $0.id == id.rawValue }) {
-                    edit { $0.selectedSourceIDs = ids }
-                } else {
-                    convertLegacy(sources: ids, scheme: nil)
-                }
-            },
-            setScheme: { scheme in
-                if library.snapshot.recipes.contains(where: { $0.id == id.rawValue }) {
-                    edit { $0.selectedRuleID = scheme }
-                } else {
-                    convertLegacy(sources: nil, scheme: scheme)
-                }
-            },
+            setSources: { ids in setComposition(sources: ids, scheme: nil) },
+            setScheme: { scheme in setComposition(sources: nil, scheme: scheme) },
             activate: { list.select(id) },
             duplicate: { list.perform(.duplicate(id: id)) },
             export: { list.perform(.export(id: id)) },
