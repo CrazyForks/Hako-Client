@@ -35,6 +35,10 @@ public struct HakoMacRuleEditorActions {
      
      
      
+     
+     
+     
+    public var candidates: (@MainActor () async throws -> ConfigurationRuleTargetCandidates)? = nil
     public var documentText: (@Sendable (String) throws -> String)? = nil
     public var documentFromText: (@Sendable (String) throws -> String)? = nil
 
@@ -135,6 +139,7 @@ public struct HakoMacRuleEditorSheet: View {
     @State private var confirmsDiscard = false
     @State private var confirmsReset = false
     @State private var pane: Pane = .rules
+    @State private var nodeCandidates = ConfigurationRuleTargetCandidates(sections: [])
     @State private var sourceText = ""
      
     @State private var shownSourceText = ""
@@ -188,6 +193,11 @@ public struct HakoMacRuleEditorSheet: View {
             )
         }
         .task { if state == nil { await load() } }
+        .task {
+            if let candidates = actions.candidates, let loaded = try? await candidates() {
+                nodeCandidates = ConfigurationRuleTargetCandidates(sections: loaded.sections.filter { $0.kind == .source })
+            }
+        }
         .sheet(item: $sheet) { item in
             Group {
             if let state {
@@ -208,7 +218,7 @@ public struct HakoMacRuleEditorSheet: View {
                 case .group(let id):
                     HakoMacRuleGroupEditor(
                         group: id.flatMap { gid in state.draft.groups.first { $0.id == gid } },
-                        all: state.draft.groups,
+                        all: state.draft.groups, nodeCandidates: nodeCandidates,
                         commit: { document in try mutateThrowing { draft in try draft.setGroup(document, groupID: id) } },
                         close: { sheet = nil }
                     )
@@ -638,8 +648,10 @@ struct HakoMacRuleRowEditor: View {
     @State private var action: HakoStructuredRule.Action = .domainSuffix
     @State private var content = ""
     @State private var target = "DIRECT"
+    @State private var pickingTarget = false
 
-    init(draft: ConfigurationRuleDraft, rowID: UUID?, commit: @escaping (String, Bool, String) -> Void, close: @escaping () -> Void) {
+    init(draft: ConfigurationRuleDraft, rowID: UUID?,
+         commit: @escaping (String, Bool, String) -> Void, close: @escaping () -> Void) {
         self.draft = draft
         self.rowID = rowID
         self.commit = commit
@@ -650,10 +662,14 @@ struct HakoMacRuleRowEditor: View {
         _note = State(initialValue: row.map { draft.note(for: $0.raw) } ?? "")
     }
 
-    private var targets: [String] {
-        var names = draft.groups.map(\.name).filter { !$0.isEmpty }
-        for fixed in ["DIRECT", "REJECT"] where !names.contains(fixed) { names.append(fixed) }
-        return names
+     
+     
+     
+     
+     
+     
+    private var candidates: ConfigurationRuleTargetCandidates {
+        ConfigurationRuleTargetCandidates.make(groups: draft.groups.map(\.name), sources: [])
     }
 
     private var assembled: String {
@@ -672,6 +688,12 @@ struct HakoMacRuleRowEditor: View {
             width: 560,
             height: rowID == nil ? 480 : 340
         ) {
+            if pickingTarget {
+                HakoMacTargetPickerPage(candidates: candidates, current: target, identifier: "configuration-center.rule-editor.rule.target") { picked in
+                    target = picked
+                    pickingTarget = false
+                }
+            } else {
             HakoMacSheetForm {
                 if rowID == nil {
                     Section {
@@ -696,12 +718,9 @@ struct HakoMacRuleRowEditor: View {
                                 Text(verbatim: action.contentLabel)
                             }
                         }
-                        Picker(selection: $target) {
-                            ForEach(targets, id: \.self) { name in Text(verbatim: name).tag(name) }
-                        } label: {
-                            Text(hako: .copy("Policy Groups"))
+                        HakoMacTargetRow(title: .copy("Target"), value: target, identifier: "configuration-center.rule-editor.rule.target") {
+                            pickingTarget = true
                         }
-                        .accessibilityIdentifier("configuration-center.rule-editor.rule.target")
                     }
                     .onChange(of: assembled) { value in raw = value }
                 }
@@ -716,6 +735,12 @@ struct HakoMacRuleRowEditor: View {
                 }
             }
             .accessibilityIdentifier("configuration-center.rule-editor.rule-sheet")
+            }
+        } leading: {
+            if pickingTarget {
+                Button { pickingTarget = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.rule-editor.rule.target.back")
+            }
         } trailing: {
             HakoMacSheetButtons(
                 closeIdentifier: "configuration-center.rule-editor.rule.cancel",
@@ -735,11 +760,17 @@ struct HakoMacRuleRowEditor: View {
  
  
  
+ 
+ 
 struct HakoMacRuleGroupEditor: View {
     let group: ConfigurationRuleDraft.Group?
     let all: [ConfigurationRuleDraft.Group]
+     
+     
+    let nodeCandidates: ConfigurationRuleTargetCandidates
     let commit: (OrderedJSON) throws -> Void
     let close: () -> Void
+    @State private var pickingNode = false
     @State private var name: String
     @State private var kind: String
     @State private var selected: [String]
@@ -747,8 +778,10 @@ struct HakoMacRuleGroupEditor: View {
     @State private var filter: String
     @State private var error: String?
 
-    init(group: ConfigurationRuleDraft.Group?, all: [ConfigurationRuleDraft.Group], commit: @escaping (OrderedJSON) throws -> Void, close: @escaping () -> Void) {
+    init(group: ConfigurationRuleDraft.Group?, all: [ConfigurationRuleDraft.Group], nodeCandidates: ConfigurationRuleTargetCandidates = .init(sections: []),
+         commit: @escaping (OrderedJSON) throws -> Void, close: @escaping () -> Void) {
         self.group = group
+        self.nodeCandidates = nodeCandidates
         self.all = all
         self.commit = commit
         self.close = close
@@ -822,6 +855,12 @@ struct HakoMacRuleGroupEditor: View {
             subtitle: .copy("Policy Groups"),
             width: 560, height: 640
         ) {
+            if pickingNode {
+                HakoMacTargetPickerPage(candidates: nodeCandidates, current: "", identifier: "configuration-center.rule-editor.group.add-node") { picked in
+                    if !selected.contains(picked) { selected.append(picked) }
+                    pickingNode = false
+                }
+            } else {
             HakoMacSheetForm {
                  
                 Section {
@@ -878,6 +917,13 @@ struct HakoMacRuleGroupEditor: View {
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("configuration-center.rule-editor.group.add-policy")
                     }
+                    if !nodeCandidates.sections.isEmpty {
+                         
+                         
+                        HakoMacTargetRow(title: .copy("Add Node"), value: "", identifier: "configuration-center.rule-editor.group.add-node") {
+                            pickingNode = true
+                        }
+                    }
                 } header: {
                     Text(hako: .copy("Available"))
                 }
@@ -895,6 +941,12 @@ struct HakoMacRuleGroupEditor: View {
                             .accessibilityIdentifier("configuration-center.rule-editor.group.error")
                     }
                 }
+            }
+            }
+        } leading: {
+            if pickingNode {
+                Button { pickingNode = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.rule-editor.group.add-node.back")
             }
         } trailing: {
             HakoMacSheetButtons(

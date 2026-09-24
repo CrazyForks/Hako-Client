@@ -2277,17 +2277,26 @@ private final class HakoMacSceneModel: ObservableObject {
             },
             setPrepends: { on in try write { $0.override.prependRules = on } },
             targets: {
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
                 let text = try await profiles.loadSavedConfigurationPreview(for: id)
+                let label = profiles.profiles.first(where: { $0.id == id })?.label ?? id
                 return try await Task.detached {
-                    var names: [String] = ["DIRECT", "REJECT", "REJECT-DROP", "PASS"]
                     let json = try ConfigTransforms.yamlToJSON(text)
+                    var groups: [String] = []
                     if let root = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any],
-                       let groups = root["proxy-groups"] as? [[String: Any]] {
-                        for group in groups {
-                            if let name = group["name"] as? String, !names.contains(name) { names.append(name) }
-                        }
+                       let declared = root["proxy-groups"] as? [[String: Any]] {
+                        groups = declared.compactMap { $0["name"] as? String }
                     }
-                    return names
+                    return ConfigurationRuleTargetCandidates.make(
+                        groups: groups, sources: [.init(id: "configuration-" + id, label: label, documentJSON: json)]
+                    )
                 }.value
             },
             geoValues: { resource in
@@ -2361,6 +2370,15 @@ private final class HakoMacSceneModel: ObservableObject {
             },
             download: { input in try await ConfigurationTowerRuleReader.rules(input) }
         )
+         
+         
+         
+        editor.candidates = {
+            let store = try store()
+            return try await Task.detached {
+                try ConfigurationRuleTargetCandidates.make(groups: [], snapshot: try store.snapshot(), payload: store.payload)
+            }.value
+        }
          
          
         editor.documentText = { try ConfigTransforms.jsonToYAML($0) }

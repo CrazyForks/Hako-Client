@@ -36,7 +36,9 @@ public struct HakoMacCustomRulesActions {
     public var setPrepends: @MainActor (Bool) async throws -> HakoMacCustomRulesState
      
      
-    public var targets: @MainActor () async throws -> [String]
+     
+     
+    public var targets: @MainActor () async throws -> ConfigurationRuleTargetCandidates
      
      
     public var geoValues: HakoMacGeoValueLoader
@@ -45,7 +47,7 @@ public struct HakoMacCustomRulesActions {
         load: @escaping @MainActor () async -> HakoMacCustomRulesState,
         save: @escaping @MainActor ([HakoMacCustomRule]) async throws -> HakoMacCustomRulesState,
         setPrepends: @escaping @MainActor (Bool) async throws -> HakoMacCustomRulesState,
-        targets: @escaping @MainActor () async throws -> [String],
+        targets: @escaping @MainActor () async throws -> ConfigurationRuleTargetCandidates,
         geoValues: @escaping HakoMacGeoValueLoader = { _ in [] }
     ) {
         self.load = load; self.save = save; self.setPrepends = setPrepends; self.targets = targets; self.geoValues = geoValues
@@ -160,7 +162,7 @@ public struct HakoMacCustomRulesPage: View {
  
  
 struct HakoMacAddRuleSheet: View {
-    let targets: @MainActor () async throws -> [String]
+    let targets: @MainActor () async throws -> ConfigurationRuleTargetCandidates
     let geoValues: HakoMacGeoValueLoader
     let add: @MainActor (HakoMacCustomRule) async throws -> Void
     let close: () -> Void
@@ -172,7 +174,8 @@ struct HakoMacAddRuleSheet: View {
      
     @State private var pickedFrom: HakoMacGeoResource?
     @State private var target = "DIRECT"
-    @State private var candidates: [String] = ["DIRECT", "REJECT"]
+    @State private var candidates = ConfigurationRuleTargetCandidates.make(groups: [], sources: [])
+    @State private var pickingTarget = false
     @State private var enabled = true
     @State private var comment = ""
     @State private var busy = false
@@ -186,11 +189,12 @@ struct HakoMacAddRuleSheet: View {
     }
 
     private var canAdd: Bool {
-        (!action.needsContent || !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy && !pickingGeo
+        (!action.needsContent || !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy && !pickingGeo && !pickingTarget
     }
 
     private var title: HakoDisplayText {
         if pickingGeo, let resource = action.hakoMacGeoResource { return resource.rowTitle }
+        if pickingTarget { return .copy("Target") }
         return .copy("Add Rule")
     }
 
@@ -205,6 +209,14 @@ struct HakoMacAddRuleSheet: View {
                     pickedFrom = resource
                     pickingGeo = false
                 }
+            } else if pickingTarget {
+                HakoMacTargetPickerPage(
+                    candidates: candidates, current: target,
+                    identifier: "configuration-center.custom-rules.form.target"
+                ) { picked in
+                    target = picked
+                    pickingTarget = false
+                }
             } else {
                 form
             }
@@ -212,6 +224,9 @@ struct HakoMacAddRuleSheet: View {
             if pickingGeo {
                 Button { pickingGeo = false } label: { Text(hako: .copy("Back")) }
                     .accessibilityIdentifier("configuration-center.custom-rules.form.geo.back")
+            } else if pickingTarget {
+                Button { pickingTarget = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.custom-rules.form.target.back")
             }
         } trailing: {
             HakoMacSheetButtons(
@@ -260,13 +275,12 @@ struct HakoMacAddRuleSheet: View {
                             Text(hako: .copy(action.contentLabel))
                         }
                     }
-                    Picker(selection: $target) {
-                        ForEach(candidates, id: \.self) { name in Text(verbatim: name).tag(name) }
-                    } label: {
-                        Text(hako: .copy("Policy Groups"))
+                     
+                     
+                    HakoMacTargetRow(title: .copy("Target"), value: target, identifier: "configuration-center.custom-rules.form.target") {
+                        pickingTarget = true
                     }
                     .disabled(busy)
-                    .accessibilityIdentifier("configuration-center.custom-rules.form.target")
                     Toggle(isOn: $enabled) { Text(hako: .copy("Enabled")) }
                         .disabled(busy)
                         .accessibilityIdentifier("configuration-center.custom-rules.form.enabled")
@@ -283,9 +297,9 @@ struct HakoMacAddRuleSheet: View {
                 }
             }
             .task {
-                if let loaded = try? await targets(), !loaded.isEmpty {
+                if let loaded = try? await targets(), !loaded.names.isEmpty {
                     candidates = loaded
-                    if !loaded.contains(target) { target = loaded[0] }
+                    if !loaded.contains(target) { target = loaded.names[0] }
                 }
             }
     }
