@@ -659,17 +659,57 @@ extension ConfigurationLibraryStore {
     static func sourceNodeNameservers(in inputs: [ConfigurationInput]) -> [String]? {
         for input in inputs {
             guard let dns = input.document.topLevelValue("dns"), case .object = dns else { continue }
+             
+             
+             
+            if case .scalar("false")? = dns.topLevelValue("enable") { continue }
             for key in ["proxy-server-nameserver", "nameserver"] {
                 guard case .array(let values)? = dns.topLevelValue(key) else { continue }
                 let servers = values.compactMap { value -> String? in
                     guard case .string(let server) = value else { return nil }
-                    let trimmed = server.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return trimmed.isEmpty ? nil : trimmed
+                    return dialableNameserver(server)
                 }
                 if !servers.isEmpty { return servers }
             }
         }
         return nil
+    }
+
+     
+     
+     
+     
+    private static let dialableNameserverSchemes: Set<String> = [
+        "udp", "tcp", "tls", "http", "https", "quic", "system", "dhcp", "ts", "tailscale",
+    ]
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static func dialableNameserver(_ raw: String) -> String? {
+        var server = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let hash = server.firstIndex(of: "#") {
+            let parameters = server[server.index(after: hash)...]
+                .split(separator: "&", omittingEmptySubsequences: true)
+                .filter { $0.contains("=") }
+            server = String(server[..<hash])
+            if !parameters.isEmpty { server += "#" + parameters.joined(separator: "&") }
+        }
+        guard !server.isEmpty, server.first != "#" else { return nil }
+        if let range = server.range(of: "://") {
+            let scheme = server[..<range.lowerBound].lowercased()
+            guard dialableNameserverSchemes.contains(scheme) else { return nil }
+        }
+        return server
     }
 
     public func exportArchive() throws -> ConfigurationLibraryArchive {
