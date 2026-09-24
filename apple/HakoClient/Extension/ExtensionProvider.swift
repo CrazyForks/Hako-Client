@@ -1865,18 +1865,13 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
      
      
      
+     
+     
     func autoDetectControl(_ fd: Int32) throws {
-        let idx = currentInterfaceIndex()
-        guard idx != 0 else {
-            throw ExtensionError.serviceUnavailable("physical path unavailable; refusing unscoped socket fd \(fd)")
-        }
-        var index = idx
-        let v4 = setsockopt(fd, IPPROTO_IP, IP_BOUND_IF, &index, socklen_t(MemoryLayout<UInt32>.size))
-        let v6 = setsockopt(fd, IPPROTO_IPV6, IPV6_BOUND_IF, &index, socklen_t(MemoryLayout<UInt32>.size))
-         
-         
-        if v4 != 0, v6 != 0 {
-            throw ExtensionError.serviceUnavailable("IP_BOUND_IF failed for fd \(fd) (errno \(errno))")
+        do {
+            try PhysicalEgressBinding.apply(.decision(interfaceIndex: currentInterfaceIndex()), to: fd)
+        } catch let failure as PhysicalEgressBinding.Failure {
+            throw ExtensionError.serviceUnavailable(failure.description)
         }
     }
 
