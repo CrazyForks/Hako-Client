@@ -514,6 +514,7 @@ struct ProfileOverrideView: View {
                         .lineLimit(1)
                     Spacer(minLength: HakoTheme.Spacing.compact)
                 }
+                .padding(.leading, HakoTheme.Spacing.standard)
                 .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.row))
                 .contentShape(Rectangle())
             }
@@ -534,10 +535,15 @@ struct ProfileOverrideView: View {
             .buttonStyle(.borderless)
             .accessibilityLabel("Edit")
             .accessibilityIdentifier("profile.override.script.edit.\(script.id)")
+            .padding(.trailing, HakoTheme.Spacing.standard)
         }
          
          
         .accessibilityElement(children: .contain)
+         
+         
+         
+        .listRowInsets(EdgeInsets())
         .swipeActions(allowsFullSwipe: false) {
             Button("Delete", role: .destructive) { deletingScript = script }
                  
