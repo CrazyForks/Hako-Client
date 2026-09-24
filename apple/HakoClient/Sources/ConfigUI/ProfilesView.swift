@@ -3057,7 +3057,12 @@ final class ProfilesViewModel: ObservableObject {
          
          
          
-        if let encoded = try? JSONEncoder().encode(FlClashRuntimeConfig.load()) {
+         
+         
+         
+         
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        if let encoded = try? encoder.encode(FlClashRuntimeConfig.load()) {
             parts.append("\(encoded.hashValue)")
         }
         parts.append(profile.postMergeScriptID ?? "-")

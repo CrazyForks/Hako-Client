@@ -42,6 +42,11 @@ public enum HakoTheme {
 
          
         public static let minimumHitTarget: CGFloat = 44
+         
+         
+         
+         
+        public static let proxyRowTrailingControlWidth: CGFloat = 36
 
          
          

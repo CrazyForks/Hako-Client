@@ -493,7 +493,7 @@ struct HakoProxyMemberListRow: View, Equatable {
          
          
          
-        return HStack(spacing: HakoTheme.Spacing.row) {
+        return HStack(spacing: 0) {
     Button {
                 select?()
             } label: {
@@ -536,7 +536,7 @@ struct HakoProxyMemberListRow: View, Equatable {
                              
                             Button(action: testNode) {
                                 latencyBadge
-                                    .frame(minWidth: HakoTheme.Control.minimumHitTarget, maxHeight: .infinity)
+                                    .frame(minWidth: HakoTheme.Control.proxyRowTrailingControlWidth, maxHeight: .infinity, alignment: .trailing)
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -583,7 +583,7 @@ struct HakoProxyMemberListRow: View, Equatable {
                     Image(systemName: HakoSymbol.infoCircle.rawValue)
                         .font(.body)
                         .foregroundStyle(Color.blue)
-                        .frame(minWidth: HakoTheme.Control.minimumHitTarget, maxHeight: .infinity)
+                        .frame(minWidth: HakoTheme.Control.proxyRowTrailingControlWidth, maxHeight: .infinity, alignment: .trailing)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.borderless)
@@ -818,7 +818,7 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
                         Image(systemName: HakoSymbol.bolt.rawValue)
                              
                              
-                            .font(.footnote.weight(.semibold))
+                            .font(.body)
                     }
                 }
                  
@@ -842,14 +842,14 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
                      
                      
                     Text(hako: .verbatim("000"))
-                        .font(.caption)
+                        .font(.body)
                         .monospacedDigit()
                         .hidden()
                         .overlay(alignment: .trailing) {
                             Text(hako: .verbatim(
                                 group.members.count > 999 ? "999+" : "\(group.members.count)"
                             ))
-                            .font(.caption)
+                            .font(.body)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
                             .lineLimit(1)
