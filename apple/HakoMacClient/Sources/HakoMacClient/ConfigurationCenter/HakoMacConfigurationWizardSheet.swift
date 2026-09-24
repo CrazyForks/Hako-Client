@@ -309,35 +309,32 @@ struct HakoMacChoiceRow: View {
     let toggle: () -> Void
 
     var body: some View {
-        Button(action: toggle) {
-            HStack(spacing: HakoTheme.Spacing.compact) {
-                Group {
-                    switch style {
-                    case .single:
-                        if isSelected {
-                            HakoSymbolImage(symbol: .checkmark)
-                        } else {
-                            Color.clear
-                        }
-                    case .multiple:
-                        HakoSymbolImage(symbol: isSelected ? .checkmarkCircleFill : .circle)
+        HStack(spacing: HakoTheme.Spacing.compact) {
+            Group {
+                switch style {
+                case .single:
+                    if isSelected {
+                        HakoSymbolImage(symbol: .checkmark)
+                    } else {
+                        Color.clear
                     }
+                case .multiple:
+                    HakoSymbolImage(symbol: isSelected ? .checkmarkCircleFill : .circle)
                 }
-                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                .frame(width: HakoTheme.Control.pointerRowTarget)
-                VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
-                    Text(hako: title)
-                        .fontWeight(style == .single && isSelected ? .semibold : .regular)
-                    Text(hako: subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: HakoTheme.Spacing.row)
             }
-            .frame(maxHeight: .infinity)
-            .contentShape(Rectangle())
+            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+            .frame(width: HakoTheme.Control.pointerRowTarget)
+            VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
+                Text(hako: title)
+                    .fontWeight(style == .single && isSelected ? .semibold : .regular)
+                Text(hako: subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: HakoTheme.Spacing.row)
         }
-        .buttonStyle(.plain)
+        .frame(maxHeight: .infinity)
+        .hakoMacPressableRow(toggle)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier(identifier)
     }

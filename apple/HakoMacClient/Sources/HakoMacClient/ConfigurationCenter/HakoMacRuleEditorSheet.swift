@@ -102,6 +102,10 @@ public struct HakoMacRuleEditorSheet: View {
      
      
     @State private var edited = false
+     
+     
+     
+    @State private var installedRuleSets: Set<String> = []
     @State private var loadError: String?
     @State private var error: String?
     @State private var busy = false
@@ -251,28 +255,23 @@ public struct HakoMacRuleEditorSheet: View {
     private func ruleRow(_ row: ConfigurationRuleDraft.Row, draft: ConfigurationRuleDraft) -> some View {
         let enabled = draft.isEnabled(row.raw)
         let note = draft.note(for: row.raw)
-        return Button {
-            sheet = .rule(row.id)
-        } label: {
-            HStack(spacing: HakoTheme.Spacing.compact) {
-                HakoSymbolImage(symbol: enabled ? .checkmarkCircleFill : .circle)
-                    .foregroundStyle(enabled ? Color.accentColor : Color.secondary)
-                    .frame(width: HakoTheme.Control.pointerRowTarget)
-                VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
-                    Text(verbatim: row.raw)
-                        .font(.body.monospaced())
-                        .foregroundStyle(enabled ? .primary : .secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    if !note.isEmpty {
-                        Text(verbatim: note).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
-                    }
+        return HStack(spacing: HakoTheme.Spacing.compact) {
+            HakoSymbolImage(symbol: enabled ? .checkmarkCircleFill : .circle)
+                .foregroundStyle(enabled ? Color.accentColor : Color.secondary)
+                .frame(width: HakoTheme.Control.pointerRowTarget)
+            VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
+                Text(verbatim: row.raw)
+                    .font(.body.monospaced())
+                    .foregroundStyle(enabled ? .primary : .secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                if !note.isEmpty {
+                    Text(verbatim: note).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                 }
-                Spacer(minLength: HakoTheme.Spacing.row)
             }
-            .contentShape(Rectangle())
+            Spacer(minLength: HakoTheme.Spacing.row)
         }
-        .buttonStyle(.plain)
+        .hakoMacPressableRow { sheet = .rule(row.id) }
         .disabled(busy)
         .contextMenu {
             Button { sheet = .rule(row.id) } label: { Text(hako: .copy("Edit")) }
@@ -298,19 +297,14 @@ public struct HakoMacRuleEditorSheet: View {
                 .disabled(busy)
                 .accessibilityIdentifier("configuration-center.rule-editor.add-group")
             ForEach(draft.groups) { group in
-                Button {
-                    sheet = .group(group.id)
-                } label: {
-                    HStack(spacing: HakoTheme.Spacing.compact) {
-                        VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
-                            Text(verbatim: group.name)
-                            Text(verbatim: group.type).font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: HakoTheme.Spacing.row)
+                HStack(spacing: HakoTheme.Spacing.compact) {
+                    VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
+                        Text(verbatim: group.name)
+                        Text(verbatim: group.type).font(.subheadline).foregroundStyle(.secondary)
                     }
-                    .contentShape(Rectangle())
+                    Spacer(minLength: HakoTheme.Spacing.row)
                 }
-                .buttonStyle(.plain)
+                .hakoMacPressableRow { sheet = .group(group.id) }
                 .disabled(busy)
                 .contextMenu {
                     Button { sheet = .group(group.id) } label: { Text(hako: .copy("Edit")) }
@@ -346,7 +340,7 @@ public struct HakoMacRuleEditorSheet: View {
                         title: .verbatim(set.name),
                         subtitle: .format("%@ rules", [String(set.rules.count)]),
                         style: .multiple,
-                        isSelected: draft.containsRuleSet(key),
+                        isSelected: installedRuleSets.contains(key),
                         identifier: "configuration-center.rule-editor.local.\(set.id)",
                         toggle: {
                             try? mutateThrowing { value in
@@ -374,7 +368,7 @@ public struct HakoMacRuleEditorSheet: View {
                         title: .verbatim(entry.displayName),
                         subtitle: .verbatim(entry.defaultRoute.rawValue),
                         style: .multiple,
-                        isSelected: draft.containsRuleSet(key),
+                        isSelected: installedRuleSets.contains(key),
                         identifier: "configuration-center.rule-editor.catalog.\(entry.id)",
                         toggle: { toggleCatalog(entry, key: key, draft: draft) }
                     )
@@ -388,10 +382,23 @@ public struct HakoMacRuleEditorSheet: View {
 
      
 
+     
+     
+     
+    nonisolated static func installedRuleSets(in draft: ConfigurationRuleDraft) -> Set<String> {
+        var keys = Set<String>()
+        for row in draft.rows where row.raw.hasPrefix("RULE-SET,") {
+            let parts = row.raw.split(separator: ",", maxSplits: 2, omittingEmptySubsequences: false)
+            if parts.count == 3 { keys.insert(String(parts[1])) }
+        }
+        return keys
+    }
+
     private func mutate(_ change: (inout ConfigurationRuleDraft) -> Void) {
         guard var current = state else { return }
         change(&current.draft)
         state = current
+        installedRuleSets = Self.installedRuleSets(in: current.draft)
         edited = true
         error = nil
     }
@@ -401,6 +408,7 @@ public struct HakoMacRuleEditorSheet: View {
         do {
             try change(&current.draft)
             state = current
+            installedRuleSets = Self.installedRuleSets(in: current.draft)
             edited = true
             error = nil
         } catch {
@@ -472,6 +480,7 @@ public struct HakoMacRuleEditorSheet: View {
             state = current
         } else {
             state = next
+            installedRuleSets = Self.installedRuleSets(in: next.draft)
             baseline = next.draft
             edited = false
         }
@@ -485,6 +494,7 @@ public struct HakoMacRuleEditorSheet: View {
                 var current = state
                 current.draft = reloaded
                 self.state = current
+                installedRuleSets = Self.installedRuleSets(in: reloaded)
                 baseline = reloaded
                 edited = false
                 saved()
