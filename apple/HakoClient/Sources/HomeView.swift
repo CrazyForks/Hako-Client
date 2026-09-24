@@ -25,7 +25,6 @@ struct HomeView: View {
             ),
             routing: OverviewRoutingSnapshot(
                 mode: command.mode,
-                configurationStrictRoute: vpn.configurationStrictRoute,
                 configuredIncludedRouteCount: vpn.configuredIncludedRouteCount,
                 configuredExcludedRouteCount: vpn.configuredExcludedRouteCount,
                 deviceCommunicationBypass: vpn.routingPolicy.excludeDeviceCommunication,
@@ -173,15 +172,11 @@ struct OverviewTrafficSnapshot {
 
 struct OverviewRoutingSnapshot {
     let mode: String
-    let configurationStrictRoute: Bool
     let configuredIncludedRouteCount: Int
     let configuredExcludedRouteCount: Int
     let deviceCommunicationBypass: Bool
     let needsApply: Bool
 
-    var disclosure: String {
-        "strict-route is applied to the Apple VPN profile as enforceRoutes and requires reconnecting when it changes."
-    }
 }
 
 struct OverviewEgressSnapshot {

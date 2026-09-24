@@ -3662,7 +3662,6 @@
 "ss|http" = "ss|http";
 "start: Clash DNS is enabled in Settings. Disable DNS-only before starting Packet Tunnel VPN." = "start: Clash DNS is enabled in Settings. Disable DNS-only before starting Packet Tunnel VPN.";
 "start: DNS-only mode is selected. Remove the DNS configuration in Tools before starting VPN." = "start: DNS-only mode is selected. Remove the DNS configuration in Tools before starting VPN.";
-"strict-route is applied to the Apple VPN profile as enforceRoutes and requires reconnecting when it changes." = "strict-route is applied to the Apple VPN profile as enforceRoutes and requires reconnecting when it changes.";
 "sub-rule name" = "sub-rule name";
 "surrounding whitespace" = "surrounding whitespace";
 "tcp" = "tcp";

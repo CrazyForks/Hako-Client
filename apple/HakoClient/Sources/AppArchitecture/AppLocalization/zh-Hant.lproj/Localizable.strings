@@ -3662,7 +3662,6 @@
 "ss|http" = "ss|http";
 "start: Clash DNS is enabled in Settings. Disable DNS-only before starting Packet Tunnel VPN." = "啟動失敗：Clash DNS 已在「設定」中啟用。請先停用僅 DNS，再啟動 Packet Tunnel VPN。";
 "start: DNS-only mode is selected. Remove the DNS configuration in Tools before starting VPN." = "啟動失敗：目前為僅 DNS 模式。請先在「工具」中移除 DNS 設定，再啟動 VPN。";
-"strict-route is applied to the Apple VPN profile as enforceRoutes and requires reconnecting when it changes." = "strict-route 以 enforceRoutes 套用到 Apple VPN 描述檔案；變更後需要重新連線。";
 "sub-rule name" = "sub-rule 名稱";
 "surrounding whitespace" = "前後帶空白";
 "tcp" = "tcp";

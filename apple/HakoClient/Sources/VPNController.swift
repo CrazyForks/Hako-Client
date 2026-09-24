@@ -309,7 +309,6 @@ struct VPNTunnelSettings: Equatable {
  
  
  
- 
 struct VPNRoutingPolicy: Equatable {
     let includeAllNetworks: Bool
     let excludeLocalNetworks: Bool
@@ -320,12 +319,16 @@ struct VPNRoutingPolicy: Equatable {
 
     init(
         tunnel: VPNTunnelSettings = VPNTunnelSettings(),
-        configurationStrictRoute: Bool = false,
         preserveDevelopmentDeviceCommunication: Bool = Self.defaultDevelopmentDeviceCommunication
     ) {
         includeAllNetworks = tunnel.includeAllNetworks
         excludeLocalNetworks = !tunnel.includeLocalNetworks
-        enforceRoutes = tunnel.enforceRoutes || configurationStrictRoute
+         
+         
+         
+         
+         
+        enforceRoutes = tunnel.enforceRoutes
         excludeCellularServices = !tunnel.includeCellularServices
         excludeAPNs = !tunnel.includeAPNs
          
@@ -486,7 +489,6 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
      
     @Published var legacySettingsMigration: LegacyClientSettingsMigrationResult?
-    @Published private(set) var configurationStrictRoute = false
     @Published private(set) var configuredIncludedRouteCount = 0
     @Published private(set) var configuredExcludedRouteCount = 0
     @Published private(set) var routingPolicyNeedsApply = false
@@ -852,10 +854,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     }
 
     var routingPolicy: VPNRoutingPolicy {
-        VPNRoutingPolicy(
-            tunnel: tunnelSettings,
-            configurationStrictRoute: configurationStrictRoute
-        )
+        VPNRoutingPolicy(tunnel: tunnelSettings)
     }
 
      
@@ -2103,11 +2102,10 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     }
 
     private func applyConfigurationRoutingIntent(_ intent: PlatformConfigIntent) {
-        let changed = configurationStrictRoute != intent.strictRoute
-        configurationStrictRoute = intent.strictRoute
+         
+         
         configuredIncludedRouteCount = intent.includedRouteCount
         configuredExcludedRouteCount = intent.excludedRouteCount
-        if changed { routingPolicyNeedsApply = true }
     }
 
 
