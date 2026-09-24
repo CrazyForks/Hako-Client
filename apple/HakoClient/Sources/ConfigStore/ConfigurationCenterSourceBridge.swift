@@ -85,7 +85,11 @@ enum ConfigurationCenterSourceBridge {
 
      
      
-    static func refreshDueSources(container: URL, now: Date) async -> BackgroundRefreshOutcome {
+     
+     
+     
+    static func refreshDueSources(container: URL, now: Date,
+                                  downloader: HTTPFetching = ResourceDownloader()) async -> BackgroundRefreshOutcome {
         var outcome = BackgroundRefreshOutcome()
         let working = container.appendingPathComponent("working")
         let directory = working.appendingPathComponent("configuration-library")
@@ -103,10 +107,8 @@ enum ConfigurationCenterSourceBridge {
                 try ConfigurationCenterPublicationBridge.reconcileDeletedProfiles(library: library, profileStore: profiles)
                 return try library.snapshot()
             }.value
-            let due = initial.availableSources.filter { source in
-                guard case .subscription = source.origin, let hours = source.updateIntervalHours, hours > 0 else { return false }
-                return source.updatedAt.addingTimeInterval(Double(hours) * 3600) <= now
-            }
+            let due = ConfigurationSourcesDueForRefresh.select(sources: initial.availableSources, now: now)
+            let credentials = CredentialStore()
             for source in due {
                 if Task.isCancelled { outcome.cancelled = true; return outcome }
                 outcome.attempted += 1
@@ -114,8 +116,8 @@ enum ConfigurationCenterSourceBridge {
                     let current = try await Task.detached { try library.snapshot() }.value
                     guard let latest = current.sources.first(where: { $0.id == source.id }), latest == source,
                           case .subscription(let url) = latest.origin else { outcome.unchanged += 1; continue }
-                    let fetched = try await fetch(url: url, label: latest.label, credentials: CredentialStore())
-                    let prepared = try await Task.detached {
+                    let fetched = try await fetch(url: url, label: latest.label, credentials: credentials, downloader: downloader)
+                    let prepared = try await Task.detached { () -> (PreparedConfigurationSourceUpdate, [ConfigurationCenterPublicationBridge.Replacement]) in
                         let previous = try library.payload(.init(latest))
                         var record = latest
                         record.version = fetched.record.version; record.updatedAt = fetched.record.updatedAt
@@ -142,16 +144,61 @@ enum ConfigurationCenterSourceBridge {
                         return (plan, replacements)
                     }.value
                     try Task.checkCancellation()
+                     
+                     
+                     
+                     
+                     
+                    let recomposedIDs = Set(prepared.0.compositions.keys)
                     try await MainActor.run {
                         try Task.checkCancellation()
                         try ConfigurationCenterPublicationBridge.replace(prepared.1, candidate: prepared.0.candidate,
                             payloads: prepared.0.payloads, library: library, workingDir: working, expectedGeneration: current.generation)
                     }
                     outcome.updated += 1
+                     
+                     
+                     
+                     
+                     
+                     
+                    await restageInUseIfRecomposed(recomposedIDs, container: container, working: working,
+                        credentials: credentials, downloader: downloader, now: now, outcome: &outcome)
                 } catch { outcome.record(error) }
             }
         } catch { outcome.record(error) }
+        if outcome.updated > 0 {
+            await MainActor.run {
+                NotificationCenter.default.post(name: .hakoConfigurationSourcesRefreshed, object: nil)
+            }
+        }
         return outcome
+    }
+
+     
+     
+     
+     
+    private static func restageInUseIfRecomposed(_ recomposedIDs: Set<String>, container: URL, working: URL,
+                                                 credentials: CredentialStore, downloader: HTTPFetching,
+                                                 now: Date, outcome: inout BackgroundRefreshOutcome) async {
+        guard let store = try? ConfigResourceStore(containerURL: container),
+              let active = try? store.activePointer(), recomposedIDs.contains(active.profileID) else { return }
+        let profileStore = ProfileStore(fileURL: working.appendingPathComponent("store/profiles.json"))
+        guard let profile = profileStore.load().first(where: { $0.id == active.profileID }),
+              let document = try? String(contentsOf: ProfileSourceStore.runnableURL(workingDirectory: working,
+                  profileID: active.profileID), encoding: .utf8) else { return }
+        do {
+            let coordinator = ProfileActivationCoordinator(
+                store: store, profileStore: profileStore, credentials: credentials,
+                downloader: downloader, coreHomeDir: working,
+                compileRuleSets: false, activator: { _ in }, now: { now })
+            _ = try await coordinator.activate(profile: profile, sourceYAML: document)
+        } catch is CancellationError {
+            outcome.cancelled = true
+        } catch {
+            outcome.record(error)
+        }
     }
 
     static func payload(

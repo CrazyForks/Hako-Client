@@ -14,6 +14,41 @@ enum ProfilesDueForRefresh {
     }
 }
 
+extension Notification.Name {
+     
+     
+     
+     
+     
+     
+     
+     
+    static let hakoConfigurationSourcesRefreshed = Notification.Name("HakoConfigurationSourcesRefreshed")
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+enum ConfigurationSourcesDueForRefresh {
+    static func select(sources: [ConfigurationSourceRecord], now: Date) -> [ConfigurationSourceRecord] {
+        sources.filter { source in
+            guard case .subscription = source.origin, source.isRetainedSnapshot != true,
+                  let hours = source.updateIntervalHours, hours > 0 else { return false }
+            return source.updatedAt.addingTimeInterval(TimeInterval(hours) * 3600) <= now
+        }
+    }
+}
+
  
  
  

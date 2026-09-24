@@ -171,6 +171,7 @@ final class ProfilesViewModel: ObservableObject {
     private let downloader: HTTPFetching
     private(set) var storeReplacementObserver: NSObjectProtocol?
     private var selectionObserver: NSObjectProtocol?
+    private var scheduledRefreshObserver: NSObjectProtocol?
      
      
      
@@ -236,6 +237,9 @@ final class ProfilesViewModel: ObservableObject {
         if let storeReplacementObserver {
             NotificationCenter.default.removeObserver(storeReplacementObserver)
         }
+        if let scheduledRefreshObserver {
+            NotificationCenter.default.removeObserver(scheduledRefreshObserver)
+        }
         if let selectionObserver {
             NotificationCenter.default.removeObserver(selectionObserver)
         }
@@ -266,6 +270,18 @@ final class ProfilesViewModel: ObservableObject {
          
         selectionObserver = NotificationCenter.default.addObserver(
             forName: .hakoProfileSelectionDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.load()
+        }
+         
+         
+         
+         
+         
+        scheduledRefreshObserver = NotificationCenter.default.addObserver(
+            forName: .hakoConfigurationSourcesRefreshed,
             object: nil,
             queue: .main
         ) { [weak self] _ in
