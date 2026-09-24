@@ -591,6 +591,11 @@ public struct HakoMacRuleEditorSheet: View {
                 baseline = reloaded
                 edited = false
                 saved()
+                 
+                 
+                 
+                 
+                dismiss()
             }
         }
     }
@@ -679,11 +684,17 @@ struct HakoMacRuleRowEditor: View {
                         }
                         .accessibilityIdentifier("configuration-center.rule-editor.rule.action")
                         if action.needsContent {
-                            TextField(text: $content, prompt: Text(verbatim: action.contentPlaceholder)) {
+                             
+                             
+                            LabeledContent {
+                                TextField(text: $content, prompt: Text(verbatim: action.contentPlaceholder)) { Text(verbatim: action.contentLabel) }
+                                    .labelsHidden()
+                                    .font(.body.monospaced())
+                                    .multilineTextAlignment(.trailing)
+                                    .accessibilityIdentifier("configuration-center.rule-editor.rule.content")
+                            } label: {
                                 Text(verbatim: action.contentLabel)
                             }
-                            .font(.body.monospaced())
-                            .accessibilityIdentifier("configuration-center.rule-editor.rule.content")
                         }
                         Picker(selection: $target) {
                             ForEach(targets, id: \.self) { name in Text(verbatim: name).tag(name) }

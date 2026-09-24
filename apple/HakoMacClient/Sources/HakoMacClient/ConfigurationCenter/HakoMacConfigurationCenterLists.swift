@@ -121,18 +121,10 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
         } message: {
             Text(hako: .copy("Your rule edits conflict with this update. Use the profile URL rules to replace your edits, or cancel to keep the current profile. You can copy your rule scheme before updating."))
         }
-        .alert(deleteTitle, isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })) {
-            Button(role: .destructive) {
-                if let pendingDelete { actions.delete(pendingDelete) }
-                pendingDelete = nil
-            } label: {
-                Text(hako: .copy("Delete"))
-            }
-            .accessibilityIdentifier("configuration-center.delete.confirm")
-            Button(role: .cancel) {} label: { Text(hako: .copy("Cancel")) }
-        } message: {
-            Text(hako: deleteMessage)
-        }
+         
+         
+         
+         
         .modifier(HakoMacCenterListIdentifier(segment: segment))
     }
 
@@ -361,9 +353,13 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
         }
         HakoMacCardButtons {
              
-            Button { Task { await model.updateAllSources() } } label: { Text(hako: .copy("Update All Sources")) }
-                .disabled(model.isBusy || !model.updatingSourceIDs.isEmpty || model.isUpdatingAll)
-                .accessibilityIdentifier("configuration-center.nodes.update-all")
+             
+             
+            if model.hasLinkedNodes {
+                Button { Task { await model.updateAllSources() } } label: { Text(hako: .copy("Update All Sources")) }
+                    .disabled(model.isBusy || !model.updatingSourceIDs.isEmpty || model.isUpdatingAll)
+                    .accessibilityIdentifier("configuration-center.nodes.update-all")
+            }
         } trailing: {
             Menu {
                 Button { actions.addSource(.link) } label: { Text(hako: .copy("Profile URL")) }
@@ -424,9 +420,11 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
             }
         }
         HakoMacCardButtons {
-            Button { Task { await model.updateAllRuleSets() } } label: { Text(hako: .copy("Update All Rule Sets")) }
-                .disabled(model.isBusy || !model.updatingSourceIDs.isEmpty || model.isUpdatingAll)
-                .accessibilityIdentifier("configuration-center.rules.update-all")
+            if model.hasLinkedRuleSets {
+                Button { Task { await model.updateAllRuleSets() } } label: { Text(hako: .copy("Update All Rule Sets")) }
+                    .disabled(model.isBusy || !model.updatingSourceIDs.isEmpty || model.isUpdatingAll)
+                    .accessibilityIdentifier("configuration-center.rules.update-all")
+            }
         } trailing: {
             Menu {
                 Button { actions.addScheme(.link) } label: { Text(hako: .copy("Profile URL")) }
@@ -540,23 +538,31 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
         model.snapshot.sources.first { $0.id == sourceID }?.nodeChain != nil
     }
 
-    private var deleteTitle: Text {
-        switch pendingDelete {
-        case .source(let id): isChain(id) ? Text(hako: .copy("Delete Proxy Chain")) : Text(hako: .copy("Delete Source"))
-        case .scheme: Text(hako: .copy("Delete Rule Scheme"))
-        case .configuration, .collection, nil: Text(hako: .copy("Delete Profile"))
+}
+
+ 
+ 
+ 
+ 
+ 
+public enum HakoMacDeleteCopy {
+    public static func title(_ item: HakoMacConfigurationCenterItem, isChain: Bool, locale: Locale) -> String {
+        switch item {
+        case .source: HakoCopy.string(isChain ? "Delete Proxy Chain" : "Delete Source", locale: locale)
+        case .scheme: HakoCopy.string("Delete Rule Scheme", locale: locale)
+        case .configuration, .collection: HakoCopy.string("Delete Profile", locale: locale)
         }
     }
 
-    private var deleteMessage: HakoDisplayText {
-        switch pendingDelete {
+    public static func message(_ item: HakoMacConfigurationCenterItem, isChain: Bool, locale: Locale) -> String {
+        switch item {
          
-        case .source(let id): isChain(id)
-            ? .copy("Saved profiles keep this chain. Its original nodes remain in the library.")
-            : .copy("Saved profiles keep their current content and stop following this source.")
-        case .scheme: .copy("Saved profiles keep their current rules and stop following this scheme.")
-        case .configuration: .copy("This profile will be deleted. Sources and rule schemes in the library will remain.")
-        case .collection, nil: .verbatim("")
+        case .source: HakoCopy.string(isChain
+            ? "Saved profiles keep this chain. Its original nodes remain in the library."
+            : "Saved profiles keep their current content and stop following this source.", locale: locale)
+        case .scheme: HakoCopy.string("Saved profiles keep their current rules and stop following this scheme.", locale: locale)
+        case .configuration: HakoCopy.string("This profile will be deleted. Sources and rule schemes in the library will remain.", locale: locale)
+        case .collection: ""
         }
     }
 }

@@ -441,12 +441,19 @@ public struct HakoMacSourceImportSheet: View {
             .disabled(busy)
             .accessibilityIdentifier("configuration-center.import.manual.action")
             if ruleAction.needsContent {
-                TextField(text: $ruleContent, prompt: Text(verbatim: ruleAction.contentPlaceholder)) {
+                 
+                 
+                 
+                LabeledContent {
+                    TextField(text: $ruleContent, prompt: Text(verbatim: ruleAction.contentPlaceholder)) { Text(verbatim: ruleAction.contentLabel) }
+                        .labelsHidden()
+                        .font(.body.monospaced())
+                        .multilineTextAlignment(.trailing)
+                        .disabled(busy)
+                        .accessibilityIdentifier("configuration-center.import.manual.content")
+                } label: {
                     Text(verbatim: ruleAction.contentLabel)
                 }
-                .font(.body.monospaced())
-                .disabled(busy)
-                .accessibilityIdentifier("configuration-center.import.manual.content")
             }
              
              

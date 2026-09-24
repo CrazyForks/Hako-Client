@@ -25,6 +25,10 @@ struct HakoMacNodeScopePage: View {
     let initial: ConfigurationNodeScope?
     let save: (ConfigurationNodeScope?) -> Void
     let back: () -> Void
+     
+     
+     
+    var closeTitle: HakoDisplayText = .copy("Back")
     @State private var choices: HakoMacNodeScopeChoices?
     @State private var selectedNodes: Set<String> = []
     @State private var selectedCollections: Set<String> = []
@@ -93,7 +97,7 @@ struct HakoMacNodeScopePage: View {
                                 title: .verbatim(collection.name),
                                 subtitle: .verbatim(collection.type),
                                 isOn: selectedCollections.contains(collection.name),
-                                identifier: "configuration-center.scope.collection",
+                                identifier: "configuration-center.scope.collection.\(collection.name)",
                                 toggle: { toggle(&selectedCollections, collection.name) }
                             )
                             .hakoMacCardRow(isLast: index == shownCollections.count - 1)
@@ -109,7 +113,7 @@ struct HakoMacNodeScopePage: View {
                                 title: .verbatim(node.name),
                                 subtitle: .verbatim(node.type),
                                 isOn: selectedNodes.contains(node.name),
-                                identifier: "configuration-center.scope.node",
+                                identifier: "configuration-center.scope.node.\(node.name)",
                                 toggle: { toggle(&selectedNodes, node.name) }
                             )
                             .hakoMacCardRow(isLast: expanded && index == shown.count - 1)
@@ -124,7 +128,7 @@ struct HakoMacNodeScopePage: View {
             .accessibilityIdentifier("configuration-center.scope")
         } trailing: {
             HakoMacSheetButtons(
-                closeTitle: .copy("Back"),
+                closeTitle: closeTitle,
                 closeIdentifier: "configuration-center.scope.cancel",
                 primaryTitle: .copy("Done"),
                 primaryIdentifier: "configuration-center.scope.done",

@@ -932,7 +932,65 @@ private final class HakoMacSceneModel: ObservableObject {
      
      
      
-    lazy var configurationLibrary = HakoMacConfigurationLibraryModel(actions: configurationLibraryActions())
+     
+     
+    var configurationCenterDeleteHandler: ((HakoMacConfigurationCenterItem) -> Void)?
+    private var configurationCenterDeleteAsks: AnyCancellable?
+
+     
+     
+     
+     
+     
+    func armDeleteConfirmation() {
+        guard configurationCenterDeleteAsks == nil else { return }
+        configurationCenterDeleteAsks = $configurationCenterPendingDelete
+            .compactMap { $0 }
+            .receive(on: RunLoop.main)
+            .sink { [weak self] item in self?.presentDeleteConfirmation(item) }
+    }
+
+    private func presentDeleteConfirmation(_ item: HakoMacConfigurationCenterItem) {
+        let locale = preferences.language.locale
+        let isChain: Bool = {
+            guard case .source(let id) = item else { return false }
+            return configurationLibrary.snapshot.sources.first { $0.id == id }?.nodeChain != nil
+        }()
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = HakoMacDeleteCopy.title(item, isChain: isChain, locale: locale)
+        alert.informativeText = HakoMacDeleteCopy.message(item, isChain: isChain, locale: locale)
+        let delete = alert.addButton(withTitle: HakoCopy.string("Delete", locale: locale))
+        delete.hasDestructiveAction = true
+        delete.setAccessibilityIdentifier("configuration-center.delete.confirm")
+        let cancel = alert.addButton(withTitle: HakoCopy.string("Cancel", locale: locale))
+        cancel.keyEquivalent = "\u{1b}"
+        let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            self?.configurationCenterPendingDelete = nil
+            if response == .alertFirstButtonReturn { self?.configurationCenterDeleteHandler?(item) }
+        }
+        if let window = NSApplication.shared.windows.first(where: { $0.level == .normal && $0.canBecomeKey && $0.isVisible }) {
+            alert.beginSheetModal(for: window, completionHandler: finish)
+        } else {
+            finish(alert.runModal())
+        }
+    }
+
+    lazy var configurationLibrary: HakoMacConfigurationLibraryModel = {
+        let model = HakoMacConfigurationLibraryModel(actions: configurationLibraryActions())
+         
+         
+         
+         
+         
+         
+        configurationLibraryFollowsProfiles = profiles.$profiles
+            .dropFirst()
+            .debounce(for: .milliseconds(400), scheduler: RunLoop.main)
+            .sink { [weak model] _ in Task { @MainActor in await model?.reload() } }
+        return model
+    }()
+    private var configurationLibraryFollowsProfiles: AnyCancellable?
 
     var configurationCenterSegmentBinding: Binding<HakoMacConfigurationCenterSegment> {
         Binding(get: { self.configurationCenterSegment }, set: { self.configurationCenterSegment = $0 })
@@ -1593,6 +1651,8 @@ private final class HakoMacSceneModel: ObservableObject {
      
     func configurationCenter(_ list: HakoProfilesListPresentation) -> some View {
         let actions = configurationCenterListActions(list)
+        configurationCenterDeleteHandler = { item in actions.delete(item) }
+        armDeleteConfirmation()
         return HakoMacConfigurationCenterView(segment: configurationCenterSegmentBinding) {
             self.configurationCenterListPage(.configurations, list: list, actions: actions)
         } nodes: {
@@ -1604,20 +1664,7 @@ private final class HakoMacSceneModel: ObservableObject {
             guard let self, self.configurationLibrary.phase == .idle else { return }
             await self.configurationLibrary.reload()
         }
-         
-         
-         
-        .alert(
-            Text(hako: .copy("Could Not Save")),
-            isPresented: Binding(get: { [weak self] in self?.configurationWriteError != nil },
-                                 set: { [weak self] shown in if !shown { self?.configurationWriteError = nil } }),
-            presenting: configurationWriteError
-        ) { _ in
-            Button { [weak self] in self?.configurationWriteError = nil } label: { Text(hako: .copy("OK")) }
-                .accessibilityIdentifier("configuration-center.configuration.write-error.dismiss")
-        } message: { message in
-            Text(verbatim: message)
-        }
+        .modifier(HakoMacCentrePresentations(model: self, actions: actions))
         .sheet(item: configurationCenterImportBinding) { [weak self] request in
             HakoMacSourceImportSheet(
                 purpose: request.purpose,
@@ -1717,15 +1764,6 @@ private final class HakoMacSceneModel: ObservableObject {
             }
             .hakoPageSizedSheet()
         }
-        .sheet(item: configurationCenterEditingSchemeBinding) { [weak self] selection in
-            if let self {
-                HakoMacRuleEditorSheet(
-                    actions: self.ruleEditorActions(schemeID: selection.id),
-                    saved: { [weak self] in Task { await self?.configurationLibrary.reload() } }
-                )
-                .hakoModalPresentation(.fitted)
-            }
-        }
         .sheet(isPresented: showsConfigurationWizardBinding) { [weak self] in
             if let self {
                 HakoMacConfigurationWizardSheet(
@@ -1767,11 +1805,25 @@ private final class HakoMacSceneModel: ObservableObject {
                     .onDisappear { [weak self] in
                         if self?.configurationCenterShownItem == item { self?.configurationCenterShownItem = nil }
                     }
+                     
+                     
+                     
+                     
+                     
+                    .modifier(HakoMacCentrePresentations(model: self, actions: actions))
                 )
             } else {
                 AnyView(EmptyView())
             }
         }
+    }
+
+     
+    fileprivate func ruleEditorSheet(_ selection: HakoMacLibrarySelection) -> some View {
+        HakoMacRuleEditorSheet(
+            actions: ruleEditorActions(schemeID: selection.id),
+            saved: { [weak self] in Task { await self?.configurationLibrary.reload() } }
+        )
     }
 
      
@@ -1847,7 +1899,12 @@ private final class HakoMacSceneModel: ObservableObject {
                 .id(id)
                 .navigationTitle(Text(verbatim: profile.label))
                  
-                .hakoMacPopsWhenGone(!list.profiles.contains { $0.id == id }
+                 
+                 
+                 
+                 
+                 
+                .hakoMacPopsWhenGone(!profiles.profiles.contains { $0.id == id.rawValue }
                     || (hadRecipe && !snapshot.recipes.contains { $0.id == id.rawValue }))
             }
         case .source(let sourceID):
@@ -1953,8 +2010,17 @@ private final class HakoMacSceneModel: ObservableObject {
             self?.configurationWriteError = error.localizedDescription
             Task { @MainActor in await library.reload() }
         }
+         
+         
+         
         func edit(_ change: @escaping (inout ConfigurationCreationDraft) -> Void) {
-            writes.enqueue({ try await editNow(change) }, failure: failed)
+            writes.enqueue({
+                if library.snapshot.recipes.contains(where: { $0.id == id.rawValue }) {
+                    try await editNow(change)
+                } else {
+                    try await convertLegacyNow(sources: nil, scheme: nil, change: change)
+                }
+            }, failure: failed)
         }
         func saveProfileURL(_ change: @escaping (inout HakoMacSubscriptionSettingsState) -> Void) {
             guard let appProfile = profiles.profiles.first(where: { $0.id == id.rawValue }) else { return }
@@ -1972,7 +2038,9 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
-        func convertLegacyNow(sources: [String]?, scheme: String?) async throws {
+        func convertLegacyNow(
+            sources: [String]?, scheme: String?, change: (inout ConfigurationCreationDraft) -> Void = { _ in }
+        ) async throws {
             await library.reload()
             let generation = library.snapshot.generation
             HakoMacDebugLog.note("convert \(id.rawValue): generation \(generation) sources \(sources ?? []) scheme \(scheme ?? "nil")")
@@ -2003,6 +2071,7 @@ private final class HakoMacSceneModel: ObservableObject {
             draft.label = profile.label
             draft.dnsMode = .source
             draft.connectAfterCreation = false
+            change(&draft)
             try await profiles.editConfiguration(draft, id: id.rawValue, generation: generation)
             await library.reload()
             HakoMacDebugLog.note("convert \(id.rawValue): written, generation \(library.snapshot.generation) recipe \(library.snapshot.recipes.first { $0.id == id.rawValue }?.sources.map(\.id) ?? [])")
@@ -2030,7 +2099,17 @@ private final class HakoMacSceneModel: ObservableObject {
             export: { list.perform(.export(id: id)) },
             editSource: { [weak self] in self?.openSourceEditor(profileID: id.rawValue) },
             delete: { [weak self] in self?.configurationCenterPendingDelete = .configuration(id) },
-            setSourceUpdates: { on in list.perform(.setConfigurationSourceUpdates(id: id, enabled: on)) },
+             
+             
+             
+             
+            setSourceUpdates: { on in
+                writes.enqueue({
+                    try await profiles.setConfigurationSourceUpdates(id.rawValue, enabled: on)
+                    await library.reload()
+                    HakoMacDebugLog.note("edit \(id.rawValue): followsUpdates \(on) written, generation \(library.snapshot.generation)")
+                }, failure: failed)
+            },
             openRuntimePreview: { [weak self] in
                 self?.openWindowAction?(id: "runtime-preview", value: HakoMacRuntimePreviewRequest(profileID: id.rawValue))
             },
@@ -4571,4 +4650,32 @@ struct HakoMacRuntimePreviewRequest: Hashable, Codable {
  
 struct HakoMacScriptEditorRequest: Hashable, Codable {
     let scriptID: String
+}
+
+ 
+ 
+ 
+ 
+ 
+private struct HakoMacCentrePresentations: ViewModifier {
+    @ObservedObject var model: HakoMacSceneModel
+    let actions: HakoMacConfigurationCenterListActions
+
+    func body(content: Content) -> some View {
+        content
+            .alert(
+                Text(hako: .copy("Could Not Save")),
+                isPresented: Binding(get: { model.configurationWriteError != nil }, set: { shown in if !shown { model.configurationWriteError = nil } }),
+                presenting: model.configurationWriteError
+            ) { _ in
+                Button { model.configurationWriteError = nil } label: { Text(hako: .copy("OK")) }
+                    .accessibilityIdentifier("configuration-center.configuration.write-error.dismiss")
+            } message: { message in
+                Text(verbatim: message)
+            }
+            .sheet(item: model.configurationCenterEditingSchemeBinding) { selection in
+                model.ruleEditorSheet(selection)
+                    .hakoModalPresentation(.fitted)
+            }
+    }
 }

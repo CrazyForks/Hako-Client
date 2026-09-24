@@ -350,6 +350,19 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
 
      
      
+     
+     
+    public var hasLinkedNodes: Bool {
+        snapshot.availableSources.contains { if case .subscription = $0.origin { return $0.isRetainedSnapshot != true && $0.suppliesNodes }; return false }
+            || collections.contains { $0.collection.id.kind == .nodes && $0.collection.type == "http" && $0.source.isRetainedSnapshot != true }
+    }
+
+     
+     
+    public var hasLinkedRuleSets: Bool {
+        collections.contains { $0.collection.id.kind == .rules && $0.collection.type == "http" && $0.source.isRetainedSnapshot != true }
+    }
+
     public func hasLinkedContent(legacyProfiles: Bool) -> Bool {
         legacyProfiles
             || snapshot.availableSources.contains { if case .subscription = $0.origin { return $0.isRetainedSnapshot != true }; return false }

@@ -139,6 +139,7 @@ public struct HakoMacSchemePane: View {
                 }
                 Menu {
                     Button { actions.duplicate() } label: { Text(hako: .copy("Copy Rule Scheme")) }
+                        .accessibilityIdentifier("configuration-center.scheme.duplicate")
                     if comesFromLink {
                         Button { actions.update() } label: { Text(hako: .copy("Update")) }
                     }
@@ -149,11 +150,12 @@ public struct HakoMacSchemePane: View {
                         Button(role: .destructive) { actions.delete() } label: {
                             Text(hako: .copy("Delete"))
                         }
+                        .accessibilityIdentifier("configuration-center.scheme.delete")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
                 }
-                .menuStyle(.borderedButton).fixedSize()
+                .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize()
                 .accessibilityIdentifier("configuration-center.scheme.more")
             }
             .tint(.primary)

@@ -101,12 +101,34 @@ public struct HakoMacChainSheet: View {
         }
     }
 
+     
+    static func sourceGroups(_ choices: [HakoMacChainChoice]) -> [(label: String, choices: [HakoMacChainChoice])] {
+        var order: [String] = []
+        var grouped: [String: [HakoMacChainChoice]] = [:]
+        for choice in choices {
+            if grouped[choice.sourceLabel] == nil { order.append(choice.sourceLabel) }
+            grouped[choice.sourceLabel, default: []].append(choice)
+        }
+        return order.map { (label: $0, choices: grouped[$0] ?? []) }
+    }
+
     private func hopPicker(_ title: HakoDisplayText, selection: Binding<ConfigurationNodeChain.Hop?>, identifier: String) -> some View {
         Picker(selection: selection) {
              
             Text(hako: .copy("Choose Node")).tag(ConfigurationNodeChain.Hop?.none)
-            ForEach(choices ?? []) { choice in
-                Text(verbatim: choice.hop.nodeName + " · " + choice.sourceLabel).tag(ConfigurationNodeChain.Hop?.some(choice.hop))
+             
+             
+             
+             
+             
+            ForEach(Self.sourceGroups(choices ?? []), id: \.label) { group in
+                Section {
+                    ForEach(group.choices) { choice in
+                        Text(verbatim: choice.hop.nodeName).tag(ConfigurationNodeChain.Hop?.some(choice.hop))
+                    }
+                } header: {
+                    Text(verbatim: group.label)
+                }
             }
         } label: {
             HStack(spacing: HakoTheme.Spacing.compact) {

@@ -246,11 +246,12 @@ public struct HakoMacSourceContentPage: View {
                         Button(role: .destructive) { actions.delete() } label: {
                             Text(hako: isChain ? .copy("Delete Proxy Chain") : .copy("Delete"))
                         }
+                        .accessibilityIdentifier("configuration-center.source.delete")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
                 }
-                .menuStyle(.borderedButton).fixedSize()
+                .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize()
                 .accessibilityIdentifier("configuration-center.source.more")
             }
             .tint(.primary)

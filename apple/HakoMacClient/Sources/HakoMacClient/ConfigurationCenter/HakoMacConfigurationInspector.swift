@@ -183,6 +183,10 @@ public struct HakoMacConfigurationInspector: View {
         }
         }
         .task(id: profile.id) { scripts = await scriptsActions.load() }
+        .onAppear { HakoMacDebugLog.note("page.appear \(profile.id.rawValue) composed=\(isComposed) follows=\(String(describing: profile.followsConfigurationSourceUpdates)) canEditSource=\(profile.canEditSource)") }
+        .onChange(of: profile.followsConfigurationSourceUpdates) { follows in
+            HakoMacDebugLog.note("page.profile \(profile.id.rawValue) follows=\(String(describing: follows)) composed=\(isComposed)")
+        }
     }
 
      
@@ -220,10 +224,12 @@ public struct HakoMacConfigurationInspector: View {
                     Divider()
                     Button(role: .destructive) { actions.delete() } label: { Text(hako: .copy("Delete")) }
                         .disabled(!profile.canDelete)
+                        .accessibilityIdentifier("configuration-center.configuration.delete")
                 } label: {
                     Image(systemName: "ellipsis")
                 }
                 .menuStyle(.borderedButton)
+                .menuIndicator(.hidden)
                 .fixedSize()
                 .accessibilityIdentifier("configuration-center.configuration.more")
             }
@@ -305,7 +311,13 @@ public struct HakoMacConfigurationInspector: View {
                 HakoMacPushRowLabel(.copy("All Sources"))
             }
             .accessibilityIdentifier("configuration-center.configuration.sources.all")
-            if let follows = profile.followsConfigurationSourceUpdates {
+             
+             
+             
+             
+             
+             
+            if let follows = recipe?.followsUpdates ?? profile.followsConfigurationSourceUpdates {
                 Toggle(isOn: Binding(get: { follows }, set: { actions.setSourceUpdates($0) })) {
                     Text(hako: .copy("Automatically Update Sources"))
                 }
@@ -352,7 +364,10 @@ public struct HakoMacConfigurationInspector: View {
 
     private var overrides: some View {
         Section {
-            HakoRoutedViewLink {
+             
+             
+             
+            HakoRoutedViewLink(onReturn: { Task { @MainActor in scripts = await scriptsActions.load() } }) {
                 HakoMacScriptsPage(actions: scriptsActions, initial: scripts)
                     .navigationTitle(Text(hako: .copy("Overrides and Scripts")))
             } label: {
@@ -732,7 +747,8 @@ struct HakoMacScopeSheet: View {
                 actions.setScope(request.source.id, scope)
                 done(scope)
             },
-            back: back
+            back: back,
+            closeTitle: .copy("Cancel")
         )
     }
 }
