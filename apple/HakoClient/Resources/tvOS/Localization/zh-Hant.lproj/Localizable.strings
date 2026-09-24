@@ -355,6 +355,7 @@
 "Two entries in one source share a name. Rename one of them." = "同一來源裡有兩項同名，請改掉其中一個名稱。";
 "Type a profile address, here or on your iPhone. The address is what this Apple TV remembers; what it points at is fetched again whenever it is needed." = "在這裡或在 iPhone 上輸入設定檔網址。這台 Apple TV 記住的是網址；它指向的內容會在需要時重新取得。";
 "Type on your phone instead — the keyboard is already waiting there." = "也可以改在手機上輸入——鍵盤已經在那裡等著了。";
+"Unfix" = "取消固定";
 "Update Script" = "更新腳本";
 "Update now" = "立即更新";
 "Update unsuccessful · Choice confirmed %@" = "更新未成功 · 選擇確認於 %@";

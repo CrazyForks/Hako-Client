@@ -135,10 +135,19 @@ enum HakoTVKernelSnapshots {
              
              
              
+             
+             
+             
+             
+             
+             
+             
+             
             return HakoProxyGroupSnapshot(
                 name: name,
                 type: entry["type"] as? String ?? "",
                 members: members,
+                configuredSelection: entry["fixed"] as? String,
                 runtimeSelection: now,
                 resolvedRuntimeRoute: now.map(resolve),
                 emptyFallback: entry["emptyFallback"] as? String

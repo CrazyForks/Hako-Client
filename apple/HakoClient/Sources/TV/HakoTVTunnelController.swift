@@ -576,6 +576,35 @@ final class HakoTVTunnelController: ObservableObject {
      
      
      
+    func unpin(group: String) async {
+        guard state.isConnected else {
+            state.unpin(group: group)
+            return
+        }
+        let generation = ipcGeneration
+        controlRevision &+= 1
+        let revision = controlRevision
+        let epoch = presentationEpoch
+        do {
+            state.observations.proxies.waitForUpdate()
+            let reply = try await send(["cmd": "unfix", "group": group], expectedGeneration: generation)
+            guard generation.isValid, revision == controlRevision else { return }
+            guard Self.isOK(reply) else { throw Self.replyError(reply) }
+            state.issue = nil
+            if presentation.active && presentationEpoch == epoch {
+                await refreshProxies()
+            }
+        } catch {
+            HakoLogStore.shared.append("tv unpin outcome  reason=\(error.localizedDescription)", stream: .app, level: .warning)
+            guard generation.isValid, revision == controlRevision else { return }
+            report(issue: error.localizedDescription)
+        }
+    }
+
+     
+     
+     
+     
      
      
      
@@ -1606,7 +1635,7 @@ actor HakoTVIPCChannel {
         if object["error"] is String { return true }
         if object["accepted"] as? Bool == true { return false }
         switch command {
-        case "reload", "setMode", "select", "closeAll", "recordMemoryPressureEvidence":
+        case "reload", "setMode", "select", "unfix", "closeAll", "recordMemoryPressureEvidence":
             return object["ok"] as? Bool == true
         case "hello":
             return object["schemaVersion"] is NSNumber && object["coreVersion"] is String

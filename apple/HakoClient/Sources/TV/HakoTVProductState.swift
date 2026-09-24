@@ -217,6 +217,24 @@ struct HakoTVProductState {
     }
 
      
+     
+     
+    mutating func unpin(group groupName: String) {
+        guard let index = proxyGroups.firstIndex(where: { $0.name == groupName }) else { return }
+        let group = proxyGroups[index]
+        proxyGroups[index] = HakoProxyGroupSnapshot(
+            name: group.name,
+            type: group.type,
+            members: group.members,
+            configuredSelection: nil,
+            runtimeSelection: group.runtimeSelection,
+            resolvedRuntimeRoute: group.resolvedRuntimeRoute,
+            icon: group.icon,
+            emptyFallback: group.emptyFallback
+        )
+    }
+
+     
 
     private static func buildProxyFixture(
         _ fixture: Fixture

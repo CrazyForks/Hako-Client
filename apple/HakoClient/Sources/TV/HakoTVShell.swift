@@ -242,6 +242,7 @@ struct HakoTVShell: View {
             HakoTVNodesScreen(
                 state: state,
                 onPin: live ? { member, group in Task { await tunnel.pin(member: member, group: group) } } : nil,
+                onUnpin: live ? { group in Task { await tunnel.unpin(group: group.name) } } : nil,
                 onTestAll: live ? { group in Task { await tunnel.testAll(group: group) } } : nil,
                 onTest: live ? { member in Task { await tunnel.testOne(member: member) } } : nil
             )
@@ -636,8 +637,9 @@ struct HakoTVShell: View {
                         HakoTVNodesScreen(
                             state: state,
                             onPin: live ? { member, group in Task { await tunnel.pin(member: member, group: group) } } : nil,
+                            onUnpin: live ? { group in Task { await tunnel.unpin(group: group.name) } } : nil,
                             onTestAll: live ? { group in Task { await tunnel.testAll(group: group) } } : nil,
-                        onTest: live ? { member in Task { await tunnel.testOne(member: member) } } : nil
+                            onTest: live ? { member in Task { await tunnel.testOne(member: member) } } : nil
                         )
                     case .rules:
                         HakoTVRulesScreen(state: state)

@@ -1022,6 +1022,15 @@ final class ExtensionProvider: NSObject {
             HakoSelectProxy(group, name, &selectErr)
             if let selectErr { return jsonError(selectErr.localizedDescription) }
             return okJSON()
+         
+         
+         
+        case "unfix":
+            guard let group = req["group"] as? String else { return jsonError("missing group") }
+            var unfixErr: NSError?
+            HakoUnfixProxy(group, &unfixErr)
+            if let unfixErr { return jsonError(unfixErr.localizedDescription) }
+            return okJSON()
         case "urltest":
             guard let name = req["name"] as? String else { return jsonError("missing name") }
             let delay = HakoURLTest(name, req["url"] as? String ?? "")

@@ -33,6 +33,10 @@ struct HakoTVNodesScreen: View {
     var onPin: ((_ member: String, _ group: String) -> Void)?
      
      
+     
+    var onUnpin: ((HakoProxyGroupSnapshot) -> Void)?
+     
+     
     var onTestAll: ((HakoProxyGroupSnapshot) -> Void)?
      
     var onTest: ((HakoProxyMemberSnapshot) -> Void)?
@@ -100,10 +104,16 @@ struct HakoTVNodesScreen: View {
                         shownGroupName = group.name
                     } label: {
                         LabeledContent {
-                            Text(Self.groupRowValue(for: group))
+                             
+                             
+                             
+                            Text(Self.groupRowValue(for: group, state: state))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
                         } label: {
                             Text(group.name)
                             Text(Self.groupRowSubtitle(for: group, state: state))
+                                .lineLimit(1)
                         }
                     }
                      
@@ -131,6 +141,23 @@ struct HakoTVNodesScreen: View {
                         .textCase(.uppercase)
                         .foregroundStyle(.tertiary)
                     Spacer(minLength: 20)
+                    if Self.offersUnpin(for: group) {
+                         
+                         
+                         
+                         
+                        Button {
+                            if let onUnpin {
+                                onUnpin(group)
+                            } else {
+                                state.unpin(group: group.name)
+                            }
+                        } label: {
+                            Text(Self.unfixTitle)
+                                .font(.caption)
+                        }
+                        .accessibilityIdentifier("tvos.nodes.unfix")
+                    }
                     if Self.offersTestAll(for: group) {
                          
                          
@@ -474,20 +501,34 @@ struct HakoTVNodesScreen: View {
      
      
     static func groupRowSubtitle(for group: HakoProxyGroupSnapshot, state: HakoTVProductState) -> String {
-        if group.isEmpty { return "\(group.type) \(noNodes)" }
-        guard let selection = group.currentSelection else { return group.type }
-        if case .measured(let milliseconds) = displayedLatency(forGroup: group, state: state) {
-            return "\(group.type) · \(selection) (\(latencyLabel(.measured(milliseconds: milliseconds))))"
-        }
-        return "\(group.type) · \(selection)"
+        group.isEmpty ? "\(group.type) \(noNodes)" : group.type
     }
 
      
      
      
-    static func groupRowValue(for group: HakoProxyGroupSnapshot) -> String {
-        group.isEmpty ? "—" : (group.currentSelection ?? "—")
+     
+     
+     
+    static func groupRowValue(for group: HakoProxyGroupSnapshot, state: HakoTVProductState) -> String {
+        guard !group.isEmpty, let selection = group.currentSelection else { return "—" }
+        if case .measured(let milliseconds) = displayedLatency(forGroup: group, state: state) {
+            return "\(selection) (\(latencyLabel(.measured(milliseconds: milliseconds))))"
+        }
+        return selection
     }
+
+     
+     
+     
+     
+     
+    static func offersUnpin(for group: HakoProxyGroupSnapshot) -> Bool {
+        group.canBeUnpinned && group.configuredSelection != nil
+    }
+
+     
+    static var unfixTitle: String { String(localized: "Unfix") }
 
      
      

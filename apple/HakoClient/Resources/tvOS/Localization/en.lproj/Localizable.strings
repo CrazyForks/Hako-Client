@@ -355,6 +355,7 @@
 "Two entries in one source share a name. Rename one of them." = "Two entries in one source share a name. Rename one of them.";
 "Type a profile address, here or on your iPhone. The address is what this Apple TV remembers; what it points at is fetched again whenever it is needed." = "Type a profile address, here or on your iPhone. The address is what this Apple TV remembers; what it points at is fetched again whenever it is needed.";
 "Type on your phone instead — the keyboard is already waiting there." = "Type on your phone instead — the keyboard is already waiting there.";
+"Unfix" = "Unfix";
 "Update Script" = "Update Script";
 "Update now" = "Update now";
 "Update unsuccessful · Choice confirmed %@" = "Update unsuccessful · Choice confirmed %@";
