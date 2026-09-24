@@ -381,40 +381,7 @@ private struct HakoProductModalPanel<Content: View>: View {
              
              
             .overlay(alignment: .topTrailing) {
-                Button {
-                    requestDismiss()
-                } label: {
-                     
-                     
-                     
-                    Image(systemName: HakoSymbol.xmark.rawValue)
-                        .font(.title3.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .frame(
-                            width: HakoTheme.MacOS.ProductModal.closeGlyphSize,
-                            height: HakoTheme.MacOS.ProductModal.closeGlyphSize
-                        )
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                 
-                 
-                 
-                 
-                 
-                .keyboardShortcut(.cancelAction)
-                .padding(HakoTheme.MacOS.ProductModal.closePadding)
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                 
-                .accessibilityLabel("Close")
+                HakoProductModalCloseGlyph(action: requestDismiss)
             }
             .background(
                 RoundedRectangle(
@@ -459,33 +426,59 @@ private struct HakoProductModalPanel<Content: View>: View {
             }
     }
 
-    @ViewBuilder
     private var framedContent: some View {
+        content().modifier(HakoProductModalFrame(role: role))
+    }
+}
+
+ 
+ 
+ 
+private struct HakoProductModalFrame: ViewModifier {
+    let role: HakoModalPresentationRole
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
         switch role {
         case .fitted:
-            sizedContent
-                 
-                 
-                 
+            content
+                .fixedSize(horizontal: false, vertical: true)
                 .scrollContentBackground(.hidden)
                 .frame(width: HakoTheme.MacOS.ProductModal.width)
         case .page, .form:
-            sizedContent
+            content
                 .scrollContentBackground(.hidden)
                 .frame(width: HakoTheme.MacOS.ProductModal.width)
                 .frame(maxHeight: HakoTheme.MacOS.ProductModal.maximumHeight)
         }
     }
+}
 
-    @ViewBuilder
-    private var sizedContent: some View {
-        switch role {
-        case .fitted:
-            content()
-                .fixedSize(horizontal: false, vertical: true)
-        case .page, .form:
-            content()
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+private struct HakoProductModalCloseGlyph: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: HakoSymbol.xmark.rawValue)
+                .font(.title3.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(
+                    width: HakoTheme.MacOS.ProductModal.closeGlyphSize,
+                    height: HakoTheme.MacOS.ProductModal.closeGlyphSize
+                )
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .keyboardShortcut(.cancelAction)
+        .padding(HakoTheme.MacOS.ProductModal.closePadding)
+        .accessibilityLabel("Close")
     }
 }
 #endif
@@ -509,7 +502,7 @@ public extension View {
         @ViewBuilder content: @escaping (Item) -> C
     ) -> some View {
 #if os(macOS)
-        modifier(HakoProductModalItemHost(
+        modifier(HakoProductModalMacItemPresenter(
             item: item,
             role: macOSPanelRole ?? role,
             builder: { AnyView(content($0)) }
@@ -553,7 +546,7 @@ public extension View {
         @ViewBuilder content: @escaping () -> C
     ) -> some View {
 #if os(macOS)
-        modifier(HakoProductModalBoolHost(
+        modifier(HakoProductModalMacBoolPresenter(
             isPresented: isPresented,
             role: macOSPanelRole ?? role,
             refreshID: refreshID,
@@ -597,6 +590,106 @@ enum HakoModalItemSplit {
 #endif
 
 #if os(macOS)
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+struct HakoProductModalMacItemPresenter<Item: Identifiable>: ViewModifier {
+    let item: Binding<Item?>
+    let role: HakoModalPresentationRole
+    let builder: (Item) -> AnyView
+    @Environment(\.hakoPresentsPanelsAsNativeSheets) private var asNativeSheets
+
+    func body(content: Content) -> some View {
+        if asNativeSheets {
+            content.sheet(item: item) { value in
+                HakoProductModalSheetBody(role: role, dismiss: { item.wrappedValue = nil }) { builder(value) }
+                    .hakoModalPresentation(role)
+            }
+        } else {
+            content.modifier(HakoProductModalItemHost(item: item, role: role, builder: builder))
+        }
+    }
+}
+
+ 
+struct HakoProductModalMacBoolPresenter: ViewModifier {
+    let isPresented: Binding<Bool>
+    let role: HakoModalPresentationRole
+    let refreshID: AnyHashable
+    let builder: () -> AnyView
+    @Environment(\.hakoPresentsPanelsAsNativeSheets) private var asNativeSheets
+
+    func body(content: Content) -> some View {
+        if asNativeSheets {
+            content.sheet(isPresented: isPresented) {
+                HakoProductModalSheetBody(role: role, dismiss: { isPresented.wrappedValue = false }) { builder() }
+                    .hakoModalPresentation(role)
+            }
+        } else {
+            content.modifier(HakoProductModalBoolHost(
+                isPresented: isPresented, role: role, refreshID: refreshID, builder: builder
+            ))
+        }
+    }
+}
+
+ 
+ 
+ 
+ 
+private struct HakoProductModalSheetBody<Content: View>: View {
+    let role: HakoModalPresentationRole
+    let dismiss: () -> Void
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        content()
+            .environment(\.hakoNavigationHostContext, .standalone)
+            .environment(\.hakoProductChromeApplied, false)
+            .environment(\.hakoInsideModalPresentation, true)
+            .environment(\.hakoInsideProductModalPresentation, true)
+            .environment(\.hakoProductModalDismiss) { dismiss() }
+            .modifier(HakoProductModalFrame(role: role))
+            .modifier(HakoProductModalSheetHeight(role: role))
+            .background(HakoProductModalSurface.canvas)
+            .overlay(alignment: .topTrailing) {
+                HakoProductModalCloseGlyph(action: dismiss)
+            }
+            .onExitCommand(perform: dismiss)
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+private struct HakoProductModalSheetHeight: ViewModifier {
+    let role: HakoModalPresentationRole
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        switch role {
+        case .fitted:
+            content
+        case .page, .form:
+            content.frame(height: HakoTheme.MacOS.ProductModal.maximumHeight)
+        }
+    }
+}
+
  
  
  
@@ -868,6 +961,10 @@ private struct HakoInsideProductModalPresentationKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+private struct HakoPresentsPanelsAsNativeSheetsKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 public extension EnvironmentValues {
      
      
@@ -886,6 +983,15 @@ public extension EnvironmentValues {
     var hakoInsideProductModalPresentation: Bool {
         get { self[HakoInsideProductModalPresentationKey.self] }
         set { self[HakoInsideProductModalPresentationKey.self] = newValue }
+    }
+
+     
+     
+     
+     
+    var hakoPresentsPanelsAsNativeSheets: Bool {
+        get { self[HakoPresentsPanelsAsNativeSheetsKey.self] }
+        set { self[HakoPresentsPanelsAsNativeSheetsKey.self] = newValue }
     }
 }
 

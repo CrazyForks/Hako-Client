@@ -1747,6 +1747,10 @@ private final class HakoMacSceneModel: ObservableObject {
                 close: { [weak self] in self?.configurationCenterImport = nil }
             )
             .hakoModalPresentation(.fitted)
+             
+             
+             
+            .environment(\.hakoPresentsPanelsAsNativeSheets, true)
         }
          
          
@@ -1790,6 +1794,10 @@ private final class HakoMacSceneModel: ObservableObject {
                     created: {}
                 )
                 .hakoModalPresentation(.fitted)
+                 
+                 
+                 
+                .environment(\.hakoPresentsPanelsAsNativeSheets, true)
             }
         }
     }
@@ -4911,10 +4919,12 @@ private struct HakoMacCentrePresentations: ViewModifier {
             .sheet(item: model.configurationCenterEditingSchemeBinding) { selection in
                 model.ruleEditorSheet(selection)
                     .hakoModalPresentation(.fitted)
+                    .environment(\.hakoPresentsPanelsAsNativeSheets, true)
             }
             .sheet(item: model.configurationCenterChainBinding) { request in
                 model.chainSheet(request)
                     .hakoModalPresentation(.fitted)
+                    .environment(\.hakoPresentsPanelsAsNativeSheets, true)
             }
     }
 }
