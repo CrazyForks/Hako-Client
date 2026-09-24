@@ -401,6 +401,11 @@ enum OfflineProxyCatalogLoader {
         let pointer: ActiveConfigurationPointer?
         let sidecarSize: Int
         let sidecarModified: Double
+         
+         
+         
+         
+        let presentation: String
     }
 
     private struct SnapshotKey: Equatable {
@@ -464,12 +469,18 @@ enum OfflineProxyCatalogLoader {
          
         let sidecarAttributes = try? FileManager.default.attributesOfItem(atPath: sidecarURL.path)
         let usesPointer = sidecarAttributes == nil && activePointer?.profileID == profileID && configStore != nil
+        let scriptBody = usesPointer
+            ? nil
+            : ScriptLibrary.load().first { $0.id == profile.selectedScriptID }?.body
         let sourceKey = SourceKey(
             profileID: profileID,
             pointer: usesPointer ? activePointer : nil,
             sidecarSize: (sidecarAttributes?[.size] as? NSNumber)?.intValue ?? -1,
             sidecarModified: (sidecarAttributes?[.modificationDate] as? Date)?
-                .timeIntervalSince1970 ?? -1
+                .timeIntervalSince1970 ?? -1,
+            presentation: usesPointer
+                ? ""
+                : ProxiesPresentedDocument.key(projectionKey: "", profile: profile, scriptBody: scriptBody)
         )
         memoLock.lock()
         let rememberedText = textMemo.flatMap { $0.key == sourceKey ? $0.text : nil }
@@ -489,7 +500,19 @@ enum OfflineProxyCatalogLoader {
             guard let stored = try? String(contentsOf: source, encoding: .utf8) else {
                 return nil
             }
-            yaml = stored
+             
+             
+             
+             
+             
+             
+             
+             
+            yaml = ProxiesPresentedDocument.make(
+                source: stored,
+                profile: profile,
+                fallback: CustomNodesGroupMaterializer.projectForUI(sourceYAML: stored, profile: profile) ?? stored
+            ) ?? stored
         }
         let files = ConfigurationCollectionContentBridge.cachedNodeFiles(yaml: yaml, workingDirectory: working)
         let fingerprints = files.mapValues { file in
