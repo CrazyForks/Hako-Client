@@ -722,8 +722,10 @@ struct HakoProductPageSection<Content: View>: View {
         }
     }
 
-    @ViewBuilder
-    private var primaryCard: some View {
+     
+     
+     
+    private var primaryCard: AnyView {
         let rows = VStack(spacing: 0) {
             content
         }
@@ -753,28 +755,30 @@ struct HakoProductPageSection<Content: View>: View {
          
         if usesTraditionalPrimaryCard
             || !HakoPlatformLayout.touchCardWearsSystemMaterial {
-            traditionalCard
-        } else if #available(iOS 26.0, macOS 26.0, tvOS 26.0, *) {
-             
-             
-             
-             
-            rows
-                .clipShape(
-                    RoundedRectangle(
-                        cornerRadius: HakoTheme.Radius.liquidGlassCard,
-                        style: .continuous
-                    )
-                )
-                .glassEffect(
-                    .regular,
-                    in: .rect(
-                        cornerRadius: HakoTheme.Radius.liquidGlassCard
-                    )
-                )
-        } else {
-            traditionalCard
+            return AnyView(traditionalCard)
         }
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, *) {
+             
+             
+             
+             
+            return AnyView(
+                rows
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: HakoTheme.Radius.liquidGlassCard,
+                            style: .continuous
+                        )
+                    )
+                    .glassEffect(
+                        .regular,
+                        in: .rect(
+                            cornerRadius: HakoTheme.Radius.liquidGlassCard
+                        )
+                    )
+            )
+        }
+        return AnyView(traditionalCard)
     }
 
      

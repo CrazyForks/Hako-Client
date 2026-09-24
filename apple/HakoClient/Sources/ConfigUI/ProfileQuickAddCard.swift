@@ -78,12 +78,23 @@ struct ProfileQuickAddState: Equatable {
  
 @MainActor
 final class ProfileQuickAddController: ObservableObject {
-    enum Target { case profile, source, rules }
+     
+     
+     
+     
+     
+    enum Target { case profile, source, rules, scripts }
 
     let target: Target
     @Published var state = ProfileQuickAddState()
     @Published var showsImporter = false
-    @Published var showsQRCapture = false
+    @Published var showsQRCapture = false {
+        didSet {
+             
+             
+            if showsQRCapture, !oldValue { hasDeliveredScan = false }
+        }
+    }
     @Published var showsQRPhotoPicker = false
      
      
@@ -91,9 +102,14 @@ final class ProfileQuickAddController: ObservableObject {
      
     var onSourceAdded: ((ConfigurationLibrarySnapshot) -> Void)?
      
+    var onScriptAdded: ((ConfigScript) -> Void)?
+     
      
      
     private var pendingScan: Result<String, Error>?
+     
+     
+    private var hasDeliveredScan = false
     private let model: ProfilesViewModel
 
     init(model: ProfilesViewModel, target: Target) {
@@ -101,11 +117,32 @@ final class ProfileQuickAddController: ObservableObject {
         self.target = target
     }
 
+     
+     
+     
+     
+     
+    var importContentTypes: [UTType] {
+        switch target {
+         
+         
+         
+         
+         
+         
+        case .profile, .source, .rules: [.yaml, .plainText, .text]
+        case .scripts: [.javaScript, .plainText, .text]
+        }
+    }
+
     var headerKey: String {
         switch target {
         case .profile: "Add Profile"
         case .source: "Add Nodes"
         case .rules: "Add Rules"
+         
+         
+        case .scripts: "Add Script"
         }
     }
 
@@ -127,9 +164,26 @@ final class ProfileQuickAddController: ObservableObject {
 
      
     func holdScan(_ result: Result<String, Error>) {
+         
+         
+         
+         
+         
+        guard !hasDeliveredScan else { return }
+        hasDeliveredScan = true
         pendingScan = result
         showsQRCapture = false
         showsQRPhotoPicker = false
+#if os(macOS)
+         
+         
+         
+         
+         
+         
+         
+        deliverPendingScan()
+#endif
     }
 
      
@@ -181,6 +235,15 @@ final class ProfileQuickAddController: ObservableObject {
                     let snapshot = try await model.quickAddRules(input)
                     state.succeed()
                     onSourceAdded?(snapshot)
+                case .scripts:
+                     
+                     
+                     
+                     
+                     
+                    let script = try await ScriptQuickAdd.add(input)
+                    state.succeed()
+                    onScriptAdded?(script)
                 }
             } catch {
                 state.fail(
@@ -377,7 +440,7 @@ private struct ProfileQuickAddPresenters: ViewModifier {
              
              
             .fileImporter(isPresented: $controller.showsImporter,
-                          allowedContentTypes: [.yaml, .plainText, .data],
+                          allowedContentTypes: controller.importContentTypes,
                           allowsMultipleSelection: false) { result in
                 controller.importFile(result)
             }
@@ -385,7 +448,7 @@ private struct ProfileQuickAddPresenters: ViewModifier {
                               onDismiss: { controller.deliverPendingScan() }) {
                 HakoFeatureNavigationContainer {
                     Form {
-#if os(iOS)
+                         
                          
                          
                          
@@ -397,14 +460,31 @@ private struct ProfileQuickAddPresenters: ViewModifier {
                             .aspectRatio(1, contentMode: .fit)
                             .clipShape(RoundedRectangle(cornerRadius: HakoTheme.Radius.card, style: .continuous))
                         }
-#endif
                         Section {
                             Button {
+#if os(macOS)
+                                 
+                                 
+                                QRImagePanel.choose { result in
+                                    guard let result else { return }
+                                    controller.holdScan(result)
+                                    controller.showsQRCapture = false
+                                }
+#else
                                 controller.showsQRCapture = false
                                 controller.showsQRPhotoPicker = true
+#endif
                             } label: {
-                                Label("Choose QR from Photos", systemImage: HakoSymbol.photo.name).foregroundStyle(.primary)
+                                Label("Choose QR from Photos", systemImage: HakoSymbol.photo.name)
+                                    .foregroundStyle(.primary)
                             }
+                             
+                             
+                             
+                             
+                             
+                             
+                            .hakoMacFormActionChrome()
                         }
                     }
                     .hakoPageTitle("Scan QR Code")

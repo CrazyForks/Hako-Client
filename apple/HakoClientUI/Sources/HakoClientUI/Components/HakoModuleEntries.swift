@@ -76,18 +76,21 @@ private struct HakoModuleEntryButton: View {
     let palette: HakoProductPalette
     let action: () -> Void
 
-    @ViewBuilder
-    var body: some View {
+     
+     
+     
+    var body: AnyView {
 #if os(macOS)
-        quiet
+        return AnyView(quiet)
 #else
         if #available(iOS 26.0, tvOS 26.0, *) {
-            Button(action: action) { label }
-                .buttonStyle(.glass)
-                .foregroundStyle(.primary)
-        } else {
-            quiet
+            return AnyView(
+                Button(action: action) { label }
+                    .buttonStyle(.glass)
+                    .foregroundStyle(.primary)
+            )
         }
+        return AnyView(quiet)
 #endif
     }
 

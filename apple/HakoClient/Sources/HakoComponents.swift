@@ -120,15 +120,19 @@ struct HakoGlassEffectContainer<Content: View>: View {
         self.content = content()
     }
 
-    @ViewBuilder
-    var body: some View {
+     
+     
+     
+     
+    var body: AnyView {
         if #available(iOS 26.0, *) {
-            GlassEffectContainer(spacing: spacing) {
-                content
-            }
-        } else {
-            content
+            return AnyView(
+                GlassEffectContainer(spacing: spacing) {
+                    content
+                }
+            )
         }
+        return AnyView(content)
     }
 }
 
@@ -137,13 +141,15 @@ extension View {
      
 
      
-    @ViewBuilder
-    func hakoSecondaryActionButtonStyle() -> some View {
+     
+     
+     
+     
+    func hakoSecondaryActionButtonStyle() -> AnyView {
         if #available(iOS 26.0, *) {
-            buttonStyle(.glass)
-        } else {
-            buttonStyle(.bordered)
+            return AnyView(buttonStyle(.glass))
         }
+        return AnyView(buttonStyle(.bordered))
     }
 
 }

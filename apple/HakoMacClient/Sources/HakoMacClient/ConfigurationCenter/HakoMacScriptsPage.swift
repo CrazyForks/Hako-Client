@@ -120,7 +120,19 @@ public struct HakoMacScriptsPage: View {
     @State private var updateMessage: String?
     @Environment(\.locale) private var locale
 
-    public init(actions: HakoMacScriptsActions, initial: HakoMacScriptsState = .empty) {
+     
+     
+     
+     
+     
+    private let quickAdd: ((@escaping @MainActor () -> Void) -> AnyView)?
+
+    public init(
+        actions: HakoMacScriptsActions,
+        initial: HakoMacScriptsState = .empty,
+        quickAdd: ((@escaping @MainActor () -> Void) -> AnyView)? = nil
+    ) {
+        self.quickAdd = quickAdd
         self.actions = actions
         _state = State(initialValue: initial)
     }
@@ -191,6 +203,9 @@ public struct HakoMacScriptsPage: View {
             }
              
              
+            if let quickAdd {
+                quickAdd { Task { @MainActor in state = await actions.load() } }
+            }
             HakoMacCardButtons {
                 if let updateAll = actions.updateAll {
                     Button {
@@ -210,7 +225,11 @@ public struct HakoMacScriptsPage: View {
                     .accessibilityIdentifier("configuration-center.scripts.update-all")
                 }
             } trailing: {
-                Button { adding = true } label: { Text(hako: .opens("Add Script", locale: locale)) }
+                 
+                 
+                 
+                 
+                Button { adding = true } label: { Text(hako: .opens("quick-add.door.create", locale: locale)) }
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.scripts.add")
             }
@@ -313,7 +332,8 @@ struct HakoMacScriptAddSheet: View {
             switch self {
             case .link: "URL"
             case .file: "File"
-            case .manual: "Manual"
+             
+            case .manual: "quick-add.door.create"
             }
         }
     }
@@ -322,7 +342,9 @@ struct HakoMacScriptAddSheet: View {
     let addManual: (String, String) async throws -> Void
     let close: () -> Void
     @Environment(\.locale) private var locale
-    @State private var tab: Tab = .link
+     
+     
+    @State private var tab: Tab = .manual
     @State private var link = ""
     @State private var name = ""
     @State private var scriptBody = ""

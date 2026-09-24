@@ -20,6 +20,12 @@ public struct HakoMacConfigurationInspectorActions {
     public var setAutoUpdate: @MainActor (Bool) -> Void
     public var setInterval: @MainActor (Int) -> Void
     public var updateSource: @MainActor () -> Void
+     
+     
+     
+     
+     
+    public var isUpdatingSource = false
     public var stripCredentials: @MainActor () -> Void
     public var adoptHeldBack: @MainActor (String) -> Void
     public var dismissHeldBack: @MainActor () -> Void
@@ -91,6 +97,8 @@ public struct HakoMacConfigurationInspector: View {
     private let schemes: [ConfigurationRuleScheme]
     private let recipe: ConfigurationRecipe?
     private let scriptsActions: HakoMacScriptsActions
+     
+    private let scriptsQuickAdd: ((@escaping @MainActor () -> Void) -> AnyView)?
     private let profileURL: String?
     private let actions: HakoMacConfigurationInspectorActions
      
@@ -112,6 +120,7 @@ public struct HakoMacConfigurationInspector: View {
         ruleShelves: [HakoMacRuleLibraryShelf],
         recipe: ConfigurationRecipe?,
         scriptsActions: HakoMacScriptsActions,
+        scriptsQuickAdd: ((@escaping @MainActor () -> Void) -> AnyView)? = nil,
         profileURL: String? = nil,
         actions: HakoMacConfigurationInspectorActions,
         door: @escaping (HakoMacConfigurationDoor) -> AnyView = { _ in AnyView(EmptyView()) }
@@ -123,6 +132,7 @@ public struct HakoMacConfigurationInspector: View {
         self.schemes = schemes
         self.recipe = recipe
         self.scriptsActions = scriptsActions
+        self.scriptsQuickAdd = scriptsQuickAdd
         self.profileURL = profileURL
         self.actions = actions
         self.door = door
@@ -470,7 +480,7 @@ public struct HakoMacConfigurationInspector: View {
              
              
             HakoMacRoutedRow(onReturn: { Task { @MainActor in scripts = await scriptsActions.load() } }) {
-                HakoMacScriptsPage(actions: scriptsActions, initial: scripts)
+                HakoMacScriptsPage(actions: scriptsActions, initial: scripts, quickAdd: scriptsQuickAdd)
                     .navigationTitle(Text(hako: .copy("Overrides and Scripts")))
             } label: {
                 HakoMacPushRowLabel(.copy("Overrides and Scripts"), value: scripts.selectedID.flatMap { id in scripts.scripts.first { $0.id == id } }
@@ -560,10 +570,11 @@ public struct HakoMacConfigurationInspector: View {
                  
                  
                  
+                if actions.isUpdatingSource { ProgressView().controlSize(.small) }
                 Button { actions.updateSource() } label: { Text(hako: .copy("Update Source")) }
                     .buttonStyle(.bordered)
                     .tint(.primary)
-                    .disabled(profile.isBusy)
+                    .disabled(profile.isBusy || actions.isUpdatingSource)
                     .accessibilityIdentifier("configuration-center.config-url.update")
             }
             .hakoMacCardRow()

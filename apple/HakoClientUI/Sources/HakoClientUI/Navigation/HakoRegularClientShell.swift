@@ -1493,15 +1493,17 @@ public struct HakoRegularClientShell<
         }
     }
 
-    @ViewBuilder
-    private var detailBackground: some View {
+     
+     
+    private var detailBackground: AnyView {
         if #available(iOS 26.0, macOS 26.0, *) {
-            background
-                .ignoresSafeArea()
-                .backgroundExtensionEffect()
-        } else {
-            background.ignoresSafeArea()
+            return AnyView(
+                background
+                    .ignoresSafeArea()
+                    .backgroundExtensionEffect()
+            )
         }
+        return AnyView(background.ignoresSafeArea())
     }
 
 

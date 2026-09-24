@@ -96,9 +96,9 @@ public struct HakoProfileSnapshot:
     public let id: Profile.ID
     public let label: String
     public let source: HakoProfileSourceKind
-    public let sourceSummary: HakoDisplayText
-    public let subscription: HakoProfileSubscriptionSnapshot?
-    public let lastUpdatedAt: Date?
+    public var sourceSummary: HakoDisplayText
+    public var subscription: HakoProfileSubscriptionSnapshot?
+    public var lastUpdatedAt: Date?
     public let autoUpdate: Bool
     public let updateIntervalHours: Int
     public let isCurrent: Bool

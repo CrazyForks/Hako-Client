@@ -1,6 +1,7 @@
 import CoreImage
 import SwiftUI
 #if os(macOS)
+import AVFoundation
 import AppKit
 import UniformTypeIdentifiers
 #else
@@ -41,6 +42,39 @@ enum QRImageDecoder {
 #if os(macOS)
  
  
+ 
+ 
+ 
+ 
+ 
+ 
+enum QRImagePanel {
+    @MainActor
+    static func choose(_ completion: @escaping (Result<String, Error>?) -> Void) {
+        let panel = NSOpenPanel()
+        panel.title = "Choose QR Image"
+        panel.prompt = "Choose"
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else {
+                completion(nil)
+                return
+            }
+            let result: Result<String, Error>
+            if let image = NSImage(contentsOf: url),
+               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+            {
+                result = Result { try QRImageDecoder.decode(cgImage) }
+            } else {
+                result = .failure(QRImageDecoderError.unreadableImage)
+            }
+            completion(result)
+        }
+    }
+}
+
 struct QRPhotoPicker: View {
     let completion: (Result<String, Error>?) -> Void
 
@@ -57,34 +91,188 @@ struct QRPhotoPicker: View {
             }
     }
 
-    private func openPanel() {
-        let panel = NSOpenPanel()
-        panel.title = "Choose QR Image"
-        panel.prompt = "Choose"
-        panel.allowedContentTypes = [.image]
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else {
-                completion(nil)
+    private func openPanel() { QRImagePanel.choose(completion) }
+}
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+struct QRScannerView: NSViewRepresentable {
+    let onCode: (String) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onCode: onCode) }
+
+    func makeNSView(context: Context) -> ScannerView {
+        let view = ScannerView()
+        view.start(delegate: context.coordinator)
+        return view
+    }
+
+    func updateNSView(_ nsView: ScannerView, context: Context) {}
+
+    static func dismantleNSView(_ nsView: ScannerView, coordinator: Coordinator) {
+        nsView.stop()
+    }
+
+    final class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
+        private let onCode: (String) -> Void
+        private var delivered = false
+
+        init(onCode: @escaping (String) -> Void) { self.onCode = onCode }
+
+        func metadataOutput(_ output: AVCaptureMetadataOutput,
+                            didOutput metadataObjects: [AVMetadataObject],
+                            from connection: AVCaptureConnection) {
+            guard !delivered,
+                  let object = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
+                  object.type == .qr, let value = object.stringValue else { return }
+            delivered = true
+            onCode(value)
+        }
+    }
+
+    final class ScannerView: NSView {
+        private let session = AVCaptureSession()
+        private var preview: AVCaptureVideoPreviewLayer?
+        private var output: AVCaptureMetadataOutput?
+         
+         
+         
+         
+         
+         
+        private static let sessionQueue = DispatchQueue(label: "hako.qr.session")
+         
+         
+         
+        private var isTornDown = false
+         
+         
+         
+        private let unavailable = NSTextField(labelWithString: "")
+
+        override init(frame frameRect: NSRect) {
+            super.init(frame: frameRect)
+            wantsLayer = true
+            layer?.backgroundColor = NSColor.black.cgColor
+            unavailable.alignment = .center
+            unavailable.textColor = .secondaryLabelColor
+            unavailable.isHidden = true
+            unavailable.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(unavailable)
+            NSLayoutConstraint.activate([
+                unavailable.centerXAnchor.constraint(equalTo: centerXAnchor),
+                unavailable.centerYAnchor.constraint(equalTo: centerYAnchor),
+                unavailable.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 16),
+                unavailable.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -16),
+            ])
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+        func start(delegate: AVCaptureMetadataOutputObjectsDelegate) {
+            switch AVCaptureDevice.authorizationStatus(for: .video) {
+            case .authorized:
+                configure(delegate: delegate)
+            case .notDetermined:
+                AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                    DispatchQueue.main.async {
+                        guard let self, !self.isTornDown else { return }
+                        guard granted else {
+                            self.showUnavailable()
+                            return
+                        }
+                        self.configure(delegate: delegate)
+                    }
+                }
+            case .denied, .restricted:
+                showUnavailable()
+            @unknown default:
+                showUnavailable()
+            }
+        }
+
+         
+         
+        private func showUnavailable() {
+            unavailable.stringValue = HakoCopy.string("Camera unavailable", locale: .current)
+            unavailable.isHidden = false
+        }
+
+        private func configure(delegate: AVCaptureMetadataOutputObjectsDelegate) {
+            guard !isTornDown, preview == nil,
+                  let device = AVCaptureDevice.default(for: .video),
+                  let input = try? AVCaptureDeviceInput(device: device),
+                  session.canAddInput(input) else {
+                showUnavailable()
                 return
             }
-            let result: Result<String, Error>
-            if let image = NSImage(contentsOf: url),
-               let cgImage = image.cgImage(
-                   forProposedRect: nil,
-                   context: nil,
-                   hints: nil
-               )
-            {
-                result = Result { try QRImageDecoder.decode(cgImage) }
-            } else {
-                result = .failure(QRImageDecoderError.unreadableImage)
+            let output = AVCaptureMetadataOutput()
+            session.beginConfiguration()
+            session.addInput(input)
+            if session.canAddOutput(output) { session.addOutput(output) }
+            session.commitConfiguration()
+            self.output = output
+
+             
+             
+             
+             
+            let layer = AVCaptureVideoPreviewLayer(session: session)
+            layer.videoGravity = .resizeAspectFill
+            layer.frame = bounds
+             
+             
+             
+             
+             
+            self.layer?.insertSublayer(layer, at: 0)
+            preview = layer
+
+            Self.sessionQueue.async { [session] in
+                if !session.isRunning { session.startRunning() }
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, !self.isTornDown else { return }
+                     
+                     
+                     
+                     
+                     
+                    output.setMetadataObjectsDelegate(delegate, queue: .main)
+                    guard output.availableMetadataObjectTypes.contains(.qr) else {
+                        self.showUnavailable()
+                        return
+                    }
+                    output.metadataObjectTypes = [.qr]
+                }
             }
-            completion(result)
+        }
+
+        func stop() {
+            isTornDown = true
+            output?.setMetadataObjectsDelegate(nil, queue: nil)
+            output = nil
+            preview?.removeFromSuperlayer()
+            preview = nil
+             
+             
+            Self.sessionQueue.async { [session] in
+                if session.isRunning { session.stopRunning() }
+            }
+        }
+
+        override func layout() {
+            super.layout()
+            preview?.frame = bounds
         }
     }
 }
+
+
 #else
  
  

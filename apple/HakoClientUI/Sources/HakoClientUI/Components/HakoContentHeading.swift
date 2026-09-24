@@ -87,8 +87,20 @@ private struct HakoRootHeadingModifier: ViewModifier {
          
          
         if railOwnsHeading {
+#if os(macOS)
+             
+             
+             
+             
+             
+             
+             
+            content.navigationTitle(Text(hako: title))
+                .hakoFrameWatch(title.frameWatchLabel(overriddenBy: watchAs))
+#else
             content.navigationTitle("")
                 .hakoFrameWatch(title.frameWatchLabel(overriddenBy: watchAs))
+#endif
         } else {
             content.hakoPageTitle(title, watchAs: watchAs)
         }

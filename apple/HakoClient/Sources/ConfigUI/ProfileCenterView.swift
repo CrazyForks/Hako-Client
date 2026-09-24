@@ -770,7 +770,15 @@ struct ProfileCenterAdapter: View {
 
         case .sync(let id):
             if let profile = appProfile(id) {
-                model.sync(profile)
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                await model.syncAwaitingLibrary(profile)
+                await rereadCentreLibrary()
             }
             return .none
         case let .adoptHeldBackUpdate(id, keyPath):

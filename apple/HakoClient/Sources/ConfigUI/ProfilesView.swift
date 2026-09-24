@@ -3890,6 +3890,83 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
+     
+     
+     
+     
+     
+    @MainActor
+    private func runLibrarySync(_ profile: Profile, references: [String]) async {
+         
+         
+         
+        defer { if busyProfileID == profile.id { busyProfileID = nil } }
+        do {
+            let outcome = try await refreshConfigurationSources(references)
+             
+             
+            load()
+             
+             
+            busyProfileID = nil
+            await restageAfterSourceRefresh(profile.id, changed: outcome.changed)
+             
+             
+             
+            if outcome.failures.isEmpty {
+                 
+                 
+                 
+                 
+                 
+                statusMessage = outcome.changed.isEmpty
+                    ? .format("%@ is up to date", [profile.label])
+                    : .format("%@ synced", [profile.label])
+                clearFailure()
+            } else {
+                recordFailure(ProviderDownloadFailuresError(failures: outcome.failures),
+                              context: .subscription, operation: nil, preservesLastKnownGood: true)
+            }
+        } catch {
+            recordFailure(error, context: .subscription, operation: nil, preservesLastKnownGood: true)
+        }
+    }
+
+     
+     
+     
+     
+    @MainActor
+    private func syncWithoutLibraryBranch(_ profile: Profile) {
+        sync(profile)
+    }
+
+     
+     
+     
+     
+     
+    @MainActor
+    func syncAwaitingLibrary(_ profile: Profile) async {
+         
+         
+         
+         
+        guard let references = configurationLibrarySources(for: profile),
+              !references.isEmpty, busyProfileID == nil else {
+            syncWithoutLibraryBranch(profile)
+            return
+        }
+        busyProfileID = profile.id
+        clearFailure()
+        statusMessage = .format("Syncing %@…", [profile.label])
+        await runLibrarySync(profile, references: references)
+    }
+
+     
+     
+     
+     
     private func restageAfterSourceRefresh(_ profileID: String, changed: [String]) async {
         guard !changed.isEmpty, profileID == activeProfileID, tunnelIsRunning,
               let latest = profiles.first(where: { $0.id == profileID }) else { return }
@@ -3939,33 +4016,7 @@ final class ProfilesViewModel: ObservableObject {
             clearFailure()
             statusMessage = .format("Syncing %@…", [profile.label])
             Task { [weak self] in
-                guard let self else { return }
-                 
-                 
-                 
-                defer { if self.busyProfileID == profile.id { self.busyProfileID = nil } }
-                do {
-                    let outcome = try await self.refreshConfigurationSources(references)
-                     
-                     
-                    self.load()
-                     
-                     
-                    self.busyProfileID = nil
-                    await self.restageAfterSourceRefresh(profile.id, changed: outcome.changed)
-                     
-                     
-                     
-                    if outcome.failures.isEmpty {
-                        self.statusMessage = .format("%@ synced", [profile.label])
-                        self.clearFailure()
-                    } else {
-                        self.recordFailure(ProviderDownloadFailuresError(failures: outcome.failures),
-                                           context: .subscription, operation: nil, preservesLastKnownGood: true)
-                    }
-                } catch {
-                    self.recordFailure(error, context: .subscription, operation: nil, preservesLastKnownGood: true)
-                }
+                await self?.runLibrarySync(profile, references: references)
             }
             return
         }

@@ -160,6 +160,17 @@ public struct HakoMacRootView: View {
                             }
                         )
                     }
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    .onChange(of: chipIsTheAddDoor) { isAddDoor in
+                        if isAddDoor { isPickingProfile = false }
+                    }
             }
             } placeholder: {
                 HakoMacPlatformPresentation.palette.canvas
@@ -296,8 +307,30 @@ public struct HakoMacRootView: View {
                 case .openProfiles:
                      
                      
-                    isPickingProfile = true
-                    destination = nil
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    if chipIsTheAddDoor {
+                        isPickingProfile = false
+                         
+                         
+                         
+                         
+                         
+                         
+                        destination = .profiles
+                    } else {
+                        isPickingProfile = true
+                        destination = nil
+                    }
                 case .openProxies:
                     destination = .proxies
                 case .openRules:
@@ -418,9 +451,29 @@ extension HakoMacRootView {
      
      
      
+     
+     
+     
+     
+     
+     
+     
+     
+    fileprivate var chipIsTheAddDoor: Bool {
+        snapshot.home.selectedProfileIsSystemFallback
+            || snapshot.profiles.profiles.isEmpty
+    }
+
+     
+     
+     
+     
     fileprivate func profilePickerPresentation(
         for symbol: HakoSymbol
     ) -> Binding<Bool> {
-        symbol == .chevronDown ? $isPickingProfile : .constant(false)
+        guard symbol == .chevronDown, !chipIsTheAddDoor else {
+            return .constant(false)
+        }
+        return $isPickingProfile
     }
 }

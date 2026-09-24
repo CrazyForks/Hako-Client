@@ -2226,14 +2226,54 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
     private func memberDetail(
         _ member: HakoProxyMemberSnapshot
     ) -> String {
-        if index.source == snapshot.proxies, let detail = index.detail(for: member) {
+         
+         
+         
+         
+         
+         
+         
+         
+        if !member.isGroup,
+           index.source == snapshot.proxies,
+           let detail = index.detail(for: member)
+        {
             return detail
         }
-        guard member.isGroup,
-              let route = memberResolvedRoute(member) else {
+        guard member.isGroup, let route = memberRouteForDisplay(member) else {
             return member.type
         }
         return "\(member.type) → \(route)"
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    private func memberRouteForDisplay(
+        _ member: HakoProxyMemberSnapshot
+    ) -> String? {
+         
+         
+         
+         
+         
+         
+         
+         
+        if snapshot.proxies.isConnected,
+           !snapshot.proxies.isEmptyGroup(member),
+           let terminal = latencyPulseSnapshot?().groupTerminals[member.name]
+        {
+            return terminal
+        }
+        return memberResolvedRoute(member)
     }
 
     private func memberResolvedRoute(
@@ -3519,7 +3559,11 @@ struct ProxyDerivedIndex: Equatable {
                 if latencyByKey[memberKey] == nil {
                     latencyByKey[memberKey] = proxies.displayedLatency(for: member)
                 }
-                if detailByKey[memberKey] == nil {
+                 
+                 
+                 
+                 
+                if !member.isGroup, detailByKey[memberKey] == nil {
                     detailByKey[memberKey] = detail(of: member, in: proxies)
                 }
             }

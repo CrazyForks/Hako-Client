@@ -25,10 +25,12 @@ public extension View {
      
      
      
-    @ViewBuilder
+     
+     
+     
     func hakoPinnedTopBar<Bar: View>(
         @ViewBuilder _ bar: @escaping () -> Bar
-    ) -> some View {
+    ) -> AnyView {
         if HakoPinnedTopBarPolicy.usesSystemScrollPocket {
              
              
@@ -40,13 +42,15 @@ public extension View {
              
              
             if #available(iOS 26.0, macOS 26.0, tvOS 26.0, *) {
-                safeAreaBar(edge: .top, spacing: 0, content: bar)
+                return AnyView(safeAreaBar(edge: .top, spacing: 0, content: bar))
             }
-        } else {
+            return AnyView(self)
+        }
+        return AnyView(
             safeAreaInset(edge: .top, spacing: 0) {
                 bar().modifier(HakoPreScrollEdgeBarGround())
             }
-        }
+        )
     }
 
      

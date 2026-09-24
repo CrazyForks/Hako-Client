@@ -100,7 +100,9 @@ public struct HakoMacSourceImportSheet: View {
             case .link: "URL"
             case .file: "File"
             case .nodes: "Node"
-            case .manual: "Manual"
+             
+             
+            case .manual: "quick-add.door.create"
             }
         }
     }

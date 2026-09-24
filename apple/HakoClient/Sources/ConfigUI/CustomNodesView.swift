@@ -82,6 +82,14 @@ struct CustomNodesView: View {
     @StateObject private var editorState: CustomNodesEditorState
     let profile: Profile
     let sourceYAML: String?
+     
+     
+     
+     
+     
+     
+     
+    let dialerCandidatesOverride: (() -> DialerProxyCandidates)?
     let loadDraft: () throws -> ProfileProviderDefinitionsDraft
     let prepareDraft: (() async throws -> ProfileProviderDefinitionsDraft)?
     let saveDraft: (ProfileProviderDefinitionsDraft) throws -> Void
@@ -171,6 +179,7 @@ struct CustomNodesView: View {
     init(
         profile: Profile,
         sourceYAML: String?,
+        dialerCandidates: (() -> DialerProxyCandidates)? = nil,
         ownsNavigationContainer: Bool = true,
         tabHeader: ((Bool) -> AnyView)? = nil,
         editorState: CustomNodesEditorState? = nil,
@@ -189,6 +198,7 @@ struct CustomNodesView: View {
         _editorState = StateObject(wrappedValue: editorState ?? CustomNodesEditorState())
         self.profile = profile
         self.sourceYAML = sourceYAML
+        self.dialerCandidatesOverride = dialerCandidates
         self.ownsNavigationContainer = ownsNavigationContainer
         self.tabHeader = tabHeader
         self.loadDraft = loadDraft
@@ -485,10 +495,13 @@ struct CustomNodesView: View {
                         showsTesting: false,
                         isNew: true,
                         dialerRouting: .payloadField,
-                        dialerCandidates: { DialerProxyCandidates.make(
-                            sourceYAML: sourceYAML,
-                            excluding: ""
-                        ) }
+                        dialerCandidates: { [dialerCandidatesOverride] in
+                            if let dialerCandidatesOverride { return dialerCandidatesOverride() }
+                            return DialerProxyCandidates.make(
+                                sourceYAML: sourceYAML,
+                                excluding: ""
+                            )
+                        }
                     )
                 } label: {
                     nodeRow(name: pastedNode.name, type: pastedNode.type)
@@ -630,10 +643,13 @@ struct CustomNodesView: View {
                 showsTesting: false,
                 isNew: true,
                 dialerRouting: .payloadField,
-                dialerCandidates: { DialerProxyCandidates.make(
-                    sourceYAML: sourceYAML,
-                    excluding: ""
-                ) },
+                dialerCandidates: { [dialerCandidatesOverride] in
+                    if let dialerCandidatesOverride { return dialerCandidatesOverride() }
+                    return DialerProxyCandidates.make(
+                        sourceYAML: sourceYAML,
+                        excluding: ""
+                    )
+                },
                 onDone: { editorSelection = nil }
             )
         case .add:
@@ -646,10 +662,13 @@ struct CustomNodesView: View {
                 showsTesting: false,
                 isNew: true,
                 dialerRouting: .payloadField,
-                dialerCandidates: { DialerProxyCandidates.make(
-                    sourceYAML: sourceYAML,
-                    excluding: ""
-                ) },
+                dialerCandidates: { [dialerCandidatesOverride] in
+                    if let dialerCandidatesOverride { return dialerCandidatesOverride() }
+                    return DialerProxyCandidates.make(
+                        sourceYAML: sourceYAML,
+                        excluding: ""
+                    )
+                },
                 onDone: { editorSelection = nil }
             )
         case .edit(let id):
@@ -664,10 +683,13 @@ struct CustomNodesView: View {
                     },
                     showsTesting: false,
                     dialerRouting: .payloadField,
-                    dialerCandidates: { DialerProxyCandidates.make(
-                        sourceYAML: sourceYAML,
-                        excluding: record.name
-                    ) },
+                    dialerCandidates: { [dialerCandidatesOverride] in
+                        if let dialerCandidatesOverride { return dialerCandidatesOverride() }
+                        return DialerProxyCandidates.make(
+                            sourceYAML: sourceYAML,
+                            excluding: record.name
+                        )
+                    },
                     onDone: { editorSelection = nil }
                 )
             } else {

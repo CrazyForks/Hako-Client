@@ -749,6 +749,58 @@ private final class HakoMacMenuBarTrafficFeed: ObservableObject {
  
  
  
+ 
+ 
+ 
+ 
+ 
+ 
+@MainActor
+private struct HakoMacCentreAddButton: View {
+    @ObservedObject var model: HakoMacSceneModel
+
+    var body: some View {
+        switch model.configurationCenterSegment {
+        case .configurations:
+            Button {
+                model.showsConfigurationWizard = true
+            } label: {
+                Label {
+                    Text(hako: .copy("Add Profile"))
+                } icon: {
+                    Image(systemName: HakoSymbol.plus.name)
+                }
+            }
+            .help(Text(hako: .copy("Add Profile")))
+            .accessibilityIdentifier("profile-center.add")
+        case .nodes:
+            Button {
+                model.configurationCenterImport = HakoMacImportRequest(purpose: .nodes, tab: .nodes)
+            } label: {
+                Label {
+                    Text(hako: .copy("Add Nodes"))
+                } icon: {
+                    Image(systemName: HakoSymbol.plus.name)
+                }
+            }
+            .help(Text(hako: .copy("Add Nodes")))
+            .accessibilityIdentifier("configuration-center.nodes.add")
+        case .rules:
+            Button {
+                model.configurationCenterImport = HakoMacImportRequest(purpose: .rules, tab: .manual)
+            } label: {
+                Label {
+                    Text(hako: .copy("Add Rules"))
+                } icon: {
+                    Image(systemName: HakoSymbol.plus.name)
+                }
+            }
+            .help(Text(hako: .copy("Add Rules")))
+            .accessibilityIdentifier("configuration-center.rules.add")
+        }
+    }
+}
+
 private struct HakoMacProxiesGhostChrome: View, Equatable {
     let model: HakoMacSceneModel
     @ObservedObject var channels: HakoRegularRootChannels
@@ -1033,6 +1085,17 @@ private final class HakoMacSceneModel: ObservableObject {
      
      
     @Published var configurationCenterPendingDelete: HakoMacConfigurationCenterItem?
+     
+     
+     
+     
+     
+     
+    private struct QuickAddKey: Hashable {
+        let target: ProfileQuickAddController.Target
+        let profileID: String?
+    }
+    private var quickAddControllers: [QuickAddKey: ProfileQuickAddController] = [:]
     @Published var configurationCenterImport: HakoMacImportRequest?
      
      
@@ -1054,6 +1117,13 @@ private final class HakoMacSceneModel: ObservableObject {
     @Published var configurationCenterInspectedNode: HakoMacInspectedNode?
      
     @Published var configurationCenterEditingNode: HakoMacEditingNode?
+     
+     
+     
+     
+     
+     
+    @Published var configurationCenterCreatesNode = false
      
      
     @Published var configurationCenterShownItem: HakoMacConfigurationCenterItem?
@@ -1081,6 +1151,9 @@ private final class HakoMacSceneModel: ObservableObject {
     }
     var configurationCenterEditingNodeBinding: Binding<HakoMacEditingNode?> {
         Binding(get: { self.configurationCenterEditingNode }, set: { self.configurationCenterEditingNode = $0 })
+    }
+    var configurationCenterCreatesNodeBinding: Binding<Bool> {
+        Binding(get: { self.configurationCenterCreatesNode }, set: { self.configurationCenterCreatesNode = $0 })
     }
     var configurationCenterEditingSchemeBinding: Binding<HakoMacLibrarySelection?> {
         Binding(get: { self.configurationCenterEditingScheme }, set: { self.configurationCenterEditingScheme = $0 })
@@ -1230,10 +1303,23 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
-        actions.customNodesEditor = { accept, close in
+        actions.customNodesEditor = { [weak self] accept, close in
             AnyView(
-                ConfigurationNodeSourceAdapter(accept: accept)
-                    .environment(\.hakoProductModalDismiss, close)
+                 
+                 
+                 
+                 
+                ConfigurationNodeSourceAdapter(
+                    accept: accept,
+                    dialerCandidates: {
+                        guard let self,
+                              let profile = self.currentProfile,
+                              let yaml = self.profiles.effectiveYAML(for: profile)
+                        else { return .empty }
+                        return DialerProxyCandidates.make(sourceYAML: yaml, excluding: "")
+                    }
+                )
+                .environment(\.hakoProductModalDismiss, close)
             )
         }
         return actions
@@ -1761,6 +1847,43 @@ private final class HakoMacSceneModel: ObservableObject {
                         case .nodes:
                              
                              
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                            Button {
+                                self.configurationCenterImport = HakoMacImportRequest(purpose: .nodes, tab: .nodes)
+                            } label: {
+                                Label {
+                                    Text(hako: .copy("Add Nodes"))
+                                } icon: {
+                                    Image(systemName: HakoSymbol.plus.name)
+                                }
+                            }
+                            .help(Text(hako: .copy("Add Nodes")))
+                            .accessibilityIdentifier("configuration-center.nodes.add")
+                        case .rules:
+                             
+                             
+                             
+                            if payload.record.ruleCount > 0 {
+                                try await self.configurationLibrary.addRuleScheme(payload)
+                            } else {
+                                let collections = try ConfigurationCollection.read(
+                                    sourceID: payload.record.id, document: try OrderedJSON.parse(payload.documentJSON), kind: .rules
+                                )
+                                guard !collections.isEmpty else { throw ConfigurationLibraryError.missingRules }
+                                var source = payload
+                                source.record.suppliesNodes = false
+                                source.record.registersSuppliedRules = false
+                                try await self.configurationLibrary.addSource(source)
+                            }
+                        case .nodes:
+                             
+                             
                             guard payload.record.suppliesNodes, payload.record.nodeCount > 0 || payload.record.providerCount > 0 else {
                                 throw ConfigurationLibraryError.missingNodes
                             }
@@ -1807,7 +1930,76 @@ private final class HakoMacSceneModel: ObservableObject {
                         self.configurationLibrary.apply(next)
                     },
                     showsTesting: false,
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    dialerRouting: .payloadField,
+                    dialerCandidates: { [weak self] in
+                        guard let self,
+                              let profile = self.currentProfile,
+                              let yaml = self.profiles.effectiveYAML(for: profile)
+                        else { return .empty }
+                        return DialerProxyCandidates.make(
+                            sourceYAML: yaml,
+                            excluding: editing.record.name
+                        )
+                    },
                     onDone: { [weak self] in self?.configurationCenterEditingNode = nil },
+                    commitTitle: "Save"
+                )
+            }
+            .hakoPageSizedSheet()
+        }
+         
+         
+         
+         
+         
+        .hakoProductModal(isPresented: configurationCenterCreatesNodeBinding, role: .form) { [weak self] in
+            HakoFeatureNavigationContainer {
+                ProxyNodeDetailsView(
+                    record: CustomNodesView.newNodeTemplate,
+                    retest: {},
+                    saveNode: { [weak self] _, json in
+                        guard let self else { throw ConfigurationLibraryError.unreadable }
+                        let payload = try await Task.detached {
+                            let node = try JSONSerialization.jsonObject(with: Data(json.utf8))
+                            guard let node = node as? [String: Any] else {
+                                throw ConfigurationLibraryError.unreadable
+                            }
+                            let document = try JSONSerialization.data(withJSONObject: ["proxies": [node]])
+                            let yaml = try ConfigTransforms.jsonToYAML(
+                                String(decoding: document, as: UTF8.self)
+                            )
+                            return try ConfigurationCenterSourceBridge.payload(
+                                label: node["name"] as? String ?? "Custom Nodes",
+                                origin: .customNodes,
+                                original: Data(yaml.utf8),
+                                yaml: yaml
+                            )
+                        }.value
+                        var source = payload
+                        source.record.registersSuppliedRules = false
+                        try await self.configurationLibrary.addSource(source)
+                    },
+                    showsTesting: false,
+                    isNew: true,
+                    dialerRouting: .payloadField,
+                    dialerCandidates: { [weak self] in
+                        guard let self,
+                              let profile = self.currentProfile,
+                              let yaml = self.profiles.effectiveYAML(for: profile)
+                        else { return .empty }
+                        return DialerProxyCandidates.make(sourceYAML: yaml, excluding: "")
+                    },
+                    onDone: { [weak self] in self?.configurationCenterCreatesNode = false },
                     commitTitle: "Save"
                 )
             }
@@ -1829,6 +2021,81 @@ private final class HakoMacSceneModel: ObservableObject {
         }
     }
 
+     
+     
+    func quickAddController(
+        _ target: ProfileQuickAddController.Target,
+        profileID: String? = nil
+    ) -> ProfileQuickAddController {
+        let key = QuickAddKey(target: target, profileID: profileID)
+        if let existing = quickAddControllers[key] { return existing }
+        let controller = ProfileQuickAddController(model: profiles, target: target)
+        switch target {
+        case .source, .rules:
+             
+             
+            controller.onSourceAdded = { [weak self] snapshot in
+                self?.configurationLibrary.apply(snapshot)
+            }
+        case .profile, .scripts:
+            break
+        }
+        quickAddControllers[key] = controller
+        return controller
+    }
+
+     
+    @ViewBuilder
+    private func quickAddCard(_ segment: HakoMacConfigurationCenterSegment) -> some View {
+        switch segment {
+        case .configurations:
+             
+             
+             
+            MacQuickAddCard(
+                controller: quickAddController(.profile),
+                identifiers: .configurations,
+                doors: HakoMacQuickAddDoors()
+            )
+        case .nodes:
+            MacQuickAddCard(
+                controller: quickAddController(.source),
+                identifiers: .nodes,
+                doors: HakoMacQuickAddDoors()
+            )
+        case .rules:
+            MacQuickAddCard(
+                controller: quickAddController(.rules),
+                identifiers: .rules,
+                doors: HakoMacQuickAddDoors()
+            )
+        }
+    }
+
+     
+     
+     
+     
+    @ViewBuilder
+    private func scriptsQuickAddCard(
+        profileID: HakoClientKit.Profile.ID,
+        reload: @escaping @MainActor () -> Void
+    ) -> some View {
+         
+         
+         
+         
+         
+         
+        let controller = quickAddController(.scripts, profileID: profileID.rawValue)
+        MacQuickAddCard(
+            controller: controller,
+            identifiers: .scripts,
+            doors: HakoMacQuickAddDoors()
+        )
+        .onAppear { controller.onScriptAdded = { _ in reload() } }
+    }
+
     private func configurationCenterListPage(
         _ segment: HakoMacConfigurationCenterSegment,
         list: HakoProfilesListPresentation,
@@ -1839,7 +2106,10 @@ private final class HakoMacSceneModel: ObservableObject {
             model: configurationLibrary,
             profiles: list.profiles,
             pendingDelete: configurationCenterPendingDeleteBinding,
-            actions: actions
+            actions: actions,
+            quickAdd: { [weak self] segment in
+                AnyView(self?.quickAddCard(segment))
+            }
         ) { [weak self] item in
             self?.configurationCenterRoutedDetail(item, list: list, actions: actions) ?? AnyView(EmptyView())
         }
@@ -1951,6 +2221,7 @@ private final class HakoMacSceneModel: ObservableObject {
         )
         actions.editScheme = { [weak self] id in self?.configurationCenterEditingScheme = HakoMacLibrarySelection(id: id) }
         actions.addChain = { [weak self] in self?.configurationCenterChain = HakoMacChainRequest(existingID: nil) }
+        actions.createNode = { [weak self] in self?.configurationCenterCreatesNode = true }
          
         actions.reorder = { ids in list.reorder(ids) }
         actions.hasLegacyProfileURLs = profiles.profiles.contains { profile in if case .url = profile.source { return true }; return false }
@@ -1963,6 +2234,61 @@ private final class HakoMacSceneModel: ObservableObject {
         return actions
     }
 
+     
+     
+    static func libraryLinks(
+        _ recipe: ConfigurationRecipe?, in snapshot: ConfigurationLibrarySnapshot
+    ) -> [ConfigurationSourceRecord] {
+        guard let recipe else { return [] }
+        return recipe.sources.compactMap { reference in
+            snapshot.sources.first { record in
+                guard record.id == reference.id else { return false }
+                if case .subscription = record.origin { return true }
+                return false
+            }
+        }
+    }
+
+     
+     
+     
+     
+     
+     
+     
+    static func liveProfile(
+        _ listed: HakoProfileSnapshot,
+        recipe: ConfigurationRecipe?,
+        appProfile: Profile?,
+        in snapshot: ConfigurationLibrarySnapshot
+    ) -> HakoProfileSnapshot {
+        var profile = listed
+        let links = libraryLinks(recipe, in: snapshot)
+        guard let updatedAt = links.map(\.updatedAt).max() else { return profile }
+        profile.lastUpdatedAt = updatedAt
+         
+         
+        if let appProfile, case .url(let rawURL) = appProfile.source {
+            let host = SubscriptionURLPresentation.hostDescription(rawURL, locale: .current)
+            profile.sourceSummary = .verbatim(
+                "\(host) · \(updatedAt.formatted(.relative(presentation: .named)))"
+            )
+        }
+         
+         
+         
+        if links.count == 1, let usage = links[0].subscriptionUsage {
+            profile.subscription = HakoProfileSubscriptionSnapshot(
+                uploadBytes: usage.upload, downloadBytes: usage.download,
+                totalBytes: usage.total,
+                expiration: usage.expire > 0
+                    ? Date(timeIntervalSince1970: TimeInterval(usage.expire))
+                    : nil
+            )
+        }
+        return profile
+    }
+
     @ViewBuilder
     private func configurationCenterDetail(
         _ item: HakoMacConfigurationCenterItem, list: HakoProfilesListPresentation, hadRecipe: Bool = false
@@ -1970,9 +2296,22 @@ private final class HakoMacSceneModel: ObservableObject {
         let snapshot = configurationLibrary.snapshot
         switch item {
         case .configuration(let id):
-            if let profile = list.profiles.first(where: { $0.id == id }) {
+            if let listed = list.profiles.first(where: { $0.id == id }) {
                 let appProfile = profiles.profiles.first { $0.id == id.rawValue }
                 let recipe = snapshot.recipes.first { $0.id == id.rawValue }
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                let profile = Self.liveProfile(
+                    listed, recipe: recipe, appProfile: appProfile, in: snapshot
+                )
                 HakoMacConfigurationInspector(
                     profile: profile,
                     sources: snapshot.sources.filter(\.suppliesNodes),
@@ -1981,6 +2320,9 @@ private final class HakoMacSceneModel: ObservableObject {
                     ruleShelves: HakoMacConfigurationLibraryModel.ruleShelves(snapshot, keeping: recipe?.ruleSchemeID),
                     recipe: recipe,
                     scriptsActions: scriptsActions(profileID: id),
+                    scriptsQuickAdd: { [weak self] reload in
+                        AnyView(self?.scriptsQuickAddCard(profileID: id, reload: reload))
+                    },
                     profileURL: appProfile.flatMap { if case .url(let url) = $0.source { url } else { nil } },
                     actions: configurationInspectorActions(list, profile: profile, id: id),
                     door: { [weak self] door in AnyView(self?.configurationDoor(door, profileID: id, list: list)) }
@@ -2221,7 +2563,47 @@ private final class HakoMacSceneModel: ObservableObject {
             restoreLastKnownGood: { list.perform(.restoreLastKnownGood(id: id)) },
             setAutoUpdate: { on in saveProfileURL { $0.autoUpdate = on } },
             setInterval: { hours in saveProfileURL { $0.updateIntervalHours = hours } },
-            updateSource: { list.perform(.sync(id: id)) },
+             
+             
+             
+             
+             
+             
+             
+             
+            updateSource: { [weak self] in
+                guard let self else { return }
+                Task { @MainActor in
+                    guard let profile = self.profiles.profiles.first(where: {
+                        $0.id == id.rawValue
+                    }) else { return }
+                     
+                     
+                     
+                     
+                     
+                     
+                    let references = self.profiles
+                        .configurationLibrarySources(for: profile) ?? []
+                    let subscriptions = references.filter { reference in
+                        guard let record = self.configurationLibrary.snapshot.sources
+                            .first(where: { $0.id == reference }) else { return false }
+                        if case .subscription = record.origin { return true }
+                        return false
+                    }
+                    guard !subscriptions.isEmpty else {
+                         
+                         
+                        self.profiles.sync(profile)
+                        return
+                    }
+                    for reference in subscriptions {
+                        _ = await self.configurationLibrary.updateSource(reference)
+                    }
+                    self.profiles.load()
+                    self.refreshSnapshot()
+                }
+            },
             stripCredentials: { [weak self] in
                 guard let self else { return }
                 let actions = self.subscriptionActions(profileID: id)
@@ -2267,6 +2649,14 @@ private final class HakoMacSceneModel: ObservableObject {
             try await Self.scopeChoices(source, staged: nil, store: profiles.configurationLibraryStore)
         }
          
+         
+         
+         
+        actions.isUpdatingSource = {
+            let references = profiles.profiles.first(where: { $0.id == id.rawValue })
+                .flatMap { profiles.configurationLibrarySources(for: $0) } ?? []
+            return references.contains { configurationLibrary.updatingSourceIDs.contains($0) }
+        }()
         actions.copyProfileURL = {
             guard let appProfile = profiles.profiles.first(where: { $0.id == id.rawValue }),
                   let link = profiles.subscriptionLink(for: appProfile) else { return }
@@ -3550,6 +3940,13 @@ private final class HakoMacSceneModel: ObservableObject {
                      
                      
                     ToolbarItemGroup(placement: .primaryAction) {
+                         
+                         
+                         
+                         
+                         
+                         
+                        HakoMacCentreAddButton(model: self)
                         if self.profiles.hasSubscriptionProfile {
                              
                              
@@ -3939,10 +4336,26 @@ private final class HakoMacSceneModel: ObservableObject {
                 egress: egressSnapshot,
                 lanAddress: lanAddress,
                 isProfileActionInFlight:
-                    profiles.isActivationInFlight
+                    profiles.isActivationInFlight,
+                 
+                 
+                 
+                 
+                 
+                 
+                selectedProfileIsSystemFallback: ProfileCenterPolicy.selectedProfileIsSystemFallback(
+                    selectedID: profile?.id,
+                    profiles: profiles.profiles
+                )
             ),
             profiles: HakoProfilesSnapshot(
-                profiles: profiles.profiles.compactMap(
+                 
+                 
+                 
+                 
+                 
+                 
+                profiles: ProfileCenterPolicy.catalog(profiles.profiles).compactMap(
                     profileSnapshot
                 ),
                 statusMessage: profiles.statusMessage,
@@ -4026,6 +4439,23 @@ private final class HakoMacSceneModel: ObservableObject {
         ))
     }
 
+     
+     
+     
+     
+     
+    static func deleteSubtitle(
+        _ profile: Profile, canDelete: Bool, isCurrent: Bool
+    ) -> HakoDisplayText {
+        if profile.id == LocalDefaultProfileProvisioner.profileID {
+            return "Clash keeps Direct as a safe system fallback"
+        }
+        if canDelete, isCurrent { return "Clash returns to its built-in profile" }
+        return canDelete
+            ? "Remove this profile from Clash"
+            : "Switch to another profile before deleting"
+    }
+
     private func profileSnapshot(
         _ profile: Profile
     ) -> HakoProfileSnapshot? {
@@ -4045,6 +4475,11 @@ private final class HakoMacSceneModel: ObservableObject {
             sourceSummary = "Local profile"
         }
         let isCurrent = profile.id == profiles.activeProfileID
+        let canDeleteProfile = ProfileCenterPolicy.canDelete(
+            profileID: profile.id,
+            activeProfileID: profiles.activeProfileID,
+            profiles: profiles.profiles
+        )
         return HakoProfileSnapshot(
             id: id,
             label: profile.label,
@@ -4067,11 +4502,15 @@ private final class HakoMacSceneModel: ObservableObject {
             isCurrent: isCurrent,
             isBusy: profile.id == profiles.busyProfileID,
             canEditSource: true,
-            canDelete: !isCurrent,
-            deleteSubtitle:
-                isCurrent
-                    ? "Switch profiles before removing this one"
-                    : "Remove this profile from Clash",
+             
+             
+             
+             
+             
+            canDelete: canDeleteProfile,
+            deleteSubtitle: Self.deleteSubtitle(
+                profile, canDelete: canDeleteProfile, isCurrent: isCurrent
+            ),
             runtimeSummary:
                 isCurrent ? "Active runtime" : "Saved profile",
              

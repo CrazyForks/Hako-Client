@@ -235,8 +235,11 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
         }
     }
 
-    @ViewBuilder
-    private var homeScrollView: some View {
+     
+     
+     
+     
+    private var homeScrollView: AnyView {
          
          
          
@@ -267,15 +270,19 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
              
              
              
-            scroll.scrollClipDisabled()
-                .scrollEdgeEffectStyle(.soft, for: .top)
-                .hakoTracksScrollDistance { updateHeaderCompaction(for: $0) }
-        } else if #available(iOS 17.0, macOS 14.0, tvOS 17.0, *) {
-            scroll.scrollClipDisabled()
-                .hakoTracksScrollDistance { updateHeaderCompaction(for: $0) }
-        } else {
-            scroll
+            return AnyView(
+                scroll.scrollClipDisabled()
+                    .scrollEdgeEffectStyle(.soft, for: .top)
+                    .hakoTracksScrollDistance { updateHeaderCompaction(for: $0) }
+            )
         }
+        if #available(iOS 17.0, macOS 14.0, tvOS 17.0, *) {
+            return AnyView(
+                scroll.scrollClipDisabled()
+                    .hakoTracksScrollDistance { updateHeaderCompaction(for: $0) }
+            )
+        }
+        return AnyView(scroll)
     }
 
      
@@ -965,13 +972,13 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
 }
 
 private struct HakoHomeGlassSpinnerStyle: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
+     
+     
+    func body(content: Content) -> AnyView {
         if #available(iOS 26.0, macOS 26.0, tvOS 26.0, *) {
-            content.buttonStyle(.glass)
-        } else {
-            content.buttonStyle(.bordered)
+            return AnyView(content.buttonStyle(.glass))
         }
+        return AnyView(content.buttonStyle(.bordered))
     }
 }
 
@@ -1011,8 +1018,11 @@ private struct HakoHomePrimaryPageCard<Content: View>: View {
         self.content = content()
     }
 
-    @ViewBuilder
-    var body: some View {
+     
+     
+     
+     
+    var body: AnyView {
          
          
          
@@ -1087,20 +1097,21 @@ private struct HakoHomePrimaryPageCard<Content: View>: View {
              
              
              
-            padded
-                .clipShape(
-                    RoundedRectangle(
-                        cornerRadius: cardCorner,
-                        style: .continuous
+            return AnyView(
+                padded
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: cardCorner,
+                            style: .continuous
+                        )
                     )
-                )
-                .glassEffect(
-                    isInteractive ? .regular.interactive() : .regular,
-                    in: .rect(cornerRadius: cardCorner)
-                )
-        } else {
-            traditionalCard
+                    .glassEffect(
+                        isInteractive ? .regular.interactive() : .regular,
+                        in: .rect(cornerRadius: cardCorner)
+                    )
+            )
         }
+        return AnyView(traditionalCard)
     }
 }
 

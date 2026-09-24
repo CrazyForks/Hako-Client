@@ -22,6 +22,10 @@ public struct HakoMacConfigurationCenterListActions {
      
     public var addChain: @MainActor () -> Void = {}
      
+     
+     
+    public var createNode: @MainActor () -> Void = {}
+     
     public var backupPage: (@MainActor () -> AnyView)? = nil
     public var activate: @MainActor (Profile.ID) -> Void
     public var delete: @MainActor (HakoMacConfigurationCenterItem) -> Void
@@ -71,6 +75,11 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
     private let profiles: [HakoProfileSnapshot]
     @Binding private var pendingDelete: HakoMacConfigurationCenterItem?
     private let actions: HakoMacConfigurationCenterListActions
+     
+     
+     
+     
+    private let quickAdd: ((HakoMacConfigurationCenterSegment) -> AnyView)?
     private let detail: (HakoMacConfigurationCenterItem) -> Detail
 
     public init(
@@ -79,6 +88,7 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
         profiles: [HakoProfileSnapshot],
         pendingDelete: Binding<HakoMacConfigurationCenterItem?> = .constant(nil),
         actions: HakoMacConfigurationCenterListActions,
+        quickAdd: ((HakoMacConfigurationCenterSegment) -> AnyView)? = nil,
         @ViewBuilder detail: @escaping (HakoMacConfigurationCenterItem) -> Detail
     ) {
         self.segment = segment
@@ -86,6 +96,7 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
         self.profiles = profiles
         _pendingDelete = pendingDelete
         self.actions = actions
+        self.quickAdd = quickAdd
         self.detail = detail
     }
 
@@ -257,7 +268,9 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                             statusTint: nil,
                             trailing: nil,
                             busy: profile.isBusy,
-                            usage: HakoMacConfigurationUsageFacts.usage(configurationID: profile.id.rawValue, fetched: profile.subscription, in: model.snapshot)
+                            usage: HakoMacConfigurationUsageFacts.usage(configurationID: profile.id.rawValue, fetched: profile.subscription, in: model.snapshot),
+                            badges: profile.badges,
+                            note: profile.note
                         )
                     }
                     .accessibilityIdentifier("configuration-center.configurations.row.\(profile.id.rawValue)")
@@ -285,6 +298,7 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                 Text(hako: .copy("None")).foregroundStyle(.secondary).hakoMacCardRow(isLast: true)
             }
         }
+        if let quickAdd { quickAdd(.configurations) }
         HakoMacCardButtons {
              
              
@@ -295,8 +309,11 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
             }
         } trailing: {
              
-            Button { actions.addConfiguration() } label: { Text(hako: .opens("Add Profile", locale: locale)) }
-                .accessibilityIdentifier("configuration-center.configurations.add")
+             
+             
+             
+             
+            EmptyView()
         }
         if let backupPage = actions.backupPage {
             HakoMacCardSection(.copy("Data")) {
@@ -357,6 +374,7 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
         if model.nodeShelves.isEmpty {
             HakoMacCardSection { Text(hako: .copy("None")).foregroundStyle(.secondary).hakoMacCardRow(isLast: true) }
         }
+        if let quickAdd { quickAdd(.nodes) }
         HakoMacCardButtons {
              
              
@@ -367,20 +385,25 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                     .accessibilityIdentifier("configuration-center.nodes.update-all")
             }
         } trailing: {
-            Menu {
-                Button { actions.addSource(.link) } label: { Text(hako: .copy("Profile URL")) }
-                Button { actions.addSource(.file) } label: { Text(hako: .copy("File")) }
-                Button { actions.addSource(.nodes) } label: { Text(hako: .copy("Node")) }
-                Button { actions.addChain() } label: { Text(hako: .copy("Proxy Chain")) }
-            } label: {
-                 
-                 
-                 
-                 
+             
+             
+             
+             
+             
+             
+             
+             
+             
+            Button { actions.createNode() } label: {
                 Text(hako: .opens("Create Nodes", locale: locale))
             }
             .fixedSize()
-            .accessibilityIdentifier("configuration-center.nodes.add")
+            .accessibilityIdentifier("configuration-center.nodes.create")
+            Button { actions.addChain() } label: {
+                Text(hako: .opens("Proxy Chain", locale: locale))
+            }
+            .fixedSize()
+            .accessibilityIdentifier("configuration-center.nodes.chain")
         }
     }
 
@@ -425,6 +448,7 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                 }
             }
         }
+        if let quickAdd { quickAdd(.rules) }
         HakoMacCardButtons {
             if model.hasLinkedRuleSets {
                 Button { Task { await model.updateAllRuleSets() } } label: { Text(hako: .copy("Update All Rule Sets")) }
@@ -432,16 +456,10 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                     .accessibilityIdentifier("configuration-center.rules.update-all")
             }
         } trailing: {
-            Menu {
-                Button { actions.addScheme(.link) } label: { Text(hako: .copy("Profile URL")) }
-                Button { actions.addScheme(.file) } label: { Text(hako: .copy("File")) }
-                Button { actions.addScheme(.manual) } label: { Text(hako: .copy("Manual")) }
-            } label: {
-                 
-                Text(hako: .opens("Create Rules", locale: locale))
-            }
-            .fixedSize()
-            .accessibilityIdentifier("configuration-center.rules.add")
+             
+             
+             
+            EmptyView()
         }
     }
 
@@ -591,18 +609,43 @@ struct HakoMacSettingsRow: View {
      
      
     var usage: ConfigurationSubscriptionUsage? = nil
+     
+     
+     
+     
+    var badges: [HakoDisplayText] = []
+     
+     
+    var note: HakoDisplayText? = nil
 
     var body: some View {
         HStack(spacing: HakoTheme.Spacing.compact) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(hako: title).lineLimit(1)
+                HStack(spacing: 5) {
+                     
+                     
+                     
+                     
+                    Text(hako: title).lineLimit(1).layoutPriority(1)
+                    ForEach(Array(badges.enumerated()), id: \.offset) { _, badge in
+                        HakoMacRowBadge(text: badge).fixedSize()
+                    }
+                }
                 if let status {
                     HStack(spacing: 5) {
                         if let statusTint { Circle().fill(statusTint).frame(width: 7, height: 7) }
                         Text(hako: status).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                     }
                 }
-                if let usage { HakoMacUsageLines(usage: usage) }
+                if let usage {
+                    HakoMacUsageLines(usage: usage, note: note)
+                } else if let note {
+                    Text(hako: note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .padding(.top, 2)
+                }
             }
             Spacer(minLength: HakoTheme.Spacing.row)
             if busy {
@@ -767,13 +810,44 @@ private let hakoMacListDateFormatters = HakoMacDateFormatterCache(dateStyle: .me
  
  
  
+ 
+ 
+struct HakoMacRowBadge: View {
+    let text: HakoDisplayText
+
+    var body: some View {
+        Text(hako: text)
+            .font(.caption2)
+            .lineLimit(1)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .strokeBorder(.secondary.opacity(0.55), lineWidth: 1)
+            )
+    }
+}
+
+ 
+ 
 struct HakoMacUsageLines: View {
     let usage: ConfigurationSubscriptionUsage
+     
+     
+     
+    var note: HakoDisplayText? = nil
     @Environment(\.locale) private var locale
 
     var body: some View {
         VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
-            Text(hako: HakoMacSubscriptionUsageCopy.traffic(usage))
+            HStack(spacing: 4) {
+                Text(hako: HakoMacSubscriptionUsageCopy.traffic(usage))
+                if let note {
+                    Text(verbatim: "·")
+                    Text(hako: note).lineLimit(1)
+                }
+            }
             if let fraction = usage.fraction {
                  
                  

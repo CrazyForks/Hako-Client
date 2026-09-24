@@ -291,6 +291,14 @@ struct ConfigurationNodeSourceAdapter: View {
     var isFirstConfigurationStep = false
     var tabHeader: ((Bool) -> AnyView)? = nil
     let accept: (ConfigurationSourcePayload) async throws -> Void
+     
+     
+     
+     
+     
+     
+     
+    var dialerCandidates: (() -> DialerProxyCandidates)? = nil
     @State private var profile = Profile(id: UUID().uuidString.lowercased(), label: "Custom Nodes",
         source: .clipboard, autoUpdate: false, updateIntervalHours: 12,
         subscriptionInfo: nil, selectedMap: [:], activeRevision: nil, order: 0, lastUpdatedAt: nil)
@@ -300,6 +308,7 @@ struct ConfigurationNodeSourceAdapter: View {
     private let emptyNodeDocument = "proxies: []\n"
     var body: some View {
         CustomNodesView(profile: profile, sourceYAML: emptyNodeDocument,
+            dialerCandidates: dialerCandidates,
             tabHeader: tabHeader, editorState: editorState,
             loadDraft: { try ProfileProviderDefinitionsDraft(profile: profile, baselineYAML: emptyNodeDocument) },
             saveDraft: { _ in throw ConfigurationLibraryError.unreadable },
