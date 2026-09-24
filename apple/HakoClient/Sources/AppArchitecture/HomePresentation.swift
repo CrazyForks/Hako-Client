@@ -302,8 +302,8 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
          
         .init(
             id: "external-controller",
-            title: "External Controller & Web UI",
-            detail: "The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied, and the web UI is served — downloaded only if the app has not already placed it. Configuration writes stay with the app: the API serves reads, proxy selection and connection close."
+            title: "External Controller",
+            detail: "The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied. The web dashboard is not downloaded or hosted. Configuration writes stay with the app: the API serves reads, proxy selection and connection close."
         ),
     ]
 #else
@@ -358,7 +358,7 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
         ),
         .init(
             id: "external-controller",
-            title: "External Controller & Web UI",
+            title: "External Controller",
              
              
              
@@ -369,7 +369,7 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
              
              
              
-            detail: "The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied, and the web UI is served — downloaded only if the app has not already placed it. Configuration writes stay with the app: the API serves reads, proxy selection and connection close."
+            detail: "The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied. The web dashboard is not downloaded or hosted. Configuration writes stay with the app: the API serves reads, proxy selection and connection close."
         ),
     ]
 #endif
@@ -414,6 +414,12 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
         "interface-name", "routing-mark",
     ]
 
+     
+     
+    private static let dashboardKeys: Set<String> = [
+        "external-ui", "external-ui-url", "external-ui-name",
+    ]
+
     private static let platformServiceKeys: Set<String> = [
         "iptables", "clash-for-android",
     ]
@@ -453,6 +459,15 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
                  
                  
                 strippedKeys: keys.intersection(deadControllerSpellings)
+                    .intersection(ConfigTransforms.iosUnsupportedTopLevelKeys).sorted()
+            ))
+        }
+        if !keys.isDisjoint(with: dashboardKeys) {
+            result.append(.init(
+                id: "web-dashboard",
+                title: "Web Dashboard",
+                detail: "The web dashboard is not downloaded or hosted by this app; the external controller itself runs as written, and any dashboard you host elsewhere can point at it.",
+                strippedKeys: keys.intersection(dashboardKeys)
                     .intersection(ConfigTransforms.iosUnsupportedTopLevelKeys).sorted()
             ))
         }

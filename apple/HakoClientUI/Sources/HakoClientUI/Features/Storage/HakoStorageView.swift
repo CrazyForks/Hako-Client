@@ -286,8 +286,13 @@ public struct HakoStorageView: View {
                         Text(hako: .copy("Clean Up"))
                             .font(.footnote)
                     }
-                    .buttonStyle(.borderless)
+                     
+                     
+                     
+                     
+                     
                     .hakoMacFormActionChrome()
+                    .buttonStyle(.borderless)
                     .disabled(isWorking)
                     .accessibilityIdentifier("storage.row.\(area).reclaim")
                 }

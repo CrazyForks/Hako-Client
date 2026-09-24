@@ -919,6 +919,13 @@ enum ConfigTransforms {
      
      
      
+     
+     
+     
+     
+     
+     
+     
     static let iosUnsupportedTopLevelKeys: Set<String> = [
          
          
@@ -930,6 +937,9 @@ enum ConfigTransforms {
          
          
         "external-controller-pipe",
+         
+         
+        "external-ui", "external-ui-url", "external-ui-name",
     ]
 
 }

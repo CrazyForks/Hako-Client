@@ -32,6 +32,9 @@ import HakoClientKit
  
  
  
+ 
+ 
+ 
 struct StorageMaintenance {
     enum Area: String, CaseIterable, Hashable, Sendable {
         case configurations, library, geodata, providerCaches, compiledGeodata, logs, temporary
@@ -184,6 +187,35 @@ struct StorageMaintenance {
      
      
      
+     
+    func retiredDashboardDirectories() -> [URL] {
+        let own: Set<String> = [
+            "store", "configuration-library", "geodata", "payloads", "provider-runtime",
+            "compiled-geoip", "compiled-geosite", "active",
+        ]
+        let entries = (try? fileManager.contentsOfDirectory(
+            at: working, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
+        )) ?? []
+        return entries
+            .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+            .filter { !own.contains($0.lastPathComponent) }
+            .filter { directory in
+                if fileManager.fileExists(atPath: directory.appendingPathComponent("index.html").path) { return true }
+                let children = (try? fileManager.contentsOfDirectory(
+                    at: directory, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
+                )) ?? []
+                return children.contains {
+                    fileManager.fileExists(atPath: $0.appendingPathComponent("index.html").path)
+                }
+            }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+     
+     
+     
+     
+     
     func staleLogFiles(now: Date = Date()) -> [URL] {
         let directory = paths(.logs)[0]
         let live = Set(HakoLogStore.mirrorableFileNames(now: now))
@@ -202,6 +234,7 @@ struct StorageMaintenance {
         var items: [URL] = []
         let temp = containerURL.appendingPathComponent("temp", isDirectory: true)
         if fileManager.fileExists(atPath: temp.path) { items.append(temp) }
+        items += retiredDashboardDirectories()
         let store = working.appendingPathComponent("store", isDirectory: true)
         if let enumerator = fileManager.enumerator(at: store, includingPropertiesForKeys: [.isDirectoryKey], options: []) {
             for case let url as URL in enumerator where url.lastPathComponent.hasPrefix(".tmp-") {

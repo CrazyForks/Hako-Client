@@ -2901,6 +2901,7 @@
 "That text does not contain a node share link." = "That text does not contain a node share link.";
 "That username is too long. Choose a shorter one." = "That username is too long. Choose a shorter one.";
 "The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied, and the web UI is served — downloaded only if the app has not already placed it. Configuration writes stay with the app: the API serves reads, proxy selection and connection close." = "The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied, and the web UI is served — downloaded only if the app has not already placed it. Configuration writes stay with the app: the API serves reads, proxy selection and connection close.";
+"The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied. The web dashboard is not downloaded or hosted. Configuration writes stay with the app: the API serves reads, proxy selection and connection close." = "The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied. The web dashboard is not downloaded or hosted. Configuration writes stay with the app: the API serves reads, proxy selection and connection close.";
 "The Clash packet tunnel did not answer in time." = "The Clash packet tunnel did not answer in time.";
 "The Clash packet tunnel is not available." = "The Clash packet tunnel is not available.";
 "The Clash packet tunnel returned an invalid response." = "The Clash packet tunnel returned an invalid response.";
@@ -3171,6 +3172,7 @@
 "The upgraded settings would change a profile's runtime behavior, so nothing was changed." = "The upgraded settings would change a profile's runtime behavior, so nothing was changed.";
 "The upstream project Hako is based on." = "The upstream project Hako is based on.";
 "The validated source was saved." = "The validated source was saved.";
+"The web dashboard is not downloaded or hosted by this app; the external controller itself runs as written, and any dashboard you host elsewhere can point at it." = "The web dashboard is not downloaded or hosted by this app; the external controller itself runs as written, and any dashboard you host elsewhere can point at it.";
 "Theme" = "Theme";
 "Theme Mode" = "Theme Mode";
 "Then: General → VPN, DNS & Device Management → DNS → Clash DNS" = "Then: General → VPN, DNS & Device Management → DNS → Clash DNS";
@@ -3524,6 +3526,7 @@
 "Waiting for VPN authorization. Complete the system confirmation in Settings to continue." = "Waiting for VPN authorization. Complete the system confirmation in Settings to continue.";
 "Waiting for the network" = "Waiting for the network";
 "Waiting for the system to confirm the VPN settings. You can leave this page or stop the VPN." = "Waiting for the system to confirm the VPN settings. You can leave this page or stop the VPN.";
+"Web Dashboard" = "Web Dashboard";
 "WebSocket Path" = "WebSocket Path";
 "What DNS-only Does" = "What DNS-only Does";
 "What each source cost to load this start. Temporary parse memory is returned by the system after startup." = "What each source cost to load this start. Temporary parse memory is returned by the system after startup.";

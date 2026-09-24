@@ -2901,6 +2901,7 @@
 "That text does not contain a node share link." = "這段文字裡沒有節點分享連結。";
 "That username is too long. Choose a shorter one." = "使用者名稱過長，請換一個短一些的。";
 "The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied, and the web UI is served — downloaded only if the app has not already placed it. Configuration writes stay with the app: the API serves reads, proxy selection and connection close." = "API 在設定檔寫明的網址上監聽（含 TLS），profile 的 secret 與 CORS 規則均生效，Web 面板照常提供——僅當 App 尚未就位時才自行下載。設定檔寫入仍歸 App：該 API 提供讀取、代理選擇與連線關閉。";
+"The API listens at the configured address, TLS included, with the profile's secret and CORS rules applied. The web dashboard is not downloaded or hosted. Configuration writes stay with the app: the API serves reads, proxy selection and connection close." = "API 在設定檔寫明的網址上監聽（含 TLS），profile 的 secret 與 CORS 規則均生效。Web 控制台不再下載、也不託管。設定檔寫入仍歸 App：該 API 提供讀取、代理選擇與連線關閉。";
 "The Clash packet tunnel did not answer in time." = "Clash 通道未及時回應。";
 "The Clash packet tunnel is not available." = "Clash 通道不可用。";
 "The Clash packet tunnel returned an invalid response." = "Clash 通道回傳了無效回應。";
@@ -3171,6 +3172,7 @@
 "The upgraded settings would change a profile's runtime behavior, so nothing was changed." = "升級後的設定會改變某設定檔的執行階段行為，因此未做任何更改。";
 "The upstream project Hako is based on." = "Hako 所基於的上游專案。";
 "The validated source was saved." = "已儲存驗證透過的來源。";
+"The web dashboard is not downloaded or hosted by this app; the external controller itself runs as written, and any dashboard you host elsewhere can point at it." = "本 App 不下載、不託管 Web 控制台；外部控制器本身按設定照常執行，你自己託管的控制台可以指向它。";
 "Theme" = "主題";
 "Theme Mode" = "主題模式";
 "Then: General → VPN, DNS & Device Management → DNS → Clash DNS" = "然後：通用 → VPN、DNS 與裝置管理 → DNS → Clash DNS";
@@ -3524,6 +3526,7 @@
 "Waiting for VPN authorization. Complete the system confirmation in Settings to continue." = "正在等待 VPN 授權。請在系統設定中完成確認後繼續。";
 "Waiting for the network" = "等待網路";
 "Waiting for the system to confirm the VPN settings. You can leave this page or stop the VPN." = "正在等待系統確認 VPN 設定。你可以離開此頁面或停止 VPN。";
+"Web Dashboard" = "Web 控制台";
 "WebSocket Path" = "WebSocket 路徑";
 "What DNS-only Does" = "僅 DNS 模式做什麼";
 "What each source cost to load this start. Temporary parse memory is returned by the system after startup." = "本次啟動各來源的裝載開銷。解析期的臨時記憶體啟動後由系統收回。";

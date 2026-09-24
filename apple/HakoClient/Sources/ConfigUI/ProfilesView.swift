@@ -553,8 +553,13 @@ final class ProfilesViewModel: ObservableObject {
             if let container {
                 let running = StorageView.tunnelIsRunning(vpn.status)
                 Task.detached(priority: .utility) {
-                    _ = try? StorageMaintenance(containerURL: container, tunnelIsRunning: { running })
-                        .reclaim([.configurations, .geodata])
+                    let maintenance = StorageMaintenance(containerURL: container, tunnelIsRunning: { running })
+                    _ = try? maintenance.reclaim([.configurations, .geodata])
+                     
+                     
+                    for url in maintenance.retiredDashboardDirectories() {
+                        try? FileManager.default.removeItem(at: url)
+                    }
                 }
             }
         }
