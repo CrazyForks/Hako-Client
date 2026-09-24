@@ -3303,12 +3303,12 @@ private final class HakoMacSceneModel: ObservableObject {
         let activity = AppleClientActions(capability: .activity) { action in
             guard case .activity(let command) = action else { return }
             switch command {
-            case .setLogLevelDirective(let raw):
-                let directive = HakoLogSettings.LevelDirective(rawValue: raw)
-                HakoLogSettings.setLevelDirective(
-                    directive,
-                    in: GlobalConfig.appGroupDefaults
-                )
+             
+             
+             
+             
+             
+             
             case .setLogSeverityFilter(let levels):
                 HakoLogSettings.setSeverityFilter(
                     levels,
