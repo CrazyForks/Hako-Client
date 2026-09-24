@@ -373,13 +373,9 @@ public struct HakoMacConfigurationInspector: View {
                 .disabled(profile.isBusy)
                 .accessibilityIdentifier("configuration-center.configuration.source-updates")
             }
-        } footer: {
-            if offersOriginal {
-                Text(hako: usesOriginal
-                    ? .copy("Runs the configuration as received, with its own proxy groups, rules and DNS.")
-                    : .copy("Nodes come from the chosen node sources; routing follows the rule scheme."))
-            }
         }
+         
+         
     }
 
      
