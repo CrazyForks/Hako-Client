@@ -1172,8 +1172,7 @@ extension HakoProfileRulesView {
             isDirty: draft != openedWith,
             isBusy: isSaving,
             save: { completion in
-                persist()
-                completion(true)
+                persist(then: completion)
             },
             discard: { draft = openedWith }
         )
@@ -1183,7 +1182,7 @@ extension HakoProfileRulesView {
                 HakoModalActionBar(
                     primaryTitle: "Save",
                     primaryDisabled: isSaving,
-                    onPrimary: persist
+                    onPrimary: { persist() }
                 )
             }
         }
@@ -1854,8 +1853,10 @@ extension HakoProfileRulesView {
         )
     }
 
-    private func persist() {
-        guard !isSaving else { return }
+     
+     
+    private func persist(then: ((Bool) -> Void)? = nil) {
+        guard !isSaving else { then?(false); return }
         isSaving = true
         error = ""
         Task {
@@ -1864,8 +1865,9 @@ extension HakoProfileRulesView {
                     .rules(.saveProfileRules(draft)),
                     allowedBy: snapshot
                 )
-                dismissPresentation()
+                if let then { then(true) } else { dismissPresentation() }
             } catch {
+                then?(false)
                 self.error =
                     "Rules could not be saved. The previous configuration is still available."
             }

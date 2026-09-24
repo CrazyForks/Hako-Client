@@ -731,7 +731,7 @@ struct ScriptEditorView: View {
                         HakoModalActionBar(
                             primaryTitle: "Save",
                             primaryDisabled: label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                            onPrimary: persist
+                            onPrimary: { persist() }
                         )
                     }
                 }
@@ -791,8 +791,7 @@ struct ScriptEditorView: View {
                 current: bodyText
             ) == .offerToSave,
             save: { completion in
-                persist()
-                completion(true)
+                persist(then: completion)
             },
             discard: { bodyText = originalBody }
         )
@@ -1011,7 +1010,7 @@ struct ScriptEditorView: View {
         showsTestResult = !result.isEmpty
     }
 
-    private func persist() {
+    private func persist(then: ((Bool) -> Void)? = nil) {
          
         let source: ScriptEditorSource = importAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .write : .url
         switch ScriptEditorSaveIntent.decide(source: source, address: importAddress) {
@@ -1027,15 +1026,17 @@ struct ScriptEditorView: View {
                 await importFromAddress()
                  
                  
-                guard importResult.isEmpty else { return }
-                commit()
+                guard importResult.isEmpty else { then?(false); return }
+                finish(commit(), then)
             }
         case .save:
-            commit()
+            finish(commit(), then)
         }
     }
 
-    private func commit() {
+     
+    @discardableResult
+    private func commit() -> Bool {
         guard let edited = ScriptLibrary.editedScript(
             id: script.id,
             label: label,
@@ -1045,11 +1046,19 @@ struct ScriptEditorView: View {
         ) else {
             saveResult = "Another script already uses that name."
             showsSaveResult = true
-            return
+            return false
         }
         saveResult = ""
         save(edited)
-        dismissPresentation()
+        return true
+    }
+
+     
+     
+     
+     
+    private func finish(_ saved: Bool, _ then: ((Bool) -> Void)?) {
+        if let then { then(saved) } else if saved { dismissPresentation() }
     }
 
     private func dismissPresentation() {

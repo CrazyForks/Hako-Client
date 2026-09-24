@@ -2817,8 +2817,10 @@ private struct HakoDNSPolicyEntrySheet<Icon: View>: View {
     }
 
      
-    private func commitOnce() {
-        guard !committed, isUsable else { return }
+     
+     
+    private func writeOnce() -> Bool {
+        guard !committed, isUsable else { return false }
         committed = true
         save(draft)
          
@@ -2828,6 +2830,11 @@ private struct HakoDNSPolicyEntrySheet<Icon: View>: View {
          
          
         committed = false
+        return true
+    }
+
+    private func commitOnce() {
+        guard writeOnce() else { return }
          
          
          
@@ -2945,8 +2952,7 @@ private struct HakoDNSPolicyEntrySheet<Icon: View>: View {
             .hakoRegistersDeparture(
                 isDirty: openedWith.map { $0 != draft } ?? false,
                 save: { completion in
-                    commitOnce()
-                    completion(true)
+                    completion(writeOnce())
                 },
                 discard: { if let openedWith { draft = openedWith } }
             )

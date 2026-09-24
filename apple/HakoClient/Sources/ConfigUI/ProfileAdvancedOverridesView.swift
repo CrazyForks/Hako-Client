@@ -180,8 +180,7 @@ struct ProfileAdvancedOverridesView: View {
         .hakoRegistersDeparture(
             isDirty: draft != openedWith,
             save: { completion in
-                persist()
-                completion(true)
+                completion(commit())
             },
             discard: { draft = openedWith }
         )
@@ -482,15 +481,24 @@ struct ProfileAdvancedOverridesView: View {
         }
     }
 
-    private func persist() {
+     
+     
+     
+     
+     
+    private func persist() { if commit() { closePage() } }
+
+    @discardableResult
+    private func commit() -> Bool {
         do {
             try save(draft)
-            closePage()
+            return true
         } catch let bounded as ProfileAdvancedOverridesError {
             error = bounded.localizedDescription
         } catch {
             self.error = "Advanced overrides could not be saved. The previous configuration remains available."
         }
+        return false
     }
 
     @MainActor
@@ -746,8 +754,7 @@ struct ProfileRuntimeTrustEditor: View {
         .hakoRegistersDeparture(
             isDirty: hasChanges,
             save: { completion in
-                persist()
-                completion(true)
+                completion(writeDraft())
             },
             discard: { if let openedWith { draft = openedWith } }
         )
@@ -820,18 +827,27 @@ struct ProfileRuntimeTrustEditor: View {
         return updated.override.patchJSON != baselinePatchJSON
     }
 
-    private func persist() {
+     
+     
+     
+     
+     
+    private func persist() { if writeDraft() { dismiss() } }
+
+    @discardableResult
+    private func writeDraft() -> Bool {
         do {
             var working = profile
             working.override.patchJSON = baselinePatchJSON
             let updated = try draft.applying(to: working)
             commit(updated.override.patchJSON)
-            dismiss()
+            return true
         } catch let bounded as ProfileRuntimeTrustError {
             error = bounded.localizedDescription
         } catch {
             self.error = "Runtime and trust settings could not be prepared. The previous configuration remains unchanged."
         }
+        return false
     }
 
     private func add(_ certificate: String) {
@@ -1104,8 +1120,7 @@ struct ProfileAdditionalFieldsView: View {
         .hakoRegistersDeparture(
             isDirty: draft != openedWith,
             save: { completion in
-                persist()
-                completion(true)
+                completion(commit())
             },
             discard: { draft = openedWith }
         )
@@ -1114,16 +1129,25 @@ struct ProfileAdditionalFieldsView: View {
         .hakoCapturesDismiss(dismiss)
     }
 
-    private func persist() {
+     
+     
+     
+     
+     
+    private func persist() { if commit() { closePage() } }
+
+    @discardableResult
+    private func commit() -> Bool {
         do {
             draft.mode = .standard
             try save(draft)
-            closePage()
+            return true
         } catch let bounded as ProfileAdvancedOverridesError {
             error = bounded.localizedDescription
         } catch {
             self.error = "Additional fields could not be saved. The previous configuration remains available."
         }
+        return false
     }
 
      
