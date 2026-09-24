@@ -376,6 +376,18 @@ struct ProfileCenterAdapter: View {
         }
         let isCurrent = profile.id == model.activeProfileID
         let libraryFacts = Self.libraryFacts(for: profile, in: configurationLibrary)
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        let lastUpdatedAt = libraryFacts != nil
+            ? libraryFacts?.lastUpdatedAt
+            : profile.lastUpdatedAt
         let canDelete = ProfileCenterPolicy.canDelete(
             profileID: profile.id,
             activeProfileID: model.activeProfileID,
@@ -386,11 +398,11 @@ struct ProfileCenterAdapter: View {
             id: id,
             label: ProfileRowPresentation.label(for: profile, locale: .current),
             source: sourceKind(profile.source),
-            sourceSummary: sourceSummary(profile),
+            sourceSummary: sourceSummary(profile, updatedAt: lastUpdatedAt),
             subscription: libraryFacts != nil
                 ? libraryFacts?.usage.map { Self.subscriptionSnapshot(upload: $0.upload, download: $0.download, total: $0.total, expire: $0.expire) }
                 : profile.subscriptionInfo.map { Self.subscriptionSnapshot(upload: $0.upload, download: $0.download, total: $0.total, expire: $0.expire) },
-            lastUpdatedAt: libraryFacts != nil ? libraryFacts?.lastUpdatedAt : profile.lastUpdatedAt,
+            lastUpdatedAt: lastUpdatedAt,
             autoUpdate: profile.autoUpdate,
             updateIntervalHours: profile.updateIntervalHours,
             isCurrent: isCurrent,
@@ -476,14 +488,20 @@ struct ProfileCenterAdapter: View {
         }
     }
 
-    private func sourceSummary(_ profile: Profile) -> HakoDisplayText {
+     
+     
+     
+    private func sourceSummary(
+        _ profile: Profile,
+        updatedAt: Date?
+    ) -> HakoDisplayText {
         switch profile.source {
         case .url(let rawURL):
             let host = SubscriptionURLPresentation.hostDescription(
                 rawURL,
                 locale: locale
             )
-            if let updated = profile.lastUpdatedAt {
+            if let updated = updatedAt {
                 return .verbatim(
                     "\(host) · \(updated.formatted(.relative(presentation: .named)))"
                 )
