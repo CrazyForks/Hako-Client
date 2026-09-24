@@ -1885,6 +1885,7 @@
 "No materialized proxy sources are available in the active revision." = "当前配置里没有代理集合。";
 "No materialized rule sets are available in the active revision." = "当前配置里没有规则集合。";
 "No network is available. Restore Wi-Fi or cellular data and try again." = "没有可用网络。恢复 Wi-Fi 或蜂窝数据后重试。";
+"No nodes" = "无节点";
 "No nodes were found in this document." = "文件中没有节点或节点集合。";
 "No nodes were found. Try another link or file, or create a node manually." = "未找到节点。请换一个链接或文件，也可以手动创建。";
 "No optional cards. The Connection card always stays on Overview." = "没有可选卡片。连接卡片始终固定在概览上。";
@@ -3729,6 +3730,7 @@
 "vpn authorization still waiting" = "仍在等待 VPN 授权";
 "vpn start cancelled before request" = "VPN 启动在请求前取消";
 "vpn start cancelled during preparation" = "VPN 启动在准备期间取消";
+"· No nodes" = "· 无节点";
 "“%@” has no profile URL yet — this profile is a template, and that line still holds placeholder text. Open it and paste your own profile URL." = "「%@」还没有配置链接——这份配置是模板，那一行填的还是占位文字。打开它，把你自己的配置链接粘进去。";
 "↑%@ · ↓%@" = "↑%1$@ · ↓%2$@";
 "≈ figures are estimates: entry count × a measured slope, or the staged file's size on disk." = "≈ 为估算值：条数 × 实测斜率，或其文件在磁盘的大小。";

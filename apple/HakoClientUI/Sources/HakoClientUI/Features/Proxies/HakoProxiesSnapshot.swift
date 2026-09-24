@@ -219,6 +219,11 @@ public struct HakoProxyGroupSnapshot:
      
      
     public let icon: String?
+     
+     
+     
+     
+    public let emptyFallback: String?
 
     public init(
         name: String,
@@ -227,8 +232,13 @@ public struct HakoProxyGroupSnapshot:
         configuredSelection: String? = nil,
         runtimeSelection: String? = nil,
         resolvedRuntimeRoute: String? = nil,
-        icon: String? = nil
+        icon: String? = nil,
+        emptyFallback: String? = nil
     ) {
+        self.emptyFallback = emptyFallback.flatMap { value in
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
          
          
          
@@ -260,6 +270,18 @@ public struct HakoProxyGroupSnapshot:
 
     public var currentSelection: String? {
         runtimeSelection ?? configuredSelection
+    }
+
+     
+     
+     
+     
+     
+     
+     
+    public var isEmpty: Bool {
+        guard let emptyFallback else { return false }
+        return members.map(\.name) == [emptyFallback]
     }
 
     private var normalizedType: String {
@@ -699,6 +721,9 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
         guard member.isGroup, let group = group(named: member.name) else {
             return member.name
         }
+         
+         
+        guard !group.isEmpty else { return nil }
         if isConnected {
             return group.resolvedRuntimeRoute ?? group.runtimeSelection
         }
@@ -713,12 +738,32 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
     public func displayedLatency(
         for member: HakoProxyMemberSnapshot
     ) -> HakoProxyLatencyState {
+         
+         
+        if isEmptyGroup(member) { return .untested }
         let direct = latency(for: member.name)
         guard direct == .untested,
               let route = resolvedDisplayRoute(for: member) else {
             return direct
         }
         return latency(for: route)
+    }
+
+     
+     
+     
+    public func isEmptyGroup(_ member: HakoProxyMemberSnapshot) -> Bool {
+        member.isGroup && group(named: member.name)?.isEmpty == true
+    }
+
+     
+     
+     
+     
+    public func displayedLatency(
+        forGroup group: HakoProxyGroupSnapshot
+    ) -> HakoProxyLatencyState {
+        displayedLatency(for: HakoProxyMemberSnapshot(name: group.name, type: group.type, isGroup: true))
     }
 
     public func resolvedConfiguredRoute(

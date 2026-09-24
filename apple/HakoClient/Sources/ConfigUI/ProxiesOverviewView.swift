@@ -652,7 +652,8 @@ struct ProxiesOverviewAdapter: View {
                         configuredSelection: group.configuredSelection,
                         runtimeSelection: isConnected ? effectiveRuntime.nowByGroup[group.name] : nil,
                         resolvedRuntimeRoute: isConnected ? effectiveRuntime.resolvedNowByGroup[group.name] : nil,
-                        icon: group.icon
+                        icon: group.icon,
+                        emptyFallback: group.emptyFallback
                     )
                 }
                 return ProxiesProjectionMemo.GroupProjection(

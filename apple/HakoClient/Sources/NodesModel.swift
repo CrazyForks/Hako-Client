@@ -26,6 +26,9 @@ struct ProxyGroup: Identifiable, Equatable {
      
      
     let iconURL: String?
+     
+     
+    let emptyFallback: String?
     var id: String { name }
     var selectable: Bool { type.lowercased().contains("selector") || type.lowercased() == "select" }
 
@@ -48,10 +51,12 @@ struct ProxyGroup: Identifiable, Equatable {
          configurationDetails: ProxyGroupConfigurationDetails? = nil,
          hidden: Bool = false,
          testURL: String? = nil,
-         iconURL: String? = nil) {
+         iconURL: String? = nil,
+         emptyFallback: String? = nil) {
         self.hidden = hidden
         self.testURL = testURL
         self.iconURL = iconURL
+        self.emptyFallback = emptyFallback
         self.name = name
         self.type = type
         self.now = now
@@ -675,7 +680,7 @@ enum NodeInventory {
         var rawGroups: [
             String: (
                 type: String, now: String, members: [String], hidden: Bool,
-                testURL: String?, iconURL: String?
+                testURL: String?, iconURL: String?, emptyFallback: String?
             )
         ] = [:]
         var proxyTypes: [String: String] = [:]
@@ -747,7 +752,8 @@ enum NodeInventory {
                     firstOccurrences(of: members.map(native)),
                     proxy["hidden"] as? Bool ?? false,
                     declaredURL,
-                    declaredIcon
+                    declaredIcon,
+                    (proxy["emptyFallback"] as? String).flatMap { $0.isEmpty ? nil : native($0) }
                 )
             }
         }
@@ -779,7 +785,8 @@ enum NodeInventory {
                 configurationDetails: groupConfigurationDetailsByName[name],
                 hidden: value.hidden,
                 testURL: value.testURL,
-                iconURL: value.iconURL
+                iconURL: value.iconURL,
+                emptyFallback: value.emptyFallback
             )
         }
          
@@ -850,7 +857,10 @@ enum NodeInventory {
                     survivors.contains($0.key)
                 },
                 configurationDetails: group.configurationDetails,
-                hidden: group.hidden
+                hidden: group.hidden,
+                testURL: group.testURL,
+                iconURL: group.iconURL,
+                emptyFallback: group.emptyFallback
             )
         }
     }

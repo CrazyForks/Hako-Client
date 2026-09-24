@@ -1281,6 +1281,7 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
             isTesting: isTesting,
             isConnected: snapshot.proxies.isConnected,
             currentSelection: selection,
+            latency: snapshot.proxies.displayedLatency(forGroup: group),
             showsUnpin: snapshot.proxies.offersUnpin(for: group)
                 && selection != nil,
             showsIconImages: preferences.groupIconImages,
@@ -2648,6 +2649,15 @@ private struct HakoProxyLatencyIndicator: View {
     }
 
     private func color(_ milliseconds: Int) -> Color {
+        HakoProxyLatencyPalette.color(milliseconds)
+    }
+}
+
+ 
+ 
+ 
+enum HakoProxyLatencyPalette {
+    static func color(_ milliseconds: Int) -> Color {
         if milliseconds < 800 { return .green }
         if milliseconds < 1_600 { return .yellow }
         return .orange
@@ -2688,6 +2698,8 @@ private struct HakoProxyGroupHeader<Icon: View>: View, Equatable {
     let isTesting: Bool
     let isConnected: Bool
     let currentSelection: String?
+     
+    let latency: HakoProxyLatencyState
     let showsUnpin: Bool
      
      
@@ -2705,6 +2717,7 @@ private struct HakoProxyGroupHeader<Icon: View>: View, Equatable {
             && a.isTesting == b.isTesting
             && a.isConnected == b.isConnected
             && a.currentSelection == b.currentSelection
+            && a.latency == b.latency
             && a.showsUnpin == b.showsUnpin
              
              
@@ -2886,7 +2899,11 @@ private struct HakoProxyGroupHeader<Icon: View>: View, Equatable {
                         .contentShape(Rectangle())
                         .accessibilityIdentifier("proxies.unfix.\(group.name)")
                     }
-                    if let current = currentSelection {
+                    if group.isEmpty {
+                        Text(hako: .copy("· No nodes"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if let current = currentSelection {
                         Text("→")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
@@ -2895,6 +2912,13 @@ private struct HakoProxyGroupHeader<Icon: View>: View, Equatable {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
+                        if case .measured(let milliseconds) = latency {
+                            Text(hako: .verbatim("(\(milliseconds) ms)"))
+                                .font(.caption)
+                                .monospacedDigit()
+                                .foregroundStyle(HakoProxyLatencyPalette.color(milliseconds))
+                                .accessibilityLabel("\(milliseconds)ms")
+                        }
                     }
                     Spacer(minLength: 0)
                 }

@@ -694,6 +694,10 @@ enum ProxiesRuntimeCatalogComposer {
                  
                  
                 configuredSelection: configuredByGroup[group.name] ?? nil,
+                 
+                 
+                emptyFallback: group.emptyFallback
+                    ?? source.first { $0.name == group.name }?.emptyFallback,
                 hidden: group.hidden,
                  
                  

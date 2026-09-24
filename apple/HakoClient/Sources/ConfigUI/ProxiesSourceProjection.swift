@@ -59,6 +59,11 @@ struct ProxiesOverviewModel: Equatable, Sendable {
          
          
          
+        var emptyFallback: String? = nil
+         
+         
+         
+         
          
          
         var hidden: Bool = false
@@ -571,6 +576,7 @@ struct ProxiesOverviewModel: Equatable, Sendable {
                 ProxyGroupControlKind(rawType: type) == .manual
                     ? (configuredDefault ?? members.first?.name)
                     : nil
+            let emptyFallback = (dictionary["empty-fallback"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "COMPATIBLE"
             return Group(
                 name: name,
                 type: type,
@@ -578,6 +584,7 @@ struct ProxiesOverviewModel: Equatable, Sendable {
                 configuredSelection:
                     storedSelection ?? defaultSelection,
                 defaultSelection: defaultSelection,
+                emptyFallback: emptyFallback,
                 hidden: (dictionary["hidden"] as? Bool) ?? false,
                 icon: (dictionary["icon"] as? String)
                     .flatMap { $0.isEmpty ? nil : $0 }
@@ -677,6 +684,9 @@ struct ProxiesOverviewModel: Equatable, Sendable {
                     members: group.members,
                     configuredSelection: selection,
                     defaultSelection: group.defaultSelection,
+                     
+                     
+                    emptyFallback: group.emptyFallback,
                     hidden: group.hidden,
                     isSynthesized: group.isSynthesized,
                     icon: group.icon

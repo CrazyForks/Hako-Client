@@ -1885,6 +1885,7 @@
 "No materialized proxy sources are available in the active revision." = "No materialized proxy sources are available in the active revision.";
 "No materialized rule sets are available in the active revision." = "No materialized rule sets are available in the active revision.";
 "No network is available. Restore Wi-Fi or cellular data and try again." = "No network is available. Restore Wi-Fi or cellular data and try again.";
+"No nodes" = "No nodes";
 "No nodes were found in this document." = "No nodes were found in this document.";
 "No nodes were found. Try another link or file, or create a node manually." = "No nodes were found. Try another link or file, or create a node manually.";
 "No optional cards. The Connection card always stays on Overview." = "No optional cards. The Connection card always stays on Overview.";
@@ -3729,6 +3730,7 @@
 "vpn authorization still waiting" = "vpn authorization still waiting";
 "vpn start cancelled before request" = "vpn start cancelled before request";
 "vpn start cancelled during preparation" = "vpn start cancelled during preparation";
+"· No nodes" = "· No nodes";
 "“%@” has no profile URL yet — this profile is a template, and that line still holds placeholder text. Open it and paste your own profile URL." = "“%@” has no profile URL yet — this profile is a template, and that line still holds placeholder text. Open it and paste your own profile URL.";
 "↑%@ · ↓%@" = "↑%1$@ · ↓%2$@";
 "≈ figures are estimates: entry count × a measured slope, or the staged file's size on disk." = "≈ figures are estimates: entry count × a measured slope, or the staged file's size on disk.";

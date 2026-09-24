@@ -169,6 +169,7 @@ struct HakoProxiesSystemList<Icon: View>: View {
             HakoProxyGroupHeaderRow(
                 group: group,
                 isOpen: isOpen,
+                initialLatency: snapshot.proxies.displayedLatency(forGroup: group),
                 canTest: snapshot.proxies.isConnected,
                 showsIconImages: showsIconImages,
                 drawsDisclosure: drawsDisclosure,
@@ -219,7 +220,8 @@ struct HakoProxiesSystemList<Icon: View>: View {
                     name: member.name,
                     type: member.type,
                     chainedThrough: member.chainedThrough,
-                    groupName: group.name
+                    groupName: group.name,
+                    isEmptyGroup: snapshot.proxies.isEmptyGroup(member)
                 ),
                 initialLatency: snapshot.proxies
                     .displayedLatency(for: member).normalized,
@@ -251,7 +253,10 @@ struct HakoProxiesSystemList<Icon: View>: View {
                     : { send(.testMember(name: member.name)) },
                 inspectNode: HakoProxyBrowsing.inspects(member)
                     ? { send(.inspectMember(name: member.name)) }
-                    : nil
+                    : nil,
+                 
+                 
+                showsLatency: !snapshot.proxies.isEmptyGroup(member)
             )
             .equatable()
         }
@@ -438,6 +443,9 @@ struct HakoProxyFrozenRow: Equatable, Identifiable {
     let type: String
     let chainedThrough: String?
     let groupName: String?
+     
+     
+    var isEmptyGroup: Bool = false
 }
 
  
@@ -609,7 +617,15 @@ struct HakoProxyMemberListRow: View, Equatable {
 
     @ViewBuilder
     private var subtitle: some View {
-        if let entry = row.chainedThrough {
+        if row.isEmptyGroup {
+            HStack(spacing: 4) {
+                Text(hako: .verbatim(row.type.uppercased()))
+                Text(hako: .copy("· No nodes"))
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        } else if let entry = row.chainedThrough {
             HakoRegionalFlag.label("\(entry) → \(row.name)", pointSize: 11, relativeTo: .caption2)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -685,6 +701,7 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
          
          
         a.group == b.group && a.isOpen == b.isOpen && a.canTest == b.canTest
+            && a.initialLatency == b.initialLatency
             && a.showsIconImages == b.showsIconImages
             && a.drawsDisclosure == b.drawsDisclosure
             && a.showsUnpin == b.showsUnpin
@@ -692,6 +709,10 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
 
     let group: HakoProxyGroupSnapshot
     let isOpen: Bool
+     
+     
+     
+    let initialLatency: HakoProxyLatencyState
      
      
      
@@ -773,10 +794,19 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
                             .truncationMode(.middle)
                         HStack(spacing: 4) {
                             Text(hako: .verbatim(group.type.uppercased()))
-                            if let now = group.currentSelection {
+                            if group.isEmpty {
+                                Text(hako: .copy("· No nodes"))
+                            } else if let now = group.currentSelection {
                                 HakoRegionalFlag.label("· \(now)", pointSize: 11, relativeTo: .caption2)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
+                            }
+                            if !group.isEmpty,
+                               case .measured(let milliseconds) = liveLatency ?? initialLatency {
+                                Text(hako: .verbatim("(\(milliseconds) ms)"))
+                                    .monospacedDigit()
+                                    .foregroundStyle(HakoProxyLatencyPalette.color(milliseconds))
+                                    .accessibilityLabel("\(milliseconds)ms")
                             }
                         }
                         .font(.caption2)
@@ -871,7 +901,7 @@ struct HakoProxyGroupHeaderRow: View, Equatable {
             latencyPulse
                 ?? Empty<HakoLatencyPulse, Never>().eraseToAnyPublisher()
         ) { batch in
-            guard let terminal = batch.groupTerminals[group.name] else {
+            guard !group.isEmpty, let terminal = batch.groupTerminals[group.name] else {
                 if !batch.isTesting { liveLatency = nil }
                 return
             }
