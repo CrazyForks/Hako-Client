@@ -353,8 +353,13 @@ struct HakoMacApp: App {
         WindowGroup("Script", id: "script-editor", for: HakoMacScriptEditorRequest.self) { $request in
             if let request, let script = ScriptLibrary.load().first(where: { $0.id == request.scriptID }) {
                  
-                ScriptEditorView(script: script) { ScriptLibrary.upsert($0) }
-                    .frame(minWidth: 640, minHeight: 480)
+                ScriptEditorView(script: script) { [weak model] saved in
+                    ScriptLibrary.upsert(saved)
+                     
+                     
+                    model?.profiles.restageForClientRuntimeSetting()
+                }
+                .frame(minWidth: 640, minHeight: 480)
             }
         }
         .defaultSize(width: 920, height: 720)
@@ -2388,10 +2393,32 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
+        let inUse = HakoCopy.string("Nodes in use", locale: preferences.language.locale)
         editor.candidates = {
             let store = try store()
             return try await Task.detached {
-                try ConfigurationRuleTargetCandidates.make(groups: [], snapshot: try store.snapshot(), payload: store.payload)
+                var candidates = try ConfigurationRuleTargetCandidates.make(groups: [], snapshot: try store.snapshot(), payload: store.payload)
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                if let container = HakoAppIdentifiers.appGroupContainer,
+                   let resources = try? ConfigResourceStore(containerURL: container),
+                   let directory = try? resources.activeProvidersDirectory() {
+                    let known = Set(candidates.sections.flatMap(\.names))
+                    var seen = Set<String>()
+                    let loaded = ProviderNodesLoader.load(providersDir: directory)
+                    let names = loaded.keys.sorted().flatMap { loaded[$0] ?? [] }.map(\.name)
+                        .filter { !known.contains($0) && seen.insert($0).inserted }
+                    if !names.isEmpty {
+                        candidates = ConfigurationRuleTargetCandidates(sections: candidates.sections
+                            + [.init(id: "providers:active", kind: .source, sourceLabel: inUse, names: names)])
+                    }
+                }
+                return candidates
             }.value
         }
          
@@ -2457,7 +2484,7 @@ private final class HakoMacSceneModel: ObservableObject {
     private func scriptsActions(profileID: HakoClientKit.Profile.ID) -> HakoMacScriptsActions {
         func state() throws -> HakoMacScriptsState {
             let profile = try appProfile(profileID)
-            let scripts = ScriptLibrary.load().map { HakoMacScriptEntry(id: $0.id, label: $0.label) }
+            let scripts = ScriptLibrary.load().map { HakoMacScriptEntry(id: $0.id, label: $0.label, canRefresh: $0.sourceURL != nil) }
             var fields = 0
             if let data = profile.override.patchJSON.data(using: .utf8),
                let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -2474,6 +2501,11 @@ private final class HakoMacSceneModel: ObservableObject {
             var profile = try appProfile(profileID)
             change(&profile)
             profiles.update(profile)
+             
+             
+             
+             
+            profiles.restageForClientRuntimeSetting()
             return try state()
         }
         func select(_ id: String?) throws -> HakoMacScriptsState {
@@ -2486,7 +2518,7 @@ private final class HakoMacSceneModel: ObservableObject {
         }
          
          
-        func store(label: String, body: String) throws -> ConfigScript {
+        func store(label: String, body: String, link: String? = nil) throws -> ConfigScript {
             let existing = ScriptLibrary.load()
             let id = UUID().uuidString
             var candidate = label.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2497,9 +2529,20 @@ private final class HakoMacSceneModel: ObservableObject {
                 script = ScriptLibrary.editedScript(id: id, label: "\(candidate) \(attempt)", body: body, existing: existing)
                 attempt += 1
             }
-            guard let script else { throw ScriptImportError.empty }
+            guard var script else { throw ScriptImportError.empty }
+            script.sourceURL = link
             ScriptLibrary.upsert(script)
             return script
+        }
+         
+         
+        func refresh(_ id: String) async throws -> HakoMacScriptsState {
+            guard var script = ScriptLibrary.load().first(where: { $0.id == id }),
+                  let link = script.sourceURL else { throw ScriptImportError.emptyAddress }
+            script.body = try await ScriptImport.body(at: link)
+            ScriptLibrary.upsert(script)
+            profiles.restageForClientRuntimeSetting()
+            return try state()
         }
         var actions = HakoMacScriptsActions(
             load: { (try? state()) ?? .empty },
@@ -2508,7 +2551,7 @@ private final class HakoMacSceneModel: ObservableObject {
                 let body = try await ScriptImport.body(at: link)
                 let label = (try? ScriptImport.address(link)).flatMap(ScriptImport.suggestedName(for:))
                     ?? ScriptLibrary.defaultLabel
-                let script = try store(label: label, body: body)
+                let script = try store(label: label, body: body, link: link)
                 return try select(script.id)
             },
             addManual: { name, body in
@@ -2528,7 +2571,8 @@ private final class HakoMacSceneModel: ObservableObject {
                         profile.override.appendRules.remove(at: index)
                     }
                 }
-            }
+            },
+            refresh: { id in try await refresh(id) }
         )
         actions.edit = { [weak self] id in self?.openWindowAction?(id: "script-editor", value: HakoMacScriptEditorRequest(scriptID: id)) }
         return actions

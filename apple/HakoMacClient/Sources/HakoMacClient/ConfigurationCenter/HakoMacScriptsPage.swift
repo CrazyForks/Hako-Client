@@ -8,9 +8,12 @@ import UniformTypeIdentifiers
 public struct HakoMacScriptEntry: Identifiable, Equatable, Sendable {
     public let id: String
     public let label: String
-    public init(id: String, label: String) {
+     
+    public let canRefresh: Bool
+    public init(id: String, label: String, canRefresh: Bool = false) {
         self.id = id
         self.label = label
+        self.canRefresh = canRefresh
     }
 }
 
@@ -48,6 +51,11 @@ public struct HakoMacScriptsActions {
     public var remove: @MainActor (String) async throws -> HakoMacScriptsState
      
     public var edit: (@MainActor (String) -> Void)? = nil
+     
+     
+     
+     
+    public var refresh: (@MainActor (String) async throws -> HakoMacScriptsState)? = nil
     public var clearPatch: @MainActor () async throws -> HakoMacScriptsState
     public var removeException: @MainActor (Int) async throws -> HakoMacScriptsState
 
@@ -58,7 +66,8 @@ public struct HakoMacScriptsActions {
         addManual: @escaping @MainActor (String, String) async throws -> HakoMacScriptsState,
         remove: @escaping @MainActor (String) async throws -> HakoMacScriptsState,
         clearPatch: @escaping @MainActor () async throws -> HakoMacScriptsState,
-        removeException: @escaping @MainActor (Int) async throws -> HakoMacScriptsState
+        removeException: @escaping @MainActor (Int) async throws -> HakoMacScriptsState,
+        refresh: (@MainActor (String) async throws -> HakoMacScriptsState)? = nil
     ) {
         self.load = load
         self.select = select
@@ -67,6 +76,7 @@ public struct HakoMacScriptsActions {
         self.remove = remove
         self.clearPatch = clearPatch
         self.removeException = removeException
+        self.refresh = refresh
     }
 
     public static var unavailable: HakoMacScriptsActions {
@@ -117,8 +127,11 @@ public struct HakoMacScriptsPage: View {
         .contextMenu {
             if let edit = actions.edit {
                 Button { edit(script.id) } label: { Text(hako: .copy("Edit")) }
-                Divider()
             }
+            if script.canRefresh, let refresh = actions.refresh {
+                Button { perform { try await refresh(script.id) } } label: { Text(hako: .copy("Update")) }
+            }
+            if actions.edit != nil || (script.canRefresh && actions.refresh != nil) { Divider() }
             Button(role: .destructive) { deleting = script } label: { Text(hako: .copy("Delete")) }
         }
     }
