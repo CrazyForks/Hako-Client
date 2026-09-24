@@ -1640,13 +1640,11 @@ private final class HakoMacSceneModel: ObservableObject {
         if case .scheme(let schemeID) = door {
              
              
-            if let scheme = configurationLibrary.ruleShelves.flatMap(\.schemes).first(where: { $0.id == schemeID }) {
-                schemePane(scheme, schemeID: schemeID, snapshot: configurationLibrary.snapshot, list: list)
-                    .id(schemeID)
-                    .navigationTitle(Text(verbatim: scheme.displayLabel))
-            } else {
-                EmptyView()
-            }
+             
+             
+             
+             
+            configurationCenterRoutedDetail(.scheme(schemeID), list: list, actions: configurationCenterListActions(list))
         } else if let profile = profiles.profiles.first(where: { $0.id == profileID.rawValue }) {
             switch door {
             case .scheme:
