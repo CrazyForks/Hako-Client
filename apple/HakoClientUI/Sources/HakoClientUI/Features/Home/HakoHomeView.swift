@@ -584,7 +584,12 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
     private var connectionReason: some View {
         if let issue = snapshot.home.connection.issue {
             Button {
-                send(.showConnectionIssue)
+                 
+                 
+                 
+                send(issue.kind == .providerNotLaunched
+                    ? .resetVPNProfile
+                    : .showConnectionIssue)
             } label: {
                  
                  
@@ -625,6 +630,13 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
             .foregroundStyle(Self.issueTint)
             .accessibilityIdentifier("home.connection.reason")
             .accessibilityValue(issue.message)
+             
+             
+            .accessibilityHint(
+                issue.kind == .providerNotLaunched
+                    ? Text(hako: .copy("Reinstalls the VPN profile"))
+                    : Text("")
+            )
         }
     }
 

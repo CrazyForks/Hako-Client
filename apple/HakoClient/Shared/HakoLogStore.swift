@@ -46,6 +46,39 @@ public enum HakoLogStream: String, CaseIterable, Sendable {
  
  
  
+ 
+ 
+ 
+ 
+ 
+ 
+public enum HakoStartupSidecar: CaseIterable, Sendable {
+    case breadcrumb
+    case phases
+
+     
+    public var label: String {
+        switch self {
+        case .breadcrumb: return "startup-breadcrumb"
+        case .phases: return "core-phases"
+        }
+    }
+
+     
+    public var relativePath: String {
+        switch self {
+        case .breadcrumb: return "working/startup-breadcrumb.json"
+        case .phases: return "hako-core-phases.log"
+        }
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
 public enum HakoLogRetention: String, CaseIterable, Sendable {
     case oneDay
     case sevenDays
@@ -675,6 +708,13 @@ public final class HakoLogStore: @unchecked Sendable {
      
      
      
+     
+     
+     
+     
+     
+     
+     
     @discardableResult
     public func writeExport(to destination: URL) -> Bool {
         let fileManager = self.fileManager
@@ -684,10 +724,18 @@ public final class HakoLogStore: @unchecked Sendable {
         guard let handle = try? FileHandle(forWritingTo: destination) else { return false }
         defer { try? handle.close() }
         let urls = queue.sync { HakoLogStream.allCases.map { ($0, files(for: $0)) } }
-        for (index, entry) in urls.enumerated() {
-            let header = (index == 0 ? "" : "\n") + "===== \(entry.0.rawValue) =====\n"
+        var sections: [(label: String, urls: [URL])] = urls.map { ($0.0.rawValue, $0.1) }
+        if let container = directory?.deletingLastPathComponent() {
+            for sidecar in HakoStartupSidecar.allCases {
+                let url = container.appendingPathComponent(sidecar.relativePath)
+                guard fileManager.fileExists(atPath: url.path) else { continue }
+                sections.append((sidecar.label, [url]))
+            }
+        }
+        for (index, section) in sections.enumerated() {
+            let header = (index == 0 ? "" : "\n") + "===== \(section.label) =====\n"
             try? handle.write(contentsOf: Data(header.utf8))
-            for url in entry.1 {
+            for url in section.urls {
                 guard let reader = try? FileHandle(forReadingFrom: url) else { continue }
                 defer { try? reader.close() }
                 while let chunk = try? reader.read(upToCount: 256 * 1024), !chunk.isEmpty {

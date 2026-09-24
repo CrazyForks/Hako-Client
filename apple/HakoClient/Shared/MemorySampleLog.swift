@@ -19,7 +19,7 @@ enum MemorySampleLog {
 
      
      
-    static let startupPhaseFileName = "hako-core-phases.log"
+    static let startupPhaseFileName = HakoStartupSidecar.phases.relativePath
 
      
     private static let clock: DateFormatter = {

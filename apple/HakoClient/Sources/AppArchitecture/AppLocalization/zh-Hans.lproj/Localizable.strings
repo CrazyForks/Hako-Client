@@ -734,6 +734,7 @@
 "Connection Rules" = "连接规则";
 "Connection decoder queue overflow" = "连接数据解码队列已满";
 "Connection failed" = "连接失败";
+"Connection failed. Tap to reinstall VPN profile." = "连接失败，点击重装 VPN 配置。";
 "Connection refused" = "连接被拒绝";
 "Connection required" = "需要先连接";
 "Connections" = "连接";
@@ -2370,6 +2371,7 @@
 "Refreshing providers…" = "正在刷新集合…";
 "Refused" = "被拒";
 "Register Its Rules" = "同时登记它的规则";
+"Reinstalls the VPN profile" = "重装 VPN 配置";
 "Reject" = "拒绝";
 "Reject Demo" = "Reject Demo";
 "Reject QUIC" = "拒绝 QUIC";

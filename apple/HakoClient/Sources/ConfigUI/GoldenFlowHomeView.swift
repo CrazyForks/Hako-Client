@@ -1181,6 +1181,8 @@ struct GoldenFlowHomeAdapter: View {
                 vpnAuthorization: vpn.systemVPNAuthorization,
                 errorIsStartupStopped: vpn.reportableLastError.isEmpty
                     && startupExplanation != nil,
+                errorIsProviderNotLaunched: VPNDisconnectErrorPresentation
+                    .isProviderNotLaunched(vpn.reportableLastError),
                 allowsSystemVPNProfileReset:
                     vpn.systemVPNProfileResetAvailable,
                 isSwitchingProxy: nodes.isSwitchingProxy,
@@ -1378,6 +1380,14 @@ struct GoldenFlowHomeAdapter: View {
             performPrimaryAction(action)
         case .showConnectionIssue:
             presentedConnectionIssue = presentation.issue
+        case .resetVPNProfile:
+             
+             
+             
+             
+             
+             
+            Task { @MainActor in _ = await vpn.resetSystemVPNProfile() }
          
          
          

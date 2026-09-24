@@ -303,8 +303,8 @@ public struct HakoMacRootView: View {
                 case .openRules:
                     destination = .rules
                 case .performPrimaryAction, .showConnectionIssue,
-                     .setCards, .setTrafficScope, .refreshExternalIP,
-                     .refreshLANIP:
+                     .resetVPNProfile, .setCards, .setTrafficScope,
+                     .refreshExternalIP, .refreshLANIP:
                     destination = nil
                 case .openRuntimeConfiguration:
                     destination = nil

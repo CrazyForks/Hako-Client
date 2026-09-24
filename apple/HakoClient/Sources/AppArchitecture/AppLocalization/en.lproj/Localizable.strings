@@ -734,6 +734,7 @@
 "Connection Rules" = "Connection Rules";
 "Connection decoder queue overflow" = "Connection decoder queue overflow";
 "Connection failed" = "Connection failed";
+"Connection failed. Tap to reinstall VPN profile." = "Connection failed. Tap to reinstall VPN profile.";
 "Connection refused" = "Connection refused";
 "Connection required" = "Connection required";
 "Connections" = "Connections";
@@ -2370,6 +2371,7 @@
 "Refreshing providers…" = "Refreshing providers…";
 "Refused" = "Refused";
 "Register Its Rules" = "Register Its Rules";
+"Reinstalls the VPN profile" = "Reinstalls the VPN profile";
 "Reject" = "Reject";
 "Reject Demo" = "Reject Demo";
 "Reject QUIC" = "Reject QUIC";

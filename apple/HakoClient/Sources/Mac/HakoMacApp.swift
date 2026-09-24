@@ -4023,6 +4023,11 @@ private final class HakoMacSceneModel: ObservableObject {
              
              
             break
+        case .resetVPNProfile:
+             
+             
+             
+            break
         }
     }
 

@@ -446,8 +446,8 @@ public enum HakoMacSecondaryDestination: Hashable, Sendable {
         case .openRuntimeConfiguration:
             self = .runtimeConfiguration
         case .openProfiles, .performPrimaryAction, .showConnectionIssue,
-             .openProxies, .openRules, .setCards, .setTrafficScope,
-             .refreshExternalIP, .refreshLANIP:
+             .resetVPNProfile, .openProxies, .openRules, .setCards,
+             .setTrafficScope, .refreshExternalIP, .refreshLANIP:
             return nil
         }
     }
@@ -493,6 +493,7 @@ public extension AppleClientActions {
                 case .openRuntimeConfiguration:
                     customizeHome()
                 case .showConnectionIssue,
+                     .resetVPNProfile,
                      .setCards,
                      .setTrafficScope,
                      .refreshExternalIP,

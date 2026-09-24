@@ -35,6 +35,29 @@ enum VPNDisconnectErrorPresentation {
         "The VPN disconnected because the tunnel provider reported an error."
     static let genericReportMessage =
         "The VPN operation failed. Review the app and system status for details."
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static let providerNotLaunchedMessage =
+        "Connection failed. Tap to reinstall VPN profile."
+
+     
+    static func isProviderNotLaunched(_ reportMessage: String) -> Bool {
+        reportMessage == providerNotLaunchedMessage
+    }
 
     private static let connectionMessages: [Int: String] = [
         1: "The VPN disconnected after the device slept for an extended period.",
@@ -75,11 +98,20 @@ enum VPNDisconnectErrorPresentation {
                 genericDisconnectMessage,
                 providerDisconnectMessage,
                 genericReportMessage,
+                providerNotLaunchedMessage,
             ]
     )
 
     static func message(for error: NSError) -> String {
+        message(for: error, providerLooksUnlaunched: false)
+    }
+
+     
+     
+     
+    static func message(for error: NSError, providerLooksUnlaunched: Bool) -> String {
         if #available(iOS 16.0, *), error.domain == NEVPNConnectionErrorDomain {
+            if error.code == 12, providerLooksUnlaunched { return providerNotLaunchedMessage }
             return connectionMessages[error.code] ?? genericDisconnectMessage
         }
         if error.domain == NEVPNErrorDomain {
@@ -156,7 +188,7 @@ enum VPNDisconnectErrorPresentation {
 
     static func allowsSystemVPNProfileReset(forReportMessage message: String) -> Bool {
         let resettableMessages = Set(
-            [connectionMessages[4], connectionMessages[13]]
+            [connectionMessages[4], connectionMessages[13], providerNotLaunchedMessage]
                 .compactMap { $0 }
                 + [1, 2, 4, 5, 6].compactMap { configurationMessages[$0] }
         )
@@ -166,13 +198,45 @@ enum VPNDisconnectErrorPresentation {
 
 struct VPNStartFailureTracker {
     private var awaitingResult = false
+    private var startedAt: Date?
+     
+     
+     
+     
+     
+    private(set) var consecutiveInstantFailures = 0
+     
+     
+     
+     
+     
+    static let instantWindow: TimeInterval = 0.5
+     
+     
+     
+     
+     
+     
+     
+    private(set) var providerLooksUnlaunched = false
 
-    mutating func beginStart() {
+    mutating func beginStart(at now: Date = Date()) {
         awaitingResult = true
+        startedAt = now
+        providerLooksUnlaunched = false
     }
 
     mutating func cancelStart() {
         awaitingResult = false
+        startedAt = nil
+        providerLooksUnlaunched = false
+    }
+
+     
+     
+    mutating func forgetInstantFailures() {
+        consecutiveInstantFailures = 0
+        providerLooksUnlaunched = false
     }
 
      
@@ -181,13 +245,22 @@ struct VPNStartFailureTracker {
      
     var isAwaitingResult: Bool { awaitingResult }
 
-    mutating func statusDidChange(to status: NEVPNStatus) -> Bool {
+    mutating func statusDidChange(to status: NEVPNStatus, at now: Date = Date()) -> Bool {
         switch status {
         case .connected, .reasserting:
             awaitingResult = false
+            startedAt = nil
+            consecutiveInstantFailures = 0
+            providerLooksUnlaunched = false
             return false
         case .disconnected where awaitingResult, .invalid where awaitingResult:
             awaitingResult = false
+            let lived = startedAt.map { now.timeIntervalSince($0) } ?? .infinity
+            startedAt = nil
+            consecutiveInstantFailures = lived < Self.instantWindow
+                ? consecutiveInstantFailures + 1
+                : 0
+            providerLooksUnlaunched = consecutiveInstantFailures >= 2
             return true
         default:
             return false
@@ -508,6 +581,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     private var disconnectNoticeTracker = VPNDisconnectNotice.Tracker()
     private var userStopInFlight = false
     private var startFailureTracker = VPNStartFailureTracker()
+    private var systemVPNProfileResetInFlight = false
     private var startOutcomeWatchdog: Task<Void, Never>?
      
      
@@ -786,6 +860,13 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
     @discardableResult
     func resetSystemVPNProfile() async -> Bool {
+         
+         
+         
+         
+        guard !systemVPNProfileResetInFlight else { return false }
+        systemVPNProfileResetInFlight = true
+        defer { systemVPNProfileResetInFlight = false }
         startFailureTracker.cancelStart()
 
         do {
@@ -831,6 +912,9 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
             updateStatus()
             lastError = ""
             configurationNotice = ""
+             
+             
+            startFailureTracker.forgetInstantFailures()
             return true
         } catch {
             lastError = VPNDisconnectErrorPresentation.startMessage(
@@ -2294,7 +2378,10 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                             return "vpn disconnect error  domain=\(domain) code=\(code)"
                         }(),
                         stream: .app, level: .warning)
-                    lastError = VPNDisconnectErrorPresentation.message(for: error)
+                    lastError = VPNDisconnectErrorPresentation.message(
+                        for: error,
+                        providerLooksUnlaunched: startFailureTracker.providerLooksUnlaunched
+                    )
                 } else {
                     lastError = VPNDisconnectErrorPresentation.genericStartFailureMessage
                 }
