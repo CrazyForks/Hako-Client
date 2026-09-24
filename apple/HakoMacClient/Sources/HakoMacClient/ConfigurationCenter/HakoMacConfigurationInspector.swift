@@ -26,6 +26,12 @@ public struct HakoMacConfigurationInspectorActions {
      
      
     public var isUpdatingSource = false
+     
+     
+     
+     
+     
+    public var updateError: String? = nil
     public var stripCredentials: @MainActor () -> Void
     public var adoptHeldBack: @MainActor (String) -> Void
     public var dismissHeldBack: @MainActor () -> Void
@@ -578,6 +584,15 @@ public struct HakoMacConfigurationInspector: View {
                     .accessibilityIdentifier("configuration-center.config-url.update")
             }
             .hakoMacCardRow()
+             
+             
+            if let updateError = actions.updateError {
+                Text(verbatim: updateError)
+                    .font(.footnote).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("configuration-center.config-url.update-error")
+                    .hakoMacCardRow()
+            }
             HStack(spacing: HakoTheme.Spacing.row) {
                 Button { actions.copyProfileURL() } label: { Text(hako: .copy("Copy Profile URL")) }
                     .buttonStyle(.bordered)

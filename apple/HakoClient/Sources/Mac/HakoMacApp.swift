@@ -2602,11 +2602,14 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
-        actions.isUpdatingSource = {
-            let references = profiles.profiles.first(where: { $0.id == id.rawValue })
-                .flatMap { profiles.configurationLibrarySources(for: $0) } ?? []
-            return references.contains { configurationLibrary.updatingSourceIDs.contains($0) }
-        }()
+        let references = profiles.profiles.first(where: { $0.id == id.rawValue })
+            .flatMap { profiles.configurationLibrarySources(for: $0) } ?? []
+        actions.isUpdatingSource = references.contains { configurationLibrary.updatingSourceIDs.contains($0) }
+         
+         
+         
+        let failures = references.compactMap { configurationLibrary.updateFailures[$0] }
+        actions.updateError = failures.isEmpty ? nil : failures.joined(separator: "\n")
         actions.copyProfileURL = {
             guard let appProfile = profiles.profiles.first(where: { $0.id == id.rawValue }),
                   let link = profiles.subscriptionLink(for: appProfile) else { return }
