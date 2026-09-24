@@ -1444,11 +1444,36 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
             } else if let group = browsedGroups.first(where: {
                 $0.name == active
             }) {
+                let selection = visibleSelection(in: group)
                 HStack(spacing: 6) {
                     Text(group.type)
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
-                    if let current = visibleSelection(in: group) {
+                     
+                     
+                     
+                     
+                     
+                     
+                    if snapshot.proxies.offersUnpin(for: group), selection != nil {
+                        Button("Unfix") {
+                            send(.unpin(group: group.name))
+                        }
+                        .font(.caption)
+                        .buttonStyle(.borderless)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .contentShape(Rectangle())
+                        .accessibilityIdentifier("proxies.unfix.\(group.name)")
+                    }
+                    if group.isEmpty {
+                         
+                         
+                         
+                        Text(hako: .copy("· No nodes"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if let current = selection {
                         HakoRegionalFlag.label("→ \(current)", pointSize: 12, relativeTo: .caption)
                             .font(.caption)
                             .foregroundStyle(.secondary)
