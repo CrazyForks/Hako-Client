@@ -342,9 +342,11 @@ struct HakoTVSubscriptionStore: @unchecked Sendable {
         let defaults = UserDefaults(suiteName: suite)!
         defaults.removePersistentDomain(forName: suite)
         var store = HakoTVSubscriptionStore(defaults: defaults)
-        try? store.add(urlString: "https://sub.example.com/clash/home", name: "Home")
-        try? store.add(urlString: "https://example.net/api/v1/client/subscribe", name: "")
-        try? store.add(urlString: "https://backup.example.com/sub", name: "Backup line")
+         
+         
+        try? store.add(urlString: "https://sub.example.com/clash/home", name: "Home", rules: .defaultRules)
+        try? store.add(urlString: "https://example.net/api/v1/client/subscribe", name: "", rules: .lazyRules)
+        try? store.add(urlString: "https://backup.example.com/sub", name: "Backup line", rules: .own)
         store.use(URL(string: "https://sub.example.com/clash/home")!)
         return store
     }

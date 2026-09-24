@@ -102,6 +102,9 @@ enum HakoTVTestStage: String, Equatable, Sendable {
     case editSubscription = "edit-subscription"
      
      
+    case profileRules = "profile-rules"
+     
+     
     case addSubscription = "add-subscription"
      
     case more

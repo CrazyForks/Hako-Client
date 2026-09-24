@@ -113,7 +113,7 @@ struct HakoTVShell: View {
          
          
          
-        var store = stage == .subscriptions || stage == .subscriptionDetail || stage == .editSubscription || stage == .addSubscription
+        var store = stage == .subscriptions || stage == .subscriptionDetail || stage == .editSubscription || stage == .addSubscription || stage == .profileRules
             ? HakoTVSubscriptionStore.stageFixture()
             : store
 
@@ -471,6 +471,14 @@ struct HakoTVShell: View {
                 subscriptionDoor = current.id
                 try? await Task.sleep(for: .milliseconds(400))
                 editDoor = EditDoor(id: current.id)
+            }
+            if stage == .profileRules, let current = store.current {
+                 
+                showsSubscriptions = true
+                try? await Task.sleep(for: .milliseconds(400))
+                subscriptionDoor = current.id
+                try? await Task.sleep(for: .milliseconds(400))
+                rulesDoor = RulesDoor(id: current.id)
             }
             if stage == .addSubscription { showsAddSubscription = true }
             if stage == .more { tab = .more }
