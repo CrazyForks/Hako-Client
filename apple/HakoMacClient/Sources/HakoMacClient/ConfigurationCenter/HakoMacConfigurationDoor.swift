@@ -11,6 +11,9 @@ public enum HakoMacConfigurationDoor: Hashable, Sendable, Identifiable {
     case network
      
     case trust
+     
+     
+    case scheme(String)
 }
 
 

@@ -61,3 +61,25 @@ struct HakoMacRoutedRow<Label: View>: View {
         pushRoute(HakoViewRoute(id: token))
     }
 }
+
+ 
+ 
+ 
+struct HakoMacRoutedInfoButton: View {
+    @Environment(\.hakoPushRoute) private var pushRoute
+    let identifier: String
+    let page: () -> AnyView
+
+    var body: some View {
+        Button {
+            guard let pushRoute else { return }
+            let token = UUID()
+            HakoViewRouteRegistry.set(token, ownership: .oneShot, onReturn: {}, page)
+            pushRoute(HakoViewRoute(id: token))
+        } label: {
+            Image(systemName: "info.circle")
+        }
+        .buttonStyle(.borderless)
+        .accessibilityIdentifier(identifier)
+    }
+}

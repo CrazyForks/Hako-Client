@@ -8,10 +8,6 @@ public struct HakoMacConfigurationInspectorActions {
     public var rename: @MainActor (String) -> Void
     public var setSources: @MainActor ([String]) -> Void
     public var setScheme: @MainActor (String) -> Void
-    public var editScheme: @MainActor (String) -> Void
-    public var addSource: @MainActor () -> Void
-     
-    public var addScheme: @MainActor () -> Void = {}
     public var activate: @MainActor () -> Void
     public var duplicate: @MainActor () -> Void
     public var export: @MainActor () -> Void
@@ -41,8 +37,6 @@ public struct HakoMacConfigurationInspectorActions {
         rename: @escaping @MainActor (String) -> Void,
         setSources: @escaping @MainActor ([String]) -> Void,
         setScheme: @escaping @MainActor (String) -> Void,
-        editScheme: @escaping @MainActor (String) -> Void,
-        addSource: @escaping @MainActor () -> Void,
         activate: @escaping @MainActor () -> Void,
         duplicate: @escaping @MainActor () -> Void,
         export: @escaping @MainActor () -> Void,
@@ -58,8 +52,8 @@ public struct HakoMacConfigurationInspectorActions {
         adoptHeldBack: @escaping @MainActor (String) -> Void,
         dismissHeldBack: @escaping @MainActor () -> Void
     ) {
-        self.rename = rename; self.setSources = setSources; self.setScheme = setScheme; self.editScheme = editScheme
-        self.addSource = addSource; self.activate = activate; self.duplicate = duplicate; self.export = export
+        self.rename = rename; self.setSources = setSources; self.setScheme = setScheme
+        self.activate = activate; self.duplicate = duplicate; self.export = export
         self.editSource = editSource; self.delete = delete
         self.setSourceUpdates = setSourceUpdates; self.openRuntimePreview = openRuntimePreview
         self.restoreLastKnownGood = restoreLastKnownGood
@@ -69,7 +63,7 @@ public struct HakoMacConfigurationInspectorActions {
 
     public static var unavailable: Self {
         Self(
-            rename: { _ in }, setSources: { _ in }, setScheme: { _ in }, editScheme: { _ in }, addSource: {},
+            rename: { _ in }, setSources: { _ in }, setScheme: { _ in },
             activate: {}, duplicate: {}, export: {}, editSource: {}, delete: {},
             setSourceUpdates: { _ in }, openRuntimePreview: {}, restoreLastKnownGood: {},
             setAutoUpdate: { _ in }, setInterval: { _ in }, updateSource: {},
@@ -99,8 +93,6 @@ public struct HakoMacConfigurationInspector: View {
      
     @State private var scripts = HakoMacScriptsState.empty
     @State private var showsAllHeldBack = false
-    @State private var showsAllSources = false
-    @State private var showsAllSchemes = false
     @State private var confirmsCredentialRemoval = false
     @State private var scopeSource: HakoMacScopeRequest?
     @Environment(\.locale) private var locale
@@ -158,6 +150,16 @@ public struct HakoMacConfigurationInspector: View {
             }
             .formStyle(.grouped)
             .accessibilityIdentifier("configuration-center.configuration")
+             
+             
+             
+             
+            .sheet(item: $scopeSource) { request in
+                HakoMacScopeSheet(request: request, recipe: recipe, actions: actions, done: { scope in
+                    if scope?.isEmpty == true { chosenSources.remove(request.source.id) }
+                    scopeSource = nil
+                }, back: { scopeSource = nil })
+            }
          
          
          
@@ -230,11 +232,15 @@ public struct HakoMacConfigurationInspector: View {
      
      
      
-    private var orderedSources: [ConfigurationSourceRecord] {
-        sources.filter { chosenSources.contains($0.id) } + sources.filter { !chosenSources.contains($0.id) }
+     
+     
+     
+     
+    static func shownSources(_ sources: [ConfigurationSourceRecord], chosen: Set<String>) -> [ConfigurationSourceRecord] {
+        Array(sources.filter { chosen.contains($0.id) }.prefix(chosenRowsShownAtOnce))
     }
 
-    private static let sourcesShownAtOnce = 6
+    static let chosenRowsShownAtOnce = 8
 
      
      
@@ -258,51 +264,30 @@ public struct HakoMacConfigurationInspector: View {
         actions.setSources(sources.map(\.id).filter { chosenSources.contains($0) })
     }
 
-    private func sourceRow(_ source: ConfigurationSourceRecord) -> some View {
-         
-        let chosen = chosenSources.contains(source.id)
-        return HStack(spacing: HakoTheme.Spacing.compact) {
-            HakoMacChoiceRow(
-                title: .verbatim(source.label),
-                subtitle: .format("%@ nodes", [String(source.nodeCount)]),
-                style: .multiple,
-                isSelected: chosen,
-                identifier: "configuration-center.configuration.source.\(source.id)",
-                toggle: { toggleSource(source.id) }
-            )
-            if chosen {
-                 
-                Button { scopeSource = HakoMacScopeRequest(source: source) } label: { Image(systemName: "info.circle") }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(hako: .copy("Node Collections")))
-                    .accessibilityIdentifier("configuration-center.configuration.scope.\(source.id)")
-            }
-        }
-    }
-
     private var composition: some View {
         Section {
-            let ordered = orderedSources
-            if ordered.count > Self.sourcesShownAtOnce {
-                ForEach(showsAllSources ? ordered : Array(ordered.prefix(Self.sourcesShownAtOnce))) { sourceRow($0) }
-                Button {
-                    showsAllSources.toggle()
-                } label: {
-                    HStack {
-                        Text(hako: .copy("All Sources"))
-                        Spacer()
-                        HakoMacTrailingChevron(expanded: showsAllSources)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("configuration-center.configuration.sources.disclosure")
-            } else {
-                ForEach(ordered) { sourceRow($0) }
+            ForEach(Self.shownSources(sources, chosen: chosenSources)) { source in
+                HakoMacConfigurationSourceRow(
+                    source: source, chosen: true,
+                    toggle: { toggleSource(source.id) },
+                    inspect: { scopeSource = HakoMacScopeRequest(source: source) }
+                )
             }
-            Button { actions.addSource() } label: { Text(hako: .copy("Add Source")) }
-                .buttonStyle(.borderless)
-                .accessibilityIdentifier("configuration-center.configuration.add-source")
+             
+             
+             
+             
+             
+            HakoRoutedViewLink {
+                HakoMacConfigurationSourcesPage(
+                    sources: sources, chosen: $chosenSources, recipe: recipe, actions: actions,
+                    toggle: toggleSource
+                )
+                .navigationTitle(Text(hako: .copy("Node Sources")))
+            } label: {
+                HakoMacPushRowLabel(.copy("All Sources"))
+            }
+            .accessibilityIdentifier("configuration-center.configuration.sources.all")
             if let follows = profile.followsConfigurationSourceUpdates {
                 Toggle(isOn: Binding(get: { follows }, set: { actions.setSourceUpdates($0) })) {
                     Text(hako: .copy("Automatically Update Sources"))
@@ -315,70 +300,33 @@ public struct HakoMacConfigurationInspector: View {
         }
     }
 
-     
-     
-     
-     
-    private var orderedSchemes: [ConfigurationRuleScheme] {
-        schemes.filter { $0.id == chosenScheme } + schemes.filter { $0.id != chosenScheme }
-    }
-
     private func chooseScheme(_ id: String) {
         guard id != chosenScheme else { return }
         chosenScheme = id
         actions.setScheme(id)
     }
 
-    private static func schemeLine(_ scheme: ConfigurationRuleScheme) -> HakoDisplayText {
-        switch scheme.kind {
-        case .builtin: .copy("Built-in")
-        case .custom: .copy("Custom")
-        case .supplied, .imported, .community: .copy("Imported")
-        }
-    }
-
-    private func schemeRow(_ scheme: ConfigurationRuleScheme) -> some View {
-        let chosen = scheme.id == chosenScheme
-        return HStack(spacing: HakoTheme.Spacing.compact) {
-            HakoMacChoiceRow(
-                title: .verbatim(scheme.displayLabel),
-                subtitle: Self.schemeLine(scheme),
-                style: .single,
-                isSelected: chosen,
-                identifier: "configuration-center.configuration.scheme.\(scheme.id)",
-                toggle: { chooseScheme(scheme.id) }
-            )
-            if chosen {
-                Button { actions.editScheme(scheme.id) } label: { Text(hako: .copy("Edit")) }
-                    .buttonStyle(.borderless)
-                    .accessibilityIdentifier("configuration-center.configuration.edit-scheme")
-            }
-        }
-    }
-
+     
+     
+     
     private var rules: some View {
         Section {
-            let ordered = orderedSchemes
-            if ordered.count > Self.sourcesShownAtOnce {
-                ForEach(showsAllSchemes ? ordered : Array(ordered.prefix(Self.sourcesShownAtOnce))) { schemeRow($0) }
-                Button {
-                    showsAllSchemes.toggle()
-                } label: {
-                    HStack {
-                        Text(hako: .copy("All Rule Schemes"))
-                        Spacer()
-                        HakoMacTrailingChevron(expanded: showsAllSchemes)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("configuration-center.configuration.schemes.disclosure")
-            } else {
-                ForEach(ordered) { schemeRow($0) }
+            if let chosen = schemes.first(where: { $0.id == chosenScheme }) {
+                HakoMacConfigurationSchemeRow(
+                    scheme: chosen, chosen: true,
+                    choose: {}, page: { door(.scheme(chosen.id)) }
+                )
             }
-            Button { actions.addScheme() } label: { Text(hako: .copy("Create Rules")) }
-                .buttonStyle(.borderless)
-                .accessibilityIdentifier("configuration-center.configuration.add-scheme")
+            HakoRoutedViewLink {
+                HakoMacConfigurationSchemesPage(
+                    schemes: schemes, chosen: $chosenScheme,
+                    choose: chooseScheme, page: { door(.scheme($0)) }
+                )
+                .navigationTitle(Text(hako: .copy("Rule Scheme")))
+            } label: {
+                HakoMacPushRowLabel(.copy("All Rule Schemes"))
+            }
+            .accessibilityIdentifier("configuration-center.configuration.schemes.all")
         } header: {
             Text(hako: .copy("Rule Scheme"))
         }
@@ -460,19 +408,6 @@ public struct HakoMacConfigurationInspector: View {
                     .buttonStyle(.borderless)
                     .accessibilityIdentifier("configuration-center.config-url.strip")
                 Spacer()
-            }
-            .sheet(item: $scopeSource) { request in
-                HakoMacNodeScopePage(
-                    source: request.source,
-                    load: { [actions] in try await actions.loadScopeChoices(request.source) },
-                    initial: recipe?.nodeScopes?[request.source.id],
-                    save: { scope in
-                        actions.setScope(request.source.id, scope)
-                        if scope?.isEmpty == true { chosenSources.remove(request.source.id) }
-                        scopeSource = nil
-                    },
-                    back: { scopeSource = nil }
-                )
             }
             .alert(Text(hako: .copy("Remove Stored URL Credentials")), isPresented: $confirmsCredentialRemoval) {
                 Button(role: .destructive) { actions.stripCredentials() } label: { Text(hako: .copy("Remove Stored URL Credentials")) }
@@ -604,4 +539,171 @@ struct HakoMacValueRow: View {
 struct HakoMacScopeRequest: Identifiable {
     let source: ConfigurationSourceRecord
     var id: String { source.id }
+}
+
+
+ 
+
+ 
+ 
+ 
+struct HakoMacConfigurationSourceRow: View {
+    let source: ConfigurationSourceRecord
+    let chosen: Bool
+    let toggle: () -> Void
+    let inspect: () -> Void
+
+    var body: some View {
+        HStack(spacing: HakoTheme.Spacing.compact) {
+            HakoMacChoiceRow(
+                title: .verbatim(source.label),
+                subtitle: .count(source.nodeCount, one: "%@ node", other: "%@ nodes"),
+                style: .multiple,
+                isSelected: chosen,
+                identifier: "configuration-center.configuration.source.\(source.id)",
+                toggle: toggle
+            )
+            if chosen {
+                Button(action: inspect) { Image(systemName: "info.circle") }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Text(hako: .copy("Node Collections")))
+                    .accessibilityIdentifier("configuration-center.configuration.scope.\(source.id)")
+            }
+        }
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+struct HakoMacConfigurationSchemeRow: View {
+    let scheme: ConfigurationRuleScheme
+    let chosen: Bool
+    let choose: () -> Void
+     
+    let page: () -> AnyView
+
+    static func line(_ scheme: ConfigurationRuleScheme) -> HakoDisplayText {
+        switch scheme.kind {
+        case .builtin: .copy("Built-in")
+        case .custom: .copy("Custom")
+        case .supplied, .imported, .community: .copy("Imported")
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: HakoTheme.Spacing.compact) {
+            HakoMacChoiceRow(
+                title: .verbatim(scheme.displayLabel),
+                subtitle: Self.line(scheme),
+                style: .single,
+                isSelected: chosen,
+                identifier: "configuration-center.configuration.scheme.\(scheme.id)",
+                toggle: choose
+            )
+            if chosen {
+                HakoMacRoutedInfoButton(identifier: "configuration-center.configuration.scheme-info", page: page)
+                    .accessibilityLabel(Text(hako: .copy("Rule Scheme")))
+            }
+        }
+    }
+}
+
+ 
+ 
+ 
+struct HakoMacConfigurationSourcesPage: View {
+    let sources: [ConfigurationSourceRecord]
+    @Binding var chosen: Set<String>
+    let recipe: ConfigurationRecipe?
+    let actions: HakoMacConfigurationInspectorActions
+    let toggle: (String) -> Void
+    @State private var filter = ""
+    @State private var scopeSource: HakoMacScopeRequest?
+
+    private var shown: [ConfigurationSourceRecord] {
+        let needle = filter.trimmingCharacters(in: .whitespaces)
+        guard !needle.isEmpty else { return sources }
+        return sources.filter { $0.label.localizedCaseInsensitiveContains(needle) }
+    }
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(shown) { source in
+                    HakoMacConfigurationSourceRow(
+                        source: source, chosen: chosen.contains(source.id),
+                        toggle: { toggle(source.id) },
+                        inspect: { scopeSource = HakoMacScopeRequest(source: source) }
+                    )
+                }
+            }
+        }
+        .listStyle(.inset)
+        .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Filter")))
+        .sheet(item: $scopeSource) { request in
+            HakoMacScopeSheet(request: request, recipe: recipe, actions: actions, done: { scope in
+                if scope?.isEmpty == true { chosen.remove(request.source.id) }
+                scopeSource = nil
+            }, back: { scopeSource = nil })
+        }
+    }
+}
+
+ 
+ 
+struct HakoMacConfigurationSchemesPage: View {
+    let schemes: [ConfigurationRuleScheme]
+    @Binding var chosen: String
+    let choose: (String) -> Void
+    let page: (String) -> AnyView
+    @State private var filter = ""
+
+    private var shown: [ConfigurationRuleScheme] {
+        let needle = filter.trimmingCharacters(in: .whitespaces)
+        guard !needle.isEmpty else { return schemes }
+        return schemes.filter { $0.displayLabel.localizedCaseInsensitiveContains(needle) }
+    }
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(shown) { scheme in
+                    HakoMacConfigurationSchemeRow(
+                        scheme: scheme, chosen: scheme.id == chosen,
+                        choose: { choose(scheme.id) }, page: { page(scheme.id) }
+                    )
+                }
+            }
+        }
+        .listStyle(.inset)
+        .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Filter")))
+    }
+}
+
+ 
+ 
+ 
+ 
+struct HakoMacScopeSheet: View {
+    let request: HakoMacScopeRequest
+    let recipe: ConfigurationRecipe?
+    let actions: HakoMacConfigurationInspectorActions
+    let done: (ConfigurationNodeScope?) -> Void
+    let back: () -> Void
+
+    var body: some View {
+        HakoMacNodeScopePage(
+            source: request.source,
+            load: { [actions] in try await actions.loadScopeChoices(request.source) },
+            initial: recipe?.nodeScopes?[request.source.id],
+            save: { scope in
+                actions.setScope(request.source.id, scope)
+                done(scope)
+            },
+            back: back
+        )
+    }
 }

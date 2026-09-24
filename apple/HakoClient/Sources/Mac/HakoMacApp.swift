@@ -1540,10 +1540,23 @@ private final class HakoMacSceneModel: ObservableObject {
     @ViewBuilder
     private func configurationDoor(
         _ door: HakoMacConfigurationDoor,
-        profileID: HakoClientKit.Profile.ID
+        profileID: HakoClientKit.Profile.ID,
+        list: HakoProfilesListPresentation
     ) -> some View {
-        if let profile = profiles.profiles.first(where: { $0.id == profileID.rawValue }) {
+        if case .scheme(let schemeID) = door {
+             
+             
+            if let scheme = configurationLibrary.ruleShelves.flatMap(\.schemes).first(where: { $0.id == schemeID }) {
+                schemePane(scheme, schemeID: schemeID, snapshot: configurationLibrary.snapshot, list: list)
+                    .id(schemeID)
+                    .navigationTitle(Text(verbatim: scheme.displayLabel))
+            } else {
+                EmptyView()
+            }
+        } else if let profile = profiles.profiles.first(where: { $0.id == profileID.rawValue }) {
             switch door {
+            case .scheme:
+                EmptyView()
             case .network:
                 ProfileNetworkSettingsView(
                     profile: profile, sourceYAML: profiles.baseYAML(for: profile), ownsNavigationContainer: false
@@ -1809,7 +1822,7 @@ private final class HakoMacSceneModel: ObservableObject {
                     scriptsActions: scriptsActions(profileID: id),
                     profileURL: appProfile.flatMap { if case .url(let url) = $0.source { url } else { nil } },
                     actions: configurationInspectorActions(list, profile: profile, id: id),
-                    door: { [weak self] door in AnyView(self?.configurationDoor(door, profileID: id)) }
+                    door: { [weak self] door in AnyView(self?.configurationDoor(door, profileID: id, list: list)) }
                 )
                 .id(id)
                 .navigationTitle(Text(verbatim: profile.label))
@@ -1955,8 +1968,6 @@ private final class HakoMacSceneModel: ObservableObject {
                     convertLegacy(sources: nil, scheme: scheme)
                 }
             },
-            editScheme: { [weak self] scheme in self?.configurationCenterEditingScheme = HakoMacLibrarySelection(id: scheme) },
-            addSource: { [weak self] in self?.configurationCenterImport = HakoMacImportRequest(purpose: .nodes) },
             activate: { list.select(id) },
             duplicate: { list.perform(.duplicate(id: id)) },
             export: { list.perform(.export(id: id)) },
@@ -2000,7 +2011,6 @@ private final class HakoMacSceneModel: ObservableObject {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(link, forType: .string)
         }
-        actions.addScheme = { [weak self] in self?.configurationCenterImport = HakoMacImportRequest(purpose: .rules) }
         return actions
     }
 
