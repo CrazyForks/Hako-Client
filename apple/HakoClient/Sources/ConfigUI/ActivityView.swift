@@ -64,6 +64,9 @@ struct ActivityView: View, Equatable {
     }
 
     var body: some View {
+         
+         
+        let _ = HakoLogTextPlatform.installIfNeeded()
         page
             #if os(macOS)
              
