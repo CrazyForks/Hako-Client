@@ -114,6 +114,11 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
     private let palette: HakoProductPalette
     private let opensImportInitially: Bool
     private let pagePresentation: (AnyView) -> AnyView
+     
+     
+     
+     
+    private let detailPresentation: (AnyView) -> AnyView
     private let icon: (HakoSymbol) -> Icon
     private let capabilityContent:
         (HakoProfilesCapabilityDestination) -> CapabilityContent
@@ -158,6 +163,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
         isCenterSection: Bool = false,
         palette: HakoProductPalette,
         pagePresentation: @escaping (AnyView) -> AnyView = { $0 },
+        detailPresentation: @escaping (AnyView) -> AnyView = { $0 },
         listPresentation:
             ((HakoProfilesListPresentation) -> AnyView)? = nil,
         capabilityInterceptor:
@@ -175,6 +181,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
         self.palette = palette
         self.opensImportInitially = opensImportInitially
         self.pagePresentation = pagePresentation
+        self.detailPresentation = detailPresentation
         self.listPresentation = listPresentation
         self.capabilityInterceptor = capabilityInterceptor
         self.icon = icon
@@ -293,7 +300,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
                     HakoLazyView {
                         switch route {
                         case .detail(let id):
-                            pagePresentation(
+                            pagePresentation(detailPresentation(
                                 AnyView(
                                     HakoProfileDetailView(
                                         profileID: id,
@@ -307,7 +314,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
                                         capabilityContent: capabilityContent
                                     )
                                 )
-                            )
+                            ))
                             .hakoPushedDetailPage()
                             .environment(\.hakoPushRoute, pushRoute)
                             .environment(\.hakoPopRoute, popRoute)
@@ -546,7 +553,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
                         isBlocked: pendingSelectionID != nil
                             && pendingSelectionID != profile.id,
                         destination: {
-                            pagePresentation(
+                            pagePresentation(detailPresentation(
                             AnyView(
                                 HakoProfileDetailView(
                                     profileID: profile.id,
@@ -563,7 +570,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
                                         capabilityContent
                                 )
                             )
-                            )
+                            ))
                         },
                         select: {
                             select(profile)
@@ -692,7 +699,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
                                 isBlocked: pendingSelectionID != nil
                                     && pendingSelectionID != profile.id,
                                 destination: {
-                                    pagePresentation(
+                                    pagePresentation(detailPresentation(
                                     AnyView(
                                         HakoProfileDetailView(
                                             profileID: profile.id,
@@ -709,7 +716,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
                                                 capabilityContent
                                         )
                                     )
-                                    )
+                                    ))
                                 },
                                 select: {
                                     select(profile)
@@ -983,7 +990,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
     @ViewBuilder
     private var requestedDetail: some View {
         if let requestedProfileID {
-            pagePresentation(
+            pagePresentation(detailPresentation(
                 AnyView(
                     HakoProfileDetailView(
                         profileID: requestedProfileID,
@@ -997,7 +1004,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
                         capabilityContent: capabilityContent
                     )
                 )
-            )
+            ))
         } else {
             EmptyView()
         }

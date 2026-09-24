@@ -129,21 +129,6 @@ struct ProfileCenterAdapter: View {
         } message: { failure in
             Text(verbatim: failure.messageText)
         }
-        .fileExporter(
-            isPresented: Binding(
-                get: { exportDocument != nil },
-                set: { presented in
-                    if !presented {
-                        exportDocument = nil
-                    }
-                }
-            ),
-            document: exportDocument,
-            contentType: .yaml,
-            defaultFilename: exportName
-        ) { _ in
-            exportDocument = nil
-        }
         .onAppear {
             model.load()
             model.selectSoleProfileIfNeeded()
@@ -203,6 +188,29 @@ struct ProfileCenterAdapter: View {
                 pagePresentation: { content in
                     AnyView(
             content
+                    )
+                },
+                 
+                 
+                 
+                 
+                detailPresentation: { content in
+                    AnyView(
+                        content.fileExporter(
+                            isPresented: Binding(
+                                get: { exportDocument != nil },
+                                set: { presented in
+                                    if !presented {
+                                        exportDocument = nil
+                                    }
+                                }
+                            ),
+                            document: exportDocument,
+                            contentType: .yaml,
+                            defaultFilename: exportName
+                        ) { _ in
+                            exportDocument = nil
+                        }
                     )
                 },
                 listPresentation: listPresentation,
