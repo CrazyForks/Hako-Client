@@ -19,6 +19,7 @@ import SwiftUI
 public struct HakoTowerRulesOrderView: View {
     @Binding private var draft: ConfigurationRuleDraft
     private let palette: HakoProductPalette
+    private let ruleSetNames: [String: String]
     private let markChanged: () -> Void
     private let close: () -> Void
 
@@ -37,12 +38,14 @@ public struct HakoTowerRulesOrderView: View {
     public init(
         draft: Binding<ConfigurationRuleDraft>,
         palette: HakoProductPalette,
+        ruleSetNames: [String: String] = [:],
         markChanged: @escaping () -> Void,
         close: @escaping () -> Void
     ) {
         _draft = draft
         _opening = State(initialValue: draft.wrappedValue)
         self.palette = palette
+        self.ruleSetNames = ruleSetNames
         self.markChanged = markChanged
         self.close = close
     }
@@ -60,7 +63,7 @@ public struct HakoTowerRulesOrderView: View {
         List {
             Section {
                 ForEach(Array(visible.enumerated()), id: \.element.id) { index, row in
-                    HakoTowerRuleSummary(row: row, palette: palette)
+                    HakoTowerRuleSummary(row: row, palette: palette, ruleSetNames: ruleSetNames)
                         .deleteDisabled(row.isFinal)
                         .moveDisabled(row.isFinal || searching)
                         .hakoDirectReorderRow(

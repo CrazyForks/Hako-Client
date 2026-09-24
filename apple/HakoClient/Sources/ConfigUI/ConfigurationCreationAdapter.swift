@@ -846,6 +846,18 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
                             apply(try await model.copyConfigurationRuleScheme(saved.schemeID, label: name, generation: library.generation))
                         }, close: close,
                         manualEditor: { draft, accept in AnyView(ConfigurationTowerManualRuleEditor(draft: draft, accept: accept)) },
+                         
+                         
+                        ruleEditor: { raw, draft, showsTarget, accept in
+                             
+                             
+                             
+                             
+                            AnyView(RuleBuilderAdapter(raw: raw ?? "", options: ConfigurationGroupEditorBridge.ruleOptions(draft),
+                                showsPersonalMetadata: showsTarget, showsTarget: showsTarget, pageTitle: "Add Rule",
+                                saveDetails: { raw, enabled, comment in accept(raw, enabled, comment) },
+                                save: { raw in accept(raw, true, "") }))
+                        },
                         nodeCandidates: { await loadNodeCandidates() })
                         .environment(\.hakoGroupIconImages, HakoProxiesDisplayPreferences.load().groupIconImages)
                 } else if let errorMessage {

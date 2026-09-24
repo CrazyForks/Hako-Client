@@ -215,6 +215,7 @@
 "A selected source is not a configuration object." = "A selected source is not a configuration object.";
 "A selected source needs a proxy that no selected source supplies." = "A selected source needs a proxy that no selected source supplies.";
 "A source was selected more than once." = "A source was selected more than once.";
+"A text, YAML or MRS rule set the app downloads and keeps updated." = "A text, YAML or MRS rule set the app downloads and keeps updated.";
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other.";
 "A username cannot begin or end with a space, contain a colon, or contain hidden characters." = "A username cannot begin or end with a space, contain a colon, or contain hidden characters.";
 "A validated runtime revision is ready" = "A validated runtime revision is ready";
@@ -250,6 +251,7 @@
 "Add Nodes" = "Add Nodes";
 "Add On Demand Rule" = "Add On Demand Rule";
 "Add Policy" = "Add Policy";
+"Add Policy Group" = "Add Policy Group";
 "Add Profile" = "Add Profile";
 "Add Profile URL" = "Add Profile URL";
 "Add Provider" = "Add Provider";
@@ -286,6 +288,7 @@
 "Add only profile-specific fields not available in Personal Rules, Profile Network, or Resources. App-wide fields are ignored here." = "Add only profile-specific fields not available in Personal Rules, Profile Network, or Resources. App-wide fields are ignored here.";
 "Add the IPv4 and IPv6 prefixes that should enter Clash. Swipe a prefix to remove it." = "Add the IPv4 and IPv6 prefixes that should enter Clash. Swipe a prefix to remove it.";
 "Add the condition first." = "Add the condition first.";
+"Add the rules this set matches. The policy is chosen below, not written on each rule." = "Add the rules this set matches. The policy is chosen below, not written on each rule.";
 "Add this profile URL?" = "Add this profile URL?";
 "Add this profile?" = "Add this profile?";
 "Add to Current Rules" = "Add to Current Rules";
@@ -1033,6 +1036,7 @@
 "Edit Proxy Chain" = "Edit Proxy Chain";
 "Edit Rule Content" = "Edit Rule Content";
 "Edit Rule Scheme" = "Edit Rule Scheme";
+"Edit Rule Set" = "Edit Rule Set";
 "Edit Rules Source" = "Edit Rules Source";
 "Edit Source" = "Edit Source";
 "Edit URL" = "Edit URL";
@@ -1576,6 +1580,7 @@
 "Light" = "Light";
 "Limits" = "Limits";
 "Line Numbers" = "Line Numbers";
+"Link" = "Link";
 "Link · file · QR · clipboard" = "Link · file · QR · clipboard";
 "Link · file · clipboard" = "Link · file · clipboard";
 "List" = "List";
@@ -1818,6 +1823,7 @@
 "New Blank File" = "New Blank File";
 "New Chain" = "New Chain";
 "New Node" = "New Node";
+"New Policy Group" = "New Policy Group";
 "New Rule Scheme" = "New Rule Scheme";
 "New Rule Set" = "New Rule Set";
 "New Script" = "New Script";
@@ -1997,6 +2003,7 @@
 "One backup of your profiles stays in your iCloud account and is updated while Clash is open. Apple TV restores from it." = "One backup of your profiles stays in your iCloud account and is updated while Clash is open. Apple TV restores from it.";
 "One domain, or a wildcard such as +.example.com." = "One domain, or a wildcard such as +.example.com.";
 "One or more rules cannot be matched safely on iOS." = "One or more rules cannot be matched safely on iOS.";
+"One rule per line, such as DOMAIN-SUFFIX,netflix.com or IP-CIDR,8.8.8.8/32. No policy at the end — it is chosen below." = "One rule per line, such as DOMAIN-SUFFIX,netflix.com or IP-CIDR,8.8.8.8/32. No policy at the end — it is chosen below.";
 "Online Rule Library" = "Online Rule Library";
 "Only affects this configuration. Does not change Rule Library. Personal rules apply in Standard override mode." = "Only affects this configuration. Does not change Rule Library. Personal rules apply in Standard override mode.";
 "Only matching domains" = "Only matching domains";
@@ -2121,6 +2128,7 @@
 "Plugin TLS" = "Plugin TLS";
 "Point the other device at one address above, over HTTP or SOCKS5, with this username and its saved password." = "Point the other device at one address above, over HTTP or SOCKS5, with this username and its saved password.";
 "Point the other device at one address above, over HTTP or SOCKS5." = "Point the other device at one address above, over HTTP or SOCKS5.";
+"Policy" = "Policy";
 "Policy Groups" = "Policy Groups";
 "Port" = "Port";
 "Port %@ is the profile's listener, so the next free port is suggested." = "Port %@ is the profile's listener, so the next free port is suggested.";
@@ -2540,6 +2548,7 @@
 "Rule-set routes must reference a non-empty IP-CIDR rule provider name." = "Rule-set routes must reference a non-empty IP-CIDR rule provider name.";
 "Rules" = "Rules";
 "Rules Changed" = "Rules Changed";
+"Rules From" = "Rules From";
 "Rules and proxy chains for this profile" = "Rules and proxy chains for this profile";
 "Rules could not be saved. The previous configuration is still available." = "Rules could not be saved. The previous configuration is still available.";
 "Rules from Sources" = "Rules from Sources";
@@ -2624,6 +2633,7 @@
 "Select" = "Select";
 "Select All" = "Select All";
 "Select Nodes" = "Select Nodes";
+"Select Policy" = "Select Policy";
 "Select Rules" = "Select Rules";
 "Select node sources (multiple)" = "Select node sources (multiple)";
 "Select one YAML file plus any certificates or keys it references. Clash copies only the files you explicitly select." = "Select one YAML file plus any certificates or keys it references. Clash copies only the files you explicitly select.";
@@ -3321,6 +3331,7 @@
 "Traffic Recognition" = "Traffic Recognition";
 "Traffic Statistics" = "Traffic Statistics";
 "Traffic is routed through the Clash packet tunnel." = "Traffic is routed through the Clash packet tunnel.";
+"Traffic matching these rules goes to this policy. Saving adds the rule set to the current rules." = "Traffic matching these rules goes to this policy. Saving adds the rule set to the current rules.";
 "Traffic passes through the entry node, then the exit node. Referenced nodes follow source updates." = "Traffic passes through the entry node, then the exit node. Referenced nodes follow source updates.";
 "Traffic recognition, route coverage, and connection behavior" = "Traffic recognition, route coverage, and connection behavior";
 "Traffic that goes out directly is resolved once more by the direct-connection nameserver below." = "Traffic that goes out directly is resolved once more by the direct-connection nameserver below.";

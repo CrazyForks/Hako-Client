@@ -2052,6 +2052,10 @@ private extension String {
 public struct HakoRuleEditorView<Icon: View>: View {
     private let delete: (() -> Void)?
     private let showsPersonalMetadata: Bool
+     
+     
+     
+    private let showsTarget: Bool
     private let rule: HakoPersonalRuleSnapshot
     private let options: HakoRulePolicyOptions
     private let initialRoute: HakoRuleBuilderRoute?
@@ -2066,6 +2070,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
         rule: HakoPersonalRuleSnapshot,
         options: HakoRulePolicyOptions = .empty,
         showsPersonalMetadata: Bool = true,
+        showsTarget: Bool = true,
         delete: (() -> Void)? = nil,
         initialRoute: HakoRuleBuilderRoute? = nil,
         pageTitle: String = "Rule",
@@ -2078,6 +2083,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
     ) {
         self.delete = delete
         self.showsPersonalMetadata = showsPersonalMetadata
+        self.showsTarget = showsTarget
         self.rule = rule
         self.options = options
         self.initialRoute = initialRoute
@@ -2098,6 +2104,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
             rule: rule,
             options: options,
             showsPersonalMetadata: showsPersonalMetadata,
+            showsTarget: showsTarget,
             delete: delete,
             initialRoute: initialRoute,
             pageTitle: pageTitle,
@@ -2113,6 +2120,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
 private struct HakoRuleBuilderView<Icon: View>: View {
     let delete: (() -> Void)?
     let showsPersonalMetadata: Bool
+    let showsTarget: Bool
     let pageTitle: String
     let options: HakoRulePolicyOptions
     let initialRoute: HakoRuleBuilderRoute?
@@ -2159,6 +2167,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         rule: HakoPersonalRuleSnapshot,
         options: HakoRulePolicyOptions,
         showsPersonalMetadata: Bool = true,
+        showsTarget: Bool = true,
         delete: (() -> Void)? = nil,
         initialRoute: HakoRuleBuilderRoute?,
         pageTitle: String = "Rule",
@@ -2171,6 +2180,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
     ) {
         self.delete = delete
         self.showsPersonalMetadata = showsPersonalMetadata
+        self.showsTarget = showsTarget
         self.pageTitle = pageTitle
         self.options = options
         self.initialRoute = initialRoute
@@ -2402,6 +2412,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
             }
         }
 
+        if showsTarget {
         Section("Target") {
             if action == .subRule {
                 if HakoPlatformLayout.modalEditorUsesGroupedForm {
@@ -2467,6 +2478,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                     "profile-rule.target.picker"
                 )
             }
+        }
         }
 
         if action.supportsNoResolve || action.supportsSrc {
@@ -3028,12 +3040,15 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                 error = "\(action.contentLabel) is required."
                 return false
             }
-            guard !rule.target.isEmpty else {
+            guard !showsTarget || !rule.target.isEmpty else {
                 error = "\(action.targetLabel) is required."
                 return false
             }
-            candidate = rule.rawValue
+            candidate = showsTarget ? rule.rawValue : Self.payloadLine(rule)
         }
+         
+         
+        let judged = showsTarget || rawMode ? candidate : candidate + ",DIRECT"
         let disallowReason =
             rawMode
             ? HakoStructuredRule.rawDisallowReason(
@@ -3041,7 +3056,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                 runtimeProfile: runtimeProfile
             )
             : HakoStructuredRule.disallowReason(
-                candidate,
+                judged,
                 runtimeProfile: runtimeProfile
             )
         if let reason = disallowReason
@@ -3062,6 +3077,17 @@ private struct HakoRuleBuilderView<Icon: View>: View {
          
         (modalDismiss ?? { dismiss() })()
         return true
+    }
+
+     
+     
+    static func payloadLine(_ rule: HakoStructuredRule) -> String {
+        var fields = [rule.action.rawValue]
+        if rule.action.needsContent { fields.append(rule.content) }
+        if rule.action.supportsSrc, rule.src { fields.append("src") }
+        if rule.action.supportsNoResolve, rule.noResolve { fields.append("no-resolve") }
+        fields.append(contentsOf: rule.additionalParams)
+        return fields.joined(separator: ",")
     }
 }
 

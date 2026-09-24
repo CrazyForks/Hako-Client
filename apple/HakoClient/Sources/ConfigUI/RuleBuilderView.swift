@@ -122,6 +122,7 @@ extension RulePolicyOptions {
 struct RuleBuilderAdapter: View {
     private let delete: (() -> Void)?
     private let showsPersonalMetadata: Bool
+    private let showsTarget: Bool
     private let pageTitle: String
     private let raw: String
     private let options: RulePolicyOptions
@@ -135,6 +136,7 @@ struct RuleBuilderAdapter: View {
         raw: String,
         options: RulePolicyOptions = .empty,
         showsPersonalMetadata: Bool = true,
+        showsTarget: Bool = true,
         delete: (() -> Void)? = nil,
         enabled: Bool = true,
         comment: String = "",
@@ -147,6 +149,7 @@ struct RuleBuilderAdapter: View {
         self.pageTitle = pageTitle
         self.delete = delete
         self.showsPersonalMetadata = showsPersonalMetadata
+        self.showsTarget = showsTarget
         self.raw = raw
         self.options = options
         self.enabled = enabled
@@ -164,6 +167,7 @@ struct RuleBuilderAdapter: View {
             ),
             options: options.shared,
             showsPersonalMetadata: showsPersonalMetadata,
+            showsTarget: showsTarget,
             delete: delete,
             initialRoute: initialRoute,
             pageTitle: pageTitle,

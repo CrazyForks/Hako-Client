@@ -215,6 +215,7 @@
 "A selected source is not a configuration object." = "所選來源不是一份設定。";
 "A selected source needs a proxy that no selected source supplies." = "所選來源需要一個節點，但沒有任何所選來源提供它。";
 "A source was selected more than once." = "同一個來源被選了不只一次。";
+"A text, YAML or MRS rule set the app downloads and keeps updated." = "一個文字、YAML 或 MRS 規則集連結，App 會下載並保持更新。";
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "填了 token 就是 TUIC v4，它會忽略 UUID 和密碼。二者留一個。";
 "A username cannot begin or end with a space, contain a colon, or contain hidden characters." = "使用者名稱不能以空格開頭或結尾，不能含冒號，也不能包含隱藏字元。";
 "A validated runtime revision is ready" = "已準備可執行的驗證版本";
@@ -250,6 +251,7 @@
 "Add Nodes" = "加入節點";
 "Add On Demand Rule" = "新增按需規則";
 "Add Policy" = "新增策略";
+"Add Policy Group" = "新增策略群組";
 "Add Profile" = "加入設定檔";
 "Add Profile URL" = "加入設定檔網址";
 "Add Provider" = "新增代理集合";
@@ -286,6 +288,7 @@
 "Add only profile-specific fields not available in Personal Rules, Profile Network, or Resources. App-wide fields are ignored here." = "只新增個人規則、設定檔網路或資源裡沒有的、專屬於本設定檔的欄位。全域欄位在此處會被忽略。";
 "Add the IPv4 and IPv6 prefixes that should enter Clash. Swipe a prefix to remove it." = "新增應進入 Clash 的 IPv4 與 IPv6 前綴。左滑可刪除某個前綴。";
 "Add the condition first." = "請先新增該條件。";
+"Add the rules this set matches. The policy is chosen below, not written on each rule." = "把這個規則集要符合的規則一條條加進來。出口策略在下面選一次，不用寫在每條規則上。";
 "Add this profile URL?" = "新增該設定連結？";
 "Add this profile?" = "新增該設定？";
 "Add to Current Rules" = "加入目前規則";
@@ -1033,6 +1036,7 @@
 "Edit Proxy Chain" = "編輯鏈式代理";
 "Edit Rule Content" = "編輯規則內容";
 "Edit Rule Scheme" = "編輯規則方案";
+"Edit Rule Set" = "編輯規則集";
 "Edit Rules Source" = "編輯規則原始碼";
 "Edit Source" = "編輯原始碼";
 "Edit URL" = "編輯 URL";
@@ -1576,6 +1580,7 @@
 "Light" = "淺色";
 "Limits" = "限制";
 "Line Numbers" = "行號";
+"Link" = "連結";
 "Link · file · QR · clipboard" = "連結 · 檔案 · QR Code · 剪貼簿";
 "Link · file · clipboard" = "連結 · 檔案 · 剪貼簿";
 "List" = "列表";
@@ -1818,6 +1823,7 @@
 "New Blank File" = "新增空白檔案";
 "New Chain" = "新建代理鏈";
 "New Node" = "新節點";
+"New Policy Group" = "新建策略群組";
 "New Rule Scheme" = "新增規則方案";
 "New Rule Set" = "新增規則集";
 "New Script" = "新建指令碼";
@@ -1997,6 +2003,7 @@
 "One backup of your profiles stays in your iCloud account and is updated while Clash is open. Apple TV restores from it." = "你的設定檔在 iCloud 帳號中保留一份備份，並在 Clash 開啟期間隨改動更新。Apple TV 從這份備份回復。";
 "One domain, or a wildcard such as +.example.com." = "一個網域，或形如 +.example.com 的萬用字元。";
 "One or more rules cannot be matched safely on iOS." = "有規則無法在 iOS 上安全符合。";
+"One rule per line, such as DOMAIN-SUFFIX,netflix.com or IP-CIDR,8.8.8.8/32. No policy at the end — it is chosen below." = "每行一條，例如 DOMAIN-SUFFIX,netflix.com 或 IP-CIDR,8.8.8.8/32。末尾不用寫策略，在下面選。";
 "Online Rule Library" = "線上規則庫";
 "Only affects this configuration. Does not change Rule Library. Personal rules apply in Standard override mode." = "僅影響此設定，不修改規則庫。個人規則在標準覆寫模式下生效。";
 "Only matching domains" = "僅符合的網域";
@@ -2121,6 +2128,7 @@
 "Plugin TLS" = "外掛 TLS";
 "Point the other device at one address above, over HTTP or SOCKS5, with this username and its saved password." = "讓另一台裝置透過 HTTP 或 SOCKS5 指向上面任一網址，使用此使用者名稱與已儲存的密碼。";
 "Point the other device at one address above, over HTTP or SOCKS5." = "在另一台裝置上把 HTTP 或 SOCKS5 代理指向上面任一網址。";
+"Policy" = "出口策略";
 "Policy Groups" = "策略群組";
 "Port" = "連接埠";
 "Port %@ is the profile's listener, so the next free port is suggested." = "連接埠 %@ 已被設定檔監聽佔用，已改為下一個空閒連接埠。";
@@ -2540,6 +2548,7 @@
 "Rule-set routes must reference a non-empty IP-CIDR rule provider name." = "rule-set 路由必須引用非空的 IP-CIDR 規則集合名稱。";
 "Rules" = "規則";
 "Rules Changed" = "規則已變化";
+"Rules From" = "規則來源";
 "Rules and proxy chains for this profile" = "管理目前設定檔的分流規則與代理鏈";
 "Rules could not be saved. The previous configuration is still available." = "規則無法儲存。先前的設定仍然可用。";
 "Rules from Sources" = "來自設定連結 / 檔案";
@@ -2624,6 +2633,7 @@
 "Select" = "選擇";
 "Select All" = "全選";
 "Select Nodes" = "選擇節點";
+"Select Policy" = "選擇策略";
 "Select Rules" = "選擇規則";
 "Select node sources (multiple)" = "選擇節點來源（可複選）";
 "Select one YAML file plus any certificates or keys it references. Clash copies only the files you explicitly select." = "選擇一個 YAML 檔案及其引用的憑證或金鑰。Clash 只複製你明確選擇的檔案。";
@@ -3321,6 +3331,7 @@
 "Traffic Recognition" = "流量識別";
 "Traffic Statistics" = "流量統計";
 "Traffic is routed through the Clash packet tunnel." = "流量經由 Clash 通道轉發。";
+"Traffic matching these rules goes to this policy. Saving adds the rule set to the current rules." = "命中這些規則的流量走這個策略。儲存後規則集會加入目前規則。";
 "Traffic passes through the entry node, then the exit node. Referenced nodes follow source updates." = "流量先經過前置節點，再由出口節點存取目標。引用的節點隨來源更新。";
 "Traffic recognition, route coverage, and connection behavior" = "管理流量識別、路由範圍與連線行為";
 "Traffic that goes out directly is resolved once more by the direct-connection nameserver below." = "直連出去的流量會再由下方的直連 nameserver 解析一次。";
