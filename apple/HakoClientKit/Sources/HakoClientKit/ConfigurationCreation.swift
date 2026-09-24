@@ -82,10 +82,10 @@ extension ConfigurationLibraryStore {
                                  resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws -> PreparedConfigurationCreation {
         var candidate = starting
         guard !candidate.recipes.contains(where: { $0.id == profileID }) else {
-            throw ConfigurationLibraryError.invalidIdentifier
+            throw ConfigurationLibraryError.invalidIdentifier.noted()
         }
         guard Set(draft.selectedSourceIDs).count == draft.selectedSourceIDs.count else {
-            throw ConfigurationLibraryError.invalidIdentifier
+            throw ConfigurationLibraryError.invalidIdentifier.noted()
         }
         var available = draft.sources(in: candidate)
         var schemes = draft.rules(in: candidate)
@@ -117,7 +117,7 @@ extension ConfigurationLibraryStore {
             let source = try staged.first(where: { $0.record.id == record.id && $0.record.version == record.version })
                 ?? payload(.init(record))
             let resolved = try resolveInput(source)
-            guard resolved.id == record.id else { throw ConfigurationLibraryError.invalidIdentifier }
+            guard resolved.id == record.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
             return resolved
         }
         let records = try draft.selectedSourceIDs.map(record)
@@ -155,27 +155,7 @@ extension ConfigurationLibraryStore {
         guard var existing = current.recipes.first(where: { $0.id == profileID }) else {
             throw ConfigurationLibraryError.missingDependency(profileID)
         }
-        if existing.preservesOriginal == true {
-             
-             
-             
-             
-             
-             
-             
-             
-            let block: OrderedJSON
-            if let frozen = existing.settingsJSON {
-                block = try OrderedJSON.parse(frozen)
-            } else {
-                block = try originalSettingsBaseline(of: existing, resolveInput: resolveInput)
-                if !((try? payload(existing.ruleSource))?.resourceFiles ?? [:]).isEmpty { existing.settingsSource = existing.ruleSource }
-            }
-            let delta = try OrderedJSON.parse(existing.originalSettingsJSON ?? "{}")
-            existing.settingsJSON = Self.settingsExpanded(baseline: block, delta: delta).serialized()
-            existing.originalSettingsJSON = nil
-            existing.preservesOriginal = nil
-        }
+        try adoptComposition(in: &existing, resolveInput: resolveInput)
         try freezeSettings(in: &existing, resolveInput: resolveInput)
         current.recipes.removeAll { $0.id == profileID }
         var draft = draft
@@ -237,7 +217,7 @@ extension ConfigurationLibraryStore {
         }
          
         let resolved = try resolveInput(replacement)
-        guard resolved.id == replacement.record.id else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard resolved.id == replacement.record.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         candidate.sources[index] = replacement.record
         var replacements = [replacement]
         var issues = (candidate.updateIssues ?? []).filter { $0.sourceID != replacement.record.id }
@@ -274,7 +254,7 @@ extension ConfigurationLibraryStore {
             func input(_ reference: ConfigurationSourceVersion) throws -> ConfigurationInput {
                 let source = try replacements.first(where: { ConfigurationSourceVersion($0.record) == reference }) ?? payload(reference)
                 let input = try resolveInput(source)
-                guard input.id == reference.id else { throw ConfigurationLibraryError.invalidIdentifier }
+                guard input.id == reference.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
                 return input
             }
             if recipe.preservesOriginal == true {
@@ -347,7 +327,7 @@ extension ConfigurationLibraryStore {
                                     expectedGeneration: UInt64, generatedRuleGroups: [String: String]? = nil) throws -> ConfigurationLibrarySnapshot {
         var candidate = try snapshot()
         guard candidate.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
-        guard !candidate.sources.contains(where: { $0.id == source.record.id }) else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard !candidate.sources.contains(where: { $0.id == source.record.id }) else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         let document = try OrderedJSON.parse(source.documentJSON)
         guard case .array(let rules) = document.topLevelValue("rules"), !rules.isEmpty else { throw ConfigurationLibraryError.missingRules }
         var stored = source; stored.record.suppliesNodes = false
@@ -422,15 +402,16 @@ extension ConfigurationLibraryStore {
         candidate.rules[schemeIndex].disabledRules = draft.disabledRules.isEmpty ? nil : draft.disabledRules.sorted()
         candidate.rules[schemeIndex].ruleNotes = draft.notes.isEmpty ? nil : draft.notes
         let rules = try resolveInput(replacement)
-        guard rules.id == record.id else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard rules.id == record.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         var compositions: [String: ConfigurationComposition] = [:]
         for index in candidate.recipes.indices where candidate.recipes[index].ruleSchemeID == draft.schemeID {
             var recipe = candidate.recipes[index]
+            try adoptComposition(in: &recipe, resolveInput: resolveInput)
             try freezeSettings(in: &recipe, resolveInput: resolveInput)
             recipe.ruleSource = .init(record)
             let inputs = try recipe.sources.map { reference in
                 let resolved = try resolveInput(payload(reference))
-                guard resolved.id == reference.id else { throw ConfigurationLibraryError.invalidIdentifier }
+                guard resolved.id == reference.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
                 return resolved
             }
             compositions[recipe.id] = try composeInputs(inputs, ruleInput: rules, schemeID: draft.schemeID,
@@ -465,6 +446,40 @@ extension ConfigurationLibraryStore {
         return .init(candidate: candidate, payloads: [], compositions: [:])
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    private func adoptComposition(in recipe: inout ConfigurationRecipe,
+                                  resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws {
+        guard recipe.preservesOriginal == true else { return }
+        let block: OrderedJSON
+        if let frozen = recipe.settingsJSON {
+            block = try OrderedJSON.parse(frozen)
+        } else {
+            block = try originalSettingsBaseline(of: recipe, resolveInput: resolveInput)
+            if !((try? payload(recipe.ruleSource))?.resourceFiles ?? [:]).isEmpty { recipe.settingsSource = recipe.ruleSource }
+        }
+        let delta = try OrderedJSON.parse(recipe.originalSettingsJSON ?? "{}")
+        recipe.settingsJSON = Self.settingsExpanded(baseline: block, delta: delta).serialized()
+        recipe.originalSettingsJSON = nil
+        recipe.preservesOriginal = nil
+    }
+
     private func freezeSettings(in recipe: inout ConfigurationRecipe,
         resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws {
         if recipe.preservesOriginal == true {
@@ -484,7 +499,7 @@ extension ConfigurationLibraryStore {
             if let reference = recipe.sources.first {
                 let source = try payload(reference)
                 let input = try resolveInput(source)
-                guard input.id == reference.id else { throw ConfigurationLibraryError.invalidIdentifier }
+                guard input.id == reference.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
                 recipe.settingsJSON = ConfigurationSettingsDocument.project(input.document).serialized()
                 if !(source.resourceFiles ?? [:]).isEmpty { recipe.settingsSource = reference }
             } else { recipe.settingsJSON = "{}" }
@@ -539,7 +554,7 @@ extension ConfigurationLibraryStore {
     func originalSettingsBaseline(of recipe: ConfigurationRecipe,
                                   resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws -> OrderedJSON {
         let input = try resolveInput(payload(recipe.ruleSource))
-        guard input.id == recipe.ruleSource.id else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard input.id == recipe.ruleSource.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         return ConfigurationSettingsDocument.project(input.document)
     }
 
@@ -823,6 +838,7 @@ public extension ConfigurationLibraryStore {
         let ruleInput = try resolveInput(replacement)
         for index in candidate.recipes.indices where candidate.recipes[index].ruleSchemeID == scheme.id {
             var recipe = candidate.recipes[index]
+            try adoptComposition(in: &recipe, resolveInput: resolveInput)
             try freezeSettings(in: &recipe, resolveInput: resolveInput)
             recipe.ruleSchemeID = customized.id; recipe.ruleSource = .init(record)
             let inputs = try recipe.sources.map { try resolveInput(payload($0)) }
@@ -842,7 +858,7 @@ public extension ConfigurationLibraryStore {
         resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws -> PreparedConfigurationSourceUpdate {
         let original = try snapshot()
         guard original.pendingPublications?.isEmpty ?? true else { throw ConfigurationLibraryError.busy }
-        guard let targetID = value?.id ?? id else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard let targetID = value?.id ?? id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         if let value {
             guard !value.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ConfigurationLibraryError.emptyName }
             guard !value.rules.isEmpty else { throw ConfigurationLibraryError.missingRules }
@@ -862,7 +878,7 @@ public extension ConfigurationLibraryStore {
             if let value { try draft.updateLocalRuleSet(value) } else { draft.removeRuleSet("local-" + targetID) }
             let prepared = try prepareRuleCustomization(draft, expectedGeneration: original.generation, resolveInput: resolveInput)
             for payload in prepared.payloads {
-                guard changedSources.insert(payload.record.id).inserted else { throw ConfigurationLibraryError.invalidIdentifier }
+                guard changedSources.insert(payload.record.id).inserted else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
                 guard let index = candidate.sources.firstIndex(where: { $0.id == payload.record.id }) else { throw ConfigurationLibraryError.missingDependency(payload.record.id) }
                 candidate.sources[index] = payload.record; payloads.append(payload)
             }
@@ -970,7 +986,7 @@ public extension ConfigurationLibraryStore {
             recipe.originalSettingsJSON = Self.settingsDelta(full: edited, baseline: baseline).serialized()
             try captureSettingsDependencies(in: &recipe, settingsJSON: recipe.originalSettingsJSON, resolveInput: resolveInput)
             let original = try resolveInput(payload(recipe.ruleSource))
-            guard original.id == recipe.ruleSource.id else { throw ConfigurationLibraryError.invalidIdentifier }
+            guard original.id == recipe.ruleSource.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
             candidate.recipes[index] = recipe
             return .init(candidate: candidate, payloads: [],
                          compositions: [profileID: .init(document: try overlayingAdvancedSettings(of: recipe, onto: original.document),
