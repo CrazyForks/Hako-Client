@@ -584,7 +584,10 @@ struct ProfileOverrideView: View {
                 }
             } header: {
                 if chosen == nil {
-                    Text("Script")
+                     
+                     
+                     
+                    Text("Scripts")
                 } else {
                     Text("Other Scripts").accessibilityIdentifier("profile.override.scripts.other")
                 }
