@@ -1938,7 +1938,6 @@
 "None in this profile" = "本配置中没有";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "出口能承载 UDP 时这几档都不生效。Hysteria2、TUIC 以及任何开启了 udp 的线路——包括 UDP over TCP——都会正常命中规则，走不到这里。";
 "None of these resolvers answered on the current network. Saving is allowed — another network may reach them — but names may not resolve until then." = "这些解析器在当前网络都未应答。仍可保存——其他网络可能可达——但在那之前域名可能无法解析。";
-"None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it." = "这些脚本都不是从链接导入的，没有可拉取的来源。用链接添加脚本后才能更新。";
 "None recorded" = "未记录到压力";
 "Not Applied Yet" = "尚未应用";
 "Not Connected" = "未连接";
@@ -3213,6 +3212,7 @@
 "These rules are added in front of the configuration's own rules when it is used." = "使用此配置时，这些规则加在它自己的规则之前。";
 "These rules send traffic there." = "这些规则把流量送往那里。";
 "These rules use" = "这些规则走";
+"These scripts were imported before the app kept their link, so there is nothing to fetch yet. Import each from its link once more; Update works from then on." = "这些脚本是在 App 还没记录来源链接的版本里导入的，暂时无从拉取。用链接重新导入一次，之后就能更新。";
 "These scripts will be deleted. Profiles using them must choose another script before starting." = "这些脚本将被删除。使用它们的配置需要先选择其他脚本，才能启动。";
 "These settings also affect the final configuration. Existing overrides and scripts are preserved." = "这些设置也会影响最终配置。已有覆写与脚本会继续保留。";
 "These settings apply to every profile." = "这一页的设置对所有配置生效。";

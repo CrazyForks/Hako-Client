@@ -346,11 +346,16 @@ struct ProfileOverrideView: View {
                  
                  
                 ToolbarItem(placement: .hakoNavigationTrailing) {
-                    Button { Task { await updateScripts() } } label: {
-                        Label("Update Scripts", systemImage: HakoSymbol.arrowClockwise.name)
+                     
+                     
+                     
+                    if !insideProductModal {
+                        Button { Task { await updateScripts() } } label: {
+                            Label("Update Scripts", systemImage: HakoSymbol.arrowClockwise.name)
+                        }
+                        .disabled(updatingScripts)
+                        .accessibilityIdentifier("profile.override.scripts.update")
                     }
-                    .disabled(updatingScripts)
-                    .accessibilityIdentifier("profile.override.scripts.update")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if !insideProductModal {
@@ -369,7 +374,16 @@ struct ProfileOverrideView: View {
                 }
 #endif
             }
-            .hakoProductModalRoot(title: configurationCenter ? "Overrides and Scripts" : "Profile Override")
+            .hakoProductModalRoot(
+                title: configurationCenter ? "Overrides and Scripts" : "Profile Override",
+                 
+                 
+                 
+                 
+                actionTitle: "Update Scripts",
+                actionDisabled: updatingScripts,
+                action: { Task { await updateScripts() } }
+            )
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if insideProductModal {
                     HakoModalActionBar(
@@ -777,7 +791,7 @@ struct ProfileOverrideView: View {
         let targets = scripts.filter { !($0.sourceURL ?? "").isEmpty }
         if targets.isEmpty {
             scriptsUpdateMessage = HakoCopy.string(
-                "None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it.",
+                "These scripts were imported before the app kept their link, so there is nothing to fetch yet. Import each from its link once more; Update works from then on.",
                 locale: .current)
             showsScriptsUpdate = true
             return

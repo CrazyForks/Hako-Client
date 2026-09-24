@@ -1938,7 +1938,6 @@
 "None in this profile" = "None in this profile";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this.";
 "None of these resolvers answered on the current network. Saving is allowed — another network may reach them — but names may not resolve until then." = "None of these resolvers answered on the current network. Saving is allowed — another network may reach them — but names may not resolve until then.";
-"None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it." = "None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it.";
 "None recorded" = "None recorded";
 "Not Applied Yet" = "Not Applied Yet";
 "Not Connected" = "Not Connected";
@@ -3213,6 +3212,7 @@
 "These rules are added in front of the configuration's own rules when it is used." = "These rules are added in front of the configuration's own rules when it is used.";
 "These rules send traffic there." = "These rules send traffic there.";
 "These rules use" = "These rules use";
+"These scripts were imported before the app kept their link, so there is nothing to fetch yet. Import each from its link once more; Update works from then on." = "These scripts were imported before the app kept their link, so there is nothing to fetch yet. Import each from its link once more; Update works from then on.";
 "These scripts will be deleted. Profiles using them must choose another script before starting." = "These scripts will be deleted. Profiles using them must choose another script before starting.";
 "These settings also affect the final configuration. Existing overrides and scripts are preserved." = "These settings also affect the final configuration. Existing overrides and scripts are preserved.";
 "These settings apply to every profile." = "These settings apply to every profile.";

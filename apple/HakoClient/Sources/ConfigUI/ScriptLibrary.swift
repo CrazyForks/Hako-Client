@@ -549,7 +549,7 @@ struct ScriptLibraryView: View {
         defer { updating = false }
         if targets.isEmpty {
             updateMessage = HakoCopy.string(
-                "None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it.",
+                "These scripts were imported before the app kept their link, so there is nothing to fetch yet. Import each from its link once more; Update works from then on.",
                 locale: .current)
             showsUpdateResult = true
             return
