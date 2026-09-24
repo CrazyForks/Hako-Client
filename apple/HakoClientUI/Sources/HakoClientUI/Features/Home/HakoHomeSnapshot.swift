@@ -110,6 +110,23 @@ public struct HakoHomeConnectionIssue:
          
          
         case providerNotLaunched
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        case configurationNotFound
+
+         
+         
+        public var lineTapResetsVPNProfile: Bool {
+            self == .providerNotLaunched || self == .configurationNotFound
+        }
     }
 
     public let message: String
@@ -154,6 +171,11 @@ public struct HakoHomeConnectionFacts: Codable, Equatable, Sendable {
      
      
     public var errorIsProviderNotLaunched: Bool
+     
+     
+     
+     
+    public var errorIsConfigurationNotFound: Bool
     public var allowsSystemVPNProfileReset: Bool
     public var isSwitchingProxy: Bool
     public var recoveryMode: HakoHomeRecoveryMode
@@ -168,6 +190,7 @@ public struct HakoHomeConnectionFacts: Codable, Equatable, Sendable {
         vpnAuthorization: HakoVPNAuthorizationState? = nil,
         errorIsStartupStopped: Bool = false,
         errorIsProviderNotLaunched: Bool = false,
+        errorIsConfigurationNotFound: Bool = false,
         allowsSystemVPNProfileReset: Bool = false,
         isSwitchingProxy: Bool = false,
         recoveryMode: HakoHomeRecoveryMode = .none,
@@ -182,6 +205,7 @@ public struct HakoHomeConnectionFacts: Codable, Equatable, Sendable {
         self.vpnAuthorization = vpnAuthorization
         self.errorIsStartupStopped = errorIsStartupStopped
         self.errorIsProviderNotLaunched = errorIsProviderNotLaunched
+        self.errorIsConfigurationNotFound = errorIsConfigurationNotFound
         self.allowsSystemVPNProfileReset = allowsSystemVPNProfileReset
         self.isSwitchingProxy = isSwitchingProxy
         self.recoveryMode = recoveryMode
@@ -261,6 +285,8 @@ public enum HakoHomeConnectionPresenter {
         let kind: HakoHomeConnectionIssue.Kind
         if facts.errorIsProviderNotLaunched {
             kind = .providerNotLaunched
+        } else if facts.errorIsConfigurationNotFound {
+            kind = .configurationNotFound
         } else if facts.errorIsStartupStopped {
             kind = .startupStopped
         } else {
@@ -273,7 +299,8 @@ public enum HakoHomeConnectionPresenter {
              
              
              
-            allowsSystemVPNProfileReset: kind == .providerNotLaunched
+             
+            allowsSystemVPNProfileReset: kind.lineTapResetsVPNProfile
                 || (kind != .startupStopped && facts.allowsSystemVPNProfileReset)
         )
 
@@ -432,6 +459,7 @@ public enum HakoHomeCommand: Codable, Equatable, Sendable {
     case openProfiles
     case performPrimaryAction(HakoHomePrimaryAction)
     case showConnectionIssue
+     
      
      
     case resetVPNProfile

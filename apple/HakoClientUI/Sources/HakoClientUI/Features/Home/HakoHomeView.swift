@@ -587,7 +587,8 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
                  
                  
                  
-                send(issue.kind == .providerNotLaunched
+                 
+                send(issue.kind.lineTapResetsVPNProfile
                     ? .resetVPNProfile
                     : .showConnectionIssue)
             } label: {
@@ -633,7 +634,7 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
              
              
             .accessibilityHint(
-                issue.kind == .providerNotLaunched
+                issue.kind.lineTapResetsVPNProfile
                     ? Text(hako: .copy("Reinstalls the VPN profile"))
                     : Text("")
             )

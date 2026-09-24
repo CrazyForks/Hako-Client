@@ -735,6 +735,7 @@
 "Connection decoder queue overflow" = "Connection decoder queue overflow";
 "Connection failed" = "Connection failed";
 "Connection failed. Tap to reinstall VPN profile." = "Connection failed. Tap to reinstall VPN profile.";
+"Connection failed. The VPN extension did not start." = "Connection failed. The VPN extension did not start.";
 "Connection refused" = "Connection refused";
 "Connection required" = "Connection required";
 "Connections" = "Connections";
@@ -2964,6 +2965,7 @@
 "The VPN disconnected after the device slept for an extended period." = "The VPN disconnected after the device slept for an extended period.";
 "The VPN disconnected because the system reported an error." = "The VPN disconnected because the system reported an error.";
 "The VPN disconnected because the tunnel provider reported an error." = "The VPN disconnected because the tunnel provider reported an error.";
+"The VPN extension is disabled. Enable it in System Settings and try again." = "The VPN extension is disabled. Enable it in System Settings and try again.";
 "The VPN operation failed. Review the app and system status for details." = "The VPN operation failed. Review the app and system status for details.";
 "The VPN profile is unavailable." = "The VPN profile is unavailable.";
 "The VPN server address could not be resolved." = "The VPN server address could not be resolved.";
@@ -3538,6 +3540,7 @@
 "VPN disconnected" = "VPN disconnected";
 "VPN not connected" = "VPN not connected";
 "VPN profile became invalid while applying routing policy" = "VPN profile became invalid while applying routing policy";
+"VPN profile not found. Click to reinstall it." = "VPN profile not found. Click to reinstall it.";
 "VPN protocol negotiation failed." = "VPN protocol negotiation failed.";
 "Validated when this profile is prepared" = "Validated when this profile is prepared";
 "Value" = "Value";

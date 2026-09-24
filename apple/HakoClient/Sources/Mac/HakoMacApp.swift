@@ -3873,6 +3873,8 @@ private final class HakoMacSceneModel: ObservableObject {
                             vpnStatus: vpn.status,
                             errorMessage: vpn.reportableLastError,
                             vpnAuthorization: vpn.systemVPNAuthorization,
+                            errorIsConfigurationNotFound:
+                                vpn.lastErrorOffersVPNProfileReset,
                             allowsSystemVPNProfileReset:
                                 vpn.systemVPNProfileResetAvailable,
                             isSwitchingProxy:
@@ -4170,7 +4172,10 @@ private final class HakoMacSceneModel: ObservableObject {
              
              
              
-            break
+             
+             
+            _ = await vpn.resetSystemVPNProfile()
+            refreshSnapshot()
         }
     }
 

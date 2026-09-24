@@ -735,6 +735,7 @@
 "Connection decoder queue overflow" = "連線資料解碼佇列已滿";
 "Connection failed" = "連線失敗";
 "Connection failed. Tap to reinstall VPN profile." = "連線失敗，點一下重裝 VPN 設定檔。";
+"Connection failed. The VPN extension did not start." = "連線失敗，VPN 延伸功能沒有啟動。";
 "Connection refused" = "連線被拒絕";
 "Connection required" = "需要先連線";
 "Connections" = "連線";
@@ -2964,6 +2965,7 @@
 "The VPN disconnected after the device slept for an extended period." = "裝置長時間休眠後，VPN 已中斷連線。";
 "The VPN disconnected because the system reported an error." = "系統報告錯誤，VPN 已中斷連線。";
 "The VPN disconnected because the tunnel provider reported an error." = "通道提供方報告錯誤，VPN 已中斷連線。";
+"The VPN extension is disabled. Enable it in System Settings and try again." = "VPN 延伸功能已停用，請在系統設定中啟用後再試一次。";
 "The VPN operation failed. Review the app and system status for details." = "VPN 操作失敗。請檢視 App 與系統狀態了解詳情。";
 "The VPN profile is unavailable." = "VPN 描述檔案不可用。";
 "The VPN server address could not be resolved." = "無法解析 VPN 伺服器網址。";
@@ -3538,6 +3540,7 @@
 "VPN disconnected" = "VPN 已中斷連線";
 "VPN not connected" = "VPN 未連線";
 "VPN profile became invalid while applying routing policy" = "套用路由策略時 VPN 描述檔案失效";
+"VPN profile not found. Click to reinstall it." = "VPN 設定檔不存在，按一下重裝 VPN 設定檔。";
 "VPN protocol negotiation failed." = "VPN 協定協商失敗。";
 "Validated when this profile is prepared" = "準備設定檔時將自動驗證";
 "Value" = "值";

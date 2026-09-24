@@ -91,8 +91,24 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     @Published var legacySettingsMigration: LegacyClientSettingsMigrationResult?
     @Published private(set) var status = "idle"
     @Published private(set) var lastError = "" {
-        didSet { installationReadError = nil }
+        didSet {
+            installationReadError = nil
+            lastErrorOffersVPNProfileReset = false
+        }
     }
+     
+     
+     
+     
+     
+    @Published private(set) var lastErrorOffersVPNProfileReset = false
+     
+     
+     
+     
+     
+    private var awaitingStartTransition = false
+    private var systemVPNProfileResetInFlight = false
     @Published private(set) var vpnAuthorization: HakoVPNAuthorizationState?
     private var installationReadError: String?
     private var installationReadGeneration: UInt64 = 0
@@ -264,6 +280,20 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                 }
                 let status = manager?.connection.status ?? connection.status
                 updateStatus(status)
+                if status == .connected || status == .reasserting {
+                    awaitingStartTransition = false
+                } else if awaitingStartTransition,
+                          status == .disconnected || status == .invalid,
+                          let failed = manager?.connection {
+                     
+                     
+                     
+                     
+                    awaitingStartTransition = false
+                    Task { @MainActor [weak self] in
+                        await self?.resolveLastDisconnectError(on: failed)
+                    }
+                }
                 if status == .connected {
                     if !reachedConnectedSinceStart {
                          
@@ -484,10 +514,12 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                 start: { [self] in
                     phase = "start"
                     try manager.connection.startVPNTunnel()
+                    awaitingStartTransition = true
                     adoptInstalledManager(manager)
                     lastError = ""
                 },
                 abort: { [self] in
+                    awaitingStartTransition = false
                      
                      
                     await Task { @MainActor in
@@ -541,6 +573,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         stopGeneration &+= 1
         vpnAuthorization = nil
         userStopInFlight = true
+        awaitingStartTransition = false
         if let manager, Self.disarmOnDemandForUserStop(manager) || applyingIPStackSettings {
              
              
@@ -610,17 +643,79 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     }
 
     @discardableResult
+     
+     
+     
+     
+     
+     
+     
+     
     func resetSystemVPNProfile() async -> Bool {
-        guard let manager else { return true }
+        guard !systemVPNProfileResetInFlight else { return false }
+        systemVPNProfileResetInFlight = true
+        defer { systemVPNProfileResetInFlight = false }
+        awaitingStartTransition = false
         do {
-            try await removeFromPreferences(manager)
-            self.manager = nil
-            status = "disconnected"
+            if let manager {
+                try await removeFromPreferences(manager)
+                self.manager = nil
+            }
+            let fresh = try await currentOrNewManager()
+            try await saveToPreferences(fresh)
+            try await loadFromPreferences(fresh)
+            adoptInstalledManager(fresh)
             lastError = ""
             return true
         } catch {
             fail(error)
             return false
+        }
+    }
+
+     
+     
+     
+     
+     
+     
+    private func resolveLastDisconnectError(on connection: NEVPNConnection) async {
+        let intent = profileWriteIntentGeneration
+        await VPNStartAuthorization.resolveFailure(
+            fetch: { [self] in await fetchLastDisconnectError(on: connection) },
+            isCurrent: { [self] in
+                manager?.connection === connection
+                    && profileWriteIntentGeneration == intent
+                    && (connection.status == .disconnected || connection.status == .invalid)
+            },
+            publish: { [self] error in
+                if let error {
+                     
+                     
+                     
+                    let domain = error.domain
+                    let code = error.code
+                    HakoLogStore.shared.append(
+                        "vpn disconnect error  domain=\(domain) code=\(code)",
+                        stream: .app, level: .warning)
+                }
+                let verdict = MacVPNDisconnectErrorPresentation.verdict(
+                    for: error, status: connection.status)
+                lastError = verdict.message
+                lastErrorOffersVPNProfileReset = verdict.offersVPNProfileReset
+            })
+    }
+
+    private func fetchLastDisconnectError(on connection: NEVPNConnection) async -> NSError? {
+        await withCheckedContinuation { continuation in
+            let gate = MacVPNDisconnectErrorFetchGate(continuation)
+            connection.fetchLastDisconnectError { error in
+                gate.resolve(error as NSError?)
+            }
+            Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                gate.resolve(nil)
+            }
         }
     }
 
