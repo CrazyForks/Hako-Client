@@ -437,6 +437,8 @@ struct HakoTVShell: View {
                     subscriptionDoor = current.id
                     Task { await tunnel.refresh(subscription: current) }
                 }
+
+
             }
              
              

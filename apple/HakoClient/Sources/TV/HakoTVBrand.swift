@@ -158,6 +158,9 @@ struct HakoTVLaunchOverrides: Equatable, Sendable {
     let scriptURL: String?
      
      
+    let updatesScriptOnLaunch: Bool
+     
+     
      
      
     let rulesForCurrent: HakoTVProfileRules?
@@ -193,6 +196,7 @@ struct HakoTVLaunchOverrides: Equatable, Sendable {
         disconnectsOnLaunch = environment["HAKO_TV_DISCONNECT_ON_LAUNCH"] == "1"
         useProfileURL = environment["HAKO_TV_USE_PROFILE_URL"]
         scriptURL = environment["HAKO_TV_SCRIPT_URL"]
+        updatesScriptOnLaunch = environment["HAKO_TV_UPDATE_SCRIPT_ON_LAUNCH"] == "1"
         rulesForCurrent = environment["HAKO_TV_RULES"].flatMap(HakoTVProfileRules.init(rawValue:))
         allowLAN = environment["HAKO_TV_ALLOW_LAN"].flatMap { $0 == "1" ? true : ($0 == "0" ? false : nil) }
         proxyShare = Self.proxyShareOverride(environment["HAKO_TV_PROXY_SHARE"])
