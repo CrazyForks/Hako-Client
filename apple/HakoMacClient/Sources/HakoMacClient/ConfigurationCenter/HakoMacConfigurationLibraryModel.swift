@@ -220,7 +220,7 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
         snapshot = next
         nodeShelves = Self.nodeShelves(next)
         ruleShelves = Self.ruleShelves(next)
-        schemeUsage = next.recipes.reduce(into: [:]) { counts, recipe in counts[recipe.ruleSchemeID, default: 0] += 1 }
+        schemeUsage = Self.schemeUsage(next)
         refreshCollections(next)
         return true
     }
@@ -488,8 +488,40 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
     }
 
      
+     
+     
+     
+     
     public func configurations(usingScheme id: String) -> [String] {
-        snapshot.recipes.filter { $0.ruleSchemeID == id }.map(\.label)
+        let family = Self.family(of: id, in: snapshot)
+        return snapshot.recipes.filter { family.contains($0.ruleSchemeID) }.map(\.label)
+    }
+
+     
+     
+     
+     
+     
+    nonisolated static func family(of id: String, in snapshot: ConfigurationLibrarySnapshot) -> Set<String> {
+        let base = snapshot.rules.first { $0.id == id }?.baseSchemeID ?? id
+        if ConfigurationBuiltins.isNative(base) { return [id] }
+        var members: Set<String> = [id, base]
+        for scheme in snapshot.rules where scheme.baseSchemeID == base { members.insert(scheme.id) }
+        return members
+    }
+
+     
+     
+    nonisolated static func schemeUsage(_ snapshot: ConfigurationLibrarySnapshot) -> [String: Int] {
+        var counts: [String: Int] = [:]
+        var families: [String: Set<String>] = [:]
+        for recipe in snapshot.recipes {
+            let members = families[recipe.ruleSchemeID] ?? {
+                let f = family(of: recipe.ruleSchemeID, in: snapshot); families[recipe.ruleSchemeID] = f; return f
+            }()
+            for member in members { counts[member, default: 0] += 1 }
+        }
+        return counts
     }
 
      
