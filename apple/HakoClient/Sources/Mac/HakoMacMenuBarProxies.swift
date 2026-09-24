@@ -66,13 +66,23 @@ struct HakoMacMenuProxyCatalog: Equatable {
             name: \.name,
             isHidden: \.hidden
         )
+         
+         
+         
+         
+        let emptyGroups = Set(groups.filter(\.isEmpty).map(\.name))
         return HakoMacMenuProxyCatalog(
             groups: visible.compactMap { group in
-                guard group.acceptsMemberChoice, !group.members.isEmpty else {
+                guard group.acceptsMemberChoice, !group.members.isEmpty,
+                      !group.isEmpty else {
                     return nil
                 }
                 var latency: [String: HakoProxyLatencyState] = [:]
                 for member in group.members {
+                    if emptyGroups.contains(member) {
+                        latency[member] = .untested
+                        continue
+                    }
                      
                      
                      
