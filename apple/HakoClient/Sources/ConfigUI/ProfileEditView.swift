@@ -581,7 +581,7 @@ struct ProfileEditView: View {
  
  
  
-private struct HakoBarFadesWhileTyping: ViewModifier {
+struct HakoBarFadesWhileTyping: ViewModifier {
     @Binding var typing: Bool
 
     func body(content: Content) -> some View {

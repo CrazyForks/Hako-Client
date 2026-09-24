@@ -180,6 +180,11 @@ enum ScriptLibrary {
      
     static let defaultLabel = "New Script"
 
+     
+    static func fresh() -> ConfigScript {
+        ConfigScript(id: UUID().uuidString.lowercased(), label: defaultLabel, body: ScriptSettings.template)
+    }
+
     static func load(from defaults: UserDefaults = appGroupDefaults) -> [ConfigScript] {
         guard let data = defaults.data(forKey: key),
               let scripts = try? JSONDecoder().decode([ConfigScript].self, from: data) else {
@@ -367,7 +372,7 @@ struct ScriptLibraryView: View {
     @State private var scripts = ScriptLibrary.load()
     @State private var deletingScripts: [ConfigScript] = []
     @State private var editing: ConfigScript?
-    @State private var adding = false
+    @State private var adding: ConfigScript?
 
     var body: some View {
         Group {
@@ -410,7 +415,7 @@ struct ScriptLibraryView: View {
             }
             Section {
                 HakoAddRow(Text(HakoCopy.key("Add Script"))) {
-                    adding = true
+                    adding = ScriptLibrary.fresh()
                 }
                 .accessibilityIdentifier("scripts.row.add")
             }
@@ -459,24 +464,19 @@ struct ScriptLibraryView: View {
         .hakoToolbarUnlessInPanel {
             ToolbarItemGroup(placement: .hakoNavigationTrailing) {
                 HakoEditButton()
-                Button { adding = true } label: {
+                Button { adding = ScriptLibrary.fresh() } label: {
                     Label("Add Script", systemImage: HakoSymbol.plus.name)
                 }
             }
         }
-        .hakoProductModal(item: $editing, role: .page) { script in
+         
+        .hakoProductModal(item: $editing, role: .page, immersive: { _ in true }) { script in
             ScriptEditorView(script: script) { save($0) }
                 .hakoModalPresentation(.page)
         }
-        .hakoProductModal(isPresented: $adding, role: .page) {
-            ScriptEditorView(
-                script: ConfigScript(
-                    id: UUID().uuidString.lowercased(),
-                    label: ScriptLibrary.defaultLabel,
-                    body: ScriptSettings.template
-                )
-            ) { save($0) }
-            .hakoModalPresentation(.page)
+        .hakoProductModal(item: $adding, role: .page, immersive: { _ in true }) { script in
+            ScriptEditorView(script: script) { save($0) }
+                .hakoModalPresentation(.page)
         }
     }
 
@@ -484,7 +484,21 @@ struct ScriptLibraryView: View {
         ScriptLibrary.upsert(script)
         scripts = ScriptLibrary.load()
         editing = nil
-        adding = false
+        adding = nil
+    }
+}
+
+ 
+ 
+ 
+private struct ScriptEditorTitle: ViewModifier {
+    @Binding var label: String
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            content.navigationTitle($label)
+        } else {
+            content.hakoPageTitle(.verbatim(label), watchAs: "Script")
+        }
     }
 }
 
@@ -534,6 +548,16 @@ struct ScriptEditorView: View {
      
      
     @State private var saveResult = ""
+    @State private var typing = false
+    @State private var findPresented = false
+    @State private var showsLineNumbers = CodeEditorLineNumbers.isOn
+    @State private var softWrap = CodeEditorSoftWrap.isOn
+    @State private var renaming = false
+    @State private var renameDraft = ""
+    @State private var importingFromLink = false
+    @State private var showsTestResult = false
+    @State private var showsSaveResult = false
+    @State private var showsImportError = false
     private let originalBody: String
 
     init(script: ConfigScript, save: @escaping (ConfigScript) -> Void) {
@@ -544,100 +568,98 @@ struct ScriptEditorView: View {
         _bodyText = State(initialValue: script.body)
     }
 
+     
+     
+     
+     
+     
     var body: some View {
         HakoFeatureNavigationContainer {
-            VStack(spacing: 0) {
-            Form {
-                Section {
-                    TextField("Script name", text: $label)
-                        .accessibilityIdentifier("scripts.editor.name")
-                    if !saveResult.isEmpty {
-                        HakoStatusMessage(text: .copy(saveResult), kind: .error)
-                            .accessibilityIdentifier("scripts.editor.save.result")
-                    }
-                } header: {
-                    Text("Name")
+            editor
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(HakoTheme.canvas.ignoresSafeArea())
+                .modifier(HakoBarFadesWhileTyping(typing: $typing))
+                .modifier(ScriptEditorTitle(label: $label))
+                .fileImporter(
+                    isPresented: $showsFileImporter,
+                    allowedContentTypes: [.javaScript, .plainText, .text],
+                    allowsMultipleSelection: false
+                ) { outcome in
+                    importFromFile(outcome)
                 }
-                Section("Script") {
-                    CodeEditorPanel(
-                        text: $bodyText,
-                        language: .javascript,
-                        minHeight: 320,
-                        diagnosticLine: diagnosticLine,
-                        chrome: .minimal
-                    )
-                }
-                importSection
-                Section {
-                     
-                     
-                     
-                     
-                     
-                    Button("Test Run") { Task { await test() } }
-                        .accessibilityIdentifier("scripts.editor.test")
-                    if !result.isEmpty {
-                        HakoStatusMessage(
-                            text: .copy(result),
-                            kind: result.hasPrefix("OK") ? .success : .error
-                        )
-                        .accessibilityIdentifier("scripts.editor.result")
-                    }
-                }
-            }
-            }
-            .hakoPageTitle("Script")
-            .fileImporter(
-                isPresented: $showsFileImporter,
-                allowedContentTypes: [.javaScript, .plainText, .text],
-                allowsMultipleSelection: false
-            ) { outcome in
-                importFromFile(outcome)
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    if !insideProductModal {
-                        Button("Cancel") {
-                            switch UnsavedEditPolicy.decision(
-                                original: originalBody,
-                                current: bodyText
-                            ) {
-                            case .leave: dismissPresentation()
-                            case .offerToSave: asksAboutUnsaved = true
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        if !insideProductModal {
+                            Button("Cancel") {
+                                switch UnsavedEditPolicy.decision(
+                                    original: originalBody,
+                                    current: bodyText
+                                ) {
+                                case .leave: dismissPresentation()
+                                case .offerToSave: asksAboutUnsaved = true
+                                }
                             }
+                            .accessibilityIdentifier("scripts.editor.cancel")
                         }
-                        .accessibilityIdentifier("scripts.editor.cancel")
+                    }
+                    ToolbarItemGroup(placement: .confirmationAction) {
+                        if !insideProductModal {
+                            Menu {
+                                moreMenu
+                            } label: {
+                                Image(systemName: HakoSymbol.ellipsisCircle.name)
+                            }
+                            .accessibilityLabel("More")
+                            .accessibilityIdentifier("scripts.editor.more")
+                            Button("Save") {
+                                persist()
+                            }
+                            .disabled(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .accessibilityIdentifier("scripts.editor.save")
+                        }
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    if !insideProductModal {
-                        Button("Save") {
-                            persist()
-                        }
-                        .disabled(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        .accessibilityIdentifier("scripts.editor.save")
+                .hakoProductModalRoot(title: "Script")
+                .task { await loadActiveProfileName() }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if insideProductModal {
+                        HakoModalActionBar(
+                            primaryTitle: "Save",
+                            primaryDisabled: label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                            onPrimary: persist
+                        )
                     }
                 }
-            }
-            .hakoProductModalRoot(title: "Script")
-            .task { await loadActiveProfileName() }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if insideProductModal {
-                    HakoModalActionBar(
-                        primaryTitle: "Save",
-                        primaryDisabled: label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                        onPrimary: persist
-                    )
+                .hakoProductModal(isPresented: $importingFromLink, role: .form) {
+                    linkSheet
+                        .hakoModalPresentation(.form)
                 }
-            }
+                .alert("Rename…", isPresented: $renaming) {
+                    TextField("Script name", text: $renameDraft)
+                        .accessibilityIdentifier("scripts.editor.name")
+                    Button("OK") {
+                        let trimmed = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty { label = trimmed }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                }
+                .alert("Test Run", isPresented: $showsTestResult) {
+                    Button("OK") {}
+                } message: {
+                    Text(verbatim: result)
+                }
+                .alert("Cannot Save", isPresented: $showsSaveResult) {
+                    Button("OK") {}
+                } message: {
+                    Text(verbatim: saveResult)
+                }
+                .alert("Import File…", isPresented: $showsImportError) {
+                    Button("OK") {}
+                } message: {
+                    Text(verbatim: importResult)
+                }
         }
         .hakoStackNavigationViewStyle()
-         
-         
-         
-         
-         
-         
         .hakoRegistersDeparture(
             isDirty: UnsavedEditPolicy.decision(
                 original: originalBody,
@@ -662,6 +684,126 @@ struct ScriptEditorView: View {
         }
         .accessibilityIdentifier("scripts.editor.screen")
         .hakoCapturesDismiss(dismiss)
+    }
+
+    private var editor: some View {
+        CodeEditorPanel(
+            text: $bodyText,
+            language: .javascript,
+            minHeight: 200,
+            diagnosticLine: diagnosticLine,
+            expandsVertically: true,
+            chrome: .minimal,
+            showsLineNumbers: showsLineNumbers,
+            softWrap: softWrap,
+            findPresented: $findPresented,
+            typing: $typing
+        )
+        .padding(.horizontal, HakoTheme.Spacing.standard)
+        .padding(.vertical, HakoTheme.Spacing.compact)
+    }
+
+    @ViewBuilder
+    private var moreMenu: some View {
+        Button {
+            renameDraft = label
+            renaming = true
+        } label: {
+            Label("Rename…", systemImage: HakoSymbol.pencil.name)
+        }
+        .accessibilityIdentifier("scripts.editor.rename")
+        Button {
+            findPresented = true
+        } label: {
+            Label("Find", systemImage: HakoSymbol.magnifyingglass.name)
+        }
+        .keyboardShortcut("f", modifiers: .command)
+        .accessibilityIdentifier("scripts.editor.find")
+        Button {
+            showsLineNumbers.toggle()
+            CodeEditorLineNumbers.isOn = showsLineNumbers
+        } label: {
+            Label(
+                "Line Numbers",
+                systemImage: showsLineNumbers ? HakoSymbol.checkmark.name : HakoSymbol.listBullet.name
+            )
+        }
+        .accessibilityIdentifier("scripts.editor.lineNumbers")
+        Button {
+            softWrap.toggle()
+            CodeEditorSoftWrap.isOn = softWrap
+        } label: {
+            Label(
+                "Wrap Long Lines",
+                systemImage: softWrap ? HakoSymbol.checkmark.name : HakoSymbol.arrowRightToLine.name
+            )
+        }
+        .accessibilityIdentifier("scripts.editor.softWrap")
+        Divider()
+        Button {
+            importResult = ""
+            importingFromLink = true
+        } label: {
+            Label("Import from Link…", systemImage: HakoSymbol.link.name)
+        }
+        .accessibilityIdentifier("scripts.editor.import.link")
+        Button {
+            showsFileImporter = true
+        } label: {
+            Label("Import File…", systemImage: HakoSymbol.squareAndArrowDown.name)
+        }
+        .accessibilityIdentifier("scripts.editor.import.file")
+        Divider()
+        Button {
+            Task { await test() }
+        } label: {
+            Label("Test Run", systemImage: HakoSymbol.play.name)
+        }
+        .accessibilityIdentifier("scripts.editor.test")
+    }
+
+     
+     
+     
+    private var linkSheet: some View {
+        HakoFeatureNavigationContainer {
+            Form {
+                Section {
+                    TextField(
+                        HakoCopy.key("Script URL"),
+                        text: $importAddress,
+                        prompt: Text(verbatim: "https://example.com/script.js")
+                    )
+                        .textContentType(.URL)
+#if !os(macOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+#endif
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier("scripts.editor.import.address")
+                    if !importResult.isEmpty {
+                        HakoStatusMessage(text: .copy(importResult), kind: .error)
+                            .accessibilityIdentifier("scripts.editor.import.result")
+                    }
+                }
+            }
+            .hakoPageTitle("Import from Link…")
+            .hakoToolbarUnlessInPanel {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { importingFromLink = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(importing ? "Importing…" : "Import") {
+                        Task { @MainActor in
+                            await importFromAddress()
+                            if importResult.isEmpty { importingFromLink = false }
+                        }
+                    }
+                    .disabled(importing || importAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityIdentifier("scripts.editor.import.url")
+                }
+            }
+        }
     }
 
      
@@ -716,43 +858,6 @@ struct ScriptEditorView: View {
      
      
      
-     
-     
-    private var importSection: some View {
-        Section {
-            TextField(
-                HakoCopy.key("Script URL"),
-                text: $importAddress,
-                prompt: Text(verbatim: "https://example.com/script.js")
-            )
-                .textContentType(.URL)
-#if !os(macOS)
-                .keyboardType(.URL)
-                .textInputAutocapitalization(.never)
-#endif
-                .autocorrectionDisabled()
-                .accessibilityIdentifier("scripts.editor.import.address")
-            Button(importing ? "Importing…" : "Import") {
-                Task { @MainActor in await importFromAddress() }
-            }
-            .disabled(importing || importAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            .accessibilityIdentifier("scripts.editor.import.url")
-            Button("Choose File…") { showsFileImporter = true }
-                .accessibilityIdentifier("scripts.editor.import.file")
-            if !importResult.isEmpty {
-                HakoStatusMessage(text: .copy(importResult), kind: .error)
-                    .accessibilityIdentifier("scripts.editor.import.result")
-            }
-        } header: {
-            Text("Import")
-        }
-    }
-
-     
-     
-     
-     
-     
     @MainActor
     private func importFromAddress() async {
         importing = true
@@ -798,9 +903,13 @@ struct ScriptEditorView: View {
         case let .failure(error):
             importResult = (error as NSError).localizedDescription
         }
+        showsImportError = !importResult.isEmpty
     }
 
-    private func test() async { _ = validate(name: await loadActiveProfileName()) }
+    private func test() async {
+        _ = validate(name: await loadActiveProfileName())
+        showsTestResult = !result.isEmpty
+    }
 
     private func persist() {
          
@@ -834,6 +943,7 @@ struct ScriptEditorView: View {
             existing: ScriptLibrary.load()
         ) else {
             saveResult = "Another script already uses that name."
+            showsSaveResult = true
             return
         }
         saveResult = ""

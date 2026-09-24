@@ -1382,6 +1382,7 @@
 "Import Configuration" = "匯入設定";
 "Import Failed" = "匯入失敗";
 "Import File" = "匯入檔案";
+"Import File…" = "匯入檔案…";
 "Import Original Configuration" = "按原設定檔匯入";
 "Import Preview" = "讀取完成";
 "Import Public Certificate" = "匯入公開憑證";
@@ -1397,6 +1398,7 @@
 "Import a subscription or node file" = "匯入訂閱或節點檔案";
 "Import backup file" = "匯入備份檔案";
 "Import configuration files" = "匯入設定檔";
+"Import from Link…" = "從連結匯入…";
 "Import from a configuration link or Clash configuration file, or create nodes manually" = "從設定連結或 Clash 設定檔匯入，也可手動建立";
 "Import from a configuration link or Clash configuration file, or edit rules manually" = "從設定連結或 Clash 設定檔匯入，也可手動編輯";
 "Import from a configuration link or Clash configuration file, or use custom nodes" = "從設定連結或 Clash 設定檔匯入，也可使用自建節點";
@@ -2312,6 +2314,7 @@
 "Removed by the subscription · yours: %@" = "訂閱已刪除 · 你的：%@";
 "Removing the override does not delete or modify the downloaded source." = "移除覆寫不會刪除或修改已下載的原始碼。";
 "Removing them may require importing again." = "移除後可能需要重新匯入。";
+"Rename…" = "重新命名…";
 "Reopen Clash to change language?" = "重新開啟 Clash 以更換語言？";
 "Reopen Now" = "立即重開";
 "Reorder" = "重新排序";

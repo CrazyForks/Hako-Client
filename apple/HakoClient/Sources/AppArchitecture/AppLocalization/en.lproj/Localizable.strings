@@ -1382,6 +1382,7 @@
 "Import Configuration" = "Import Configuration";
 "Import Failed" = "Import Failed";
 "Import File" = "Import File";
+"Import File…" = "Import File…";
 "Import Original Configuration" = "Import Original Configuration";
 "Import Preview" = "Import Preview";
 "Import Public Certificate" = "Import Public Certificate";
@@ -1397,6 +1398,7 @@
 "Import a subscription or node file" = "Import a subscription or node file";
 "Import backup file" = "Import backup file";
 "Import configuration files" = "Import configuration files";
+"Import from Link…" = "Import from Link…";
 "Import from a configuration link or Clash configuration file, or create nodes manually" = "Import from a configuration link or Clash configuration file, or create nodes manually";
 "Import from a configuration link or Clash configuration file, or edit rules manually" = "Import from a configuration link or Clash configuration file, or edit rules manually";
 "Import from a configuration link or Clash configuration file, or use custom nodes" = "Import from a configuration link or Clash configuration file, or use custom nodes";
@@ -2312,6 +2314,7 @@
 "Removed by the subscription · yours: %@" = "Removed by the subscription · yours: %@";
 "Removing the override does not delete or modify the downloaded source." = "Removing the override does not delete or modify the downloaded source.";
 "Removing them may require importing again." = "Removing them may require importing again.";
+"Rename…" = "Rename…";
 "Reopen Clash to change language?" = "Reopen Clash to change language?";
 "Reopen Now" = "Reopen Now";
 "Reorder" = "Reorder";

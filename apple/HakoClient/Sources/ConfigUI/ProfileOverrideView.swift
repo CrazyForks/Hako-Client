@@ -42,7 +42,7 @@ struct ProfileOverrideView: View {
     @State private var isConfirmingQuickFill = false
     @State private var editingRule: RuleEditTarget?
     @State private var editingScript: ConfigScript?
-    @State private var addingScript = false
+    @State private var addingScript: ConfigScript?
     @State private var deletingScript: ConfigScript?
 
     private let globalRules: [String]
@@ -201,7 +201,7 @@ struct ProfileOverrideView: View {
                             scriptRow(script)
                         }
                         HakoAddRow(Text("Add Script")) {
-                            addingScript = true
+                            addingScript = ScriptLibrary.fresh()
                         } touchLabel: {
                             Label("Add Script", systemImage: HakoSymbol.plus.name)
                         }
@@ -418,24 +418,21 @@ struct ProfileOverrideView: View {
                 }
                 .hakoModalPresentation(.page)
             }
-            .hakoProductModal(item: $editingScript, role: .page) { script in
+             
+            .hakoProductModal(item: $editingScript, role: .page, immersive: { _ in true }) { script in
                 ScriptEditorView(script: script) { saved in
                     ScriptLibrary.upsert(saved, in: scriptLibrary)
                     editingScript = nil
                 }
                 .hakoModalPresentation(.page)
             }
-            .hakoProductModal(isPresented: $addingScript, role: .page) {
-                ScriptEditorView(script: ConfigScript(
-                    id: UUID().uuidString.lowercased(),
-                    label: ScriptLibrary.defaultLabel,
-                    body: ScriptSettings.template
-                )) { saved in
+            .hakoProductModal(item: $addingScript, role: .page, immersive: { _ in true }) { script in
+                ScriptEditorView(script: script) { saved in
                      
                      
                     ScriptLibrary.upsert(saved, in: scriptLibrary)
                     selectedScriptID = saved.id
-                    addingScript = false
+                    addingScript = nil
                 }
                 .hakoModalPresentation(.page)
             }
