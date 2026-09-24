@@ -140,6 +140,7 @@ final class ExtensionProvider: NSObject {
     private var defaultPathIsConstrained = false
     private var defaultPathSupportsIPv4 = false
     private var defaultPathSupportsIPv6 = false
+    private var physicalPathAvailableInterfaces: [PhysicalInterfaceInventory.PathInterface] = []
     private var physicalPathUpdateCount: UInt64 = 0
     private var physicalPathHistory: [PhysicalPathEvent] = []
     private var providerSleepCount: UInt64 = 0
@@ -202,6 +203,7 @@ final class ExtensionProvider: NSObject {
             defaultPathIsConstrained = snapshot.constrained
             defaultPathSupportsIPv4 = snapshot.supportsIPv4
             defaultPathSupportsIPv6 = snapshot.supportsIPv6
+            physicalPathAvailableInterfaces = snapshot.availableInterfaces
             physicalPathUpdateCount &+= 1
             physicalPathHistory.append(PhysicalPathEvent(
                 sequence: physicalPathUpdateCount,
@@ -1933,8 +1935,31 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
         }
     }
 
+     
+     
+     
+     
+     
+     
     func getInterfaces() throws -> any HakoNetworkInterfaceIteratorProtocol {
-        throw ExtensionError.serviceUnavailable("GetInterfaces not wired (unused: sing-tun monitor disabled)")
+        pathLock.lock()
+        let available = physicalPathAvailableInterfaces
+        let expensive = defaultPathIsExpensive
+        let defaultIndex = defaultInterfaceIndex
+        pathLock.unlock()
+        let settings = withStateLock { networkSettings }
+        let ownAddresses = Set(
+            (settings?.ipv4Settings?.addresses ?? []) + (settings?.ipv6Settings?.addresses ?? [])
+        )
+        return PhysicalInterfaceInventory.Iterator(
+            PhysicalInterfaceInventory.build(
+                raw: PhysicalInterfaceInventory.enumerate(),
+                available: available,
+                pathIsExpensive: expensive,
+                defaultInterfaceIndex: defaultIndex,
+                ownTunnelAddresses: ownAddresses
+            )
+        )
     }
 
     func underNetworkExtension() -> Bool {
