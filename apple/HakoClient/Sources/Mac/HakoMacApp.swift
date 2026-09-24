@@ -344,10 +344,8 @@ struct HakoMacApp: App {
                  
                  
                  
-                ProfilePreviewView(title: .verbatim(profile.label)) { [profiles = model.profiles] in
-                    try await profiles.loadSavedConfigurationPreview(for: profile.id)
-                }
-                .frame(minWidth: 640, minHeight: 480)
+                HakoMacRuntimePreviewHost(profiles: model.profiles, profileID: profile.id, label: profile.label)
+                    .frame(minWidth: 640, minHeight: 480)
             }
         }
         .defaultSize(width: 920, height: 720)
@@ -4830,6 +4828,26 @@ struct HakoMacEditingNode: Identifiable {
 }
 
  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+struct HakoMacRuntimePreviewHost: View {
+    @ObservedObject var profiles: ProfilesViewModel
+    let profileID: String
+    let label: String
+
+    var body: some View {
+        ProfilePreviewView(title: .verbatim(label)) { [profiles] in
+            try await profiles.loadSavedConfigurationPreview(for: profileID)
+        }
+        .id(profiles.savedConfigurationGeneration)
+    }
+}
+
 struct HakoMacRuntimePreviewRequest: Hashable, Codable {
     let profileID: String
 }
