@@ -104,6 +104,11 @@ public struct HakoProfileSnapshot:
     public let isCurrent: Bool
     public let isBusy: Bool
     public let canEditSource: Bool
+    public let followsConfigurationSourceUpdates: Bool?
+    public let configurationAdvancedSummary: String?
+    public let isComposed: Bool?
+    public let configurationSourceNames: [String]?
+    public let configurationRuleName: String?
     public let canDelete: Bool
     public let deleteSubtitle: HakoDisplayText
     public let runtimeSummary: HakoDisplayText
@@ -128,13 +133,22 @@ public struct HakoProfileSnapshot:
         canEditSource: Bool = false,
         canDelete: Bool = true,
         deleteSubtitle: HakoDisplayText = "Remove this profile from Clash",
-        runtimeSummary: HakoDisplayText = "Local cache · read-only",
+        runtimeSummary: HakoDisplayText = "read-only",
         requiresPlaintextExportConfirmation: Bool = false,
         featureAvailability:
             HakoProfileFeatureAvailabilitySnapshot? = nil,
-        heldBackUpdates: [HakoProfileHeldBackUpdate] = []
+        heldBackUpdates: [HakoProfileHeldBackUpdate] = [],
+        isComposed: Bool? = nil,
+        configurationSourceNames: [String]? = nil, configurationRuleName: String? = nil,
+        followsConfigurationSourceUpdates: Bool? = nil,
+        configurationAdvancedSummary: String? = nil
     ) {
         self.id = id
+        self.configurationAdvancedSummary = configurationAdvancedSummary
+        self.followsConfigurationSourceUpdates = followsConfigurationSourceUpdates
+        self.isComposed = isComposed
+        self.configurationSourceNames = configurationSourceNames
+        self.configurationRuleName = configurationRuleName
         self.heldBackUpdates = heldBackUpdates
         self.label = String(label.prefix(256))
         self.source = source

@@ -461,6 +461,7 @@ struct ProxyNodeDetailsView: View {
     @Environment(\.hakoPopRoute) private var popRoute
     @StateObject private var draft: ProxyNodeEditorDraft
     @State private var errorMessage = ""
+    @State private var saving = false
     @State private var revealsPassword = false
     @State private var revealsObfsPassword = false
     @State private var revealedSecretKeys: Set<String> = []
@@ -589,15 +590,15 @@ struct ProxyNodeDetailsView: View {
          
          
         .hakoRegistersDeparture(
-            isDirty: draft.isDirty,
-            save: { completion in
-                save()
-                completion(true)
-            },
+            isDirty: draft.isDirty || chainDialerChanged,
+            isBusy: saving,
+            save: saveAndReport,
              
              
             discard: {}
         )
+        .disabled(saving)
+        .interactiveDismissDisabled(saving)
         .hakoProductModalRoot(title: isNew ? "Add Node" : "Edit Node")
          
          
@@ -990,11 +991,7 @@ struct ProxyNodeDetailsView: View {
                 Text(hako: .copy("Reset to Subscription"))
             }
             .accessibilityIdentifier("proxies.nodeEditor.reset")
-            .confirmationDialog(
-                "Reset to Subscription",
-                isPresented: $confirmsSubscriptionReset,
-                titleVisibility: .visible
-            ) {
+            .alert("Reset to Subscription", isPresented: $confirmsSubscriptionReset) {
                 Button("Reset to Subscription", role: .destructive) {
                     do {
                         try subscriptionReset?()
@@ -1008,6 +1005,7 @@ struct ProxyNodeDetailsView: View {
                         errorMessage = error.localizedDescription
                     }
                 }
+                Button("Cancel", role: .cancel) {}
             } message: {
                 Text(hako: .copy("The subscription's own values come back; the edit is discarded."))
             }
@@ -1567,7 +1565,10 @@ struct ProxyNodeDetailsView: View {
         return !isDirty && !chainDialerChanged
     }
 
-    private func save() {
+    private func save() { saveAndReport { _ in } }
+
+    private func saveAndReport(_ completion: @escaping (Bool) -> Void) {
+        guard !saving else { completion(false); return }
          
          
         errorMessage = ""
@@ -1575,8 +1576,10 @@ struct ProxyNodeDetailsView: View {
             try validate()
         } catch {
             errorMessage = error.localizedDescription
+            completion(false)
             return
         }
+        saving = true
          
          
          
@@ -1589,10 +1592,14 @@ struct ProxyNodeDetailsView: View {
             #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
         )
 #endif
-        Task { @MainActor in await finishSave() }
+        Task { @MainActor in
+            let succeeded = await finishSave()
+            saving = false
+            completion(succeeded)
+        }
     }
 
-    private func finishSave() async {
+    private func finishSave() async -> Bool {
         do {
             if draft.isDirty || isNew {
                  
@@ -1606,27 +1613,22 @@ struct ProxyNodeDetailsView: View {
                chainDialerChanged {
                 try saveAssignment(chainDialer)
             }
-#if os(macOS)
             if let onDone {
+                 
+                 
                 onDone()
-            } else if let popRoute {
-                popRoute(HakoPopToken())
             } else {
-                presentationMode.wrappedValue.dismiss()
-            }
+#if os(macOS)
+                if let popRoute { popRoute(HakoPopToken()) }
+                else { presentationMode.wrappedValue.dismiss() }
 #else
-             
-             
-             
-             
-             
-             
-             
-             
-            presentationMode.wrappedValue.dismiss()
+                presentationMode.wrappedValue.dismiss()
 #endif
+            }
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 

@@ -48,17 +48,7 @@ public struct HakoSaveButton: View {
                 isSaving = false
             }
         } label: {
-            ZStack {
-                 
-                 
-                Text(hako: title)
-                    .opacity(isSaving ? 0 : 1)
-                if isSaving {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .controlSize(.small)
-                }
-            }
+            HakoActionProgressLabel(title, isBusy: isSaving)
         }
          
          
@@ -69,6 +59,34 @@ public struct HakoSaveButton: View {
          
          
         .accessibilityValue(isSaving ? Text("Saving") : Text(""))
+    }
+}
+
+ 
+ 
+public struct HakoActionProgressLabel: View {
+    private let title: HakoDisplayText
+    private let isBusy: Bool
+
+    public init(_ title: HakoDisplayText, isBusy: Bool) {
+        self.title = title
+        self.isBusy = isBusy
+    }
+
+    public var body: some View {
+        Text(hako: title)
+            .opacity(isBusy ? 0 : 1)
+            .overlay {
+                if isBusy {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .controlSize(.small)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .accessibilityLabel(Text(hako: title))
+            .accessibilityValue(isBusy ? Text("Saving") : Text(""))
     }
 }
 

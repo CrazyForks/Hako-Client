@@ -20,6 +20,8 @@ struct ProfileEditView: View {
     @Environment(\.hakoInsideProductModalPresentation)
     private var insideProductModal
 
+    private let savesIndependentSource: Bool
+    private let editorTitle: String
     private let original: Profile
      
      
@@ -74,11 +76,15 @@ struct ProfileEditView: View {
     init(
         profile: Profile,
         rawYAML: String?,
+        editorTitle: String = "Edit Source",
+        savesIndependentSource: Bool = false,
         save: @escaping (
             Profile, String?, [ExternalResourceImportFile], Bool
         ) async throws -> Void
     ) {
         self.save = save
+        self.editorTitle = editorTitle
+        self.savesIndependentSource = savesIndependentSource
         original = profile
         originalRawText = rawYAML ?? ""
         hadRawSource = rawYAML != nil
@@ -189,7 +195,15 @@ struct ProfileEditView: View {
                     }
                     .accessibilityIdentifier("profile.sourceEditor.loading")
                 } else if hadRawSource || !rawText.isEmpty {
-                    editor
+                    VStack(spacing: 0) {
+                        if savesIndependentSource {
+                            Text("Saving creates an independent configuration that no longer follows source updates.")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, HakoTheme.Spacing.standard)
+                        }
+                        editor
+                    }
                 } else {
                     VStack {
                         Spacer()
@@ -211,7 +225,7 @@ struct ProfileEditView: View {
              
              
              
-            .hakoPageTitle(.copy(original.label), watchAs: "Edit Source")
+            .hakoPageTitle(.copy(editorTitle == "Edit Source" ? original.label : editorTitle), watchAs: "Edit Source")
              
              
             .modifier(HakoBarFadesWhileTyping(typing: $typing))
@@ -249,7 +263,7 @@ struct ProfileEditView: View {
                 }
             }
             .hakoProductModalRoot(
-                title: "Edit Source",
+                title: editorTitle,
                  
                  
                  

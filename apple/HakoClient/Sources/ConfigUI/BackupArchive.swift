@@ -1,4 +1,5 @@
 import Foundation
+import HakoClientKit
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -21,6 +22,7 @@ struct BackupRestoreResult: Equatable {
     let importedProfiles: Int
     let totalProfiles: Int
     let scope: BackupRestoreScope
+    var registrationFailures: [String] = []
 }
 
 struct BackupRestorePreview: Equatable {
@@ -84,8 +86,11 @@ struct BackupRestorePreview: Equatable {
  
  
 struct BackupArchive: Codable, Equatable {
-    static let currentSchemaVersion = 5
+    static let currentSchemaVersion = 6
 
+     
+     
+    var configurationLibrary: ConfigurationLibraryArchive?
     var schemaVersion = BackupArchive.currentSchemaVersion
     var profiles: [Profile]
     var sidecars: [String: String]    
@@ -190,8 +195,10 @@ struct BackupArchive: Codable, Equatable {
         activeProfileID: String? = nil,
         sourceInstallID: String? = nil,
         sourceDevice: String? = nil,
-        exportedAt: Date? = nil
+        exportedAt: Date? = nil,
+        configurationLibrary: ConfigurationLibraryArchive? = nil
     ) {
+        self.configurationLibrary = configurationLibrary
         self.profiles = profiles
         self.sidecars = sidecars
         self.publicResources = publicResources
@@ -211,6 +218,7 @@ struct BackupArchive: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case schemaVersion
+        case configurationLibrary
         case profiles
         case sidecars
         case publicResources
@@ -231,6 +239,7 @@ struct BackupArchive: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        configurationLibrary = try container.decodeIfPresent(ConfigurationLibraryArchive.self, forKey: .configurationLibrary)
         profiles = try container.decode([Profile].self, forKey: .profiles)
         sidecars = try container.decode([String: String].self, forKey: .sidecars)
         publicResources = try container.decodeIfPresent(
@@ -298,6 +307,15 @@ struct BackupArchive: Codable, Equatable {
         return try archive.sanitizedForPortableStorage()
     }
 
+    private static func configurationLibraryStore(workingDir: URL) -> ConfigurationLibraryStore {
+        let directory = workingDir.appendingPathComponent("configuration-library")
+        #if canImport(UIKit)
+        return ConfigurationLibraryStore(directory: directory, beginAccess: ConfigStoreSuspensionShield.beginLibraryAccess)
+        #else
+        return ConfigurationLibraryStore(directory: directory)
+        #endif
+    }
+
      
 
     static func collect(
@@ -310,6 +328,8 @@ struct BackupArchive: Codable, Equatable {
         exportedAt: Date = Date(),
         leavingOutIncompleteProfiles: Bool = false
     ) throws -> BackupArchive {
+        try ConfigurationCenterPublicationBridge.recoverReplacements(
+            library: configurationLibraryStore(workingDir: workingDir), workingDir: workingDir)
         let profileStore = ProfileStore(
             fileURL: workingDir.appendingPathComponent("store/profiles.json"))
         var profiles = profileStore.load()
@@ -439,6 +459,18 @@ struct BackupArchive: Codable, Equatable {
             sourceDevice: sourceDevice,
             exportedAt: exportedAt
         )
+        let library = configurationLibraryStore(workingDir: workingDir)
+        var libraryArchive = try library.exportArchive()
+        let profileIDs = Set(profiles.map(\.id))
+        let unpublished = (libraryArchive.snapshot.pendingPublications ?? []).filter { !profileIDs.contains($0.profileID) }
+        guard unpublished.isEmpty else { throw ConfigurationLibraryError.busy }
+         
+         
+        libraryArchive.snapshot.recipes.removeAll { !profileIDs.contains($0.id) }
+        libraryArchive.snapshot.pendingPublications = nil
+        libraryArchive.snapshot.lastMaterializationID = nil
+        libraryArchive.publications = []
+        archive.configurationLibrary = libraryArchive
         archive.leftOutProfileLabels = leftOut
         return archive
     }
@@ -727,7 +759,6 @@ struct BackupArchive: Codable, Equatable {
      
      
      
-     
     @discardableResult
     func restore(
         workingDir: URL,
@@ -761,6 +792,16 @@ struct BackupArchive: Codable, Equatable {
         let profileStore = ProfileStore(fileURL: profileURL)
         let existing = preparation.existingProfiles
         var restoredProfiles = preparation.restoredProfiles
+
+        let library = Self.configurationLibraryStore(workingDir: workingDir)
+        let libraryGeneration = try library.snapshot().generation
+        var libraryArchive = payload.configurationLibrary ?? .init(snapshot: .init(), payloads: [])
+        var registrationFailures: [String] = []
+        try library.validateArchive(libraryArchive)
+        guard libraryArchive.snapshot.recipes.allSatisfy({ importedIDs.contains($0.id) }),
+              libraryArchive.snapshot.pendingPublications?.isEmpty ?? true else {
+            throw ConfigurationLibraryError.invalidIdentifier
+        }
 
         let affectedIDs = importedIDs.union(existing.map(\.id))
         let snapshot = try RestoreSnapshot(
@@ -850,6 +891,24 @@ struct BackupArchive: Codable, Equatable {
                     in: defaults
                 )
             }
+             
+             
+             
+             
+            for profile in restoredProfiles where importedIDs.contains(profile.id) {
+                do {
+                    if let registration = try ConfigurationLegacyRegistration.prepare(profile: profile,
+                        snapshot: libraryArchive.snapshot,
+                        load: { try ConfigurationLegacyRegistration.payload(profile: profile, workingDir: workingDir) }) {
+                        libraryArchive.snapshot = registration.snapshot
+                        libraryArchive.payloads.append(contentsOf: registration.payloads)
+                    }
+                } catch { registrationFailures.append(profile.label + ": " + error.localizedDescription) }
+            }
+             
+             
+             
+            _ = try library.restoreArchive(libraryArchive, expectedGeneration: libraryGeneration)
         } catch {
             do {
                 try snapshot.rollback(defaults: defaults)
@@ -862,7 +921,8 @@ struct BackupArchive: Codable, Equatable {
         return BackupRestoreResult(
             importedProfiles: importedProfiles.count,
             totalProfiles: restoredProfiles.count,
-            scope: scope
+            scope: scope,
+            registrationFailures: registrationFailures
         )
     }
 
@@ -871,6 +931,8 @@ struct BackupArchive: Codable, Equatable {
         scope: BackupRestoreScope,
         defaults: UserDefaults
     ) throws -> RestorePreparation {
+        try ConfigurationCenterPublicationBridge.recoverReplacements(
+            library: Self.configurationLibraryStore(workingDir: workingDir), workingDir: workingDir)
         let payload = try preparedForRestore()
         let archiveModel = try payload.configurationModel()
         let profileStore = ProfileStore(

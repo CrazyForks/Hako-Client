@@ -387,6 +387,7 @@ final class ProviderMaterializer {
          
         ageSecretKeys: [String: String] = [:],
         localOverrides: [String: Data] = [:],
+        cachedNodeFiles: [String: URL] = [:],
         captureRefreshedPayloads: Set<String> = [],
         userAgent: String? = nil,
          
@@ -480,6 +481,27 @@ final class ProviderMaterializer {
                 onHand[index] = AcquiredPayload(
                     data: local, refreshed: true, subscriptionUserInfo: nil, failure: nil)
                 continue
+            }
+            let cachedFile: URL? = cachedNodeFiles[provider.name].map { libraryFile in
+                guard let reuseDir, let record = recordFor[provider.path],
+                      record.payloadURL == provider.url else { return libraryFile }
+                let previous = reuseDir.appendingPathComponent(provider.path)
+                let previousDate = (try? FileManager.default.attributesOfItem(atPath: previous.path)[.modificationDate]) as? Date
+                let libraryDate = (try? FileManager.default.attributesOfItem(atPath: libraryFile.path)[.modificationDate]) as? Date
+                return (previousDate ?? .distantPast) > (libraryDate ?? .distantPast) ? previous : libraryFile
+            }
+            if provider.kind == "proxy", !forceRefresh.contains(provider.name),
+               let file = cachedFile,
+               let bytes = try? Data(contentsOf: file, options: .mappedIfSafe),
+               bytes.count <= maxBytesEach,
+               provider.maximumBytes <= 0 || bytes.count <= Int(clamping: provider.maximumBytes) {
+                var count = 0
+                var error: NSError?
+                if HakoInspectProviderForIOS(provider.kind, provider.behavior, provider.format, bytes, &count, &error) {
+                    onHand[index] = AcquiredPayload(data: bytes, reusedFrom: file,
+                        refreshed: false, subscriptionUserInfo: nil, failure: nil)
+                    continue
+                }
             }
             if ProviderFetchedByCore.applies(toProxy: provider.proxy) {
                  
@@ -700,7 +722,9 @@ final class ProviderMaterializer {
                  
                  
                  
-                if let known = recordFor[provider.path]?.payloadURL {
+                if acquired.reusedFrom == cachedNodeFiles[provider.name] {
+                    payloadSourceURLs[provider.path] = provider.url
+                } else if let known = recordFor[provider.path]?.payloadURL {
                     payloadSourceURLs[provider.path] = known
                 }
                 if fellBack { staleFallbackNames.append(provider.name) }
@@ -731,6 +755,7 @@ final class ProviderMaterializer {
             var counted = 0
             var readable: Bool
             if acquired.reusedFrom != nil,
+               acquired.reusedFrom != cachedNodeFiles[provider.name],
                data == acquired.data,
                let known = knownVerdicts[provider.name],
                known.url == provider.url {

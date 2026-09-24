@@ -574,6 +574,9 @@ struct BackupRestoreView: View {
                     )
                 }.value
                 status = "Restored \(result.importedProfiles) profiles · \(result.totalProfiles) total"
+                if !result.registrationFailures.isEmpty {
+                    status += "\n" + result.registrationFailures.joined(separator: "\n")
+                }
                  
                  
                  

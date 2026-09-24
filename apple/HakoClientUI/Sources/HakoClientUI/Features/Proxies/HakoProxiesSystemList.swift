@@ -454,6 +454,7 @@ struct HakoProxyMemberListRow: View, Equatable {
             && a.failureCategory == b.failureCategory
             && a.isCurrent == b.isCurrent
             && a.canTest == b.canTest
+            && a.showsLatency == b.showsLatency
             && a.density == b.density
     }
 
@@ -477,6 +478,9 @@ struct HakoProxyMemberListRow: View, Equatable {
      
      
     let inspectNode: (() -> Void)?
+
+     
+    var showsLatency: Bool = true
 
     @State private var liveLatency: HakoProxyLatencyState?
 
@@ -520,12 +524,14 @@ struct HakoProxyMemberListRow: View, Equatable {
                     Spacer(minLength: 8)
                      
                      
-                    if let testNode {
-                        Button(action: testNode) { latencyBadge }
-                            .buttonStyle(.plain)
-                            .disabled(!canTest)
-                    } else {
-                        latencyBadge
+                    if showsLatency {
+                        if let testNode {
+                            Button(action: testNode) { latencyBadge }
+                                .buttonStyle(.plain)
+                                .disabled(!canTest)
+                        } else {
+                            latencyBadge
+                        }
                     }
                 }
                 .contentShape(Rectangle())
@@ -564,7 +570,7 @@ struct HakoProxyMemberListRow: View, Equatable {
                 Button(action: inspectNode) {
                     Image(systemName: HakoSymbol.infoCircle.rawValue)
                         .font(.body)
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(Color.blue)
                 }
                 .buttonStyle(.borderless)
                 .accessibilityLabel(Text(HakoCopy.key("Node Details")))

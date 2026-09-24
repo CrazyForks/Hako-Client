@@ -78,7 +78,7 @@ public enum HakoLogSettings {
     public static let recordingKey = "logs.recording"
 
     public static func isRecording(from defaults: UserDefaults) -> Bool {
-        defaults.object(forKey: recordingKey) as? Bool ?? true
+        defaults.object(forKey: recordingKey) as? Bool ?? false
     }
 
     public static func setRecording(_ value: Bool, in defaults: UserDefaults) {
@@ -140,12 +140,85 @@ public enum HakoLogLevel: String, Sendable {
  
  
  
+ 
+ 
+final class HakoLogBudget: @unchecked Sendable {
+    private let lock = NSLock()
+    let maximumBytes: Int
+    let maximumCount: Int
+    private var bytes = 0
+    private var count = 0
+    private var dropped = 0
+
+    init(maximumBytes: Int, maximumCount: Int) {
+        self.maximumBytes = maximumBytes
+        self.maximumCount = maximumCount
+    }
+
+    func reserve(_ size: Int) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        guard size >= 0, size <= maximumBytes - bytes, count < maximumCount else {
+            dropped += 1
+            return false
+        }
+        bytes += size; count += 1
+        return true
+    }
+
+    @discardableResult func release(_ size: Int) -> Int {
+        lock.lock(); defer { lock.unlock() }
+        bytes -= size; count -= 1
+        let lost = dropped
+        dropped = 0
+        return lost
+    }
+
+    var snapshot: (bytes: Int, count: Int, dropped: Int) {
+        lock.lock(); defer { lock.unlock() }
+        return (bytes, count, dropped)
+    }
+}
+
+ 
+struct HakoLogBuffer {
+    let maximumBytes: Int
+    let maximumCount: Int
+    private(set) var lines: [String] = []
+    private(set) var bytes = 0
+    private(set) var dropped = 0
+    var isEmpty: Bool { lines.isEmpty }
+
+    mutating func append(contentsOf incoming: [String]) {
+        for line in incoming {
+            let size = line.utf8.count
+            guard size <= maximumBytes else { dropped += 1; continue }
+            while !lines.isEmpty && (bytes + size > maximumBytes || lines.count >= maximumCount) {
+                bytes -= lines.removeFirst().utf8.count
+                dropped += 1
+            }
+            lines.append(line); bytes += size
+        }
+    }
+
+    mutating func removeAll(keepingCapacity: Bool = false) {
+        lines.removeAll(keepingCapacity: keepingCapacity)
+        bytes = 0; dropped = 0
+    }
+}
+
 public final class HakoLogStore: @unchecked Sendable {
     public static let shared = HakoLogStore()
 
     private let directory: URL?
     private let fileManager: FileManager
-    private let queue = DispatchQueue(label: "network.hako.logstore")
+    private let queue: DispatchQueue
+     
+    private let coreBudget = HakoLogBudget(maximumBytes: 512 * 1024, maximumCount: 512)
+    private let appBudget = HakoLogBudget(maximumBytes: 128 * 1024, maximumCount: 256)
+
+    func pendingUsage(_ stream: HakoLogStream) -> (bytes: Int, count: Int, dropped: Int) {
+        (stream == .core ? coreBudget : appBudget).snapshot
+    }
     private let clock: () -> Date
     private let settings: UserDefaults?
      
@@ -159,12 +232,25 @@ public final class HakoLogStore: @unchecked Sendable {
         directory: URL? = HakoLogStore.defaultDirectory(),
         fileManager: FileManager = .default,
         clock: @escaping () -> Date = Date.init,
-        settings: UserDefaults? = HakoLogStore.defaultSettings()
+        settings: UserDefaults? = HakoLogStore.defaultSettings(),
+        writeQueue: DispatchQueue? = nil
     ) {
         self.directory = directory
         self.fileManager = fileManager
         self.clock = clock
         self.settings = settings
+        self.queue = writeQueue ?? DispatchQueue(label: "network.hako.logstore")
+    }
+
+     
+     
+    private static func coreLogLevel(_ message: String) -> HakoLogLevel? {
+        guard message.hasPrefix("time="), let range = message.range(of: " level=") else { return nil }
+        let value = message[range.upperBound...].prefix { !$0.isWhitespace }
+        switch value {
+        case "fatal", "panic": return .error
+        default: return HakoLogLevel(rawValue: String(value))
+        }
     }
 
     public static func defaultSettings() -> UserDefaults? {
@@ -191,7 +277,8 @@ public final class HakoLogStore: @unchecked Sendable {
          
         guard !message.isEmpty else { return }
         let now = clock()
-        let stamped = "\(Self.timestamp(now))  \(level.rawValue.uppercased())  \(message)\n"
+        let recordedLevel = stream == .core ? Self.coreLogLevel(message) ?? level : level
+        let stamped = "\(Self.timestamp(now))  \(recordedLevel.rawValue.uppercased())  \(message)\n"
         let day = Self.day(now)
          
          
@@ -214,17 +301,20 @@ public final class HakoLogStore: @unchecked Sendable {
          
          
          
-        if isStartingUp() {
-            queue.sync {
-                write(stamped, stream: stream, on: day)
-                pruneExpired(stream, now: now)
-            }
-            return
-        }
-        queue.async { [weak self] in
+        let budget = stream == .core ? coreBudget : appBudget
+        let size = stamped.utf8.count
+        guard budget.reserve(size) else { return }
+        let operation: @Sendable () -> Void = { [weak self] in
             self?.write(stamped, stream: stream, on: day)
             self?.pruneExpired(stream, now: now)
+            let lost = budget.release(size)
+            if lost > 0 {
+                self?.write("\(Self.timestamp(now))  WARNING  Log queue full; dropped \(lost) lines.\n",
+                            stream: stream, on: day)
+            }
         }
+        if isStartingUp() { queue.sync(execute: operation) }
+        else { queue.async(execute: operation) }
     }
 
      

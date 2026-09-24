@@ -44,7 +44,11 @@ struct ProfileCenterAdapter: View {
     }
     @State private var exportDocument: ConfigTextDocument?
     @State private var exportName = ""
+    @State private var centerDismiss = HakoDismissHandle()
     @State private var adaptationNoticeCounts: [String: Int] = [:]
+    @State private var composedProfileIDs: Set<String> = []
+    @State private var configurationLibrary = ConfigurationLibrarySnapshot()
+    @State private var libraryBrowseCache: ConfigurationLibraryBrowseCache?
 
      
      
@@ -90,32 +94,23 @@ struct ProfileCenterAdapter: View {
 
     var body: some View {
         HakoOptionalNavigationContainer(owns: ownsNavigationContainer) {
-            HakoClientUI.HakoProfilesView(
-                snapshot: sharedSnapshot,
-                actions: sharedActions,
-                initialProfileID: initialProfileID,
-                opensImportInitially: opensImportInitially,
-                presentationClass:
-                    shellLayout == .regularSidebar
-                        ? .regularTouch
-                        : .compactTouch,
-                showsDismissControl: ownsNavigationContainer,
-                palette: productPalette,
-                pagePresentation: { content in
-                    AnyView(
-            content
-                    )
-                },
-                listPresentation: listPresentation,
-                capabilityInterceptor: capabilityInterceptor,
-                icon: { symbol in
-                    HakoSymbolImage(symbol: symbol)
-                },
-                capabilityContent: { destination in
-                    capabilityView(destination)
-                }
-            )
+#if os(iOS)
+            HakoConfigurationCenterSections {
+                profilesPage
+            } nodes: {
+                ConfigurationSourceLibraryAdapter(model: model, library: configurationLibrary,
+                    changed: applyCenterLibrary, close: { centerDismiss() },
+                    embedded: true, showsClose: ownsNavigationContainer, browseCache: $libraryBrowseCache)
+            } rules: {
+                ConfigurationRuleLibraryAdapter(model: model, library: configurationLibrary,
+                    changed: applyCenterLibrary, close: { centerDismiss() },
+                    embedded: true, showsClose: ownsNavigationContainer, browseCache: $libraryBrowseCache)
+            }
+#else
+            profilesPage
+#endif
         }
+        .hakoCapturesDismiss(centerDismiss)
         .alert(
             isPresented: Binding(
                 get: { activeFailure != nil },
@@ -160,9 +155,63 @@ struct ProfileCenterAdapter: View {
              
             if let request = importRouter.take() { consume(request) }
         }
+        .onReceive(model.$profiles) { _ in
+#if os(iOS)
+            Task { @MainActor in
+                guard let store = model.configurationLibraryStore else { return }
+                if let snapshot = try? await Task.detached(operation: { try store.snapshot() }).value {
+                    guard snapshot.generation >= configurationLibrary.generation else { return }
+                    composedProfileIDs = Set(snapshot.recipes.filter { $0.preservesOriginal != true }.map(\.id))
+                    configurationLibrary = snapshot
+                }
+            }
+#endif
+        }
         .task(id: activeRevisionKey) {
             await loadAdaptationNoticeCount()
         }
+    }
+
+    private func applyCenterLibrary(_ snapshot: ConfigurationLibrarySnapshot) {
+        configurationLibrary = snapshot
+        composedProfileIDs = Set(snapshot.recipes.filter { $0.preservesOriginal != true }.map(\.id))
+    }
+
+    private var usesConfigurationSections: Bool {
+#if os(iOS)
+        true
+#else
+        false
+#endif
+    }
+
+    private var profilesPage: some View {
+            HakoClientUI.HakoProfilesView(
+                snapshot: sharedSnapshot,
+                actions: sharedActions,
+                initialProfileID: initialProfileID,
+                opensImportInitially: opensImportInitially,
+                presentationClass:
+                    shellLayout == .regularSidebar
+                        ? .regularTouch
+                        : .compactTouch,
+                showsDismissControl: ownsNavigationContainer,
+                isCenterSection: usesConfigurationSections,
+                palette: productPalette,
+                pagePresentation: { content in
+                    AnyView(
+            content
+                    )
+                },
+                listPresentation: listPresentation,
+                capabilityInterceptor: capabilityInterceptor,
+                icon: { symbol in
+                    HakoSymbolImage(symbol: symbol)
+                },
+                capabilityContent: { destination in
+                    capabilityView(destination)
+                }
+            )
     }
 
     private var initialProfileID: HakoClientKit.Profile.ID? {
@@ -180,6 +229,12 @@ struct ProfileCenterAdapter: View {
         palette
     }
 
+    private var catalogProfiles: [Profile] {
+        model.profiles.filter { profile in
+            profile.id != LocalDefaultProfileProvisioner.profileID || initialProfileID?.rawValue == profile.id
+        }
+    }
+
     private var sharedSnapshot: AppleClientSnapshot {
         AppleClientSnapshot(
             revision: 0,
@@ -187,7 +242,10 @@ struct ProfileCenterAdapter: View {
                 phase: .unavailable
             ),
             profiles: HakoProfilesSnapshot(
-                profiles: model.profiles.compactMap(profileSnapshot),
+                 
+                 
+                 
+                profiles: catalogProfiles.compactMap(profileSnapshot),
                  
                  
                  
@@ -253,7 +311,7 @@ struct ProfileCenterAdapter: View {
             updateIntervalHours: profile.updateIntervalHours,
             isCurrent: isCurrent,
             isBusy: profile.id == model.busyProfileID,
-            canEditSource: model.hasEditableSource(for: profile),
+            canEditSource: profile.id != LocalDefaultProfileProvisioner.profileID && model.hasEditableSource(for: profile),
             canDelete: canDelete,
             deleteSubtitle: deleteSubtitle(
                 profile,
@@ -270,8 +328,24 @@ struct ProfileCenterAdapter: View {
                     newValue: $0.newValue,
                     appValue: $0.appValue
                 )
-            }
+            },
+            isComposed: composedProfileIDs.contains(profile.id),
+            configurationSourceNames: configurationLibrary.recipes.first(where: { $0.id == profile.id }).map { recipe in
+                recipe.sources.map { pin in configurationLibrary.sources.first(where: { $0.id == pin.id })?.label ?? pin.id }
+            },
+            configurationRuleName: configurationLibrary.recipes.first(where: { $0.id == profile.id }).flatMap { recipe in
+                (configurationLibrary.rules + ConfigurationBuiltins.schemes).first(where: { $0.id == recipe.ruleSchemeID })?.displayLabel
+            },
+            followsConfigurationSourceUpdates: configurationLibrary.recipes.first(where: { $0.id == profile.id })?.followsUpdates,
+            configurationAdvancedSummary: hasAdvancedConfiguration(profile) ? "Contains existing customizations" : nil
         )
+    }
+
+    private func hasAdvancedConfiguration(_ profile: Profile) -> Bool {
+        let patch = OverridePatch(patchJSON: profile.override.patchJSON).profileOwnedPatch.patchJSON
+        let hasPatch = (try? JSONSerialization.jsonObject(with: Data(patch.utf8)) as? [String: Any])?.isEmpty == false
+        return hasPatch || (profile.overwriteMode ?? .standard) != .standard
+            || !(profile.proxyChain?.isEmpty ?? true) || !(profile.legacyRelayMigrations?.isEmpty ?? true)
     }
 
      
@@ -358,7 +432,7 @@ struct ProfileCenterAdapter: View {
                 summary + " · " + HakoCopy.string("read-only", locale: locale)
             )
         }
-        return "Local cache · read-only"
+        return "read-only"
     }
 
     private func batchSnapshot(
@@ -404,25 +478,27 @@ struct ProfileCenterAdapter: View {
         }
     }
 
+    private func legacyImportView(onSaved: @escaping () -> Void) -> some View {
+        AddProfileView(createEmpty: { Task { _ = try? await handle(.createEmpty); onSaved() } }) { label, source, rawYAML, resources in
+            model.add(label:label,source:source,rawYAML:rawYAML,resourceFiles:resources)
+            model.selectSoleProfileIfNeeded()
+            onSaved()
+        }
+    }
+
     @ViewBuilder
     private func capabilityView(
         _ destination: HakoProfilesCapabilityDestination
     ) -> some View {
         switch destination {
         case .importProfile:
-            AddProfileView(
-                 
-                 
-                createEmpty: { Task { _ = try? await handle(.createEmpty) } }
-            ) { label, source, rawYAML, resources in
-                model.add(
-                    label: label,
-                    source: source,
-                    rawYAML: rawYAML,
-                    resourceFiles: resources
-                )
-                model.selectSoleProfileIfNeeded()
-            }
+#if os(iOS)
+            ConfigurationCreationAdapter(model:model,legacyImport: { onSaved in
+                AnyView(legacyImportView(onSaved:onSaved))
+            })
+#else
+            legacyImportView(onSaved:{})
+#endif
         case .backupRestore:
             BackupRestoreView()
         case .subscriptionSettings(let id):
@@ -456,16 +532,23 @@ struct ProfileCenterAdapter: View {
         case .override(let id):
             if let profile = appProfile(id) {
                 ProfileProjectionLoader(profile: profile, model: model) { projected in
-                    ProfileOverrideView(
-                        profile: profile,
-                        rawYAML: projected
-                    ) { updated in
-                        model.update(updated)
-                    }
+                    ProfileOverrideView(profile: profile, rawYAML: projected, configurationCenter: true) { model.update($0) }
                 }
             } else {
                 EmptyView()
             }
+        case .configurationSources(let id):
+            ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
+                editingProfileID: id.rawValue, editingStep: .sources)
+        case .configurationRules(let id):
+            ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
+                editingProfileID: id.rawValue, editingStep: .rules,
+                personalRules: {
+                    AnyView(capabilityView(.rules(id)))
+                })
+        case .configurationDNS(let id):
+            ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
+                editingProfileID: id.rawValue, editingStep: .finish)
         case .sourceEditor(let id):
             if let profile = appProfile(id) {
                  
@@ -475,17 +558,16 @@ struct ProfileCenterAdapter: View {
                  
                  
                  
-                ProfileSourceEditorLoader(profile: profile, model: model)
+                ProfileSourceEditorLoader(profile: profile, model: model,
+                    savesIndependentSource: composedProfileIDs.contains(profile.id))
             } else {
                 EmptyView()
             }
         case .runtimePreview(let id):
             if let profile = appProfile(id) {
-                ProfilePreviewView(title: .verbatim(profile.label)) {
-                    await model.loadCachedPreviewText(
-                        for: profile.id
-                    )
-                }
+                ProfilePreviewView(title: .verbatim(profile.label), load: {
+                    try await model.loadAppliedConfigurationPreview(for: profile.id)
+                })
             } else {
                 EmptyView()
             }
@@ -567,6 +649,14 @@ struct ProfileCenterAdapter: View {
         case .dismissHeldBackUpdates(let id):
             if let profile = appProfile(id) {
                 try model.dismissHeldBackUpdates(profile)
+            }
+            return .none
+
+        case let .setConfigurationSourceUpdates(id, enabled):
+            try await model.setConfigurationSourceUpdates(id.rawValue, enabled: enabled)
+            if let store = model.configurationLibraryStore {
+                let updated = try await Task.detached { try store.snapshot() }.value
+                if updated.generation >= configurationLibrary.generation { configurationLibrary = updated }
             }
             return .none
 
@@ -751,11 +841,11 @@ struct ProfileCenterAdapter: View {
     private func applyOrder(
         _ desiredIDs: [HakoClientKit.Profile.ID]
     ) {
-        let desired = desiredIDs.map(\.rawValue)
-        guard desired.count == model.profiles.count,
-              Set(desired) == Set(model.profiles.map(\.id)) else {
-            return
-        }
+        let visible = desiredIDs.map(\.rawValue)
+        guard visible.count == catalogProfiles.count,
+              Set(visible) == Set(catalogProfiles.map(\.id)) else { return }
+         
+        let desired = visible + model.profiles.filter { !visible.contains($0.id) }.map(\.id)
 
         for targetIndex in desired.indices {
             guard let currentIndex = model.profiles.firstIndex(
@@ -880,6 +970,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
     @State private var autoUpdate: Bool
     @State private var updateIntervalHours: Int
     @State private var errorMessage = ""
+    @State private var confirmsCredentialRemoval = false
      
      
      
@@ -963,7 +1054,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                 ) != nil {
                     Section {
                         Button(role: .destructive) {
-                            stripStoredCredentials()
+                            confirmsCredentialRemoval = true
                         } label: {
                             Text("Remove Stored Link Credentials")
                         }
@@ -985,6 +1076,13 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                 }
             }
             .hakoPageTitle("Subscription Settings")
+            .alert("Remove Stored Link Credentials", isPresented: $confirmsCredentialRemoval) {
+                Button("Remove Stored Link Credentials", role: .destructive) { stripStoredCredentials() }
+                    .accessibilityIdentifier("profile-metadata.strip-credentials.confirm")
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("The saved link carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them.")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     if !insideProductModal {
@@ -1161,6 +1259,7 @@ private struct ProfileProjectionLoader<Content: View>: View {
 private struct ProfileSourceEditorLoader: View {
     let profile: Profile
     @ObservedObject var model: ProfilesViewModel
+    var savesIndependentSource = false
     @State private var source: String?
     @State private var read = false
 
@@ -1169,7 +1268,8 @@ private struct ProfileSourceEditorLoader: View {
             if read {
                 ProfileEditView(
                     profile: profile,
-                    rawYAML: source
+                    rawYAML: source,
+                    savesIndependentSource: savesIndependentSource
                 ) { updated, rawYAML, resources, disablingAutoUpdate in
                     try await model.updateEdited(
                         updated,

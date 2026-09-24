@@ -120,6 +120,8 @@ extension RulePolicyOptions {
  
  
 struct RuleBuilderAdapter: View {
+    private let delete: (() -> Void)?
+    private let showsPersonalMetadata: Bool
     private let raw: String
     private let options: RulePolicyOptions
     private let enabled: Bool
@@ -131,6 +133,8 @@ struct RuleBuilderAdapter: View {
     init(
         raw: String,
         options: RulePolicyOptions = .empty,
+        showsPersonalMetadata: Bool = true,
+        delete: (() -> Void)? = nil,
         enabled: Bool = true,
         comment: String = "",
         saveDetails: (
@@ -138,6 +142,8 @@ struct RuleBuilderAdapter: View {
         )? = nil,
         save: @escaping (String) -> Void
     ) {
+        self.delete = delete
+        self.showsPersonalMetadata = showsPersonalMetadata
         self.raw = raw
         self.options = options
         self.enabled = enabled
@@ -154,6 +160,8 @@ struct RuleBuilderAdapter: View {
                 comment: comment.isEmpty ? nil : comment
             ),
             options: options.shared,
+            showsPersonalMetadata: showsPersonalMetadata,
+            delete: delete,
             initialRoute: initialRoute,
             runtimeProfile: hakoAppleRuntimeProfile,
             palette: HakoClientUI.HakoProductPalette.hakoProduct,

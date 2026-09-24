@@ -13,6 +13,7 @@ struct ProfileDNSSettingsAdapter: View {
      
     var openDNSQuery: (() -> Void)?
     var ownsNavigationContainer = true
+    var configurationDraft = false
     let save: (ProfileDNSDraft) throws -> Void
 
     init(
@@ -22,8 +23,10 @@ struct ProfileDNSSettingsAdapter: View {
         saveHosts: ((ProfileHostsDraft) throws -> Void)? = nil,
         openDNSQuery: (() -> Void)? = nil,
         ownsNavigationContainer: Bool = true,
+        configurationDraft: Bool = false,
         save: @escaping (ProfileDNSDraft) throws -> Void
     ) {
+        self.configurationDraft = configurationDraft
         self.profile = profile
         self.command = command
         self.sourceYAML = sourceYAML
@@ -271,7 +274,8 @@ struct ProfileDNSSettingsAdapter: View {
         HakoClientUI.HakoDNSSettingsView(
             snapshot: snapshot,
             actions: actions,
-            capabilities: capabilities
+            capabilities: capabilities,
+            configurationDraft: configurationDraft
         ) {
             HakoSymbolImage(symbol: $0)
         } dnsQueryDestination: {
@@ -333,7 +337,7 @@ struct ProfileDNSSettingsAdapter: View {
                     dnsOverridesProfiles:
                         profile.override.dnsOverridesProfiles ?? false
                 ).sharedDraft,
-                inherited: derived?.inheritedBases ?? .none,
+                inherited: configurationDraft ? .none : derived?.inheritedBases ?? .none,
                 localMappings: hosts,
                 localMappingsAvailable: saveHosts != nil,
                  

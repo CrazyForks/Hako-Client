@@ -15,6 +15,7 @@ final class HakoRootDepartureGuard: ObservableObject {
          
         let id: UUID
         let isDirty: Bool
+        let isBusy: Bool
         let save: (@escaping (Bool) -> Void) -> Void
         let discard: () -> Void
     }
@@ -42,6 +43,7 @@ final class HakoRootDepartureGuard: ObservableObject {
      
     var hasDirtyRegistration: Bool { registration?.isDirty == true }
     private var pendingDeparture: (() -> Void)?
+    private var isSaving = false
 
     func register(
         id: UUID,
@@ -53,6 +55,7 @@ final class HakoRootDepartureGuard: ObservableObject {
         let entry = Registration(
             id: id,
             isDirty: isDirty,
+            isBusy: isBusy,
             save: save,
             discard: discard
         )
@@ -65,18 +68,18 @@ final class HakoRootDepartureGuard: ObservableObject {
         if wasDirty != hasDirtyRegistration {
             dirtyRegistrationDidChange?()
         }
+        refreshBusyState()
+    }
+
+    private func refreshBusyState() {
          
          
          
          
          
          
-         
-         
-         
-        if self.isBusy != isBusy {
-            self.isBusy = isBusy
-        }
+        let next = isSaving || registration?.isBusy == true
+        if isBusy != next { isBusy = next }
     }
 
      
@@ -92,6 +95,7 @@ final class HakoRootDepartureGuard: ObservableObject {
     func unregister(id: UUID) {
         let wasDirty = hasDirtyRegistration
         registrations.removeAll { $0.id == id }
+        refreshBusyState()
         if wasDirty != hasDirtyRegistration {
             dirtyRegistrationDidChange?()
         }
@@ -119,6 +123,7 @@ final class HakoRootDepartureGuard: ObservableObject {
              
              
             registrations.removeLast()
+            refreshBusyState()
             departure()
             return
         }
@@ -133,17 +138,20 @@ final class HakoRootDepartureGuard: ObservableObject {
          
          
          
-        isBusy = true
+        isSaving = true
+        refreshBusyState()
         registration.save { [weak self] succeeded in
             guard let self else { return }
+            isSaving = false
             guard succeeded else {
                 pendingDeparture = nil
-                isBusy = false
+                refreshBusyState()
                 return
             }
             let departure = pendingDeparture
             pendingDeparture = nil
             registrations.removeAll()
+            refreshBusyState()
             departure?()
         }
     }
@@ -168,7 +176,8 @@ final class HakoRootDepartureGuard: ObservableObject {
      
     private func clearRegistration() {
         registrations.removeAll()
-        isBusy = false
+        isSaving = false
+        refreshBusyState()
         isPromptPresented = false
     }
 }
@@ -285,4 +294,3 @@ private struct HakoDepartureRegistration: ViewModifier {
         )
     }
 }
-

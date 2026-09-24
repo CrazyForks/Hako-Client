@@ -240,6 +240,11 @@ struct AppShellView: View {
             command.syncConnectionObservationScene(isActive: scenePhase == .active, isBackground: scenePhase == .background)
 
 
+
+
+             
+             
+            await restoreTunnelControlSession()
             proxyShare.bind(command: command)
              
              
@@ -418,9 +423,10 @@ struct AppShellView: View {
              
             ICloudAutoBackup.shared.setForeground(phase == .active)
             if phase == .active {
-                Task { await vpn.refreshSystemVPNInstallation() }
-                command.sync(vpnStatus: vpn.status)
-                syncConnectionsForSelectedTab(isForeground: true)
+                Task {
+                    await restoreTunnelControlSession()
+                    syncConnectionsForSelectedTab(isForeground: scenePhase == .active)
+                }
 
 
                 proxyShare.refreshAddresses()
@@ -991,6 +997,13 @@ struct AppShellView: View {
         }
     }
 
+    private func restoreTunnelControlSession() async {
+        await vpn.refreshSystemVPNInstallation()
+         
+         
+        rebind()
+    }
+
     private func rebind() {
         HakoPerf.measure("shell.rebind") {
             command.bind(session: vpn.session)
@@ -1216,6 +1229,10 @@ struct AppShellView: View {
      
      
     private func handleVPNStatusTransition(_ status: String) {
+         
+         
+         
+        command.bind(session: vpn.session)
         command.sync(vpnStatus: status)
         publishVPNControlSnapshot(status: status)
          

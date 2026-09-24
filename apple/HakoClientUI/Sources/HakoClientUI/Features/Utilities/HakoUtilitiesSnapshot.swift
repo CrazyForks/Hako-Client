@@ -22,7 +22,7 @@ public struct HakoUtilitiesSnapshot: Codable, Equatable, Sendable {
         activeConnectionCount: Int = 0,
         requestCount: Int = 0,
         logCount: Int = 0,
-        isRecordingLogs: Bool = true,
+        isRecordingLogs: Bool = false,
         logRetentionTitle: String? = nil,
         providerCount: Int? = nil,
         networkQualitySummary: String =

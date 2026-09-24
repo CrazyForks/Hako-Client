@@ -47,6 +47,7 @@ struct ProfileOverrideView: View {
     private let scripts: [ConfigScript]
     private let rawYAML: String?
     private let opensProxyChainsDirectly: Bool
+    private let configurationCenter: Bool
 
     private struct RuleEditTarget: Identifiable {
         let id = UUID()
@@ -64,10 +65,12 @@ struct ProfileOverrideView: View {
         profile: Profile,
         rawYAML: String?,
         openProxyChains: Bool = false,
+        configurationCenter: Bool = false,
         save: @escaping (Profile) -> Void
     ) {
         let settingsFacade = ProfileSettingsFacade()
         let settings = settingsFacade.snapshot(for: profile)
+        self.configurationCenter = configurationCenter
         self.profile = profile
         self.save = save
         self.rawYAML = rawYAML
@@ -138,9 +141,10 @@ struct ProfileOverrideView: View {
                     } header: {
                         Text("Patch JSON")
                     } footer: {
-                        Text("Deep-merged into this profile's generated working copy. Use {} for no field overrides.")
+                        Text("Use {} to leave fields unchanged.")
                     }
 
+                    if !configurationCenter {
                     Section {
                         ForEach(ruleRows.current(for: rules)) { row in
                             let rule = ruleRows.index(of: row.id)
@@ -178,6 +182,7 @@ struct ProfileOverrideView: View {
                                 : "Tap to edit; use Edit to reorder or delete."
                         )
                     }
+                    }
                 } else if mode == .script {
                     Section {
                     Picker("Override Script", selection: $selectedScriptID) {
@@ -190,7 +195,7 @@ struct ProfileOverrideView: View {
                     } header: {
                         Text("Script")
                     } footer: {
-                        Text("The selected script transforms the full generated working copy before app-wide overrides.")
+                        Text("Global overrides apply after this script.")
                     }
                 } else {
                     Section {
@@ -268,6 +273,7 @@ struct ProfileOverrideView: View {
                     }
                 }
 
+                if !configurationCenter || !proxyChain.isEmpty || !legacyRelayMigrations.isEmpty {
                 Section {
                     HakoRoutedViewLink {
                         ProfileProxyChainEditor(
@@ -287,7 +293,9 @@ struct ProfileOverrideView: View {
                 } header: {
                     Text("Proxy Identity")
                 } footer: {
-                    Text("Credentials stay in the device Keychain. Chains use dialer-proxy; neither feature rewrites the downloaded source.")
+                    Text("Existing chain overrides affect this configuration. Add reusable chains in Node Library.")
+                }
+
                 }
 
                 if !globalRules.isEmpty {
@@ -338,7 +346,7 @@ struct ProfileOverrideView: View {
                     )
                 }.value
             }
-            .hakoPageTitle("Profile Override")
+            .hakoPageTitle(.copy(configurationCenter ? "Overrides and Scripts" : "Profile Override"))
              
              
              
@@ -369,7 +377,7 @@ struct ProfileOverrideView: View {
                 }
 #endif
             }
-            .hakoProductModalRoot(title: "Profile Override")
+            .hakoProductModalRoot(title: configurationCenter ? "Overrides and Scripts" : "Profile Override")
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if insideProductModal {
                     HakoModalActionBar(
@@ -507,12 +515,11 @@ struct ProfileOverrideView: View {
         if mode == .custom { try customOverwrite.validate() }
 
         var settings = settingsFacade.snapshot(for: profile)
-        settings.override = OverrideSpec(
-            patchJSON: patchJSON,
-            appendRules: rules,
-            prependRules: prependRules,
-            disabledGlobalRules: globalRules.filter(disabledGlobalRules.contains)
-        )
+         
+        settings.override.patchJSON = patchJSON
+        settings.override.appendRules = rules
+        settings.override.prependRules = prependRules
+        settings.override.disabledGlobalRules = globalRules.filter(disabledGlobalRules.contains)
         settings.selectedScriptID = selectedScriptID
         settings.overwriteMode = mode
         settings.customOverwrite = customOverwrite

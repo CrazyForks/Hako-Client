@@ -68,7 +68,18 @@ enum CustomNodeAppend {
  
  
  
+ 
+ 
+final class CustomNodesEditorState: ObservableObject {
+    @Published var draft: ProfileProviderDefinitionsDraft?
+    @Published var hasLoadedOnce = false
+    @Published var openedWith: [InlineProxyRow] = []
+    @Published var pendingRenames: [(old: String, new: String)] = []
+    @Published var customRows: [InlineProxyRow] = []
+}
+
 struct CustomNodesView: View {
+    @StateObject private var editorState: CustomNodesEditorState
     let profile: Profile
     let sourceYAML: String?
     let loadDraft: () throws -> ProfileProviderDefinitionsDraft
@@ -82,6 +93,12 @@ struct CustomNodesView: View {
      
      
     let savePayload: ((String?) throws -> Void)?
+    let savePayloadAsync: ((String?) async throws -> Void)?
+    let onSaved: (() -> Void)?
+    let libraryDraft: Bool
+    let isFirstConfigurationStep: Bool
+    @State private var isSaving = false
+    private var isBusy: Bool { isApplying || isSaving }
      
     let applyEdits: (() -> Void)?
      
@@ -96,6 +113,7 @@ struct CustomNodesView: View {
      
      
     let renameNode: (_ old: String, _ new: String) throws -> Void
+    let tabHeader: ((Bool) -> AnyView)?
     let ownsNavigationContainer: Bool
      
      
@@ -110,10 +128,10 @@ struct CustomNodesView: View {
      
      
     @State private var addRequested = false
-    @State private var draft: ProfileProviderDefinitionsDraft?
+    private var draft: ProfileProviderDefinitionsDraft? { get { editorState.draft } nonmutating set { editorState.draft = newValue } }
     @Environment(\.hakoInsideProductModalPresentation)
     private var insideProductModal
-    @State private var hasLoadedOnce = false
+    private var hasLoadedOnce: Bool { get { editorState.hasLoadedOnce } nonmutating set { editorState.hasLoadedOnce = newValue } }
     @State private var asksAboutUnsaved = false
 
      
@@ -122,13 +140,13 @@ struct CustomNodesView: View {
      
      
      
-    @State private var openedWith: [InlineProxyRow] = []
+    private var openedWith: [InlineProxyRow] { get { editorState.openedWith } nonmutating set { editorState.openedWith = newValue } }
      
      
      
      
      
-    @State private var pendingRenames: [(old: String, new: String)] = []
+    private var pendingRenames: [(old: String, new: String)] { get { editorState.pendingRenames } nonmutating set { editorState.pendingRenames = newValue } }
 
     private var hasUnsavedEdits: Bool {
          
@@ -140,7 +158,7 @@ struct CustomNodesView: View {
             current: customRows.map(\.json).joined(separator: "\n")
         ) == .offerToSave
     }
-    @State private var customRows: [InlineProxyRow] = []
+    private var customRows: [InlineProxyRow] { get { editorState.customRows } nonmutating set { editorState.customRows = newValue } }
     @State private var errorMessage = ""
      
     @State private var fieldsLeftBehind = ""
@@ -154,21 +172,33 @@ struct CustomNodesView: View {
         profile: Profile,
         sourceYAML: String?,
         ownsNavigationContainer: Bool = true,
+        tabHeader: ((Bool) -> AnyView)? = nil,
+        editorState: CustomNodesEditorState? = nil,
         loadDraft: @escaping () throws -> ProfileProviderDefinitionsDraft,
         prepareDraft: (() async throws -> ProfileProviderDefinitionsDraft)? = nil,
         saveDraft: @escaping (ProfileProviderDefinitionsDraft) throws -> Void,
         savePayload: ((String?) throws -> Void)? = nil,
+        savePayloadAsync: ((String?) async throws -> Void)? = nil,
+        onSaved: (() -> Void)? = nil,
+        libraryDraft: Bool = false,
+        isFirstConfigurationStep: Bool = false,
         applyEdits: (() -> Void)? = nil,
         isApplying: Bool = false,
         renameNode: @escaping (_ old: String, _ new: String) throws -> Void
     ) {
+        _editorState = StateObject(wrappedValue: editorState ?? CustomNodesEditorState())
         self.profile = profile
         self.sourceYAML = sourceYAML
         self.ownsNavigationContainer = ownsNavigationContainer
+        self.tabHeader = tabHeader
         self.loadDraft = loadDraft
         self.prepareDraft = prepareDraft
         self.saveDraft = saveDraft
         self.savePayload = savePayload
+        self.savePayloadAsync = savePayloadAsync
+        self.onSaved = onSaved
+        self.libraryDraft = libraryDraft
+        self.isFirstConfigurationStep = isFirstConfigurationStep
         self.applyEdits = applyEdits
         self.isApplying = isApplying
         self.renameNode = renameNode
@@ -185,7 +215,10 @@ struct CustomNodesView: View {
         HakoFeatureNavigationContainer(
             ownsNavigationContainer: ownsNavigationContainer
         ) {
-            content
+            VStack(spacing: 0) {
+                if let tabHeader { tabHeader(hasUnsavedEdits).disabled(isBusy) }
+                content
+            }
         }
         .accessibilityIdentifier("custom-nodes")
         .onChange(of: addRequested) { requested in
@@ -240,13 +273,13 @@ struct CustomNodesView: View {
          
         .hakoRegistersDeparture(
             isDirty: hasUnsavedEdits || !pendingRenames.isEmpty,
-            isBusy: isApplying,
+            isBusy: isBusy,
             save: { completion in
-                commitEdits()
-                completion(true)
+                commitEdits(completion: completion)
             },
             discard: { discardEdits() }
         )
+        .disabled(isSaving)
         .hakoPageProbe("custom-nodes")
         .hakoCapturesDismiss(dismiss)
     }
@@ -258,14 +291,15 @@ struct CustomNodesView: View {
         HakoClientUI.HakoProfileCollectionPage(
             profileName: profile.label,
             message:
-                "Hand-built nodes and subscription-node edits belong to this profile. Its imported source stays unchanged."
+                isFirstConfigurationStep ? "Create a node, then choose how to route your traffic." : libraryDraft ? "Save custom nodes here, then select them when creating a configuration."
+                    : "Hand-built nodes and subscription-node edits belong to this profile. Its imported source stays unchanged."
         ) {
             HakoSymbolImage(symbol: .profileClipboard)
         } content: {
             customSection
             shareLinkSection
         }
-        .navigationTitle(HakoCopy.key("Custom Nodes"))
+        .navigationTitle(HakoCopy.key(isFirstConfigurationStep ? "Create Nodes 1/2" : (libraryDraft ? HakoConfigurationAddition.nodes.title : "Custom Nodes")))
         .hakoStableNavigationDestination(for: CustomNodeRoute.self) {
             route in
             nodeDestination(for: route)
@@ -303,19 +337,9 @@ struct CustomNodesView: View {
                 Button {
                     commitEdits()
                 } label: {
-                     
-                     
-                     
-                    if isApplying {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text(hako: .copy("Saving…"))
-                        }
-                    } else {
-                        Text(hako: .copy("Save"))
-                    }
+                    HakoActionProgressLabel(.copy(isFirstConfigurationStep ? "Next" : "Save"), isBusy: isBusy)
                 }
-                .disabled(isApplying || !hasUnsavedEdits)
+                .disabled(isBusy || !hasUnsavedEdits)
                 .accessibilityIdentifier("custom-nodes.save")
             }
         }
@@ -323,11 +347,9 @@ struct CustomNodesView: View {
              
              
             Button("Save") {
-                commitEdits()
-                 
-                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    dismiss()
+                commitEdits { saved in
+                    guard saved else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { dismiss() }
                 }
             }
              
@@ -817,7 +839,17 @@ struct CustomNodesView: View {
      
      
      
-    private func commitEdits() {
+    private func commitEdits(completion: @escaping (Bool) -> Void = { _ in }) {
+        guard !isBusy else { completion(false); return }
+        isSaving = true
+        Task { @MainActor in
+            defer { isSaving = false }
+            await writeEdits(completion: completion)
+        }
+    }
+
+    @MainActor
+    private func writeEdits(completion: (Bool) -> Void) async {
         let began = DispatchTime.now().uptimeNanoseconds
         defer {
             HakoPerf.note(
@@ -826,7 +858,7 @@ struct CustomNodesView: View {
             )
         }
         guard hasUnsavedEdits || !pendingRenames.isEmpty else {
-            dismiss()
+            completion(true)
             return
         }
         do {
@@ -836,7 +868,9 @@ struct CustomNodesView: View {
                     to: payload, from: rename.old, to: rename.new
                 )
             }
-            if let savePayload {
+            if let savePayloadAsync {
+                try await savePayloadAsync(CustomNodePayload.definitionJSON(for: payload))
+            } else if let savePayload {
                 try savePayload(CustomNodePayload.definitionJSON(for: payload))
             } else {
                  
@@ -859,8 +893,11 @@ struct CustomNodesView: View {
             customRows = InlineProxyRow.rows(from: payload)
             openedWith = customRows
             applyEdits?()
+            completion(true)
+            onSaved?()
         } catch {
             errorMessage = error.localizedDescription
+            completion(false)
         }
     }
 
@@ -952,6 +989,7 @@ struct CustomNodesView: View {
 
     @MainActor
     private func reload() async {
+        if libraryDraft && hasLoadedOnce { return }
         do {
              
              

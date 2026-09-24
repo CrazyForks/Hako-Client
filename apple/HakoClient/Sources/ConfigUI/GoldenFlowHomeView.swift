@@ -146,6 +146,7 @@ struct GoldenFlowHomeAdapter: View {
      
     @State private var presentedHomeSnapshot: AppleClientSnapshot?
     @State private var configTally: ProfileConfigTally?
+    @State private var tallyGeneration: UInt64 = 0
      
      
      
@@ -261,6 +262,10 @@ struct GoldenFlowHomeAdapter: View {
          
         .onChange(of: command.isConnected) { _ in
             recomputeTally()
+        }
+        .onChange(of: profiles.savedConfigurationGeneration) { _ in
+            recomputeTally()
+            if !command.isConnected { Task { await nodes.refresh() } }
         }
         .onChange(of: editorDestination?.id) { destination in
             if destination == nil {
@@ -1608,14 +1613,10 @@ struct GoldenFlowHomeAdapter: View {
          
          
          
-         
-         
-         
-        let fromDisk = subscriptionNodeTally
         let fromRuntime = nodes.runtimeProviderCatalog.proxyProviders.values
             .filter { !$0.isKernelInternal }
             .reduce(0) { $0 + $1.proxies.count }
-        let subscription = fromDisk ?? fromRuntime
+        let subscription = command.isConnected ? fromRuntime : (nodes.cachedProviderNodeCount ?? 0)
         guard subscription > 0 else { return inline }
         return (inline ?? 0) + subscription
     }
@@ -2155,6 +2156,9 @@ struct GoldenFlowHomeAdapter: View {
     }
 
     private func recomputeTally() {
+        tallyGeneration &+= 1
+        let generation = tallyGeneration
+        let tunnelRunning = command.isConnected
          
          
          
@@ -2182,7 +2186,7 @@ struct GoldenFlowHomeAdapter: View {
          
          
         let cacheKey = currentProfile.map {
-            HomeTallyCache.Key(profileID: $0.id, refreshToken: profileRefreshToken)
+            HomeTallyCache.Key(profileID: $0.id, refreshToken: profileRefreshToken &+ Int(truncatingIfNeeded: profiles.savedConfigurationGeneration))
         }
         if let cacheKey, let cached = HomeTallyCache.shared.entry(for: cacheKey) {
             configTally = cached.tally
@@ -2209,9 +2213,14 @@ struct GoldenFlowHomeAdapter: View {
                     )
                 }
             }
-            let (effective, tunnelRunning): (String?, Bool) = await MainActor.run {
-                (projectionProfile.flatMap { profiles.effectiveYAML(for: $0) }, command.isConnected)
-            }
+            let effective: String?
+            if tunnelRunning {
+                effective = await MainActor.run { projectionProfile.flatMap { profiles.effectiveYAML(for: $0) } }
+            } else if let source = resourceYAML, let profile = projectionProfile {
+                 
+                 
+                effective = (try? ProfileRuntimeConfigBuilder.buildProduction(raw: source, profile: profile)) ?? source
+            } else { effective = nil }
             let tally = ProfileConfigTally.make(sourceYAML: effective, tunnelRunning: tunnelRunning)
             let overview = RulesOverviewModel.make(sourceYAML: effective)
             let subscription = Self.readSubscriptionNodeTally(store: store)
@@ -2220,6 +2229,8 @@ struct GoldenFlowHomeAdapter: View {
                 sourceYAML: resourceYAML
             )
             await MainActor.run {
+                guard generation == tallyGeneration, command.isConnected == tunnelRunning,
+                      currentProfile?.id == projectionProfile?.id else { return }
                  
                  
                  

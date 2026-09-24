@@ -365,6 +365,7 @@ enum ScriptLibrary {
 
 struct ScriptLibraryView: View {
     @State private var scripts = ScriptLibrary.load()
+    @State private var deletingScripts: [ConfigScript] = []
     @State private var editing: ConfigScript?
     @State private var adding = false
 
@@ -403,9 +404,7 @@ struct ScriptLibraryView: View {
                 .accessibilityIdentifier("scripts.row.\(script.id)")
             }
             .onDelete { offsets in
-                let ids = offsets.compactMap { scripts.indices.contains($0) ? scripts[$0].id : nil }
-                ids.forEach { ScriptLibrary.remove(id: $0) }
-                scripts = ScriptLibrary.load()
+                deletingScripts = offsets.compactMap { scripts.indices.contains($0) ? scripts[$0] : nil }
             }
                 }
             }
@@ -440,9 +439,7 @@ struct ScriptLibraryView: View {
                 .accessibilityIdentifier("scripts.row.\(script.id)")
             }
             .onDelete { offsets in
-                let ids = offsets.compactMap { scripts.indices.contains($0) ? scripts[$0].id : nil }
-                ids.forEach { ScriptLibrary.remove(id: $0) }
-                scripts = ScriptLibrary.load()
+                deletingScripts = offsets.compactMap { scripts.indices.contains($0) ? scripts[$0] : nil }
             }
         }
         .hakoInsetGroupedListStyle()
@@ -451,6 +448,14 @@ struct ScriptLibraryView: View {
         .hakoPageTitle("Scripts")
         .hakoDetailPageInsets()
         .accessibilityIdentifier("scripts.screen")
+        .hakoDeleteConfirmation(deletingScripts.map(\.label).joined(separator: ", "),
+            isPresented: Binding(get: { !deletingScripts.isEmpty }, set: { if !$0 { deletingScripts = [] } }),
+            message: .copy("These scripts will be deleted. Configurations using them must choose another script before starting."),
+            identifier: "scripts.delete.confirm") { [deletingScripts] in
+                deletingScripts.forEach { ScriptLibrary.remove(id: $0.id) }
+                scripts = ScriptLibrary.load()
+                self.deletingScripts = []
+            }
         .hakoToolbarUnlessInPanel {
             ToolbarItemGroup(placement: .hakoNavigationTrailing) {
                 HakoEditButton()

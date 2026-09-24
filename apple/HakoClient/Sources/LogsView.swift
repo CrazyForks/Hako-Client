@@ -99,22 +99,26 @@ struct LogSettingsView: View {
      
     @State private var dismiss = HakoDismissHandle()
     @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
-    @State private var recording = HakoLogSettings.isRecording(
-        from: GlobalConfig.appGroupDefaults
-    )
-    @State private var retention = HakoLogSettings.retention(
-        from: GlobalConfig.appGroupDefaults
-    )
+    private let defaults: UserDefaults
+    @State private var recording: Bool
+    @State private var retention: HakoLogRetention
+
+    init(defaults: UserDefaults = GlobalConfig.appGroupDefaults, onChange: @escaping () -> Void = {}) {
+        self.defaults = defaults
+        self.onChange = onChange
+        _recording = State(initialValue: HakoLogSettings.isRecording(from: defaults))
+        _retention = State(initialValue: HakoLogSettings.retention(from: defaults))
+    }
 
     var body: some View {
         HakoMacSettingsFormContainer {
             Section {
-                Toggle("Recording", isOn: $recording)
+                Toggle("Record Logs", isOn: $recording)
                     .accessibilityIdentifier("logs.settings.recording")
                     .onChange(of: recording) { value in
                         HakoLogSettings.setRecording(
                             value,
-                            in: GlobalConfig.appGroupDefaults
+                            in: defaults
                         )
                         onChange()
                     }
@@ -127,15 +131,12 @@ struct LogSettingsView: View {
                 .onChange(of: retention) { value in
                     HakoLogSettings.setRetention(
                         value,
-                        in: GlobalConfig.appGroupDefaults
+                        in: defaults
                     )
                     onChange()
                 }
             } footer: {
-                Text(
-                    LogRetentionCopy.summary(retention)
-                        + " Turning recording off stops new lines; what is already here stays until you clear it."
-                )
+                Text(hako: .copy("Record logs to help troubleshoot problems."))
             }
         }
         

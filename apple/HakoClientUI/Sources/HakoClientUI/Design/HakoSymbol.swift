@@ -121,6 +121,7 @@ public enum HakoSymbol: String, CaseIterable, Sendable {
     case rectangleStack = "rectangle.stack"
     case rectangleStackFill = "rectangle.stack.fill"
     case trayFullFill = "tray.full.fill"
+    case sparklesRectangleStackFill = "sparkles.rectangle.stack.fill"
     case serverRack = "server.rack"
     case shieldFill = "shield.fill"
     case shieldLefthalfFilled = "shield.lefthalf.filled"

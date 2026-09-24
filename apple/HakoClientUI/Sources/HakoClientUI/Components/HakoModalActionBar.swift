@@ -34,19 +34,6 @@ public struct HakoModalActionBar: View {
         self.onPrimary = onPrimary
     }
 
-     
-     
-     
-     
-     
-     
-     
-     
-     
-    private var label: String {
-        isBusy ? (busyTitle ?? primaryTitle) : primaryTitle
-    }
-
     public var body: some View {
         VStack(spacing: HakoTheme.Spacing.tight) {
              
@@ -61,7 +48,7 @@ public struct HakoModalActionBar: View {
              
              
              
-            if primaryDisabled, let primaryHint {
+            if primaryDisabled, !isBusy, let primaryHint {
                 Text(hako: .formatCopy("Needs %@", [primaryHint]))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -84,13 +71,13 @@ public struct HakoModalActionBar: View {
              
              
             if HakoPlatformLayout.pageUsesSystemSettingsIdiom {
-                Text(HakoCopy.key(label))
+                HakoActionProgressLabel(.copy(primaryTitle), isBusy: isBusy)
                     .font(.subheadline.bold())
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, minHeight: 32)
                     .contentShape(Capsule())
             } else {
-                Text(HakoCopy.key(label))
+                HakoActionProgressLabel(.copy(primaryTitle), isBusy: isBusy)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -119,7 +106,7 @@ public struct HakoModalActionBar: View {
          
          
         .accessibilityValue(
-            primaryDisabled ? (primaryHint.map { HakoDisplayText.copy($0).resolved(locale: Locale.current) } ?? "") : ""
+            isBusy ? HakoCopy.string(busyTitle ?? "Saving", locale: .current) : (primaryDisabled ? (primaryHint.map { HakoDisplayText.copy($0).resolved(locale: Locale.current) } ?? "") : "")
         )
     }
 }

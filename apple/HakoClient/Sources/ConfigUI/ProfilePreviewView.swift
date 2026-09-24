@@ -5,66 +5,56 @@ import SwiftUI
  
 struct ProfilePreviewView: View {
     let title: HakoDisplayText
-    private let loader: (() async -> String?)?
-     
+    private let loader: () async throws -> String?
     @State private var dismiss = HakoDismissHandle()
-    @State private var text: String
-    @State private var isAvailable: Bool
-    @State private var isLoading: Bool
+    @State private var text = ""
+    @State private var isAvailable = false
+    @State private var isLoading = true
+    @State private var failure: String?
 
-    init(title: HakoDisplayText, text: String?) {
-        self.title = title
-        loader = nil
-        _text = State(initialValue: text ?? "")
-        _isAvailable = State(initialValue: text != nil)
-        _isLoading = State(initialValue: false)
-    }
-
-    init(title: HakoDisplayText, load: @escaping () async -> String?) {
+    init(title: HakoDisplayText, load: @escaping () async throws -> String?) {
         self.title = title
         loader = load
-        _text = State(initialValue: "")
-        _isAvailable = State(initialValue: false)
-        _isLoading = State(initialValue: true)
     }
 
     var body: some View {
         HakoFeatureNavigationContainer {
-            ZStack {
-                HakoTheme.canvas.ignoresSafeArea()
-                if isLoading {
-                    ProgressView("Preparing local configuration")
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("profile-preview.loading")
-                } else if isAvailable {
-                    CodeEditorPanel(
-                        text: $text,
-                        language: .yaml,
-                        minHeight: 360,
-                        isEditable: false,
-                        expandsVertically: true
-                    )
-                    .padding(HakoTheme.Spacing.standard)
-                     
-                     
-                     
-                     
-                     
-                     
-                     
-                     
-                     
+            VStack(spacing: HakoTheme.Spacing.standard) {
+                Group {
+                    if isLoading {
+                        ProgressView("Preparing local configuration")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("profile-preview.loading")
+                    } else if let failure {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: HakoTheme.Spacing.standard) {
+                                Text("Unable to Read Runtime Configuration").font(.headline)
+                                Text(verbatim: failure).foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .accessibilityIdentifier("profile-preview.error")
+                    } else if isAvailable {
+                        VStack(alignment: .leading, spacing: HakoTheme.Spacing.standard) {
+                            CodeEditorPanel(text: $text, language: .yaml, minHeight: 360,
+                                isEditable: false, expandsVertically: true)
+                                .accessibilityIdentifier("profile-preview.document")
 #if os(macOS)
-                    .hakoPageProbe("runtime-editor")
+                                .hakoPageProbe("runtime-editor")
 #endif
-                } else {
-                    HakoEmptyState(
-                        title: "No Local Configuration",
-                        message: "Sync or import this profile to cache its configuration on this device.",
-                        symbol: .docTextMagnifyingglass
-                    )
+                        }
+                    } else {
+                        HakoEmptyState(
+                            title: "Not Applied Yet",
+                            message: "This profile has no previously applied configuration.",
+                            symbol: .docTextMagnifyingglass)
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .padding(HakoTheme.Spacing.standard)
+            .background(HakoTheme.canvas.ignoresSafeArea())
             .hakoPageTitle(title, watchAs: "profile-preview")
             .hakoToolbarUnlessInPanel {
                 ToolbarItem(placement: .cancellationAction) {
@@ -73,11 +63,15 @@ struct ProfilePreviewView: View {
             }
             .hakoProductModalRoot(title: "Runtime Configuration")
             .task {
-                guard let loader, isLoading else { return }
-                let loaded = await loader()
-                guard !Task.isCancelled else { return }
-                text = loaded ?? ""
-                isAvailable = loaded != nil
+                do {
+                    let loaded = try await loader()
+                    guard !Task.isCancelled else { return }
+                    text = loaded ?? ""
+                    isAvailable = loaded != nil
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    failure = error.localizedDescription
+                }
                 isLoading = false
             }
         }

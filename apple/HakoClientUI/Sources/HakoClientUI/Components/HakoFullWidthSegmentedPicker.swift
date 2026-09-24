@@ -183,7 +183,8 @@ struct HakoFullWidthSegmentedPicker<Selection: Hashable>: View {
                                 ? AnyShapeStyle(.tint)
                                 : AnyShapeStyle(.secondary)
                         )
-                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(.vertical, HakoTheme.Spacing.row)
                         .overlay(alignment: .bottom) {
                             Rectangle()
@@ -222,6 +223,7 @@ struct HakoFullWidthSegmentedPicker<Selection: Hashable>: View {
                 )
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(underlineSeparator.opacity(0.28))

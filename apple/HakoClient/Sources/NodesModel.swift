@@ -242,6 +242,7 @@ struct OfflineProxyCatalogSnapshot {
     let yaml: String
     let selectedMap: [String: String]
     let runtimeData: Data
+    var cachedProviderNodeCount: Int? = nil
 }
 
  
@@ -251,7 +252,8 @@ struct OfflineProxyCatalogSnapshot {
 enum OfflineProxyCatalogBuilder {
     static func runtimeData(
         yaml: String,
-        selectedMap: [String: String]
+        selectedMap: [String: String],
+        providerNodes: [String: [[String: Any]]] = [:]
     ) -> Data? {
          
          
@@ -262,7 +264,7 @@ enum OfflineProxyCatalogBuilder {
         let rawGroups = root["proxy-groups"] as? [[String: Any]] ?? []
         var proxies: [String: Any] = [:]
 
-        for mapping in rawProxies {
+        for mapping in rawProxies + providerNodes.keys.sorted().flatMap({ providerNodes[$0] ?? [] }) {
             guard let name = nonEmptyString(mapping["name"]) else { continue }
             proxies[name] = [
                 "type": nonEmptyString(mapping["type"]) ?? "?",
@@ -273,7 +275,15 @@ enum OfflineProxyCatalogBuilder {
         for mapping in rawGroups {
             guard let name = nonEmptyString(mapping["name"]),
                   let type = nonEmptyString(mapping["type"]) else { continue }
-            let members = (mapping["proxies"] as? [String]) ?? []
+            var members = (mapping["proxies"] as? [String]) ?? []
+            let use = mapping["use"] as? [String] ?? []
+            let includeProviders = mapping["include-all"] as? Bool == true || mapping["include-all-providers"] as? Bool == true
+            let includeInline = mapping["include-all"] as? Bool == true || mapping["include-all-proxies"] as? Bool == true
+            let extra = (includeInline ? rawProxies : []) + (includeProviders ? providerNodes.keys.sorted() : use).flatMap { providerNodes[$0] ?? [] }
+            var seenMembers = Set(members)
+            for node in extra {
+                if let nodeName = nonEmptyString(node["name"]), seenMembers.insert(nodeName).inserted { members.append(nodeName) }
+            }
             let selected = selectedMap[name].flatMap { members.contains($0) ? $0 : nil }
                 ?? defaultSelection(type: type, members: members)
             proxies[name] = [
@@ -336,6 +346,7 @@ enum OfflineProxyCatalogLoader {
     private struct SnapshotKey: Equatable {
         let source: SourceKey
         let selectedMap: [String: String]
+        let providerFiles: [String: String]
     }
 
      
@@ -389,10 +400,10 @@ enum OfflineProxyCatalogLoader {
         let sidecarURL = working
             .appendingPathComponent("store/\(profileID)", isDirectory: true)
             .appendingPathComponent("source.yaml")
-        let usesPointer = activePointer?.profileID == profileID && configStore != nil
-        let sidecarAttributes = usesPointer
-            ? nil
-            : try? FileManager.default.attributesOfItem(atPath: sidecarURL.path)
+         
+         
+        let sidecarAttributes = try? FileManager.default.attributesOfItem(atPath: sidecarURL.path)
+        let usesPointer = sidecarAttributes == nil && activePointer?.profileID == profileID && configStore != nil
         let sourceKey = SourceKey(
             profileID: profileID,
             pointer: usesPointer ? activePointer : nil,
@@ -400,17 +411,14 @@ enum OfflineProxyCatalogLoader {
             sidecarModified: (sidecarAttributes?[.modificationDate] as? Date)?
                 .timeIntervalSince1970 ?? -1
         )
-        let snapshotKey = SnapshotKey(source: sourceKey, selectedMap: profile.selectedMap)
         memoLock.lock()
-        let rememberedSnapshot = snapshotMemo.flatMap { $0.key == snapshotKey ? $0.snapshot : nil }
         let rememberedText = textMemo.flatMap { $0.key == sourceKey ? $0.text : nil }
         memoLock.unlock()
-        if let rememberedSnapshot { return rememberedSnapshot }
 
         let yaml: String
         if let rememberedText {
             yaml = rememberedText
-        } else if activePointer?.profileID == profileID,
+        } else if usesPointer,
            let configStore,
            let current = try? configStore.loadCurrent().text {
             yaml = current
@@ -423,15 +431,32 @@ enum OfflineProxyCatalogLoader {
             }
             yaml = stored
         }
+        let files = ConfigurationCollectionContentBridge.cachedNodeFiles(yaml: yaml, workingDirectory: working)
+        let fingerprints = files.mapValues { file in
+            let attributes = try? FileManager.default.attributesOfItem(atPath: file.path)
+            return file.path + ":" + String(describing: attributes?[.size]) + ":" + String((attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? -1)
+        }
+        let snapshotKey = SnapshotKey(source: sourceKey, selectedMap: profile.selectedMap, providerFiles: fingerprints)
+        memoLock.lock()
+        let rememberedSnapshot = snapshotMemo.flatMap { $0.key == snapshotKey ? $0.snapshot : nil }
+        memoLock.unlock()
+        if let rememberedSnapshot { return rememberedSnapshot }
+        let providerNodes = files.compactMapValues { file -> [[String: Any]]? in
+            guard let bytes = try? Data(contentsOf: file, options: .mappedIfSafe),
+                  let report = try? ProxyImportBridge.inspect(bytes, context: .nodeBundle) else { return nil }
+            return report.proxies
+        }
         guard let runtimeData = OfflineProxyCatalogBuilder.runtimeData(
             yaml: yaml,
-            selectedMap: profile.selectedMap
+            selectedMap: profile.selectedMap,
+            providerNodes: providerNodes
         ) else { return nil }
         let snapshot = OfflineProxyCatalogSnapshot(
             profileID: profileID,
             yaml: yaml,
             selectedMap: profile.selectedMap,
-            runtimeData: runtimeData
+            runtimeData: runtimeData,
+            cachedProviderNodeCount: providerNodes.values.reduce(0) { $0 + $1.count }
         )
         memoLock.lock()
         textMemo = (sourceKey, yaml)
@@ -1000,6 +1025,7 @@ final class NodesModel: ObservableObject {
      
      
      
+    @Published private(set) var cachedProviderNodeCount: Int?
     @Published private(set) var runtimeProviderCatalog = ProviderRuntimeCatalog.empty {
         didSet { HakoPerf.count("pub.nodes.providers") }
     }
@@ -1053,6 +1079,8 @@ final class NodesModel: ObservableObject {
     private var observedRuntimeIdentity: NodesRuntimeIdentity?
     private var restoredRuntimeKey: String?
     private var providerCatalogGeneration: UInt64 = 0
+    private var providerArrivalTask: Task<Void, Never>?
+    private let providerCatalogRetryDelayNanoseconds: UInt64
     private var latencyRunID: UInt64 = 0
     private var latencyTask: Task<LatencyProbeSummary, Never>?
      
@@ -1084,6 +1112,7 @@ final class NodesModel: ObservableObject {
             NodeSwitchSettings.autoCloseOnSwitch()
         },
         runtimeRestartGrace: TimeInterval = 20,
+        providerCatalogRetryDelayNanoseconds: UInt64 = 2_000_000_000,
         memorySentryNow: @escaping @Sendable () -> UInt64 = {
             DispatchTime.now().uptimeNanoseconds
         },
@@ -1101,6 +1130,7 @@ final class NodesModel: ObservableObject {
         self.shouldCloseConnectionsOnSwitch =
             shouldCloseConnectionsOnSwitch
         self.runtimeRestartGrace = runtimeRestartGrace
+        self.providerCatalogRetryDelayNanoseconds = providerCatalogRetryDelayNanoseconds
         self.memorySentryNow = memorySentryNow
         self.memorySentrySleep = memorySentrySleep
     }
@@ -2615,6 +2645,7 @@ final class NodesModel: ObservableObject {
             milliseconds: milliseconds,
             detail: "nodes=\(projection?.protocolDetails.count ?? 0)"
         )
+        cachedProviderNodeCount = snapshot?.cachedProviderNodeCount
         guard let snapshot, let projection else {
             lastRuntimeInventory = nil
             protocolDetailsByNodeName = [:]
@@ -2916,6 +2947,9 @@ final class NodesModel: ObservableObject {
     }
 
     private func loadProviderSources(command: NodesCommanding, token: UInt64) async {
+        providerArrivalTask?.cancel()
+        providerArrivalTask = nil
+        defer { watchPendingProviders(command: command, token: token) }
         guard command.isConnected else {
             if token == providerCatalogGeneration {
                 providerNamesByProxy = [:]
@@ -2952,6 +2986,37 @@ final class NodesModel: ObservableObject {
             providerNamesByProxy = ProxyProviderAttribution.uniqueProviderNames(in: retried)
             runtimeProviderCatalog = retried
             reapplyInventoryWithProviderCatalog(command: command)
+        }
+    }
+
+    private var hasPendingProviderNodes: Bool {
+        if runtimeProviderCatalog.proxyProviders.isEmpty { return true }
+        if configuredOrder.providerNames.contains(where: { runtimeProviderCatalog.proxyProviders[$0] == nil }) { return true }
+        return runtimeProviderCatalog.proxyProviders.values.contains { !$0.isKernelInternal && $0.proxies.isEmpty }
+    }
+
+     
+     
+     
+    private func watchPendingProviders(command: NodesCommanding, token: UInt64) {
+        guard token == providerCatalogGeneration, command.isConnected, hasPendingProviderNodes else { return }
+        let delay = providerCatalogRetryDelayNanoseconds
+        providerArrivalTask = Task { [weak self, weak command] in
+            for _ in 0..<15 {
+                do { try await Task.sleep(nanoseconds: delay) } catch { return }
+                guard let self, let command, command.isConnected,
+                      token == self.providerCatalogGeneration, !Task.isCancelled else { return }
+                guard let catalog = try? await command.nodesProviderCatalog() else { continue }
+                guard token == self.providerCatalogGeneration, command.isConnected, !Task.isCancelled else { return }
+                if catalog != self.runtimeProviderCatalog {
+                    await command.refreshMetadata()
+                    guard token == self.providerCatalogGeneration, command.isConnected, !Task.isCancelled else { return }
+                    self.providerNamesByProxy = ProxyProviderAttribution.uniqueProviderNames(in: catalog)
+                    self.runtimeProviderCatalog = catalog
+                    if let data = command.proxiesData { await self.applyInventoryOffMain(data, reason: .periodicRefresh) }
+                }
+                if !self.hasPendingProviderNodes { return }
+            }
         }
     }
 

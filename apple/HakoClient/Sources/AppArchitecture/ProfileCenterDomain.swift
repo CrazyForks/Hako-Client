@@ -343,9 +343,8 @@ enum DirectProfileTemplate {
       # moment a proxy is added: a NAS, a printer or a router page must not be
       # carried through the tunnel. `lan`, not `private` -- only `lan` is the
       # pseudo-rule the kernel answers from the address itself, without a
-      # database (rules/common/geoip.go:154-159, :213), while `private` would
-      # look for a category our bundled geoip.metadb does not carry and the
-      # config would be refused. `no-resolve` because under fake-ip a domain
+      # database (rules/common/geoip.go). The bundled metadb also has private,
+      # but `lan` remains available if that database is replaced. Under fake-ip a domain
       # request already carries a synthetic address.
       - GEOIP,lan,DIRECT,no-resolve
       - MATCH,Default Route

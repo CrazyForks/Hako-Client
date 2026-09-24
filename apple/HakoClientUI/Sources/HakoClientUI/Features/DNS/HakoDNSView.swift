@@ -82,6 +82,7 @@ public struct HakoDNSSettingsView<
     Icon: View,
     DNSQuery: View
 >: View {
+    private let configurationDraft: Bool
     private let snapshot: AppleClientSnapshot
     private let actions: AppleClientActions
     private let capabilities: HakoDNSCapabilities
@@ -128,10 +129,12 @@ public struct HakoDNSSettingsView<
         snapshot: AppleClientSnapshot,
         actions: AppleClientActions,
         capabilities: HakoDNSCapabilities,
+        configurationDraft: Bool = false,
 
         @ViewBuilder icon: @escaping (HakoSymbol) -> Icon,
         @ViewBuilder dnsQueryDestination: @escaping () -> DNSQuery
     ) {
+        self.configurationDraft = configurationDraft
         self.snapshot = snapshot
         self.actions = actions
         self.capabilities = capabilities
@@ -147,11 +150,11 @@ public struct HakoDNSSettingsView<
          
          
         HakoMacSettingsFormContainer(
-            scopeFooter: snapshot.dns.profileName == nil
+            scopeFooter: configurationDraft ? .copy("These DNS settings belong only to this configuration.") : snapshot.dns.profileName == nil
                 ? .copy("These settings apply to every profile.")
                 : nil
         ) {
-            if let profileName = snapshot.dns.profileName {
+            if !configurationDraft, let profileName = snapshot.dns.profileName {
                 Section {
                     HakoProfileContextHeader(
                         profileName: profileName,
@@ -163,6 +166,7 @@ public struct HakoDNSSettingsView<
                 }
             }
 
+            if !configurationDraft {
             Section {
                 if HakoPlatformLayout.pageUsesSystemSettingsIdiom {
                     HakoMacToggleRow(
@@ -190,6 +194,8 @@ public struct HakoDNSSettingsView<
                     "Off: a profile with its own DNS keeps it; the settings below still apply to profiles without one. Turn it on to change them for every profile."
                 )
                 .hakoMacSettingsFootnote()
+            }
+
             }
 
              
@@ -452,21 +458,13 @@ public struct HakoDNSSettingsView<
         } message: {
             Text(hako: .verbatim(saveRefusal ?? ""))
         }
-        .alert("Save your changes?", isPresented: $asksAboutUnsaved) {
-             
-             
-             
-             
-            Button("Save") { persist() }
-                .disabled(saveCoordinator.isBusy)
-            Button("Discard", role: .destructive) {
-                discardChangesAndDismiss()
-            }
-            .disabled(saveCoordinator.isBusy)
-            Button("Keep Editing", role: .cancel) {}
-        } message: {
-            Text("These DNS settings have changes that have not been saved.")
-        }
+        .hakoUnsavedChangesAlert(
+            isPresented: $asksAboutUnsaved,
+            message: .copy("These DNS settings have changes that have not been saved."),
+            isBusy: saveCoordinator.isBusy,
+            save: { persist() },
+            discard: { discardChangesAndDismiss() }
+        )
          
          
          
@@ -529,7 +527,7 @@ public struct HakoDNSSettingsView<
             Button {
                 persist()
             } label: {
-                Text(hako: .copy(saveButtonTitle))
+                HakoActionProgressLabel(.copy("Save"), isBusy: saveCoordinator.isBusy)
             }
              
              
@@ -539,14 +537,6 @@ public struct HakoDNSSettingsView<
              
             .disabled(saveCoordinator.phase != .idle || !hasUnsavedEdits)
             .accessibilityIdentifier("profile-dns.save")
-        }
-    }
-
-    private var saveButtonTitle: String {
-        switch saveCoordinator.phase {
-        case .checking: "Checking…"
-        case .committing: "Saving…"
-        case .idle, .awaitingWarning: "Save"
         }
     }
 
@@ -634,7 +624,7 @@ public struct HakoDNSSettingsView<
         let accepted = saveCoordinator.save(
             draft: candidate,
             preflight: { candidate in
-                guard candidate.overrideDNS else { return nil }
+                guard !configurationDraft, candidate.overrideDNS else { return nil }
                 let verdict = await HakoDNSPreSaveCheck.run(
                     nameserver: candidate.nameserver,
                     policyResolvers:
@@ -914,9 +904,9 @@ public struct HakoDNSLocalMappingsView<Icon: View>: View {
         .hakoPageTitle("Local Mapping")
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .confirmationAction) {
-                Button(isSaving ? "Saving…" : "Save") {
+                Button {
                     persist()
-                }
+                } label: { HakoActionProgressLabel(.copy("Save"), isBusy: isSaving) }
                 .disabled(isSaving)
                 .accessibilityIdentifier("profile-hosts.save")
             }

@@ -259,13 +259,15 @@ enum ProfileRuntimeConfigBuilder {
         )
         let scripted = try configScript(profileScripted, profile.label)
         var providerMerge = ProviderDefinitionMergeReport()
+        var hasOwnLogLevel = false
         let trimmed = try applyClientTransforms(
             to: scripted,
             profile: profile,
             applyProviderDefinitions: applyProviderDefinitions,
             applyProxyChain: applyProxyChain,
             applyLegacyRelayMigration: applyLegacyRelayMigration,
-            providerMerge: &providerMerge
+            providerMerge: &providerMerge,
+            inspectLogLevel: { hasOwnLogLevel = $0 }
         )
 
         var effectiveRuntime = runtimeOverride
@@ -288,6 +290,11 @@ enum ProfileRuntimeConfigBuilder {
          
         if runtimePatch.mode == nil, let legacyMode = profile.outboundMode {
             runtimePatch.mode = legacyMode.rawValue
+        }
+         
+         
+        if runtimePatch.logLevel == nil, !hasOwnLogLevel {
+            runtimePatch.logLevel = "warning"
         }
         effectiveRuntime.patchJSON = runtimePatch.patchJSON
         let disabledRuntimeRules = Set(
@@ -349,7 +356,8 @@ enum ProfileRuntimeConfigBuilder {
         applyProviderDefinitions: Bool = true,
         applyProxyChain: Bool = true,
         applyLegacyRelayMigration: Bool = true,
-        providerMerge: inout ProviderDefinitionMergeReport
+        providerMerge: inout ProviderDefinitionMergeReport,
+        inspectLogLevel: ((Bool) -> Void)? = nil
     ) throws -> String {
          
          
@@ -399,6 +407,7 @@ enum ProfileRuntimeConfigBuilder {
         }
         touched = try (profile.memoryTrim ?? MemoryTrimSpec())
             .apply(to: &document.root) || touched
+        inspectLogLevel?(document.root["log-level"] != nil && !(document.root["log-level"] is NSNull))
          
          
          
@@ -1422,6 +1431,9 @@ final class ProfileActivationCoordinator {
                 forceRefresh: forceRefresh,
                 ageSecretKeys: ageSecretKeys,
                 localOverrides: providerOverrides,
+                cachedNodeFiles: ConfigurationCollectionContentBridge.cachedNodeFiles(
+                    urlsByName: Dictionary(uniqueKeysWithValues: plan.providers.filter { $0.kind == "proxy" }.map { ($0.name, $0.url) }),
+                    workingDirectory: coreHomeDir),
                 captureRefreshedPayloads: requestedProviders,
                 userAgent: ClientUserAgent.resolved(
                     configYAML: materializedMerged,

@@ -25,6 +25,11 @@ enum ConfigStoreSuspensionShield {
         )
     }
 
+    static func beginLibraryAccess() -> @Sendable () -> Void {
+        holder.coalescer.acquire()
+        return { holder.coalescer.release() }
+    }
+
     private static let holder = AssertionHolder()
 
      

@@ -144,6 +144,9 @@ struct ProxyNodeDetailSheet: View {
     let nodeName: String
     let yaml: String?
     let providersDir: URL?
+     
+     
+    var suppliedDetails: ProxyProtocolDetails? = nil
 
      
      
@@ -242,8 +245,9 @@ struct ProxyNodeDetailSheet: View {
             let name = nodeName
             let source = yaml
             let directory = providersDir
+            let supplied = suppliedDetails
             let found = await Task.detached(priority: .userInitiated) { () -> (ProxyProtocolDetails, [String: String], [String: [ProxyProtocolDetailRow]])? in
-                guard let details = ProxyNodeDetailLookup.details(
+                guard let details = supplied ?? ProxyNodeDetailLookup.details(
                     named: name, yaml: source, providersDir: directory
                 ) else { return nil }
                 return (

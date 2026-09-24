@@ -1133,7 +1133,7 @@ extension HakoProfileRulesView {
             Button("Delete", role: .destructive) { deleteSelectedRules() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("They are removed from this profile and cannot be brought back.")
+            Text("The selected rules will be removed when you save. Discard changes to keep them.")
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -1155,11 +1155,7 @@ extension HakoProfileRulesView {
                     Button {
                         persist()
                     } label: {
-                        if dynamicTypeSize.isAccessibilitySize {
-                            icon(.checkmark)
-                        } else {
-                            Text("Save")
-                        }
+                        HakoActionProgressLabel(.copy("Save"), isBusy: isSaving)
                     }
                     .disabled(isSaving)
                     .accessibilityLabel("Save")
@@ -2051,6 +2047,8 @@ private extension String {
  
  
 public struct HakoRuleEditorView<Icon: View>: View {
+    private let delete: (() -> Void)?
+    private let showsPersonalMetadata: Bool
     private let rule: HakoPersonalRuleSnapshot
     private let options: HakoRulePolicyOptions
     private let initialRoute: HakoRuleBuilderRoute?
@@ -2064,6 +2062,8 @@ public struct HakoRuleEditorView<Icon: View>: View {
     public init(
         rule: HakoPersonalRuleSnapshot,
         options: HakoRulePolicyOptions = .empty,
+        showsPersonalMetadata: Bool = true,
+        delete: (() -> Void)? = nil,
         initialRoute: HakoRuleBuilderRoute? = nil,
         runtimeProfile: HakoAppleRuntimeProfile,
         palette: HakoProductPalette,
@@ -2072,6 +2072,8 @@ public struct HakoRuleEditorView<Icon: View>: View {
         @ViewBuilder icon: @escaping (HakoSymbol) -> Icon,
         save: @escaping (HakoPersonalRuleSnapshot) -> Void
     ) {
+        self.delete = delete
+        self.showsPersonalMetadata = showsPersonalMetadata
         self.rule = rule
         self.options = options
         self.initialRoute = initialRoute
@@ -2086,6 +2088,8 @@ public struct HakoRuleEditorView<Icon: View>: View {
         HakoRuleBuilderView(
             rule: rule,
             options: options,
+            showsPersonalMetadata: showsPersonalMetadata,
+            delete: delete,
             initialRoute: initialRoute,
             runtimeProfile: runtimeProfile,
             palette: palette,
@@ -2097,6 +2101,8 @@ public struct HakoRuleEditorView<Icon: View>: View {
 }
 
 private struct HakoRuleBuilderView<Icon: View>: View {
+    let delete: (() -> Void)?
+    let showsPersonalMetadata: Bool
     let options: HakoRulePolicyOptions
     let initialRoute: HakoRuleBuilderRoute?
     let runtimeProfile: HakoAppleRuntimeProfile
@@ -2141,6 +2147,8 @@ private struct HakoRuleBuilderView<Icon: View>: View {
     init(
         rule: HakoPersonalRuleSnapshot,
         options: HakoRulePolicyOptions,
+        showsPersonalMetadata: Bool = true,
+        delete: (() -> Void)? = nil,
         initialRoute: HakoRuleBuilderRoute?,
         runtimeProfile: HakoAppleRuntimeProfile,
         palette: HakoProductPalette,
@@ -2149,6 +2157,8 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         icon: @escaping (HakoSymbol) -> Icon,
         save: @escaping (HakoPersonalRuleSnapshot) -> Void
     ) {
+        self.delete = delete
+        self.showsPersonalMetadata = showsPersonalMetadata
         self.options = options
         self.initialRoute = initialRoute
         self.runtimeProfile = runtimeProfile
@@ -2194,6 +2204,14 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         HakoSingleColumnNavigationContainer {
             HakoModalEditorBody {
                 builderSections
+                if let delete {
+                    Section {
+                        Button("Delete This Rule", role: .destructive) {
+                            delete()
+                            (modalDismiss ?? { dismiss() })()
+                        }.accessibilityIdentifier("configuration.rule.delete-current")
+                    }
+                }
             }
             .onChange(of: action) { updated in
                 content = updated == .network ? "tcp" : ""
@@ -2215,8 +2233,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
             .hakoRegistersDeparture(
             isDirty: !openedWith.isEmpty && currentFingerprint != openedWith,
             save: { completion in
-                submit()
-                completion(true)
+                completion(submit())
             },
             discard: {}
         )
@@ -2281,11 +2298,13 @@ private struct HakoRuleBuilderView<Icon: View>: View {
     @ViewBuilder
     private var rawSections: some View {
         Section {
+            if showsPersonalMetadata {
             HakoSettingsToggleRow(
                 Text("Enabled"),
                 isOn: $enabled
             )
             .accessibilityIdentifier("profile-rule.enabled")
+            }
         }
         Section {
             rawRuleField
@@ -2296,17 +2315,19 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                 "This rule is not available in the structured editor. Imported source rules are never rewritten."
             )
         }
-        commentSection
+        if showsPersonalMetadata { commentSection }
     }
 
     @ViewBuilder
     private var structuredSections: some View {
         Section {
+            if showsPersonalMetadata {
             HakoSettingsToggleRow(
                 Text("Enabled"),
                 isOn: $enabled
             )
             .accessibilityIdentifier("profile-rule.enabled")
+            }
             HakoRoutedViewLink {
                 HakoRuleTypeSelectionView(
                     selection: $action,
@@ -2466,7 +2487,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
             }
         }
 
-        commentSection
+        if showsPersonalMetadata { commentSection }
     }
 
     private var commentSection: some View {
@@ -2923,7 +2944,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         if rawMode {
             return !rawText.trimmingCharacters(in: .whitespaces).isEmpty
         }
-        return !content.trimmingCharacters(in: .whitespaces).isEmpty
+        return !action.needsContent || !content.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
      
@@ -2945,7 +2966,8 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         ].joined(separator: "\u{1F}")
     }
 
-    private func submit() {
+    @discardableResult
+    private func submit() -> Bool {
         let candidate: String
         if rawMode {
             candidate = rawText.trimmingCharacters(
@@ -2965,13 +2987,13 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                         minimum == 1
                         ? "Add the condition first."
                         : "Add at least two conditions."
-                    return
+                    return false
                 }
                 guard conditions.allSatisfy({
                     !$0.content.isEmpty
                 }) else {
                     error = "Every condition needs a value."
-                    return
+                    return false
                 }
                 effectiveContent =
                     HakoLogicExpressionCodec.serialize(
@@ -2991,11 +3013,11 @@ private struct HakoRuleBuilderView<Icon: View>: View {
             guard !action.needsContent || !rule.content.isEmpty
             else {
                 error = "\(action.contentLabel) is required."
-                return
+                return false
             }
             guard !rule.target.isEmpty else {
                 error = "\(action.targetLabel) is required."
-                return
+                return false
             }
             candidate = rule.rawValue
         }
@@ -3013,7 +3035,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         {
             error =
                 "\(reason) The previous rule is unchanged."
-            return
+            return false
         }
         save(
             HakoPersonalRuleSnapshot(
@@ -3026,6 +3048,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         )
          
         (modalDismiss ?? { dismiss() })()
+        return true
     }
 }
 

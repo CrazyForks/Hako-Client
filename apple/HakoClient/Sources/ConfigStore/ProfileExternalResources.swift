@@ -54,7 +54,8 @@ enum ProfileExternalResourceImporter {
         source: IOSExternalResourceSource,
         files: [ExternalResourceImportFile],
         existingReferences: [ProfileExternalResourceReference] = [],
-        existingPublicResources: [String: Data] = [:]
+        existingPublicResources: [String: Data] = [:],
+        requiringAllFiles: Bool = true
     ) throws -> PreparedExternalResourceImport {
         let json = try ConfigTransforms.yamlToJSON(yaml)
         guard var root = try JSONSerialization.jsonObject(with: Data(json.utf8))
@@ -62,7 +63,7 @@ enum ProfileExternalResourceImporter {
             throw ProfileExternalResourceError.invalidConfiguration
         }
         let findings = IOSExternalResourceCatalog.inspect(root: root, source: source)
-        if let blocked = findings.first(where: { finding in
+        if requiringAllFiles, let blocked = findings.first(where: { finding in
             switch finding.resolution {
             case .localImportRequired, .managedRuntimeStateRequired:
                 return false
@@ -79,7 +80,7 @@ enum ProfileExternalResourceImporter {
                 $0.capability.disposition == .publicFileOrInline
                     || $0.capability.disposition == .secretFileOrInline
             }
-        guard source == .localFile || requirements.isEmpty else {
+        guard !requiringAllFiles || source == .localFile || requirements.isEmpty else {
             if let finding = findings.first { throw finding }
             throw ProfileExternalResourceError.invalidConfiguration
         }
@@ -113,6 +114,11 @@ enum ProfileExternalResourceImporter {
                     fileName: name,
                     data: data
                 )
+            } else if !requiringAllFiles {
+                 
+                 
+                 
+                continue
             } else {
                 throw ProfileExternalResourceError.missingSelection(field: field)
             }

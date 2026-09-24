@@ -166,8 +166,9 @@ struct CustomProxyGroupsEditor: View {
         }
     }
 }
-private struct CustomProxyGroupEditor: View {
+struct CustomProxyGroupEditor: View {
     let save: (CustomProxyGroup) -> Void
+    let validateChange: ((CustomProxyGroup) -> String?)?
     let existingNames: Set<String>
     let validationContext: CustomGroupValidationContext
     let profileProxyNames: [String]
@@ -199,12 +200,14 @@ private struct CustomProxyGroupEditor: View {
                 nodeNames: [], groupNames: [],
                 providerNames: [], siblingGroupNames: []
             ),
+        validateChange: ((CustomProxyGroup) -> String?)? = nil,
         save: @escaping (CustomProxyGroup) -> Void
     ) {
         self.existingNames = existingNames
         self.validationContext = validationContext
         self.profileProxyNames = profileProxyNames
         self.save = save
+        self.validateChange = validateChange
         _group = State(initialValue: group)
         _interval = State(initialValue: group.interval.map(String.init) ?? "")
         _timeout = State(initialValue: group.timeout.map(String.init) ?? "")
@@ -530,6 +533,7 @@ private struct CustomProxyGroupEditor: View {
         group.timeout = Int(timeout)
         group.maxFailedTimes = Int(maxFailedTimes)
         group.tolerance = Int(tolerance)
+        if let message = validateChange?(group) { error = message; return }
         save(group)
         dismissPresentation()
     }

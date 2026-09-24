@@ -508,7 +508,8 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
     private var diagnosticPublication: HakoRuntimeDiagnostics?
     private var publishingDiagnostics = false
     private var logBatchTask: Task<Void, Never>?
-    private var pendingLogs: [String] = []
+    private var logDisplayLevel = "warning"
+    private var pendingLogs = HakoLogBuffer(maximumBytes: 256 * 1024, maximumCount: 1000)
     private var trafficReducer = ClashTrafficReducer()
     private let connectionRuntimeFeed: ConnectionRuntimeFeed
     private var routeEvidenceJournal: RuntimeRouteEvidenceJournal { connectionRuntimeFeed.routeJournal }
@@ -559,6 +560,7 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
         servesProxyShareFixture ? true : client != nil
     }
 
+    private let logRecordingEnabled: @Sendable () -> Bool
     private let memoryNow: @Sendable () -> UInt64
     private let enqueueMemory: ClashMemoryDelivery
 
@@ -566,6 +568,9 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
         connectionRuntimeFeed: ConnectionRuntimeFeed? = nil,
         sceneManagedDiagnostics: Bool? = nil,
         runtimeDiagnosticsReader: (() async throws -> HakoRuntimeDiagnostics)? = nil,
+        logRecordingEnabled: @escaping @Sendable () -> Bool = {
+            HakoLogStore.defaultSettings().map { HakoLogSettings.isRecording(from: $0) } ?? false
+        },
         memoryNow: @escaping @Sendable () -> UInt64 = ClashMemoryClock.now,
         enqueueMemory: @escaping ClashMemoryDelivery = { action in
             Task { @MainActor in action() }
@@ -578,6 +583,7 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
         self.sceneManagedDiagnostics = sceneManagedDiagnostics ?? false
 #endif
         self.runtimeDiagnosticsReader = runtimeDiagnosticsReader
+        self.logRecordingEnabled = logRecordingEnabled
         self.memoryNow = memoryNow
         self.enqueueMemory = enqueueMemory
 return 
@@ -1984,12 +1990,17 @@ return
     }
 
     private func makeCommandHandler() -> HandlerProxy {
-        HandlerProxy(owner: self, token: generation, now: memoryNow, enqueueMemory: enqueueMemory)
+        HandlerProxy(owner: self, token: generation, now: memoryNow, enqueueMemory: enqueueMemory, recordLogs: logRecordingEnabled)
     }
 
      
     func memoryHandlerForTesting() -> HakoClashAPIClientHandlerProtocol {
         makeCommandHandler()
+    }
+
+    func logHandlerForTesting() -> (HakoClashAPIClientHandlerProtocol, HakoLogBudget) {
+        let handler = makeCommandHandler()
+        return (handler, handler.logDeliveryBudget)
     }
 
     private func openNativeClient(socketPath: String, hello: HakoCommandHello, token: UInt64) {
@@ -2281,6 +2292,8 @@ return
 
     private func handleLog(_ payload: LogPayload, token: UInt64) {
         guard token == generation else { return }
+        let levels = ["debug": 0, "info": 1, "warning": 2, "error": 3, "silent": 4]
+        guard (levels[payload.type.lowercased()] ?? 3) >= (levels[logDisplayLevel] ?? 2) else { return }
          
         enqueueLogLines([
             "\(payload.type.uppercased()) \(payload.payload)",
@@ -2358,7 +2371,7 @@ return
     @Published private(set) var selectionAnnouncements = 0
 
     private func enqueueLogLines(_ lines: [String]) {
-        guard !lines.isEmpty else { return }
+        guard logRecordingEnabled(), !lines.isEmpty else { return }
         pendingLogs.append(contentsOf: lines)
         guard logBatchTask == nil else { return }
         if logs.isEmpty {
@@ -2374,14 +2387,16 @@ return
 
     private func flushLogs() {
         logBatchTask = nil
-        guard !pendingLogs.isEmpty else { return }
-        var buffer = logs
-        buffer.append(contentsOf: pendingLogs)
-        pendingLogs.removeAll(keepingCapacity: true)
-        if buffer.count > Self.logMaxLines {
-            buffer.removeFirst(buffer.count - Self.logMaxLines)
+        guard logRecordingEnabled() else { pendingLogs.removeAll(); return }
+        guard !pendingLogs.isEmpty || pendingLogs.dropped > 0 else { return }
+        var buffer = HakoLogBuffer(maximumBytes: 1024 * 1024, maximumCount: Self.logMaxLines)
+        buffer.append(contentsOf: logs)
+        buffer.append(contentsOf: pendingLogs.lines)
+        if pendingLogs.dropped > 0 {
+            buffer.append(contentsOf: ["WARNING Log display busy; dropped \(pendingLogs.dropped) lines."])
         }
-        logs = buffer
+        pendingLogs.removeAll(keepingCapacity: true)
+        logs = buffer.lines
     }
 
      
@@ -2453,6 +2468,9 @@ return
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let currentMode = object["mode"] as? String
         else { return }
+         
+         
+        if let level = object["log-level"] as? String { logDisplayLevel = level.lowercased() }
          
          
          
@@ -2557,6 +2575,8 @@ private extension ClashCommandClient {
 
         let now: @Sendable () -> UInt64
         let enqueueMemory: ClashMemoryDelivery
+        let recordLogs: @Sendable () -> Bool
+        let logDeliveryBudget = HakoLogBudget(maximumBytes: 256 * 1024, maximumCount: 256)
         private let memoryReceiptLock = NSLock()
         private var memorySequence: UInt64 = 0
 
@@ -2569,11 +2589,13 @@ private extension ClashCommandClient {
 
         init(owner: ClashCommandClient, token: UInt64,
              now: @escaping @Sendable () -> UInt64,
-             enqueueMemory: @escaping ClashMemoryDelivery) {
+             enqueueMemory: @escaping ClashMemoryDelivery,
+             recordLogs: @escaping @Sendable () -> Bool) {
             self.owner = owner
             self.token = token
             self.now = now
             self.enqueueMemory = enqueueMemory
+            self.recordLogs = recordLogs
         }
 
         func connected() {
@@ -2604,10 +2626,23 @@ private extension ClashCommandClient {
         }
 
         func writeLogs(_ message: String?) {
-            guard let data = message?.data(using: .utf8),
-                  let payload = try? JSONDecoder().decode(LogPayload.self, from: data)
-            else { return }
-            Task { @MainActor [weak owner] in owner?.handleLog(payload, token: token) }
+            guard recordLogs(), let message else { return }
+            let size = message.utf8.count
+            let budget = logDeliveryBudget
+            guard budget.reserve(size) else { return }
+            guard let data = message.data(using: .utf8),
+                  let payload = try? JSONDecoder().decode(LogPayload.self, from: data) else {
+                budget.release(size)
+                return
+            }
+            Task { @MainActor [weak owner, token] in
+                owner?.handleLog(payload, token: token)
+                let lost = budget.release(size)
+                if lost > 0 {
+                    owner?.handleLog(LogPayload(type: "warning",
+                        payload: "Log delivery busy; dropped \(lost) lines."), token: token)
+                }
+            }
         }
 
         func writeConnections(_: String?) {}

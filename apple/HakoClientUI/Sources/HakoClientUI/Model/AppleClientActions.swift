@@ -17,6 +17,7 @@ public enum HakoProfilesCommand: Codable, Equatable, Sendable {
     case select(id: Profile.ID)
     case reorder(ids: [Profile.ID])
     case sync(id: Profile.ID)
+    case setConfigurationSourceUpdates(id: Profile.ID, enabled: Bool)
     case rename(id: Profile.ID, label: String)
     case saveSubscription(
         id: Profile.ID,

@@ -445,7 +445,7 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
                  
                  
                  
-                icon(.trayFullFill)
+                icon(.sparklesRectangleStackFill)
                     .font(
                         dynamicTypeSize.isAccessibilitySize
                             ? .headline.weight(.bold)
