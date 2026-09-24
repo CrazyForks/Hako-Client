@@ -2306,7 +2306,25 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
     }
 }
 
-private struct HakoProxyMemberCard: View, Equatable {
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+private enum HakoLatencyRowAlignment: AlignmentID {
+    static func defaultValue(in context: ViewDimensions) -> CGFloat {
+        context[VerticalAlignment.center]
+    }
+}
+
+private extension VerticalAlignment {
+    static let hakoLatencyRow = VerticalAlignment(HakoLatencyRowAlignment.self)
+}
+
+struct HakoProxyMemberCard: View, Equatable {
      
      
      
@@ -2370,7 +2388,7 @@ private struct HakoProxyMemberCard: View, Equatable {
          
          
          
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: Alignment(horizontal: .trailing, vertical: .hakoLatencyRow)) {
         Button(action: action) {
             content
                 .padding(.trailing, inspect == nil ? 0 : 24)
@@ -2408,8 +2426,8 @@ private struct HakoProxyMemberCard: View, Equatable {
         .accessibilityValue(isCurrent ? "Selected" : "")
         .accessibilityIdentifier("proxies.member.\(member.name)")
         inspectButton
+            .alignmentGuide(.hakoLatencyRow) { $0[VerticalAlignment.center] }
             .padding(.trailing, HakoTheme.Spacing.compact)
-            .padding(.bottom, HakoTheme.Spacing.compact)
         }
         .onReceive(
             pulse ?? Empty<HakoLatencyPulse, Never>().eraseToAnyPublisher()
@@ -2517,6 +2535,7 @@ private struct HakoProxyMemberCard: View, Equatable {
                 state: shownLatency,
                 failureCategory: failureCategory
             )
+                .alignmentGuide(.hakoLatencyRow) { $0[VerticalAlignment.center] }
         }
         .padding(HakoTheme.Spacing.row)
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -2541,6 +2560,7 @@ private struct HakoProxyMemberCard: View, Equatable {
                         failureCategory: failureCategory,
                         onTest: onTest
                     )
+                        .alignmentGuide(.hakoLatencyRow) { $0[VerticalAlignment.center] }
                 }
                 chainLine
             }
@@ -2576,6 +2596,7 @@ private struct HakoProxyMemberCard: View, Equatable {
                         failureCategory: failureCategory,
                         onTest: onTest
                     )
+                        .alignmentGuide(.hakoLatencyRow) { $0[VerticalAlignment.center] }
                 }
             }
         }
@@ -2600,6 +2621,7 @@ private struct HakoProxyMemberCard: View, Equatable {
                 failureCategory: failureCategory,
                 usesDot: true
             )
+                .alignmentGuide(.hakoLatencyRow) { $0[VerticalAlignment.center] }
         }
         .padding(.horizontal, HakoTheme.Spacing.compact)
         .padding(.vertical, 6)
