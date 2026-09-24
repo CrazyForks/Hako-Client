@@ -793,6 +793,7 @@
 "Could Not Save" = "無法儲存";
 "Could not prepare the log for sharing." = "無法準備要共享的記錄。";
 "Could not write the log to that location." = "無法把記錄寫到該位置。";
+"Couldn’t connect: %@" = "連不上：%@";
 "Couldn’t connect: GEOIP rules need too much memory" = "連不上：GEOIP 規則佔用記憶體過多";
 "Couldn’t connect: GEOSITE categories need too much memory" = "連不上：GEOSITE 分類佔用記憶體過多";
 "Couldn’t connect: not enough memory" = "連不上：記憶體不夠";
@@ -3195,6 +3196,7 @@
 "The tunnel stays connected. The new language takes effect when Clash reopens." = "通道保持連線。新語言將在 Clash 重新開啟後生效。";
 "The tunnel stopped without a request from Clash." = "通道在 Clash 未請求的情況下停止了。";
 "The tunnel writes down what it was doing right up to the moment it stopped. When the reason above does not say enough, the last lines of the log usually do — they name the rule set, the server or the setting involved." = "通道會把自己停下前正在做的事逐條記下來。上面這段說不清楚的時候，記錄的最後幾行通常說得清楚——它會點出是哪個規則集、哪台伺服器或哪項設定。";
+"The tunnel’s start failed: %@. It was using %@ at the time." = "通道啟動時出錯：%@。當時它用了 %@。";
 "The universal proxy platform" = "通用代理平台";
 "The update interval must be zero or a positive number of seconds." = "更新間隔須為零或正數秒。";
 "The upgraded script would change a profile's runtime behavior, so nothing was changed." = "升級後的指令碼會改變某設定檔的執行階段行為，因此未做任何更改。";

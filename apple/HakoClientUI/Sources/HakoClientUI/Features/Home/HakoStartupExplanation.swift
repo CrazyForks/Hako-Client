@@ -201,6 +201,14 @@ public extension HakoStartupExplanation {
      
      
     var summary: HakoDisplayText {
+         
+         
+         
+         
+         
+        if let failureReason, !failureReason.isEmpty {
+            return .format("Couldn’t connect: %@", [failureReason])
+        }
         guard memoryWasTheStory else {
              
             return .copy("Couldn’t connect: the tunnel stopped while starting up")
@@ -224,6 +232,12 @@ public extension HakoStartupExplanation {
      
      
     var detail: HakoDisplayText {
+        if let failureReason, !failureReason.isEmpty {
+            return .format(
+                "The tunnel’s start failed: %@. It was using %@ at the time.",
+                [failureReason, Self.megabytes(footprintBytes)]
+            )
+        }
         guard memoryWasTheStory else {
             guard let resource else {
                 return .format(

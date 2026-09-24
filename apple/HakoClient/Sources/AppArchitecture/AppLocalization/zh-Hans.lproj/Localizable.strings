@@ -793,6 +793,7 @@
 "Could Not Save" = "无法保存";
 "Could not prepare the log for sharing." = "无法准备要共享的日志。";
 "Could not write the log to that location." = "无法把日志写到该位置。";
+"Couldn’t connect: %@" = "连不上：%@";
 "Couldn’t connect: GEOIP rules need too much memory" = "连不上：GEOIP 规则占用内存过多";
 "Couldn’t connect: GEOSITE categories need too much memory" = "连不上：GEOSITE 分类占用内存过多";
 "Couldn’t connect: not enough memory" = "连不上：内存不够";
@@ -3195,6 +3196,7 @@
 "The tunnel stays connected. The new language takes effect when Clash reopens." = "隧道保持连接。新语言将在 Clash 重新打开后生效。";
 "The tunnel stopped without a request from Clash." = "隧道在 Clash 未请求的情况下停止了。";
 "The tunnel writes down what it was doing right up to the moment it stopped. When the reason above does not say enough, the last lines of the log usually do — they name the rule set, the server or the setting involved." = "隧道会把自己停下前正在做的事逐条记下来。上面这段说不清楚的时候，日志的最后几行通常说得清楚——它会点出是哪个规则集、哪台服务器或哪项设置。";
+"The tunnel’s start failed: %@. It was using %@ at the time." = "隧道启动时出错：%@。当时它用了 %@。";
 "The universal proxy platform" = "通用代理平台";
 "The update interval must be zero or a positive number of seconds." = "更新间隔须为零或正数秒。";
 "The upgraded script would change a profile's runtime behavior, so nothing was changed." = "升级后的脚本会改变某配置的运行时行为，因此未做任何更改。";

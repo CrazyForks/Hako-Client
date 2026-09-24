@@ -1148,11 +1148,16 @@ return
         guard let measured = HakoMemoryLedger.lastRun(
             from: phaseLogLines
         ).rows.last?.name, !measured.isEmpty else { return account }
+         
+         
+         
         return HakoStartupExplanation(
             resource: account.resource,
             footprintBytes: account.footprintBytes,
             budgetBytes: account.budgetBytes,
-            stage: measured
+            stage: measured,
+            failureReason: account.failureReason,
+            sawCriticalPressure: account.sawCriticalPressure
         )
     }
 

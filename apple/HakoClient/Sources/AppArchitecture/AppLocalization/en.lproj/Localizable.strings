@@ -793,6 +793,7 @@
 "Could Not Save" = "Could Not Save";
 "Could not prepare the log for sharing." = "Could not prepare the log for sharing.";
 "Could not write the log to that location." = "Could not write the log to that location.";
+"Couldn’t connect: %@" = "Couldn’t connect: %@";
 "Couldn’t connect: GEOIP rules need too much memory" = "Couldn’t connect: GEOIP rules need too much memory";
 "Couldn’t connect: GEOSITE categories need too much memory" = "Couldn’t connect: GEOSITE categories need too much memory";
 "Couldn’t connect: not enough memory" = "Couldn’t connect: not enough memory";
@@ -3195,6 +3196,7 @@
 "The tunnel stays connected. The new language takes effect when Clash reopens." = "The tunnel stays connected. The new language takes effect when Clash reopens.";
 "The tunnel stopped without a request from Clash." = "The tunnel stopped without a request from Clash.";
 "The tunnel writes down what it was doing right up to the moment it stopped. When the reason above does not say enough, the last lines of the log usually do — they name the rule set, the server or the setting involved." = "The tunnel writes down what it was doing right up to the moment it stopped. When the reason above does not say enough, the last lines of the log usually do — they name the rule set, the server or the setting involved.";
+"The tunnel’s start failed: %@. It was using %@ at the time." = "The tunnel’s start failed: %@. It was using %@ at the time.";
 "The universal proxy platform" = "The universal proxy platform";
 "The update interval must be zero or a positive number of seconds." = "The update interval must be zero or a positive number of seconds.";
 "The upgraded script would change a profile's runtime behavior, so nothing was changed." = "The upgraded script would change a profile's runtime behavior, so nothing was changed.";
