@@ -161,8 +161,9 @@ struct ProfileCenterAdapter: View {
                 guard let store = model.configurationLibraryStore else { return }
                 if let snapshot = try? await Task.detached(operation: { try store.snapshot() }).value {
                     guard snapshot.generation >= configurationLibrary.generation else { return }
-                    composedProfileIDs = Set(snapshot.recipes.filter { $0.preservesOriginal != true }.map(\.id))
-                    configurationLibrary = snapshot
+                    let composed = Set(snapshot.recipes.filter { $0.preservesOriginal != true }.map(\.id))
+                    if composed != composedProfileIDs { composedProfileIDs = composed }
+                    if snapshot != configurationLibrary { configurationLibrary = snapshot }
                 }
             }
 #endif
@@ -925,7 +926,7 @@ struct ProfileCenterAdapter: View {
                   where: { $0.id == activeID }
               )?.activeRevision != nil,
               let container = HakoAppIdentifiers.appGroupContainer else {
-            adaptationNoticeCounts = [:]
+            if !adaptationNoticeCounts.isEmpty { adaptationNoticeCounts = [:] }
             return
         }
 
@@ -945,7 +946,7 @@ struct ProfileCenterAdapter: View {
                 ).notices.count
             ) ?? 0
         }.value
-        adaptationNoticeCounts = [activeID: count]
+        if adaptationNoticeCounts != [activeID: count] { adaptationNoticeCounts = [activeID: count] }
     }
 }
 

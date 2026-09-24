@@ -421,7 +421,9 @@ final class ProfilesViewModel: ObservableObject {
                 )
             }
         }
-        profiles = sanitized
+         
+         
+        if profiles != sanitized { profiles = sanitized }
     }
 
      
