@@ -1135,8 +1135,15 @@ final class ProfilesViewModel: ObservableObject {
         return try await Task.detached { try library.snapshot() }.value
     }
 
+     
+     
+     
+     
+    enum ConfigurationSourceRefreshResult: Equatable { case updated, nothingNew }
+
+    @discardableResult
     func refreshConfigurationSource(_ id: String, replaceEditedRules: Bool = false,
-                                    expectedVersion: String? = nil) async throws {
+                                    expectedVersion: String? = nil) async throws -> ConfigurationSourceRefreshResult {
         await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
@@ -1159,8 +1166,16 @@ final class ProfilesViewModel: ObservableObject {
             registersSuppliedRules: source.registersSuppliedRules)
         record.subscriptionUsage = fetched.record.subscriptionUsage
         let refreshedRecord = record
+        let previous = try await Task.detached(priority: .userInitiated) { try library.payload(.init(source)) }.value
+        if ConfigurationCenterSourceBridge.refreshBroughtNothingNew(previous: previous, fetched: fetched) {
+             
+            let noted = ConfigurationCenterSourceBridge.noted(source, refreshedAt: fetched.record)
+            try await Task.detached(priority: .userInitiated) {
+                try ConfigurationCenterSourceBridge.noteUnchangedRefresh(noted, in: library, expectedGeneration: current.generation)
+            }.value
+            return .nothingNew
+        }
         let prepared = try await Task.detached(priority: .userInitiated) {
-            let previous = try library.payload(.init(source))
             let replacement = ConfigurationSourcePayload(record: refreshedRecord, original: fetched.original,
                 documentJSON: fetched.documentJSON, resourceFiles: previous.resourceFiles)
             return try library.prepareSourceUpdate(replacement, expectedGeneration: current.generation,
@@ -1168,6 +1183,7 @@ final class ProfilesViewModel: ObservableObject {
         }.value
         try await saveConfigurationPlan(candidate: prepared.candidate, payloads: prepared.payloads,
             compositions: prepared.compositions, generation: current.generation)
+        return .updated
     }
 
     private func saveConfigurationPlan(candidate initial: ConfigurationLibrarySnapshot,
@@ -3745,7 +3761,7 @@ final class ProfilesViewModel: ObservableObject {
                     self.statusMessage = .format("Syncing %@…", [source.label])
                     do {
                         try await withThrowingTaskGroup(of: Void.self) { group in
-                            group.addTask { try await self.refreshConfigurationSource(source.id) }
+                            group.addTask { _ = try await self.refreshConfigurationSource(source.id) }
                             group.addTask {
                                 try await Task.sleep(nanoseconds: UInt64(Self.batchItemLimit * 1_000_000_000))
                                 throw URLError(.timedOut)

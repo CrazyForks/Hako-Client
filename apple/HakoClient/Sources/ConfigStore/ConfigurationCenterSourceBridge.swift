@@ -40,6 +40,43 @@ enum ConfigurationCenterSourceBridge {
               case let .subscription(link) = record.origin, !link.isEmpty else { return .clipboard }
         return .url(link)
     }
+     
+     
+     
+     
+     
+     
+     
+     
+    static func refreshBroughtNothingNew(previous: ConfigurationSourcePayload, fetched: ConfigurationSourcePayload) -> Bool {
+        previous.original == fetched.original && previous.documentJSON == fetched.documentJSON
+    }
+
+     
+     
+     
+    static func noted(_ record: ConfigurationSourceRecord, refreshedAt fetched: ConfigurationSourceRecord) -> ConfigurationSourceRecord {
+        var noted = record
+        noted.updatedAt = fetched.updatedAt
+        noted.subscriptionUsage = fetched.subscriptionUsage
+        return noted
+    }
+
+     
+     
+     
+     
+    static func noteUnchangedRefresh(_ record: ConfigurationSourceRecord, in library: ConfigurationLibraryStore,
+                                     expectedGeneration: UInt64) throws {
+        var candidate = try library.snapshot()
+        guard candidate.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
+        guard let index = candidate.sources.firstIndex(where: { $0.id == record.id }) else {
+            throw ConfigurationLibraryError.missingDependency(record.id)
+        }
+        candidate.sources[index] = record
+        _ = try library.commit(candidate, payloads: [], expectedGeneration: expectedGeneration)
+    }
+
     static func prepareReplacements(compositions: [String: ConfigurationComposition], planned: ConfigurationLibrarySnapshot,
                                     payloads: [ConfigurationSourcePayload], library: ConfigurationLibraryStore,
                                     originals: [Profile], workingDir: URL, container: URL, rename: String? = nil,
@@ -117,8 +154,17 @@ enum ConfigurationCenterSourceBridge {
                     guard let latest = current.sources.first(where: { $0.id == source.id }), latest == source,
                           case .subscription(let url) = latest.origin else { outcome.unchanged += 1; continue }
                     let fetched = try await fetch(url: url, label: latest.label, credentials: credentials, downloader: downloader)
+                    let previous = try await Task.detached { try library.payload(.init(latest)) }.value
+                    if Self.refreshBroughtNothingNew(previous: previous, fetched: fetched) {
+                         
+                        let noted = Self.noted(latest, refreshedAt: fetched.record)
+                        try await Task.detached {
+                            try Self.noteUnchangedRefresh(noted, in: library, expectedGeneration: current.generation)
+                        }.value
+                        outcome.unchanged += 1
+                        continue
+                    }
                     let prepared = try await Task.detached { () -> (PreparedConfigurationSourceUpdate, [ConfigurationCenterPublicationBridge.Replacement]) in
-                        let previous = try library.payload(.init(latest))
                         var record = latest
                         record.version = fetched.record.version; record.updatedAt = fetched.record.updatedAt
                         record.nodeCount = fetched.record.nodeCount; record.providerCount = fetched.record.providerCount
