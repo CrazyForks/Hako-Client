@@ -2092,6 +2092,8 @@ private struct ConfigurationCollectionImportAdapter: View {
     @State private var busy = false
     @State private var error: String?
     private var dirty: Bool { !name.isEmpty || !link.isEmpty || fileData != nil }
+    private var missingRequired: Bool { name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (fileData == nil && link.isEmpty) }
+    @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     var body: some View {
         HakoFeatureNavigationContainer {
             Form {
@@ -2121,6 +2123,12 @@ private struct ConfigurationCollectionImportAdapter: View {
                     ToolbarItem(placement: .confirmationAction) { Button { save() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(busy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (fileData == nil && link.isEmpty)) }
                 }
                 .hakoRegistersDeparture(isDirty: dirty, isBusy: busy, save: { save($0) }, discard: { name = ""; link = ""; fileData = nil; fileName = nil })
+                 
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if insideProductModal {
+                        HakoModalActionBar(primaryTitle: "Save", primaryDisabled: missingRequired, isBusy: busy, onPrimary: { save() })
+                    }
+                }
                 .fileImporter(isPresented: $pickingFile, allowedContentTypes: [.data]) { result in
                     do {
                         let url = try result.get(); let access = url.startAccessingSecurityScopedResource()
