@@ -399,7 +399,8 @@ targets:
     - path: ../../Vendor/HakoAdapter/Sources/HakoAdapter
     settings:
       configs:
-        Release: {}
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE)
         PRODUCT_NAME: Clash
@@ -499,7 +500,8 @@ targets:
       buildPhase: resources
     settings:
       configs:
-        Release: {}
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).widgets
         MACOSX_DEPLOYMENT_TARGET: '14.0'
@@ -543,7 +545,8 @@ targets:
     - path: ../../Vendor/HakoAdapter/Sources/HakoAdapter
     settings:
       configs:
-        Release: {}
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).packet-tunnel
         PRODUCT_NAME: HakoMacExtension
