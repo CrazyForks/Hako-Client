@@ -105,10 +105,6 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
      
     @Published private(set) var tunnelSettings = VPNTunnelSettings()
-     
-     
-     
-    @Published private(set) var configurationStrictRoute = false
 
     private let preferences: UserDefaults
     private let preferencesReadTimeout: Double
@@ -340,26 +336,16 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
 
     func refresh() async {
         await refreshSystemVPNInstallation()
-         
-         
-         
-        if let stampJSON = TunnelIntentStamp.readJSON(from: intentStampDefaults),
-           let recovered = try? JSONDecoder().decode(
-               PlatformConfigIntent.self, from: Data(stampJSON.utf8)
-           ) {
-            configurationStrictRoute = recovered.strictRoute
-        }
     }
 
      
 
      
      
+     
+     
     var routingPolicy: VPNRoutingPolicy {
-        VPNRoutingPolicy(
-            tunnel: tunnelSettings,
-            configurationStrictRoute: configurationStrictRoute
-        )
+        VPNRoutingPolicy(tunnel: tunnelSettings)
     }
 
      
@@ -465,6 +451,18 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
             proto.serverAddress = Self.vpnProfileDescription
             proto.providerConfiguration = try ipStack.applying(to: proto.providerConfiguration)
             routingPolicy.apply(to: proto)
+            let policy = routingPolicy
+             
+             
+             
+             
+            HakoLogStore.shared.append(
+                "routing policy: enforceRoutes=\(policy.enforceRoutes) "
+                    + "excludeLocalNetworks=\(policy.excludeLocalNetworks) "
+                    + "includeAllNetworks=\(policy.includeAllNetworks) "
+                    + "excludeAPNs=\(policy.excludeAPNs)",
+                stream: .app
+            )
             manager.protocolConfiguration = proto
             manager.localizedDescription = Self.vpnProfileDescription
             manager.isEnabled = true
@@ -734,10 +732,6 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     func applyActiveConfiguration(
         nextIntent intent: PlatformConfigIntent
     ) async -> Bool {
-         
-         
-         
-        configurationStrictRoute = intent.strictRoute
         let tunnelUp: Bool
         switch manager?.connection.status {
         case .connected, .connecting, .reasserting: tunnelUp = true

@@ -28,6 +28,8 @@ import NetworkExtension
  
  
  
+ 
+ 
 struct VPNTunnelSettings: Equatable {
     var enforceRoutes = false
     var includeAllNetworks = false
@@ -83,9 +85,8 @@ struct VPNTunnelSettings: Equatable {
      
      
      
-     
-    func localNetworksSwitchIsEnabled(configurationStrictRoute: Bool) -> Bool {
-        includeAllNetworks || enforceRoutes || configurationStrictRoute
+    var localNetworksSwitchIsEnabled: Bool {
+        includeAllNetworks || enforceRoutes
     }
 
     func save(to defaults: UserDefaults) {
@@ -103,6 +104,7 @@ struct VPNTunnelSettings: Equatable {
  
  
  
+ 
 struct VPNRoutingPolicy: Equatable {
     let includeAllNetworks: Bool
     let excludeLocalNetworks: Bool
@@ -113,12 +115,11 @@ struct VPNRoutingPolicy: Equatable {
 
     init(
         tunnel: VPNTunnelSettings = VPNTunnelSettings(),
-        configurationStrictRoute: Bool = false,
         preserveDevelopmentDeviceCommunication: Bool = Self.defaultDevelopmentDeviceCommunication
     ) {
         includeAllNetworks = tunnel.includeAllNetworks
         excludeLocalNetworks = !tunnel.includeLocalNetworks
-        enforceRoutes = tunnel.enforceRoutes || configurationStrictRoute
+        enforceRoutes = tunnel.enforceRoutes
          
         excludeCellularServices = true
         excludeAPNs = !tunnel.includeAPNs

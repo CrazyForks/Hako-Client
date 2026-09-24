@@ -26,24 +26,14 @@ struct HakoMacTunnelSettingsView: View {
     @State private var isApplying = false
     @State private var error = ""
 
-    private var enforceRoutesEffective: Bool {
-        draft.enforceRoutes || vpn.configurationStrictRoute
-    }
-
     var body: some View {
         HakoMacSettingsFormContainer {
             Section {
                  
                  
                  
-                Toggle(
-                    "Enforce Routes",
-                    isOn: vpn.configurationStrictRoute
-                        ? .constant(true)
-                        : binding(\.enforceRoutes)
-                )
-                .disabled(vpn.configurationStrictRoute)
-                .accessibilityIdentifier("tunnel.enforceRoutes")
+                Toggle("Enforce Routes", isOn: binding(\.enforceRoutes))
+                    .accessibilityIdentifier("tunnel.enforceRoutes")
             } footer: {
                 Text("If YES, route rules for this tunnel will take precedence over any locally-defined routes. The default is NO.")
             }
@@ -59,11 +49,7 @@ struct HakoMacTunnelSettingsView: View {
 
             Section {
                 Toggle("Include Local Networks", isOn: binding(\.includeLocalNetworks))
-                    .disabled(
-                        !draft.localNetworksSwitchIsEnabled(
-                            configurationStrictRoute: vpn.configurationStrictRoute
-                        )
-                    )
+                    .disabled(!draft.localNetworksSwitchIsEnabled)
                     .accessibilityIdentifier("tunnel.includeLocalNetworks")
             } header: {
                 Text("Include Local Networks")
