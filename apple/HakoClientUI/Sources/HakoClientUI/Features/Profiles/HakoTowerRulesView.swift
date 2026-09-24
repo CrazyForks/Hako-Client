@@ -189,6 +189,9 @@ public struct HakoTowerRuleCustomizationView: View {
     @State private var search = ""
     @State private var category: ConfigurationRuleCatalogCategory?
     @State private var reordering = false
+     
+     
+    @State private var loadingRuleSets: Set<String> = []
     @State private var busy = false
     @State private var error: String?
     @State private var modal: Modal?
@@ -210,6 +213,7 @@ public struct HakoTowerRuleCustomizationView: View {
     private enum Modal: String, Identifiable { case identity, group, local, copy, manual; var id: String { rawValue } }
     @State private var groupID: UUID?
     @State private var localID: String?
+    @State private var ordered = HakoOrderedWork()
     @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     public init(draft: ConfigurationRuleDraft, localSets: [ConfigurationLocalRuleSet], resetDocument: String, palette: HakoProductPalette, pushed: Bool = false, ruleSetKeys: Set<String> = [],
         save: @escaping (ConfigurationRuleDraft) async throws -> ConfigurationRuleDraft, download: @escaping (String) async throws -> [String],
@@ -227,8 +231,26 @@ public struct HakoTowerRuleCustomizationView: View {
     public var body: some View {
         List {
             if let error { Text(verbatim: error).foregroundStyle(.orange) }
-            HakoTowerInlineRules(rows: draft.rows, version: draft.version,
-                query: search, palette: palette)
+            if reordering {
+                 
+                 
+                 
+                 
+                 
+                Section {
+                    HStack {
+                        Text("Current Rules")
+                        Spacer()
+                        Text(hako: .format("%@ rules", [String(draft.rows.count)]))
+                            .foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("configuration.rules.current.summary")
+                }
+            } else {
+                HakoTowerInlineRules(rows: draft.rows, version: draft.version,
+                    query: search, palette: palette)
+            }
             Section {
                 ForEach(visibleGroups) { group in
                     Button { groupID = group.id; modal = .group } label: {
@@ -263,7 +285,6 @@ public struct HakoTowerRuleCustomizationView: View {
                     var changed = draft
                     changed.reorderGroups(ids)
                     draft = changed; hasUnsavedChanges = true
-                    persist(changed)
                 }
             } header: { HStack { Text("Policy Groups"); Spacer(); Text(hako: .format("%@ groups", [String(visibleGroups.count)])) } }
             if reordering {
@@ -275,7 +296,8 @@ public struct HakoTowerRuleCustomizationView: View {
                                 Text(entry.emoji).font(.title3).frame(width: 36, height: 36).background(.tint.opacity(0.11), in: RoundedRectangle(cornerRadius: 10))
                                 VStack(alignment: .leading, spacing: 3) { Text(verbatim: entry.name).font(.body).foregroundStyle(.primary); Text(verbatim: entry.provider.displayName + " · " + route(entry.defaultRoute)).font(.caption).foregroundStyle(.secondary) }
                                 Spacer(minLength: 8)
-                                mark(installedRuleSets.contains("catalog-" + entry.id))
+                                mark(installedRuleSets.contains("catalog-" + entry.id),
+                                     loading: loadingRuleSets.contains("catalog-" + entry.id))
                             }.contentShape(Rectangle())
                         }.buttonStyle(.plain).listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     }
@@ -307,7 +329,7 @@ public struct HakoTowerRuleCustomizationView: View {
             }
         }
         .modifier(HakoTowerReorderMode(active: reordering))
-        .allowsHitTesting(!busy)
+        .modifier(HakoTowerSelectionFeedback(trigger: installedRuleSets))
         .modifier(HakoTowerSearchPlacement(text: $search, palette: palette))
         .hakoPageTitle("Rule Customization")
          
@@ -377,7 +399,12 @@ public struct HakoTowerRuleCustomizationView: View {
                     HakoTowerLocalRuleEditor(value: localSets.first { $0.id == localID }, save: { name, input in
                         let rules = try await download(input)
                         let value = ConfigurationLocalRuleSet(id: localID ?? UUID().uuidString.lowercased(), name: name, input: input, rules: rules)
-                        let updated = try await saveLocal(value); await receiveSaved(updated.0); localSets = updated.1; modal = nil
+                         
+                         
+                         
+                        let updated = try await saveLocal(value)
+                        try await receiveHostWrite(updated.0) { scheme in try scheme.updateLocalRuleSet(value) }
+                        localSets = updated.1; modal = nil
                     }, close: { modal = nil })
                 case .copy:
                     HakoTowerNameEditor(title: "Save as New Scheme", name: draft.label + " · 自定义", save: { name in try await copy(draft, name); modal = nil; close() }, close: { modal = nil })
@@ -403,7 +430,13 @@ public struct HakoTowerRuleCustomizationView: View {
             isPresented: Binding(get: { deletingLocal != nil }, set: { if !$0 { deletingLocal = nil } }),
             actionTitle: .copy("Delete Rule Set"), message: .copy("This local rule set will be deleted. Rule schemes in the library will also remove rules added from it."),
             identifier: "configuration.rules.local.delete.confirm") { [deletingLocal] in
-                if let item = deletingLocal { perform { let updated = try await deleteLocal(item.id); await receiveSaved(updated.0); localSets = updated.1 } }
+                if let item = deletingLocal {
+                    perform {
+                        let updated = try await deleteLocal(item.id)
+                        try await receiveHostWrite(updated.0) { scheme in scheme.removeRuleSet("local-" + item.id) }
+                        localSets = updated.1
+                    }
+                }
             }
 
     }
@@ -417,7 +450,9 @@ public struct HakoTowerRuleCustomizationView: View {
                         Button { localID = item.id; modal = .local } label: {
                             HStack { Text("🧩").font(.title3); VStack(alignment: .leading, spacing: 3) { Text(verbatim: item.name).foregroundStyle(.primary); Text(hako: .format("Local · %@ rules", [String(item.rules.count)])).font(.caption).foregroundStyle(.secondary) }; Spacer() }.contentShape(Rectangle())
                         }.buttonStyle(.plain)
-                        Button { toggleLocal(item) } label: { mark(installedRuleSets.contains("local-" + item.id)) }.buttonStyle(.plain)
+                        Button { toggleLocal(item) } label: {
+                            mark(installedRuleSets.contains("local-" + item.id), loading: false)
+                        }.buttonStyle(.plain)
                     }.contextMenu {
                         Button("Edit Rule Content") { localID = item.id; modal = .local }
                         Button("Delete Local Rule Set", role: .destructive) { deletingLocal = item }
@@ -431,13 +466,21 @@ public struct HakoTowerRuleCustomizationView: View {
             } header: { HStack { Text("My Rule Sets"); Spacer(); Text(hako: .format("%@ items", [String(localSets.count)])) } }
 
     }
-    private func mark(_ selected: Bool) -> some View {
-        Image(systemName: selected ? "minus.circle" : "plus.circle")
-            .font(.title3)
-            .foregroundStyle(selected ? Color.red : .accentColor)
-            .frame(width: HakoTheme.Control.minimumHitTarget, height: HakoTheme.Control.minimumHitTarget)
-            .contentShape(Rectangle())
-            .accessibilityLabel(Text(HakoCopy.key(selected ? "Remove from Current Rules" : "Add to Current Rules")))
+    @ViewBuilder
+    private func mark(_ selected: Bool, loading: Bool) -> some View {
+        if loading {
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: HakoTheme.Control.minimumHitTarget, height: HakoTheme.Control.minimumHitTarget)
+                .accessibilityLabel(Text(HakoCopy.key("Loading")))
+        } else {
+            Image(systemName: selected ? "minus.circle" : "plus.circle")
+                .font(.title3)
+                .foregroundStyle(selected ? Color.red : .accentColor)
+                .frame(width: HakoTheme.Control.minimumHitTarget, height: HakoTheme.Control.minimumHitTarget)
+                .contentShape(Rectangle())
+                .accessibilityLabel(Text(HakoCopy.key(selected ? "Remove from Current Rules" : "Add to Current Rules")))
+        }
     }
     private func emoji(_ name: String) -> String? {
         guard let first = name.trimmingCharacters(in: .whitespaces).first,
@@ -450,26 +493,57 @@ public struct HakoTowerRuleCustomizationView: View {
     }
     private func summary(_ group: ConfigurationRuleDraft.Group) -> String { if case .array(let values) = group.document.topLevelValue("proxies"), case .string(let value) = values.first { return value }; return group.type == "url-test" ? "自动选择" : "节点匹配" }
     private func route(_ value: ConfigurationRuleCatalogDefaultRoute) -> String { value == .direct ? "直连" : value == .reject ? "拦截" : "代理" }
+     
+     
+     
+     
+     
     private func toggleCatalog(_ entry: ConfigurationRuleCatalogEntry) {
-        perform {
-            let snapshot = draft; let key = "catalog-" + entry.id
-            let content = installedRuleSets.contains(key) ? nil : try await download(entry.sourceURLString)
-            let value = try await Task.detached {
-                var value = snapshot
-                if let content { try value.addRuleSet(key: key, name: entry.displayName, rules: content, defaultRoute: entry.defaultRoute.rawValue) }
-                else { value.removeRuleSet(key) }
-                return value
-            }.value
-            let saved = try await save(value); await receiveSaved(saved)
+        let key = "catalog-" + entry.id
+        guard !loadingRuleSets.contains(key) else { return }
+        if installedRuleSets.contains(key) {
+            change { value in var value = value; value.removeRuleSet(key); return value }
+            return
+        }
+        loadingRuleSets.insert(key)
+        Task { @MainActor in
+            defer { loadingRuleSets.remove(key) }
+            do {
+                let content = try await download(entry.sourceURLString)
+                try await apply { value in
+                    var value = value
+                    try value.addRuleSet(key: key, name: entry.displayName, rules: content, defaultRoute: entry.defaultRoute.rawValue)
+                    return value
+                }
+            } catch { self.error = error.localizedDescription }
         }
     }
     private func toggleLocal(_ item: ConfigurationLocalRuleSet) {
         let key = "local-" + item.id
         let removing = installedRuleSets.contains(key)
-        mutate { snapshot in
+        change { snapshot in
             var value = snapshot
             if removing { value.removeRuleSet(key) } else { try value.addRuleSet(key: key, name: item.name, rules: item.rules, defaultRoute: "proxy") }
             return value
+        }
+    }
+     
+     
+     
+    private func apply(_ transform: @escaping @Sendable (ConfigurationRuleDraft) throws -> ConfigurationRuleDraft) async throws {
+         
+         
+         
+        try await ordered.run {
+            let snapshot = draft
+            let value = try await Task.detached { try transform(snapshot) }.value
+            let keys = await Task.detached { value.referencedRuleSets }.value
+            withAnimation { draft = value; installedRuleSets = keys; hasUnsavedChanges = true }
+        }
+    }
+    private func change(_ transform: @escaping @Sendable (ConfigurationRuleDraft) throws -> ConfigurationRuleDraft) {
+        Task { @MainActor in
+            do { try await apply(transform) } catch { self.error = error.localizedDescription }
         }
     }
     private func receiveSaved(_ value: ConfigurationRuleDraft) async {
@@ -488,12 +562,26 @@ public struct HakoTowerRuleCustomizationView: View {
             draft = value; installedRuleSets = keys; hasUnsavedChanges = true
         }
     }
-    private func mutate(_ transform: @escaping @Sendable (ConfigurationRuleDraft) throws -> ConfigurationRuleDraft) {
-        perform {
+     
+     
+     
+     
+     
+    private func receiveHostWrite(_ stored: ConfigurationRuleDraft, applying change: @escaping @Sendable (inout ConfigurationRuleDraft) throws -> Void) async throws {
+        try await ordered.run {
+            guard hasUnsavedChanges else { await receiveSaved(stored); return }
             let snapshot = draft
-            let value = try await Task.detached { try transform(snapshot) }.value
-            let saved = try await save(value); await receiveSaved(saved)
+            let value = try await Task.detached { var value = snapshot; try change(&value); return value }.value
+            let keys = await Task.detached { value.referencedRuleSets }.value
+            let storedKeys = await Task.detached { stored.referencedRuleSets }.value
+            var transaction = Transaction(); transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                draft = value; installedRuleSets = keys; baseline = stored; baselineRuleSets = storedKeys; hasUnsavedChanges = true
+            }
         }
+    }
+    private func mutate(_ transform: @escaping @Sendable (ConfigurationRuleDraft) throws -> ConfigurationRuleDraft) {
+        change(transform)
     }
     private func persist(_ value: ConfigurationRuleDraft, then: @escaping () -> Void = {}, completion: @escaping (Bool) -> Void = { _ in }) {
         guard !busy else { completion(false); return }; busy = true; error = nil
@@ -679,6 +767,19 @@ private struct HakoTowerGroupEditor: View {
                 }
                 try await save(document); completion(true)
             } catch { self.error = error.localizedDescription; completion(false) }
+        }
+    }
+}
+
+ 
+ 
+private struct HakoTowerSelectionFeedback: ViewModifier {
+    let trigger: Set<String>
+    func body(content: Content) -> some View {
+        if #available(iOS 17, macOS 14, tvOS 17, *) {
+            content.sensoryFeedback(.success, trigger: trigger)
+        } else {
+            content
         }
     }
 }

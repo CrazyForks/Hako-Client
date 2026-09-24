@@ -835,7 +835,7 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
                 if let initial {
                     HakoTowerRuleCustomizationView(draft: initial.draft, localSets: library.localRuleSets ?? [],
                         resetDocument: initial.resetDocument, palette: .hakoProduct, pushed: pushed, ruleSetKeys: initial.ruleSetKeys,
-                        save: save, download: ConfigurationTowerRuleReader.rules,
+                        save: save, download: { try await ConfigurationTowerRuleReader.rules($0) },
                         saveLocal: { value in apply(try await model.saveConfigurationLocalRuleSet(value)); return (try await reloadDraft(), library.localRuleSets ?? []) },
                         deleteLocal: { id in apply(try await model.saveConfigurationLocalRuleSet(nil, deleting: id)); return (try await reloadDraft(), library.localRuleSets ?? []) },
                         copy: { draft, name in
@@ -1273,17 +1273,60 @@ enum ConfigurationTowerRuleReader {
         }
         return parts.string ?? value
     }
-    static func rules(_ input: String) async throws -> [String] {
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static let session: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("TowerRuleSets", isDirectory: true)
+        configuration.urlCache = URLCache(memoryCapacity: 4 << 20, diskCapacity: 32 << 20, directory: directory)
+        return URLSession(configuration: configuration)
+    }()
+
+     
+    private static let catalogLinks: Set<String> = Set(ConfigurationRuleCatalog.builtIn.entries.compactMap {
+        URL(string: normalizedURL($0.sourceURLString))?.absoluteString
+    })
+
+     
+     
+     
+     
+    private actor Memo {
+        private var lists: [String: [String]] = [:]
+        private var order: [String] = []
+        func value(for key: String) -> [String]? { lists[key] }
+        func store(_ value: [String], for key: String) {
+            if lists[key] == nil { order.append(key) }
+            lists[key] = value
+            while order.count > 64, let oldest = order.first { order.removeFirst(); lists[oldest] = nil }
+        }
+    }
+    private static let memo = Memo()
+
+    static func rules(_ input: String, session: URLSession = session) async throws -> [String] {
         var text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         if let url = URL(string: normalizedURL(text)), ["https", "http"].contains(url.scheme?.lowercased() ?? "") {
-            var request = URLRequest(url: url); request.timeoutInterval = 30
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let catalog = catalogLinks.contains(url.absoluteString)
+            if catalog, let known = await memo.value(for: url.absoluteString) { return known }
+            let request = URLRequest(url: url, cachePolicy: catalog ? .returnCacheDataElseLoad : .useProtocolCachePolicy, timeoutInterval: 30)
+            let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
                   data.count <= 32 * 1024 * 1024, let decoded = String(data: data, encoding: .utf8) else { throw ConfigurationLibraryError.unreadable }
             text = decoded
         }
         let raw = text
-        return try await Task.detached {
+        let key = URL(string: normalizedURL(input.trimmingCharacters(in: .whitespacesAndNewlines)))
+            .flatMap { ["https", "http"].contains($0.scheme?.lowercased() ?? "") ? $0.absoluteString : nil }
+        let parsed = try await Task.detached {
             let lines: [String]
             if raw.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("payload:") {
                 let object = try OrderedJSON.parse(ConfigTransforms.yamlToJSON(raw))
@@ -1301,6 +1344,8 @@ enum ConfigurationTowerRuleReader {
             try ConfigTransforms.validateSource(document.serialized())
             return lines
         }.value
+        if let key, catalogLinks.contains(key) { await memo.store(parsed, for: key) }
+        return parsed
     }
 }
 

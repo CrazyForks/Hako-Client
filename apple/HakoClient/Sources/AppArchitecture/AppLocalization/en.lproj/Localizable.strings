@@ -1897,7 +1897,6 @@
 "Node Sources" = "Node Sources";
 "Node could not be saved" = "Node could not be saved";
 "Nodes" = "Nodes";
-"Nodes come from the chosen node sources; routing follows the rule scheme." = "Nodes come from the chosen node sources; routing follows the rule scheme.";
 "None" = "None";
 "None in this profile" = "None in this profile";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this.";

@@ -1897,7 +1897,6 @@
 "Node Sources" = "節點來源";
 "Node could not be saved" = "節點未能儲存";
 "Nodes" = "節點";
-"Nodes come from the chosen node sources; routing follows the rule scheme." = "節點來自所選節點來源，分流按規則方案。";
 "None" = "無";
 "None in this profile" = "本設定檔中沒有";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "出口能承載 UDP 時這幾檔都不生效。Hysteria2、TUIC 以及任何開啟了 udp 的線路——包括 UDP over TCP——都會正常命中規則，走不到這裡。";
