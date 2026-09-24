@@ -3536,56 +3536,81 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
     @State private var query = ""
 
     public var body: some View {
-        Form {
-            if !builtIns.isEmpty {
-                Section {
-                    ForEach(builtIns, id: \.name) { entry in
-                        policyRow(entry.name, caption: entry.caption)
-                    }
-                } header: {
-                    if let builtInsTitle {
-                        Text(hako: .copy(builtInsTitle))
-                    }
+        catalogue
+            .hakoProductModalSearchable(
+                text: $query,
+                prompt: Text("Search proxies")
+            )
+            .hakoPageTitle(.copy(title))
+            .hakoProductModalChild(
+                title: title,
+                searchText: $query
+            )
+            .hakoCapturesDismiss(dismiss)
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    @ViewBuilder
+    private var catalogue: some View {
+        if HakoPlatformLayout.pageUsesSystemSettingsIdiom {
+            List { sections }
+                .hakoMacSettingsList()
+        } else {
+            Form { sections }
+        }
+    }
+
+    @ViewBuilder
+    private var sections: some View {
+        if !builtIns.isEmpty {
+            Section {
+                ForEach(builtIns, id: \.name) { entry in
+                    policyRow(entry.name, caption: entry.caption)
                 }
-            }
-            if !filteredGroups.isEmpty || query.isEmpty {
-                Section("Groups") {
-                    ForEach(filteredGroups) {
-                        policyRow($0.name, caption: $0.type)
-                    }
-                    if offersGlobal,
-                        !options.groups.contains(where: {
-                        $0.name == "GLOBAL"
-                    }),
-                        query.isEmpty
-                            || "GLOBAL"
-                            .localizedCaseInsensitiveContains(query)
-                    {
-                        policyRow(
-                            "GLOBAL",
-                            caption: "Kernel built-in group"
-                        )
-                    }
-                }
-            }
-            if !filteredProxies.isEmpty {
-                Section("Proxies") {
-                    ForEach(filteredProxies) {
-                        policyRow($0.name, caption: $0.type)
-                    }
+            } header: {
+                if let builtInsTitle {
+                    Text(hako: .copy(builtInsTitle))
                 }
             }
         }
-        .hakoProductModalSearchable(
-            text: $query,
-            prompt: Text("Search proxies")
-        )
-        .hakoPageTitle(.copy(title))
-        .hakoProductModalChild(
-            title: title,
-            searchText: $query
-        )
-        .hakoCapturesDismiss(dismiss)
+        if !filteredGroups.isEmpty || query.isEmpty {
+            Section("Groups") {
+                ForEach(filteredGroups) {
+                    policyRow($0.name, caption: $0.type)
+                }
+                if offersGlobal,
+                    !options.groups.contains(where: {
+                    $0.name == "GLOBAL"
+                }),
+                    query.isEmpty
+                        || "GLOBAL"
+                        .localizedCaseInsensitiveContains(query)
+                {
+                    policyRow(
+                        "GLOBAL",
+                        caption: "Kernel built-in group"
+                    )
+                }
+            }
+        }
+        if !filteredProxies.isEmpty {
+            Section("Proxies") {
+                ForEach(filteredProxies) {
+                    policyRow($0.name, caption: $0.type)
+                }
+            }
+        }
     }
 
     private var filteredGroups: [HakoRulePolicySnapshot] {
