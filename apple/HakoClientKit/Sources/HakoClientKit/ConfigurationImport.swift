@@ -68,6 +68,30 @@ extension ConfigurationLibraryStore {
 public extension ConfigurationLibraryStore {
      
      
+     
+     
+     
+     
+     
+     
+     
+    func registerSuppliedRules(sourceID: String, expectedGeneration: UInt64) throws -> ConfigurationLibrarySnapshot {
+        var candidate = try snapshot()
+        guard candidate.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
+        guard let index = candidate.sources.firstIndex(where: { $0.id == sourceID }) else {
+            throw ConfigurationLibraryError.missingDependency(sourceID)
+        }
+        guard candidate.sources[index].hasRules else { throw ConfigurationLibraryError.missingRules }
+        candidate.sources[index].registersSuppliedRules = true
+        let ruleID = "rules-" + sourceID
+        if !candidate.rules.contains(where: { $0.id == ruleID }) {
+            candidate.rules.append(.init(id: ruleID, label: candidate.sources[index].label, kind: .supplied, sourceID: sourceID))
+        }
+        return try commit(candidate, payloads: [], expectedGeneration: expectedGeneration)
+    }
+
+     
+     
     func prepareWholeSourceEditing(_ profileID: String, replacement: ConfigurationSourcePayload,
         expectedGeneration: UInt64,
         resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput = {

@@ -669,6 +669,15 @@ final class ProfilesViewModel: ObservableObject {
         case .nodeShareLink, .nothing:
             throw ProfileInstallLinkError.unusableSubscription
         }
+         
+         
+         
+         
+         
+        guard payload.record.suppliesNodes,
+              payload.record.nodeCount > 0 || payload.record.providerCount > 0 else {
+            throw ConfigurationLibraryError.missingNodes
+        }
         let generation = try await Task.detached { try library.snapshot().generation }.value
         return try await addConfigurationSource(payload, generation: generation)
     }
@@ -695,8 +704,7 @@ final class ProfilesViewModel: ObservableObject {
         }
         let current = try await Task.detached { try library.snapshot() }.value
         if let existing = current.availableSources.first(where: { $0.id == payload.record.id }) {
-            try await refreshLibrarySource(payload, replacing: existing)
-            return try await Task.detached { try library.snapshot() }.value
+            return try await adoptRulesOfLibrarySource(payload, replacing: existing)
         }
         if payload.record.ruleCount > 0 {
             return try await addConfigurationRuleScheme(payload, generation: current.generation)
@@ -723,6 +731,31 @@ final class ProfilesViewModel: ObservableObject {
         defer { changingConfigurationLibrary = false }
         let current = try await Task.detached { try library.snapshot() }.value
         _ = try await applyFetchedSource(fetched, replacing: existing, in: current, library: library, replaceEditedRules: false)
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    private func adoptRulesOfLibrarySource(_ fetched: ConfigurationSourcePayload,
+                                           replacing existing: ConfigurationSourceRecord) async throws -> ConfigurationLibrarySnapshot {
+        guard fetched.record.hasRules else { throw ConfigurationLibraryError.missingRules }
+        await settleLibraryHousekeeping()
+        guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
+        guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+        changingConfigurationLibrary = true
+        defer { changingConfigurationLibrary = false }
+        let current = try await Task.detached { try library.snapshot() }.value
+        _ = try await applyFetchedSource(fetched, replacing: existing, in: current, library: library, replaceEditedRules: false)
+        let refreshed = try await Task.detached { try library.snapshot() }.value
+        return try await Task.detached(priority: .userInitiated) {
+            try library.registerSuppliedRules(sourceID: existing.id, expectedGeneration: refreshed.generation)
+        }.value
     }
 
     private var hasAttemptedConfigurationRecovery = false
@@ -1127,6 +1160,16 @@ final class ProfilesViewModel: ObservableObject {
         await settleLibraryHousekeeping()
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+        let current = try await Task.detached { try library.snapshot() }.value
+        if let existing = current.availableSources.first(where: { $0.id == source.record.id }) {
+             
+             
+             
+             
+             
+            guard current.generation == generation else { throw ConfigurationLibraryError.staleGeneration }
+            return try await adoptRulesOfLibrarySource(source, replacing: existing)
+        }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
         return try await Task.detached(priority: .userInitiated) {
