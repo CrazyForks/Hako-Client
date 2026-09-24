@@ -29,11 +29,11 @@ public enum ConfigurationCompositionError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .duplicateSource(let id): return "The source was selected more than once: \(id)"
-        case .invalidDocument(let id): return "The source is not a configuration object: \(id)"
-        case .duplicateName(let source, let name): return "Duplicate name in \(source): \(name)"
+        case .duplicateSource: return "A source was selected more than once."
+        case .invalidDocument: return "A selected source is not a configuration object."
+        case .duplicateName: return "Two entries in one source share a name. Rename one of them."
         case .unresolvedDependency(let source, let name):
-            return "The selected sources do not supply \(name), required by \(source)."
+            return "A selected source needs a proxy that no selected source supplies."
         }
     }
 }

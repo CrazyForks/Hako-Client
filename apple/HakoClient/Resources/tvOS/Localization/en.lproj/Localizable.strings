@@ -12,7 +12,11 @@
 "1 never matches here" = "1 never matches here";
 "A VPN operation is already in progress. Wait for it to finish before changing IP Stack settings." = "A VPN operation is already in progress. Wait for it to finish before changing IP Stack settings.";
 "A load-balance group spreads connections across its members, so it has no single route to pin." = "A load-balance group spreads connections across its members, so it has no single route to pin.";
+"A node in this chain is missing or ambiguous. Edit the chain before updating this source." = "A node in this chain is missing or ambiguous. Edit the chain before updating this source.";
 "A relay sends traffic through its members in order, so there is no one member to choose." = "A relay sends traffic through its members in order, so there is no one member to choose.";
+"A selected source is not a configuration object." = "A selected source is not a configuration object.";
+"A selected source needs a proxy that no selected source supplies." = "A selected source needs a proxy that no selected source supplies.";
+"A source was selected more than once." = "A source was selected more than once.";
 "A valid memory sample was not included in the reply." = "A valid memory sample was not included in the reply.";
 "About" = "About";
 "Add a profile" = "Add a profile";
@@ -30,12 +34,15 @@
 "Bad HTTP" = "Bad HTTP";
 "Branches into the named sub-rule list when the condition matches." = "Branches into the named sub-rule list when the condition matches.";
 "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back." = "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back.";
+"Built-in sources cannot be deleted." = "Built-in sources cannot be deleted.";
 "Bundled" = "Bundled";
 "Cancel" = "Cancel";
 "Changing this setting restarts the VPN." = "Changing this setting restarts the VPN.";
 "Check that the subscription address is still reachable, then update it once from its own screen." = "Check that the subscription address is still reachable, then update it once from its own screen.";
 "Checking…" = "Checking…";
 "Choice confirmed %@" = "Choice confirmed %@";
+"Choose different entry and exit nodes." = "Choose different entry and exit nodes.";
+"Choose individual nodes, not another proxy chain." = "Choose individual nodes, not another proxy chain.";
 "Choose the IP query mode and how the tunnel handles IPv6. Changes restart a connected VPN." = "Choose the IP query mode and how the tunnel handles IPv6. Changes restart a connected VPN.";
 "Choose the device to restore from" = "Choose the device to restore from";
 "Clash" = "Clash";
@@ -55,6 +62,7 @@
 "Connection Not Completed" = "Connection Not Completed";
 "Connections" = "Connections";
 "Connections · %@" = "Connections · %@";
+"Copy this rule scheme before editing it." = "Copy this rule scheme before editing it.";
 "Could not update: %@" = "Could not update: %@";
 "Current status not confirmed" = "Current status not confirmed";
 "Currently in force: %@ · changing this takes effect immediately, without reconnecting" = "Currently in force: %@ · changing this takes effect immediately, without reconnecting";
@@ -73,6 +81,7 @@
 "Duration" = "Duration";
 "Edit" = "Edit";
 "Ended" = "Ended";
+"Enter a name." = "Enter a name.";
 "Every rule in the profile, in the order the tunnel tries them. Read-only here: see what a connection will do, then edit on your phone." = "Every rule in the profile, in the order the tunnel tries them. Read-only here: see what a connection will do, then edit on your phone.";
 "Failed" = "Failed";
 "From configuration" = "From configuration";
@@ -94,6 +103,7 @@
 "In force" = "In force";
 "In use" = "In use";
 "In use. The tunnel fetches its configuration from this address." = "In use. The tunnel fetches its configuration from this address.";
+"Keep exactly one MATCH rule at the end." = "Keep exactly one MATCH rule at the end.";
 "Last known choice" = "Last known choice";
 "Last observed duration" = "Last observed duration";
 "Last problem" = "Last problem";
@@ -151,6 +161,7 @@
 "No policy groups in this configuration" = "No policy groups in this configuration";
 "No profiles on this Apple TV" = "No profiles on this Apple TV";
 "No route" = "No route";
+"No routing rules were found in this source." = "No routing rules were found in this source.";
 "No valid active or last-known-good configuration is available" = "No valid active or last-known-good configuration is available";
 "Node" = "Node";
 "Nodes" = "Nodes";
@@ -232,6 +243,7 @@
 "Sharing did not start." = "Sharing did not start.";
 "Sharing on this network." = "Sharing on this network.";
 "Sign in to iCloud on this Apple TV to restore from your iPhone." = "Sign in to iCloud on this Apple TV to restore from your iPhone.";
+"Something still references this item. Change that reference before deleting it." = "Something still references this item. Change that reference before deleting it.";
 "Source" = "Source";
 "Start sharing" = "Start sharing";
 "Starting…" = "Starting…";
@@ -261,6 +273,10 @@
 "The configuration could not be saved on this Apple TV: %@" = "The configuration could not be saved on this Apple TV: %@";
 "The configuration failed the tunnel's check: %@" = "The configuration failed the tunnel's check: %@";
 "The configuration is in use. Try again in a moment." = "The configuration is in use. Try again in a moment.";
+"The configuration library changed. Reopen it and try again." = "The configuration library changed. Reopen it and try again.";
+"The configuration library contains an invalid identifier." = "The configuration library contains an invalid identifier.";
+"The configuration library could not be read. Its contents were left unchanged." = "The configuration library could not be read. Its contents were left unchanged.";
+"The configuration library is busy. Try again." = "The configuration library is busy. Try again.";
 "The configuration was refused: %@" = "The configuration was refused: %@";
 "The connection changed while waiting." = "The connection changed while waiting.";
 "The connection list was incomplete." = "The connection list was incomplete.";
@@ -272,6 +288,7 @@
 "The name this app gives when it downloads a profile or a provider. Panels read it to decide which format to hand back, so Clash — the core's own name — is the one to keep unless a panel of yours answers better to another client." = "The name this app gives when it downloads a profile or a provider. Panels read it to decide which format to hand back, so Clash — the core's own name — is the one to keep unless a panel of yours answers better to another client.";
 "The new address replaces the old one. What was downloaded from the old address is no longer used, and the new address is downloaded as soon as you save." = "The new address replaces the old one. What was downloaded from the old address is no longer used, and the new address is downloaded as soon as you save.";
 "The node currently carrying proxied traffic. A url-test group may pick a different one for you. Press to see every group and node." = "The node currently carrying proxied traffic. A url-test group may pick a different one for you. Press to see every group and node.";
+"The nodes have different resource files with the same name." = "The nodes have different resource files with the same name.";
 "The profile could not be downloaded: %@" = "The profile could not be downloaded: %@";
 "The profile did not come back as text." = "The profile did not come back as text.";
 "The profile in use. Press to see its address or remove it." = "The profile in use. Press to see its address or remove it.";
@@ -305,13 +322,18 @@
 "These are the tunnel's own resolvers, from the profile — not a system DNS setting. An Apple TV has none to change; the policy editor stays on your phone." = "These are the tunnel's own resolvers, from the profile — not a system DNS setting. An Apple TV has none to change; the policy editor stays on your phone.";
 "This address is already in the list, as “%@”." = "This address is already in the list, as “%@”.";
 "This group picks its own member." = "This group picks its own member.";
+"This item is still required, or is missing." = "This item is still required, or is missing.";
 "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed." = "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed.";
+"This node already uses a dialer proxy. Choose a node without an existing chain." = "This node already uses a dialer proxy. Choose a node without an existing chain.";
 "This profile has no providers" = "This profile has no providers";
 "This profile is no longer on this Apple TV." = "This profile is no longer on this Apple TV.";
 "This rule tests which app opened the connection. An Apple TV tunnel only sees packets, never the app behind them, so it is loaded but never fires and the next rule decides." = "This rule tests which app opened the connection. An Apple TV tunnel only sees packets, never the app behind them, so it is loaded but never fires and the next rule decides.";
+"This source is used by a proxy chain. Edit or delete the chain first." = "This source is used by a proxy chain. Edit or delete the chain first.";
+"This source version already exists with different contents." = "This source version already exists with different contents.";
 "Throughput" = "Throughput";
 "Timeout" = "Timeout";
 "Tunnel" = "Tunnel";
+"Two entries in one source share a name. Rename one of them." = "Two entries in one source share a name. Rename one of them.";
 "Type a profile address, here or on your iPhone. The address is what this Apple TV remembers; what it points at is fetched again whenever it is needed." = "Type a profile address, here or on your iPhone. The address is what this Apple TV remembers; what it points at is fetched again whenever it is needed.";
 "Type on your phone instead — the keyboard is already waiting there." = "Type on your phone instead — the keyboard is already waiting there.";
 "Update now" = "Update now";

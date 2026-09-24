@@ -71,10 +71,10 @@ public enum ConfigurationNodeChainError: LocalizedError {
         switch self {
         case .sameNode: return "Choose different entry and exit nodes."
         case .nestedChain: return "Choose individual nodes, not another proxy chain."
-        case .missingNode(let name): return "The chain's node is missing or ambiguous: \(name). Edit the chain before updating this source."
-        case .alreadyChained(let name): return "This node already uses a dialer proxy: \(name). Choose a node without an existing chain."
-        case .resourceConflict(let name): return "The nodes have different resource files with the same name: \(name)."
-        case .referencedBy(let name): return "This source is used by proxy chain \(name). Edit or delete the chain first."
+        case .missingNode: return "A node in this chain is missing or ambiguous. Edit the chain before updating this source."
+        case .alreadyChained: return "This node already uses a dialer proxy. Choose a node without an existing chain."
+        case .resourceConflict: return "The nodes have different resource files with the same name."
+        case .referencedBy: return "This source is used by a proxy chain. Edit or delete the chain first."
         }
     }
 }

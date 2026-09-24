@@ -12,7 +12,11 @@
 "1 never matches here" = "1 条在此永不匹配";
 "A VPN operation is already in progress. Wait for it to finish before changing IP Stack settings." = "VPN 操作正在进行，请完成后再更改 IP Stack 设置。";
 "A load-balance group spreads connections across its members, so it has no single route to pin." = "load-balance 组会把连接分散到各成员，因此没有可固定的单一线路。";
+"A node in this chain is missing or ambiguous. Edit the chain before updating this source." = "链里有节点缺失或不唯一，先编辑链式代理再更新这个来源。";
 "A relay sends traffic through its members in order, so there is no one member to choose." = "relay 组会按顺序把流量依次经过各成员，因此没有单独可选的成员。";
+"A selected source is not a configuration object." = "所选来源不是一份配置。";
+"A selected source needs a proxy that no selected source supplies." = "所选来源需要一个节点，但没有任何所选来源提供它。";
+"A source was selected more than once." = "同一个来源被选了不止一次。";
 "A valid memory sample was not included in the reply." = "回复未包含有效的内存样本。";
 "About" = "关于";
 "Add a profile" = "添加配置";
@@ -30,12 +34,15 @@
 "Bad HTTP" = "异常";
 "Branches into the named sub-rule list when the condition matches." = "条件匹配时，跳转到指定的 sub-rule 列表。";
 "Bring the profiles your iPhone or Mac keeps in iCloud onto this Apple TV, and keep them current. Nothing is written back." = "把 iPhone 或 Mac 存在 iCloud 里的配置带到这台 Apple TV，并保持最新。不会写回任何内容。";
+"Built-in sources cannot be deleted." = "内置来源不能删除。";
 "Bundled" = "内置";
 "Cancel" = "取消";
 "Changing this setting restarts the VPN." = "更改此设置会重启 VPN。";
 "Check that the subscription address is still reachable, then update it once from its own screen." = "先确认订阅地址仍可访问，然后在它自己的页面里更新一次。";
 "Checking…" = "正在检查…";
 "Choice confirmed %@" = "选择确认于 %@";
+"Choose different entry and exit nodes." = "前置节点和出口节点要不同。";
+"Choose individual nodes, not another proxy chain." = "请选单个节点，不能选另一个链式代理。";
 "Choose the IP query mode and how the tunnel handles IPv6. Changes restart a connected VPN." = "选择 IP 查询模式和隧道处理 IPv6 的方式。更改会重启已连接的 VPN。";
 "Choose the device to restore from" = "选择要从哪台设备恢复";
 "Clash" = "Clash";
@@ -55,6 +62,7 @@
 "Connection Not Completed" = "连接未完成";
 "Connections" = "连接";
 "Connections · %@" = "连接 · %@";
+"Copy this rule scheme before editing it." = "先复制这个规则方案再编辑。";
 "Could not update: %@" = "无法更新：%@";
 "Current status not confirmed" = "当前状态尚未确认";
 "Currently in force: %@ · changing this takes effect immediately, without reconnecting" = "当前生效：%@ · 更改立即生效，无需重连";
@@ -73,6 +81,7 @@
 "Duration" = "时长";
 "Edit" = "编辑";
 "Ended" = "已结束";
+"Enter a name." = "请输入名称。";
 "Every rule in the profile, in the order the tunnel tries them. Read-only here: see what a connection will do, then edit on your phone." = "配置中的全部规则，按隧道尝试它们的顺序排列。这里只读：看清一条连接会怎么走，再到手机上编辑。";
 "Failed" = "失败";
 "From configuration" = "来自配置文件";
@@ -94,6 +103,7 @@
 "In force" = "生效中";
 "In use" = "使用中";
 "In use. The tunnel fetches its configuration from this address." = "使用中。隧道从这个地址获取配置。";
+"Keep exactly one MATCH rule at the end." = "末尾只能有一条 MATCH 规则。";
 "Last known choice" = "上次已知的选择";
 "Last observed duration" = "最后观测到的时长";
 "Last problem" = "最近一次问题";
@@ -151,6 +161,7 @@
 "No policy groups in this configuration" = "此配置中没有策略组";
 "No profiles on this Apple TV" = "这台 Apple TV 上还没有配置";
 "No route" = "连不上";
+"No routing rules were found in this source." = "这个来源里没有找到路由规则。";
 "No valid active or last-known-good configuration is available" = "没有可用的当前配置，也没有上一次正常的配置";
 "Node" = "节点";
 "Nodes" = "节点";
@@ -232,6 +243,7 @@
 "Sharing did not start." = "共享未能开始。";
 "Sharing on this network." = "正在本网络共享。";
 "Sign in to iCloud on this Apple TV to restore from your iPhone." = "在这台 Apple TV 上登录 iCloud，即可从 iPhone 恢复。";
+"Something still references this item. Change that reference before deleting it." = "还有地方引用这一项，先改掉引用再删除。";
 "Source" = "来源";
 "Start sharing" = "开始共享";
 "Starting…" = "正在开始…";
@@ -261,6 +273,10 @@
 "The configuration could not be saved on this Apple TV: %@" = "配置无法保存到这台 Apple TV：%@";
 "The configuration failed the tunnel's check: %@" = "配置没有通过隧道的检查：%@";
 "The configuration is in use. Try again in a moment." = "配置正被占用，请稍后重试。";
+"The configuration library changed. Reopen it and try again." = "配置库已变化，请重新打开再试。";
+"The configuration library contains an invalid identifier." = "配置库里有无效的标识符。";
+"The configuration library could not be read. Its contents were left unchanged." = "配置库读取失败，内容未改动。";
+"The configuration library is busy. Try again." = "配置库正忙，请再试一次。";
 "The configuration was refused: %@" = "配置被拒绝：%@";
 "The connection changed while waiting." = "等待期间连接已发生变化。";
 "The connection list was incomplete." = "连接列表不完整。";
@@ -272,6 +288,7 @@
 "The name this app gives when it downloads a profile or a provider. Panels read it to decide which format to hand back, so Clash — the core's own name — is the one to keep unless a panel of yours answers better to another client." = "本 App 下载配置或 provider 时自称的名字。面板会按它决定回哪种格式，所以一般保持 Clash——那是内核自己的名字；除非你的面板对另一个客户端答得更好。";
 "The new address replaces the old one. What was downloaded from the old address is no longer used, and the new address is downloaded as soon as you save." = "新地址会取代旧的。旧地址下载的内容不再使用，保存后会立刻下载新地址。";
 "The node currently carrying proxied traffic. A url-test group may pick a different one for you. Press to see every group and node." = "当前承载代理流量的节点。url-test 组可能会替你换一个。按下可查看全部策略组与节点。";
+"The nodes have different resource files with the same name." = "这些节点有同名但内容不同的资源文件。";
 "The profile could not be downloaded: %@" = "配置下载失败：%@";
 "The profile did not come back as text." = "配置返回的不是文本。";
 "The profile in use. Press to see its address or remove it." = "正在使用的配置。按下可查看它的地址或将其移除。";
@@ -305,13 +322,18 @@
 "These are the tunnel's own resolvers, from the profile — not a system DNS setting. An Apple TV has none to change; the policy editor stays on your phone." = "这些是隧道自己的解析器，来自配置——不是系统 DNS 设置。Apple TV 没有可改的系统 DNS；策略编辑器留在手机上。";
 "This address is already in the list, as “%@”." = "这个地址已经在列表里了，叫“%@”。";
 "This group picks its own member." = "该分组自行选择成员。";
+"This item is still required, or is missing." = "这一项仍被需要，或者已缺失。";
 "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed." = "此模式下所有流量不经过代理，因此不列出代理组与节点。";
+"This node already uses a dialer proxy. Choose a node without an existing chain." = "这个节点已在用前置代理，请选一个没有链的节点。";
 "This profile has no providers" = "此配置没有 provider";
 "This profile is no longer on this Apple TV." = "这个配置已不在这台 Apple TV 上。";
 "This rule tests which app opened the connection. An Apple TV tunnel only sees packets, never the app behind them, so it is loaded but never fires and the next rule decides." = "这条规则判断的是哪个 App 发起了连接。Apple TV 的隧道只看得到数据包、看不到背后的 App，所以它虽被加载却永不触发，交由下一条规则决定。";
+"This source is used by a proxy chain. Edit or delete the chain first." = "这个来源正被链式代理使用，先编辑或删除那条链。";
+"This source version already exists with different contents." = "这个来源版本已存在，但内容不同。";
 "Throughput" = "吞吐";
 "Timeout" = "超时";
 "Tunnel" = "隧道";
+"Two entries in one source share a name. Rename one of them." = "同一来源里有两项同名，请改掉其中一个名字。";
 "Type a profile address, here or on your iPhone. The address is what this Apple TV remembers; what it points at is fetched again whenever it is needed." = "在这里或在 iPhone 上输入配置地址。这台 Apple TV 记住的是地址；它指向的内容会在需要时重新获取。";
 "Type on your phone instead — the keyboard is already waiting there." = "也可以改在手机上输入——键盘已经在那里等着了。";
 "Update now" = "立即更新";

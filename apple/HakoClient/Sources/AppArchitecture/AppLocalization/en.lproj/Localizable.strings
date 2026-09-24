@@ -170,6 +170,7 @@
 "A mapping points a domain at an address: an IPv4 or IPv6 address, or another domain name." = "A mapping points a domain at an address: an IPv4 or IPv6 address, or another domain name.";
 "A match is required." = "A match is required.";
 "A multi-platform proxy client" = "A multi-platform proxy client";
+"A node in this chain is missing or ambiguous. Edit the chain before updating this source." = "A node in this chain is missing or ambiguous. Edit the chain before updating this source.";
 "A node share link is added to Custom Nodes. HTTP links are sent without encryption." = "A node share link is added to Custom Nodes. HTTP links are sent without encryption.";
 "A packet tunnel cannot attribute traffic to ordinary app processes. Process matching is disabled." = "A packet tunnel cannot attribute traffic to ordinary app processes. Process matching is disabled.";
 "A partial settings upgrade was detected. Restore the previous profile data, then retry." = "A partial settings upgrade was detected. Restore the previous profile data, then retry.";
@@ -203,6 +204,9 @@
 "A saved provider credential is unavailable. Re-enter it before saving or connecting." = "A saved provider credential is unavailable. Re-enter it before saving or connecting.";
 "A script in the library uses the name reserved for the previous version's script." = "A script in the library uses the name reserved for the previous version's script.";
 "A script library conflict prevents the settings upgrade. Rename the conflicting script, then retry." = "A script library conflict prevents the settings upgrade. Rename the conflicting script, then retry.";
+"A selected source is not a configuration object." = "A selected source is not a configuration object.";
+"A selected source needs a proxy that no selected source supplies." = "A selected source needs a proxy that no selected source supplies.";
+"A source was selected more than once." = "A source was selected more than once.";
 "A subscription update or source edit renamed/deleted these proxies. Migrate the identity or remove its override before saving." = "A subscription update or source edit renamed/deleted these proxies. Migrate the identity or remove its override before saving.";
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other.";
 "A username cannot begin or end with a space, contain a colon, or contain hidden characters." = "A username cannot begin or end with a space, contain a colon, or contain hidden characters.";
@@ -446,6 +450,7 @@
 "Built-in" = "Built-in";
 "Built-in Rules" = "Built-in Rules";
 "Built-in outbound" = "Built-in outbound";
+"Built-in sources cannot be deleted." = "Built-in sources cannot be deleted.";
 "Bundle archive members are not yet materialized by Clash." = "Bundle archive members are not yet materialized by Clash.";
 "Bundled config.yaml is missing" = "Bundled config.yaml is missing";
 "Bundled global proxy schema is incomplete" = "Bundled global proxy schema is incomplete";
@@ -541,6 +546,8 @@
 "Choose a supported log level, or use the profile default." = "Choose a supported log level, or use the profile default.";
 "Choose config file" = "Choose config file";
 "Choose country or region" = "Choose country or region";
+"Choose different entry and exit nodes." = "Choose different entry and exit nodes.";
+"Choose individual nodes, not another proxy chain." = "Choose individual nodes, not another proxy chain.";
 "Choose node sources" = "Choose node sources";
 "Choose node sources and a rule scheme" = "Choose node sources and a rule scheme";
 "Choose the controls you want to keep close at hand." = "Choose the controls you want to keep close at hand.";
@@ -741,6 +748,7 @@
 "Copy Shell Command (127.0.0.1)" = "Copy Shell Command (127.0.0.1)";
 "Copy Subscription Link" = "Copy Subscription Link";
 "Copy YAML" = "Copy YAML";
+"Copy this rule scheme before editing it." = "Copy this rule scheme before editing it.";
 "Copy this rule scheme to make changes." = "Copy this rule scheme to make changes.";
 "Core" = "Core";
 "Core Behavior" = "Core Behavior";
@@ -1049,6 +1057,7 @@
 "Enter a URL that starts with http:// or https:// and includes a host." = "Enter a URL that starts with http:// or https:// and includes a host.";
 "Enter a hostname or IP address for the time server, or leave it empty to use the profile default." = "Enter a hostname or IP address for the time server, or leave it empty to use the profile default.";
 "Enter a name for this provider." = "Enter a name for this provider.";
+"Enter a name." = "Enter a name.";
 "Enter a port or port range." = "Enter a port or port range.";
 "Enter a short, printable User-Agent, or use the profile default." = "Enter a short, printable User-Agent, or use the profile default.";
 "Enter a subscription address." = "Enter a subscription address.";
@@ -1480,6 +1489,7 @@
 "Keep Copy" = "Keep Copy";
 "Keep Editing" = "Keep Editing";
 "Keep My Settings" = "Keep My Settings";
+"Keep exactly one MATCH rule at the end." = "Keep exactly one MATCH rule at the end.";
 "Keep iCloud Backup Up to Date" = "Keep iCloud Backup Up to Date";
 "Keep iCloud Backup Up to Date?" = "Keep iCloud Backup Up to Date?";
 "Keep it — this app reads it even though the core does not." = "Keep it — this app reads it even though the core does not.";
@@ -1852,6 +1862,7 @@
 "No results" = "No results";
 "No route" = "No route";
 "No routing rules target this group" = "No routing rules target this group";
+"No routing rules were found in this source." = "No routing rules were found in this source.";
 "No rule provider named %@ is declared." = "No rule provider named %@ is declared.";
 "No rule sets yet." = "No rule sets yet.";
 "No traffic in the last 30 seconds" = "No traffic in the last 30 seconds";
@@ -2630,6 +2641,7 @@
 "Sniffer discovers domains before this profile's rules are evaluated." = "Sniffer discovers domains before this profile's rules are evaluated.";
 "Sniffing changes rule matching and therefore belongs beside profile networking." = "Sniffing changes rule matching and therefore belongs beside profile networking.";
 "Some references are unavailable. Previous versions were kept:" = "Some references are unavailable. Previous versions were kept:";
+"Something still references this item. Change that reference before deleting it." = "Something still references this item. Change that reference before deleting it.";
 "Sort" = "Sort";
 "Source" = "Source";
 "Source ASN" = "Source ASN";
@@ -2908,6 +2920,10 @@
 "The configuration file exceeds the 16 MB import limit." = "The configuration file exceeds the 16 MB import limit.";
 "The configuration generated when this profile was last applied." = "The configuration generated when this profile was last applied.";
 "The configuration is in use. Try again in a moment." = "The configuration is in use. Try again in a moment.";
+"The configuration library changed. Reopen it and try again." = "The configuration library changed. Reopen it and try again.";
+"The configuration library contains an invalid identifier." = "The configuration library contains an invalid identifier.";
+"The configuration library could not be read. Its contents were left unchanged." = "The configuration library could not be read. Its contents were left unchanged.";
+"The configuration library is busy. Try again." = "The configuration library is busy. Try again.";
 "The configuration link does not contain a subscription URL." = "The configuration link does not contain a subscription URL.";
 "The configuration link does not contain a usable subscription address." = "The configuration link does not contain a usable subscription address.";
 "The configuration resource structure is invalid." = "The configuration resource structure is invalid.";
@@ -2983,6 +2999,7 @@
 "The node connection closed during the URL test." = "The node connection closed during the URL test.";
 "The node server is unreachable on the current network." = "The node server is unreachable on the current network.";
 "The node server refused the connection." = "The node server refused the connection.";
+"The nodes have different resource files with the same name." = "The nodes have different resource files with the same name.";
 "The obfuscation packet sizes need a positive minimum and a maximum no smaller than it." = "The obfuscation packet sizes need a positive minimum and a maximum no smaller than it.";
 "The open-source core that carries traffic." = "The open-source core that carries traffic.";
 "The original YAML remains intact. Overrides and scripts change only the working copy." = "The original YAML remains intact. Overrides and scripts change only the working copy.";
@@ -3160,10 +3177,12 @@
 "This is not valid YAML. Check the line the editor marked, then save again." = "This is not valid YAML. Check the line the editor marked, then save again.";
 "This is not valid configuration YAML: %@" = "This is not valid configuration YAML: %@";
 "This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts." = "This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts.";
+"This item is still required, or is missing." = "This item is still required, or is missing.";
 "This link is not encrypted. Credentials in the address travel in the clear." = "This link is not encrypted. Credentials in the address travel in the clear.";
 "This local rule set will be deleted. Rule schemes in the library will also remove rules added from it." = "This local rule set will be deleted. Rule schemes in the library will also remove rules added from it.";
 "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed." = "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed.";
 "This name could not be resolved just now." = "This name could not be resolved just now.";
+"This node already uses a dialer proxy. Choose a node without an existing chain." = "This node already uses a dialer proxy. Choose a node without an existing chain.";
 "This node connects out through the group or proxy you pick here. None connects directly." = "This node connects out through the group or proxy you pick here. None connects directly.";
 "This node is not in the configuration or in any of its providers." = "This node is not in the configuration or in any of its providers.";
 "This node no longer exists." = "This node no longer exists.";
@@ -3217,6 +3236,8 @@
 "This selection has not been saved." = "This selection has not been saved.";
 "This source does not request a desktop or inbound server surface." = "This source does not request a desktop or inbound server surface.";
 "This source has changes that have not been saved." = "This source has changes that have not been saved.";
+"This source is used by a proxy chain. Edit or delete the chain first." = "This source is used by a proxy chain. Edit or delete the chain first.";
+"This source version already exists with different contents." = "This source version already exists with different contents.";
 "This start loaded %@ of them · %@" = "This start loaded %@ of them · %@";
 "This start, as measured. Subscriptions and proxy groups both load here." = "This start, as measured. Subscriptions and proxy groups both load here.";
 "Ticked rule sets are not loaded on the next start. The source file is unchanged." = "Ticked rule sets are not loaded on the next start. The source file is unchanged.";
@@ -3274,6 +3295,7 @@
 "Turn Off Auto Update" = "Turn Off Auto Update";
 "Turn On" = "Turn On";
 "Turning it off removes them from iCloud." = "Turning it off removes them from iCloud.";
+"Two entries in one source share a name. Rename one of them." = "Two entries in one source share a name. Rename one of them.";
 "Two spellings do not apply on this platform: the Windows named pipe is removed, and the routing mark is a Linux-only socket option that stays in the file and does nothing." = "Two spellings do not apply on this platform: the Windows named pipe is removed, and the routing mark is a Linux-only socket option that stays in the file and does nothing.";
 "Type" = "Type";
 "Type Icons" = "Type Icons";

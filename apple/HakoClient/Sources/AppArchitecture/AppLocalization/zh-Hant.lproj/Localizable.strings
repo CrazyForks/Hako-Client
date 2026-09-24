@@ -170,6 +170,7 @@
 "A mapping points a domain at an address: an IPv4 or IPv6 address, or another domain name." = "一條對映把網域指向一個網址：IPv4 或 IPv6 網址，或者另一個網域。";
 "A match is required." = "必須填寫符合條件。";
 "A multi-platform proxy client" = "多平台代理用戶端";
+"A node in this chain is missing or ambiguous. Edit the chain before updating this source." = "鏈裡有節點缺失或不唯一，先編輯鏈式代理再更新這個來源。";
 "A node share link is added to Custom Nodes. HTTP links are sent without encryption." = "節點分享連結會新增至自建節點。HTTP 連結會明文傳輸。";
 "A packet tunnel cannot attribute traffic to ordinary app processes. Process matching is disabled." = "通道無法把流量歸屬到一般 App 的程式。程序符合已停用。";
 "A partial settings upgrade was detected. Restore the previous profile data, then retry." = "偵測到設定升級只完成了一半。請先回復之前的設定檔資料，再重試。";
@@ -203,6 +204,9 @@
 "A saved provider credential is unavailable. Re-enter it before saving or connecting." = "已儲存的集合認證資訊不可用。請重新輸入後再儲存或連線。";
 "A script in the library uses the name reserved for the previous version's script." = "指令碼庫裡有一個指令碼佔用了舊版全域指令碼的名字。";
 "A script library conflict prevents the settings upgrade. Rename the conflicting script, then retry." = "指令碼庫衝突導致設定升級失敗。請重新命名衝突指令碼後重試。";
+"A selected source is not a configuration object." = "所選來源不是一份設定。";
+"A selected source needs a proxy that no selected source supplies." = "所選來源需要一個節點，但沒有任何所選來源提供它。";
+"A source was selected more than once." = "同一個來源被選了不只一次。";
 "A subscription update or source edit renamed/deleted these proxies. Migrate the identity or remove its override before saving." = "訂閱更新或原始碼編輯重新命名/刪除了這些代理。儲存前請遷移其識別碼或移除對應覆寫。";
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "填了 token 就是 TUIC v4，它會忽略 UUID 和密碼。二者留一個。";
 "A username cannot begin or end with a space, contain a colon, or contain hidden characters." = "使用者名稱不能以空格開頭或結尾，不能含冒號，也不能包含隱藏字元。";
@@ -446,6 +450,7 @@
 "Built-in" = "內建";
 "Built-in Rules" = "內建規則";
 "Built-in outbound" = "內建出站";
+"Built-in sources cannot be deleted." = "內建來源不能刪除。";
 "Bundle archive members are not yet materialized by Clash." = "Clash 尚未展開歸檔包內的成員檔案。";
 "Bundled config.yaml is missing" = "內建 config.yaml 缺失";
 "Bundled global proxy schema is incomplete" = "內建全域代理 schema 不完整";
@@ -541,6 +546,8 @@
 "Choose a supported log level, or use the profile default." = "選擇受支援的記錄等級，或使用設定檔預設值。";
 "Choose config file" = "選擇設定檔";
 "Choose country or region" = "選擇國家或地區";
+"Choose different entry and exit nodes." = "前置節點和出口節點要不同。";
+"Choose individual nodes, not another proxy chain." = "請選單一節點，不能選另一個鏈式代理。";
 "Choose node sources" = "選擇節點來源";
 "Choose node sources and a rule scheme" = "選擇節點來源與規則方案";
 "Choose the controls you want to keep close at hand." = "選擇希望在首頁隨手使用的控制項。";
@@ -741,6 +748,7 @@
 "Copy Shell Command (127.0.0.1)" = "複製終端機代理指令（127.0.0.1）";
 "Copy Subscription Link" = "複製訂閱連結";
 "Copy YAML" = "複製 YAML";
+"Copy this rule scheme before editing it." = "先複製這個規則方案再編輯。";
 "Copy this rule scheme to make changes." = "複製此規則方案後即可修改。";
 "Core" = "核心";
 "Core Behavior" = "核心行為";
@@ -1049,6 +1057,7 @@
 "Enter a URL that starts with http:// or https:// and includes a host." = "請輸入以 http:// 或 https:// 開頭、包含主機名的 URL。";
 "Enter a hostname or IP address for the time server, or leave it empty to use the profile default." = "輸入時間伺服器的主機名或 IP 網址，留空則使用設定檔預設值。";
 "Enter a name for this provider." = "請輸入資源名稱。";
+"Enter a name." = "請輸入名稱。";
 "Enter a port or port range." = "請輸入連接埠或連接埠範圍。";
 "Enter a short, printable User-Agent, or use the profile default." = "輸入簡短的可列印 User-Agent，或使用設定檔預設值。";
 "Enter a subscription address." = "請輸入訂閱網址。";
@@ -1480,6 +1489,7 @@
 "Keep Copy" = "保留副本";
 "Keep Editing" = "繼續編輯";
 "Keep My Settings" = "保留我的設定";
+"Keep exactly one MATCH rule at the end." = "結尾只能有一條 MATCH 規則。";
 "Keep iCloud Backup Up to Date" = "保持 iCloud 備份最新";
 "Keep iCloud Backup Up to Date?" = "保持 iCloud 備份最新？";
 "Keep it — this app reads it even though the core does not." = "留著——核心不讀它，但這個 App 讀。";
@@ -1852,6 +1862,7 @@
 "No results" = "無結果";
 "No route" = "連不上";
 "No routing rules target this group" = "沒有路由規則指向該群組";
+"No routing rules were found in this source." = "這個來源裡沒有找到路由規則。";
 "No rule provider named %@ is declared." = "沒有宣告名為 %@ 的規則集提供方。";
 "No rule sets yet." = "還沒有規則集。";
 "No traffic in the last 30 seconds" = "最近 30 秒無流量";
@@ -2630,6 +2641,7 @@
 "Sniffer discovers domains before this profile's rules are evaluated." = "嗅探在本設定檔規則求值前找出網域。";
 "Sniffing changes rule matching and therefore belongs beside profile networking." = "嗅探會改變規則符合，因此歸入設定檔級網路設定。";
 "Some references are unavailable. Previous versions were kept:" = "部分引用已失效，以下項目保留舊版本：";
+"Something still references this item. Change that reference before deleting it." = "還有地方引用這一項，先改掉引用再刪除。";
 "Sort" = "排序";
 "Source" = "來源";
 "Source ASN" = "來源 ASN";
@@ -2908,6 +2920,10 @@
 "The configuration file exceeds the 16 MB import limit." = "設定檔超過 16 MB 匯入上限。";
 "The configuration generated when this profile was last applied." = "上次套用此設定時產生的內容。";
 "The configuration is in use. Try again in a moment." = "設定正被佔用，請稍後重試。";
+"The configuration library changed. Reopen it and try again." = "設定庫已變更，請重新開啟再試。";
+"The configuration library contains an invalid identifier." = "設定庫裡有無效的識別碼。";
+"The configuration library could not be read. Its contents were left unchanged." = "設定庫讀取失敗，內容未變更。";
+"The configuration library is busy. Try again." = "設定庫忙碌中，請再試一次。";
 "The configuration link does not contain a subscription URL." = "該設定連結不包含訂閱 URL。";
 "The configuration link does not contain a usable subscription address." = "該設定連結裡沒有可用的訂閱網址。";
 "The configuration resource structure is invalid." = "設定資源結構無效。";
@@ -2983,6 +2999,7 @@
 "The node connection closed during the URL test." = "URL 測試期間節點連線被關閉。";
 "The node server is unreachable on the current network." = "目前網路無法存取該節點伺服器。";
 "The node server refused the connection." = "節點伺服器拒絕了連線。";
+"The nodes have different resource files with the same name." = "這些節點有同名但內容不同的資源檔案。";
 "The obfuscation packet sizes need a positive minimum and a maximum no smaller than it." = "混淆包大小的下限必須為正，上限不能小於下限。";
 "The open-source core that carries traffic." = "承載流量的開源核心。";
 "The original YAML remains intact. Overrides and scripts change only the working copy." = "原始 YAML 保持不變，覆寫與指令稿僅修改執行副本。";
@@ -3160,10 +3177,12 @@
 "This is not valid YAML. Check the line the editor marked, then save again." = "這不是有效的 YAML。檢查編輯器標出的那一行，然後重新儲存。";
 "This is not valid configuration YAML: %@" = "這不是有效的設定 YAML：%@";
 "This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts." = "對應設定檔裡的 allow-lan：設定檔寫了就照設定檔讀取，沒寫時開啟開關即寫入覆寫；下次連線生效。";
+"This item is still required, or is missing." = "這一項仍被需要，或者已缺失。";
 "This link is not encrypted. Credentials in the address travel in the clear." = "這條連結不加密。網址裡的認證資訊會明文過網。";
 "This local rule set will be deleted. Rule schemes in the library will also remove rules added from it." = "此本機規則集將被刪除，規則庫中引用它的方案也會移除對應規則。";
 "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed." = "此模式下所有流量不經過代理，因此不列出代理群組與節點。";
 "This name could not be resolved just now." = "剛才無法解析該網域。";
+"This node already uses a dialer proxy. Choose a node without an existing chain." = "這個節點已在用前置代理，請選一個沒有鏈的節點。";
 "This node connects out through the group or proxy you pick here. None connects directly." = "此節點經由你在這裡選擇的組或代理出站;None 表示直接連線。";
 "This node is not in the configuration or in any of its providers." = "該節點不在設定裡，也不在任何代理集合裡。";
 "This node no longer exists." = "此節點已不存在。";
@@ -3217,6 +3236,8 @@
 "This selection has not been saved." = "此選擇尚未儲存。";
 "This source does not request a desktop or inbound server surface." = "該源未請求桌面或入站服務面。";
 "This source has changes that have not been saved." = "該原始碼有未儲存的更改。";
+"This source is used by a proxy chain. Edit or delete the chain first." = "這個來源正被鏈式代理使用，先編輯或刪除那條鏈。";
+"This source version already exists with different contents." = "這個來源版本已存在，但內容不同。";
 "This start loaded %@ of them · %@" = "本次啟動裝載了其中 %@ 個 · %@";
 "This start, as measured. Subscriptions and proxy groups both load here." = "本次啟動實測。訂閱和代理群組都在這一步裝載。";
 "Ticked rule sets are not loaded on the next start. The source file is unchanged." = "勾掉的規則集下次啟動不裝。原始檔不改。";
@@ -3274,6 +3295,7 @@
 "Turn Off Auto Update" = "關閉自動更新";
 "Turn On" = "開啟";
 "Turning it off removes them from iCloud." = "關閉即從 iCloud 移除。";
+"Two entries in one source share a name. Rename one of them." = "同一來源裡有兩項同名，請改掉其中一個名稱。";
 "Two spellings do not apply on this platform: the Windows named pipe is removed, and the routing mark is a Linux-only socket option that stays in the file and does nothing." = "兩個拼寫在本平台不適用：Windows 命名管道會被移除；routing mark 是僅 Linux 的socket選項，欄位保留但不起作用。";
 "Type" = "類型";
 "Type Icons" = "類型圖示";

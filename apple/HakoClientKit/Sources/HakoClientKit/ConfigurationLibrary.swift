@@ -303,7 +303,7 @@ public enum ConfigurationLibraryError: LocalizedError, Equatable {
         case .invalidAdvancedSettings: return NSLocalizedString("Edit nodes and rules in their own settings.", comment: "Advanced settings field ownership")
         case .readOnlyRuleScheme: return "Copy this rule scheme before editing it."
         case .invalidFinalRule: return "Keep exactly one MATCH rule at the end."
-        case .referencedBy(let name): return "Change the reference in \(name) before deleting this item."
+        case .referencedBy: return "Something still references this item. Change that reference before deleting it."
         case .missingNodes: return NSLocalizedString("No nodes were found. Try another link or file, or create a node manually.", comment: "First configuration import")
         case .missingRules: return "No routing rules were found in this source."
         case .retainedSnapshot: return "This saved copy no longer receives source updates."
@@ -313,7 +313,7 @@ public enum ConfigurationLibraryError: LocalizedError, Equatable {
         case .invalidIdentifier: return "The configuration library contains an invalid identifier."
         case .unreadable: return "The configuration library could not be read. Its contents were left unchanged."
         case .staleGeneration: return "The configuration library changed. Reopen it and try again."
-        case .missingDependency(let id): return "This item is still required, or is missing: \(id)"
+        case .missingDependency: return "This item is still required, or is missing."
         case .busy: return "The configuration library is busy. Try again."
         case .immutableVersion: return "This source version already exists with different contents."
         }
