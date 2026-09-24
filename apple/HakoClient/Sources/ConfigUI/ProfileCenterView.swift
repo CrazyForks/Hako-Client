@@ -337,17 +337,9 @@ struct ProfileCenterAdapter: View {
                 (configurationLibrary.rules + ConfigurationBuiltins.schemes).first(where: { $0.id == recipe.ruleSchemeID })?.displayLabel
             },
             followsConfigurationSourceUpdates: configurationLibrary.recipes.first(where: { $0.id == profile.id })?.followsUpdates,
-            configurationAdvancedSummary: hasAdvancedConfiguration(profile) ? "Contains existing customizations" : nil,
             overrideScriptName: profile.overwriteMode == .script
                 ? ScriptLibrary.load().first { $0.id == profile.selectedScriptID }?.label : nil
         )
-    }
-
-    private func hasAdvancedConfiguration(_ profile: Profile) -> Bool {
-        let patch = OverridePatch(patchJSON: profile.override.patchJSON).profileOwnedPatch.patchJSON
-        let hasPatch = (try? JSONSerialization.jsonObject(with: Data(patch.utf8)) as? [String: Any])?.isEmpty == false
-        return hasPatch || (profile.overwriteMode ?? .standard) != .standard
-            || !(profile.proxyChain?.isEmpty ?? true) || !(profile.legacyRelayMigrations?.isEmpty ?? true)
     }
 
      

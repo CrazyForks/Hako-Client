@@ -2095,7 +2095,6 @@ private struct HakoProfileDetailView<
             }
             Button { activeCapability = .override(profile.id) } label: {
                 HakoProfileActionRow(title: "Overrides and Scripts",
-                    subtitle: profile.configurationAdvancedSummary.map { .copy($0) },
                     value: profile.overrideScriptName.map { .verbatim($0) },
                     symbol: .sliderHorizontal3, tint: .primary, icon: icon)
             }

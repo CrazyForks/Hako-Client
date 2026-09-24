@@ -105,7 +105,6 @@ public struct HakoProfileSnapshot:
     public let isBusy: Bool
     public let canEditSource: Bool
     public let followsConfigurationSourceUpdates: Bool?
-    public let configurationAdvancedSummary: String?
      
      
      
@@ -145,11 +144,9 @@ public struct HakoProfileSnapshot:
         isComposed: Bool? = nil,
         configurationSourceNames: [String]? = nil, configurationRuleName: String? = nil,
         followsConfigurationSourceUpdates: Bool? = nil,
-        configurationAdvancedSummary: String? = nil,
         overrideScriptName: String? = nil
     ) {
         self.id = id
-        self.configurationAdvancedSummary = configurationAdvancedSummary
         self.overrideScriptName = overrideScriptName
         self.followsConfigurationSourceUpdates = followsConfigurationSourceUpdates
         self.isComposed = isComposed
