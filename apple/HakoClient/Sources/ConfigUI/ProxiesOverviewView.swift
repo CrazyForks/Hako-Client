@@ -545,21 +545,6 @@ struct ProxiesOverviewAdapter: View {
      
      
      
-    private var composedGroups: [ProxiesOverviewModel.Group] {
-        HakoPerf.measure("proxies.compose.groups") {
-            ProxyBrowsingVisibility.groups(
-                ProxiesRuntimeCatalogComposer.groups(
-                    source: sourceModel.groups,
-                    runtime: effectiveRuntime.catalog,
-                    isConnected: isConnected
-                ),
-                mode: outboundMode,
-                name: \.name,
-                isHidden: \.hidden
-            )
-        }
-    }
-
     private var sharedSnapshot: AppleClientSnapshot {
          
          
@@ -639,35 +624,44 @@ struct ProxiesOverviewAdapter: View {
             resolvedNowByGroup: effectiveRuntime.resolvedNowByGroup,
             isConnected: isConnected
         )
-        let groups = HakoPerf.measure("proxies.snapshot.groups") {
+         
+         
+         
+         
+         
+         
+        let projection = HakoPerf.measure("proxies.snapshot.groups") {
             projections.groups(groupsKey) {
-            composedGroups.map { group in
-                HakoProxyGroupSnapshot(
-                    name: group.name,
-                    type: group.type,
-                    members: ProxyBrowsingVisibility.members(
-                        projections.members(of: group),
-                        of: group.name,
-                        mode: outboundMode,
-                        name: \.name
-                    ),
-                    configuredSelection:
-                        group.configuredSelection,
-                    runtimeSelection:
-                        isConnected
-                            ? effectiveRuntime
-                                .nowByGroup[group.name]
-                            : nil,
-                    resolvedRuntimeRoute:
-                        isConnected
-                            ? effectiveRuntime
-                                .resolvedNowByGroup[group.name]
-                            : nil,
-                    icon: group.icon
+                let all = HakoPerf.measure("proxies.compose.groups") {
+                    ProxiesRuntimeCatalogComposer.groups(
+                        source: sourceModel.groups,
+                        runtime: effectiveRuntime.catalog,
+                        isConnected: isConnected
+                    )
+                }
+                func snapshot(_ group: ProxiesOverviewModel.Group) -> HakoProxyGroupSnapshot {
+                    HakoProxyGroupSnapshot(
+                        name: group.name,
+                        type: group.type,
+                        members: ProxyBrowsingVisibility.members(
+                            projections.members(of: group),
+                            of: group.name,
+                            mode: outboundMode,
+                            name: \.name
+                        ),
+                        configuredSelection: group.configuredSelection,
+                        runtimeSelection: isConnected ? effectiveRuntime.nowByGroup[group.name] : nil,
+                        resolvedRuntimeRoute: isConnected ? effectiveRuntime.resolvedNowByGroup[group.name] : nil,
+                        icon: group.icon
+                    )
+                }
+                return ProxiesProjectionMemo.GroupProjection(
+                    listed: ProxyBrowsingVisibility.groups(all, mode: outboundMode, name: \.name, isHidden: \.hidden).map(snapshot),
+                    hidden: all.filter(\.hidden).map(snapshot)
                 )
             }
-            }
         }
+        let groups = projection.listed
         let searchable = HakoPerf.measure("proxies.snapshot.searchable") {
             ProxiesRuntimeCatalogComposer.searchableProxies(
                 source: sourceModel.proxies,
@@ -743,6 +737,7 @@ struct ProxiesOverviewAdapter: View {
             ),
             proxies: HakoProxiesSnapshot(
                 groups: groups,
+                hiddenGroups: projection.hidden,
                 searchableProxies: searchable,
                 providers: providers,
                 ungrouped: ungrouped,

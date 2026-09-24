@@ -448,6 +448,12 @@ public enum HakoProxiesCatalogState:
  
 public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
     public let groups: [HakoProxyGroupSnapshot]
+     
+     
+     
+     
+     
+    public let hiddenGroups: [HakoProxyGroupSnapshot]
     public let searchableProxies: [HakoProxySnapshot]
     public let providers: [HakoProxyProviderSnapshot]
     public let ungrouped: [HakoProxySnapshot]
@@ -526,6 +532,7 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
 
     public init(
         groups: [HakoProxyGroupSnapshot] = [],
+        hiddenGroups: [HakoProxyGroupSnapshot] = [],
         searchableProxies: [HakoProxySnapshot] = [],
         providers: [HakoProxyProviderSnapshot] = [],
         ungrouped: [HakoProxySnapshot] = [],
@@ -545,6 +552,7 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
         actionRefusals: [String: String] = [:]
     ) {
         self.groups = groups
+        self.hiddenGroups = hiddenGroups
         self.searchableProxies = searchableProxies
         self.providers = providers
         self.ungrouped = ungrouped
@@ -601,7 +609,7 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
     }
 
     public func group(named name: String) -> HakoProxyGroupSnapshot? {
-        groups.first { $0.name == name }
+        groups.first { $0.name == name } ?? hiddenGroups.first { $0.name == name }
     }
 
     public func latency(for name: String) -> HakoProxyLatencyState {
@@ -717,9 +725,10 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
         forGroupNamed name: String
     ) -> String? {
         let selections = Dictionary(
-            uniqueKeysWithValues: groups.compactMap { group in
+            (groups + hiddenGroups).compactMap { group in
                 group.configuredSelection.map { (group.name, $0) }
-            }
+            },
+            uniquingKeysWith: { first, _ in first }
         )
         return resolvedRoute(
             from: selections[name],

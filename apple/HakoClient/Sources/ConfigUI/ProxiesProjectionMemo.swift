@@ -48,7 +48,15 @@ final class ProxiesProjectionMemo {
     }
 
     private var groupsKey: GroupsKey?
-    private var groupsValue: [HakoProxyGroupSnapshot] = []
+     
+     
+     
+    struct GroupProjection: Equatable {
+        var listed: [HakoProxyGroupSnapshot]
+        var hidden: [HakoProxyGroupSnapshot] = []
+    }
+
+    private var groupsValue = GroupProjection(listed: [])
     private var ungroupedKey: UngroupedKey?
     private var ungroupedValue: [HakoProxySnapshot] = []
 
@@ -110,8 +118,8 @@ final class ProxiesProjectionMemo {
 
     func groups(
         _ key: GroupsKey,
-        build: () -> [HakoProxyGroupSnapshot]
-    ) -> [HakoProxyGroupSnapshot] {
+        build: () -> GroupProjection
+    ) -> GroupProjection {
         if let groupsKey {
             if groupsKey == key { return groupsValue }
             HakoPerf.count(

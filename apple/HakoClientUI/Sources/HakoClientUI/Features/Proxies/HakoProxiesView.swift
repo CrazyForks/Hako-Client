@@ -229,8 +229,12 @@ enum HakoProxyAccordionPlan {
  
  
  
-private struct ProxyIndexPreparationKey: Equatable {
+struct ProxyIndexPreparationKey: Equatable {
     let groups: [HakoProxyGroupSnapshot]
+     
+     
+     
+    let hiddenGroups: [HakoProxyGroupSnapshot]
     let latencyByName: [String: HakoProxyLatencyState]
     let isConnected: Bool
     let sort: HakoProxiesDisplayPreferences.Sort
@@ -246,6 +250,7 @@ private struct ProxyIndexPreparationKey: Equatable {
         orderingGroupNames: Set<String>
     ) {
         groups = proxies.groups
+        hiddenGroups = proxies.hiddenGroups
         latencyByName = proxies.latencyByName
         isConnected = proxies.isConnected
         self.sort = sort
@@ -311,6 +316,7 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
          
         let p = a.snapshot.proxies, q = b.snapshot.proxies
         let dataEqual = p.groups == q.groups
+            && p.hiddenGroups == q.hiddenGroups
             && p.searchableProxies == q.searchableProxies
             && p.providers == q.providers
             && p.ungrouped == q.ungrouped
@@ -3342,6 +3348,7 @@ struct ProxyDerivedIndex: Equatable {
         _ rhs: HakoProxiesSnapshot
     ) -> Bool {
         lhs.groups == rhs.groups
+            && lhs.hiddenGroups == rhs.hiddenGroups
             && lhs.latencyByName == rhs.latencyByName
             && lhs.isConnected == rhs.isConnected
     }

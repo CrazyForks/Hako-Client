@@ -73,9 +73,13 @@ struct HakoMacMenuProxyCatalog: Equatable {
                 }
                 var latency: [String: HakoProxyLatencyState] = [:]
                 for member in group.members {
-                    if testing.contains(member) {
+                     
+                     
+                     
+                    let measured = group.memberResolvedNames[member] ?? member
+                    if testing.contains(measured) {
                         latency[member] = .testing
-                    } else if let delay = delays[member] {
+                    } else if let delay = delays[measured] {
                         latency[member] = delay > 0
                             ? .measured(milliseconds: delay)
                             : .failed
