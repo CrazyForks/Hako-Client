@@ -56,7 +56,8 @@ targets:
       configs:
         Debug:
           INFOPLIST_KEY_UIFileSharingEnabled: 'YES'
-        Release: {}
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE)
         DEVELOPMENT_TEAM: $(HAKO_DEVELOPMENT_TEAM)
@@ -188,7 +189,8 @@ targets:
     - path: ../../Vendor/HakoAdapter/Sources/HakoAdapter
     settings:
       configs:
-        Release: {}
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).extension
         DEVELOPMENT_TEAM: $(HAKO_DEVELOPMENT_TEAM)
@@ -253,7 +255,8 @@ targets:
       buildPhase: resources
     settings:
       configs:
-        Release: {}
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).controls
         IPHONEOS_DEPLOYMENT_TARGET: '17.0'
@@ -291,7 +294,8 @@ targets:
       buildPhase: resources
     settings:
       configs:
-        Release: {}
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(HAKO_BUNDLE_BASE).share
         DEVELOPMENT_TEAM: $(HAKO_DEVELOPMENT_TEAM)
