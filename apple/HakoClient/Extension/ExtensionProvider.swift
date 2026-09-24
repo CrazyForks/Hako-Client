@@ -763,7 +763,14 @@ final class ExtensionProvider: NSObject {
     }
 
     func stop(reason: NEProviderStopReason) async {
+         
+         
+         
+         
+         
+        let stopBegan = DispatchTime.now()
         await operationGate.enter()
+        let gateWaitMs = Self.milliseconds(since: stopBegan)
         guard lifecycle.beginStop() else {
             await operationGate.leave()
             return
@@ -791,9 +798,18 @@ final class ExtensionProvider: NSObject {
             level: .warning
         )
         HakoLogStore.shared.flush()
-        await teardownResources(policy: .systemStop)
+        let steps = await teardownResources(policy: .systemStop)
+        HakoLogStore.shared.append(
+            "tunnel stopped  gate=\(gateWaitMs)ms \(steps) total=\(Self.milliseconds(since: stopBegan))ms",
+            stream: .app
+        )
+        HakoLogStore.shared.flush()
         lifecycle.didStop()
         await operationGate.leave()
+    }
+
+    private static func milliseconds(since start: DispatchTime) -> Int {
+        Int((DispatchTime.now().uptimeNanoseconds &- start.uptimeNanoseconds) / 1_000_000)
     }
 
     private func finishStartupSampling(
@@ -807,7 +823,12 @@ final class ExtensionProvider: NSObject {
         startupMemorySampler.finish(token: token, reason: reason)
     }
 
-    private func teardownResources(policy: ProviderTeardownPolicy) async {
+     
+     
+    @discardableResult
+    private func teardownResources(policy: ProviderTeardownPolicy) async -> String {
+        let closeBegan = DispatchTime.now()
+        var closeMs = 0, bridgeMs = 0, settingsMs = 0
         let cleanupGeneration = settingsWriter.advanceGeneration()
          
          
@@ -843,6 +864,8 @@ final class ExtensionProvider: NSObject {
             return (s, b)
         }
         if let svc {
+            let began = DispatchTime.now()
+            defer { closeMs = Self.milliseconds(since: began) }
             do {
                 try svc.close()
             } catch {
@@ -854,14 +877,19 @@ final class ExtensionProvider: NSObject {
                 )
             }
         }
+        let bridgeBegan = DispatchTime.now()
         bridge?.stop()
+        bridgeMs = Self.milliseconds(since: bridgeBegan)
         if policy.clearsNetworkSettings, settingsWriter.hasSubmittedSettings {
+            let began = DispatchTime.now()
             do {
                 try await clearTunnelSettings(in: cleanupGeneration)
             } catch {
                 log.error("clear tunnel settings failed: \(error.localizedDescription, privacy: .private)")
             }
+            settingsMs = Self.milliseconds(since: began)
         }
+        return "detach=\(Self.milliseconds(since: closeBegan) - closeMs - bridgeMs - settingsMs)ms close=\(closeMs)ms bridge=\(bridgeMs)ms settings=\(settingsMs)ms"
     }
 
     func sleep() {
