@@ -3718,6 +3718,7 @@
 "provider name" = "provider name";
 "proxies" = "proxies";
 "proxies page disappears" = "proxies page disappears";
+"quick-add.door.create" = "Create";
 "read-only" = "read-only";
 "redirection needs the packet filter device, which an app sandbox does not have, so the port is removed rather than opened and left unable to serve" = "redirection needs the packet filter device, which an app sandbox does not have, so the port is removed rather than opened and left unable to serve";
 "removed before the core starts" = "removed before the core starts";

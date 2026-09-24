@@ -3718,6 +3718,7 @@
 "provider name" = "集合名称";
 "proxies" = "个代理";
 "proxies page disappears" = "proxies page disappears";
+"quick-add.door.create" = "新建";
 "read-only" = "只读";
 "redirection needs the packet filter device, which an app sandbox does not have, so the port is removed rather than opened and left unable to serve" = "重定向需要数据包过滤设备，App 沙箱里没有，所以这个端口会被移除，而不是开着却无法工作。";
 "removed before the core starts" = "在内核启动前被移除";

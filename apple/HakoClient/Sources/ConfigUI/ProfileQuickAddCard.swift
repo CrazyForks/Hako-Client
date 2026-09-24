@@ -241,39 +241,51 @@ struct ProfileQuickAddCard: View {
 
      
      
+     
+     
+     
+     
+     
+     
+     
+     
+     
     private var actionRow: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .top, spacing: HakoTheme.Spacing.compact) {
             Button {
                 controller.showsQRCapture = true
             } label: {
                  
                 Label(HakoCopy.key("Scan"), systemImage: HakoSymbol.qrcodeViewfinder.name)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity)
             }
             .accessibilityIdentifier(identifiers.scanIdentifier)
-            Divider()
             Button {
                 controller.showsImporter = true
             } label: {
                 Label(HakoCopy.key("Import"), systemImage: HakoSymbol.arrowUpDocument.name)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity)
             }
             .accessibilityIdentifier(identifiers.fileIdentifier)
             if let manual {
-                Divider()
                 Button(action: manual) {
-                    Label(HakoCopy.key("Manual"), systemImage: HakoSymbol.pencilLine.name)
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity)
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    Label(HakoCopy.key("quick-add.door.create"), systemImage: HakoSymbol.pencilLine.name)
                 }
                 .accessibilityIdentifier(identifiers.manualIdentifier)
             }
         }
+        .labelStyle(QuickAddDoorLabelStyle())
         .buttonStyle(.plain)
-        .foregroundStyle(.primary)
+        .foregroundStyle(.tint)
         .disabled(controller.state.isBusy)
+        .padding(.vertical, HakoTheme.Spacing.tight)
     }
 
      
@@ -313,6 +325,32 @@ struct ProfileQuickAddCard: View {
             )
             .accessibilityIdentifier(identifiers.statusIdentifier)
         }
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+private struct QuickAddDoorLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(spacing: HakoTheme.Spacing.compact - 2) {
+            configuration.icon
+                .font(.title3)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(
+                    .tint.opacity(0.11),
+                    in: RoundedRectangle(cornerRadius: HakoTheme.Radius.icon, style: .continuous)
+                )
+            configuration.title
+                .font(.footnote)
+                .lineLimit(1)
+        }
+        .contentShape(Rectangle())
     }
 }
 
