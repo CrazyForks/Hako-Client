@@ -2393,6 +2393,11 @@ private final class HakoMacSceneModel: ObservableObject {
         }
          
          
+         
+         
+        editor.geoValues = { resource in
+            await GeoCategoryCache.shared.categories(for: resource == .geoIP ? .geoip : .geosite)
+        }
         editor.documentText = { try ConfigTransforms.jsonToYAML($0) }
         editor.documentFromText = { try ConfigTransforms.yamlToJSON($0) }
         return editor

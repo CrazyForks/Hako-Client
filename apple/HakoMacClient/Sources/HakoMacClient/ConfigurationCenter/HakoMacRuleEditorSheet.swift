@@ -39,6 +39,10 @@ public struct HakoMacRuleEditorActions {
      
      
     public var candidates: (@MainActor () async throws -> ConfigurationRuleTargetCandidates)? = nil
+     
+     
+     
+    public var geoValues: HakoMacGeoValueLoader? = nil
     public var documentText: (@Sendable (String) throws -> String)? = nil
     public var documentFromText: (@Sendable (String) throws -> String)? = nil
 
@@ -88,13 +92,13 @@ public struct HakoMacRuleEditorSheet: View {
     private enum Sheet: Identifiable {
         case rule(UUID?)
         case group(UUID?)
-        case ruleSet
+        case ruleSet(String?)
         case duplicate
         var id: String {
             switch self {
             case .rule(let id): "rule-\(id?.uuidString ?? "new")"
             case .group(let id): "group-\(id?.uuidString ?? "new")"
-            case .ruleSet: "rule-set"
+            case .ruleSet(let id): "rule-set-\(id ?? "new")"
             case .duplicate: "duplicate"
             }
         }
@@ -222,10 +226,31 @@ public struct HakoMacRuleEditorSheet: View {
                         commit: { document in try mutateThrowing { draft in try draft.setGroup(document, groupID: id) } },
                         close: { sheet = nil }
                     )
-                case .ruleSet:
+                case .ruleSet(let id):
+                    let value = id.flatMap { setID in state.localSets.first { $0.id == setID } }
                     HakoMacLocalRuleSetEditor(
+                        value: value,
+                        policy: value.flatMap { state.draft.ruleSetPolicy(HakoMacRuleSetKey.local($0)) }
+                            ?? state.draft.groups.first?.name ?? "DIRECT",
+                        candidates: Self.policyCandidates(groups: state.draft.groups, nodes: nodeCandidates),
+                        geoValues: actions.geoValues,
                         download: actions.download,
-                        commit: { value in try await runThrowing { let next = try await actions.saveLocal(value); adopt(next, keepDraft: true) } },
+                        save: { set, policy in
+                             
+                             
+                             
+                             
+                             
+                            try await runThrowing {
+                                let next = try await actions.saveLocal(set)
+                                adopt(next, keepDraft: true)
+                                try mutateThrowing { draft in
+                                    try draft.attachRuleSet(
+                                        key: HakoMacRuleSetKey.local(set), name: set.name, rules: set.rules, policy: policy
+                                    )
+                                }
+                            }
+                        },
                         close: { sheet = nil }
                     )
                 case .duplicate:
@@ -459,7 +484,7 @@ public struct HakoMacRuleEditorSheet: View {
         let draft = state.draft
         return Group {
             Section {
-                HakoMacListAddRow(.copy("Add Rule Set")) { sheet = .ruleSet }
+                HakoMacListAddRow(.copy("Add Rule Set")) { sheet = .ruleSet(nil) }
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.rule-editor.add-rule-set")
                 ForEach(state.localSets) { set in
@@ -479,6 +504,8 @@ public struct HakoMacRuleEditorSheet: View {
                     )
                     .disabled(busy)
                     .contextMenu {
+                         
+                        Button { sheet = .ruleSet(set.id) } label: { Text(hako: .copy("Edit")) }
                         Button(role: .destructive) {
                             Task { await run { let next = try await actions.deleteLocal(set.id); adopt(next, keepDraft: true) } }
                         } label: {
@@ -520,6 +547,16 @@ public struct HakoMacRuleEditorSheet: View {
             if parts.count == 3 { keys.insert(String(parts[1])) }
         }
         return keys
+    }
+
+     
+     
+     
+    static func policyCandidates(
+        groups: [ConfigurationRuleDraft.Group], nodes: ConfigurationRuleTargetCandidates
+    ) -> ConfigurationRuleTargetCandidates {
+        let named = ConfigurationRuleTargetCandidates.make(groups: groups.map(\.name), sources: [])
+        return ConfigurationRuleTargetCandidates(sections: named.sections + nodes.sections.filter { $0.kind == .source })
     }
 
     private func mutate(_ change: (inout ConfigurationRuleDraft) -> Void) {
@@ -1031,69 +1068,368 @@ struct HakoMacRuleGroupEditor: View {
 
  
 struct HakoMacLocalRuleSetEditor: View {
-    let download: @MainActor (String) async throws -> [String]
-    let commit: (ConfigurationLocalRuleSet) async throws -> Void
-    let close: () -> Void
-    @Environment(\.locale) private var locale
-    @State private var name = ""
-    @State private var input = ""
-    @State private var busy = false
-    @State private var error: String?
+     
+     
+     
+    enum Kind: Hashable { case link, manual }
 
-    private var canSave: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !busy
-    }
-
-    var body: some View {
-        HakoMacSheetFrame(title: .copy("Add Rule Set"), subtitle: .copy("My Rules"), width: 560, height: 440) {
-            HakoMacSheetForm {
-                Section {
-                    TextField(text: $name, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
-                        .disabled(busy)
-                        .accessibilityIdentifier("configuration-center.rule-editor.rule-set.name")
-                    TextEditor(text: $input)
-                        .font(.body.monospaced())
-                        .frame(minHeight: 140)
-                        .disabled(busy)
-                        .accessibilityLabel(Text(hako: .copy("Rule Set")))
-                        .accessibilityIdentifier("configuration-center.rule-editor.rule-set.input")
-                }
-                if let error {
-                    Section {
-                        Text(verbatim: error).foregroundStyle(.red)
-                            .accessibilityIdentifier("configuration-center.rule-editor.rule-set.error")
-                    }
-                }
-            }
-        } trailing: {
-            HakoMacSheetButtons(
-                closeIdentifier: "configuration-center.rule-editor.rule-set.cancel",
-                primaryTitle: .copy("Save"),
-                primaryIdentifier: "configuration-center.rule-editor.rule-set.save",
-                primaryDisabled: !canSave,
-                isBusy: busy,
-                onClose: close,
-                onPrimary: save
+     
+     
+     
+    struct Line: Identifiable, Equatable {
+        let id = UUID()
+        var raw: String
+         
+         
+         
+         
+         
+         
+         
+        var action: HakoStructuredRule.Action? {
+            let head = raw.split(separator: ",", maxSplits: 1).first ?? ""
+            return HakoStructuredRule.Action(
+                rawValue: head.trimmingCharacters(in: .whitespaces).uppercased()
             )
+        }
+        var value: String {
+            let parts = raw.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: false)
+            return parts.count > 1 ? String(parts[1]) : ""
         }
     }
 
-    private func save() {
+    let value: ConfigurationLocalRuleSet?
+    let candidates: ConfigurationRuleTargetCandidates
+    let geoValues: HakoMacGeoValueLoader?
+    let download: @MainActor (String) async throws -> [String]
+     
+    let save: (ConfigurationLocalRuleSet, String) async throws -> Void
+    let close: () -> Void
+    @Environment(\.locale) private var locale
+    @State private var name: String
+    @State private var link: String
+    @State private var lines: [Line]
+    @State private var kind: Kind
+    @State private var policy: String
+    @State private var pickingPolicy = false
+     
+     
+    @State private var addingLine = false
+     
+     
+     
+     
+     
+     
+     
+     
+    static let lineActions: [HakoStructuredRule.Action] =
+        HakoStructuredRule.Action.allCases.filter { $0.category != .logic }
+
+    @State private var lineAction: HakoStructuredRule.Action = .domainSuffix
+    @State private var lineContent = ""
+    @State private var pickingGeo = false
+    @State private var pickedFrom: HakoMacGeoResource?
+    @State private var busy = false
+    @State private var error: String?
+
+    init(
+        value: ConfigurationLocalRuleSet?, policy: String, candidates: ConfigurationRuleTargetCandidates,
+        geoValues: HakoMacGeoValueLoader? = nil,
+        download: @escaping @MainActor (String) async throws -> [String],
+        save: @escaping (ConfigurationLocalRuleSet, String) async throws -> Void,
+        close: @escaping () -> Void
+    ) {
+        self.value = value
+        self.candidates = candidates
+        self.geoValues = geoValues
+        self.download = download
+        self.save = save
+        self.close = close
+        let input = value?.input ?? ""
+        let isLink = Self.looksLikeLink(input)
+        _name = State(initialValue: value?.name ?? "")
+        _link = State(initialValue: isLink ? input : "")
+        _lines = State(initialValue: isLink ? [] : Self.lines(from: input))
+        _kind = State(initialValue: isLink ? .link : .manual)
+        _policy = State(initialValue: policy)
+    }
+
+     
+    static func looksLikeLink(_ input: String) -> Bool {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.contains("\n") && (trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://"))
+    }
+
+     
+     
+    static func lines(from input: String) -> [Line] {
+        input.split(separator: "\n", omittingEmptySubsequences: true)
+            .map { Line(raw: $0.trimmingCharacters(in: .whitespaces)) }
+            .filter { !$0.raw.isEmpty }
+    }
+
+    private var input: String {
+        kind == .link ? link.trimmingCharacters(in: .whitespacesAndNewlines) : lines.map(\.raw).joined(separator: "\n")
+    }
+
+    private var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !policy.isEmpty && !busy && !pickingPolicy && !addingLine
+            && (kind == .link ? Self.looksLikeLink(link) : !lines.isEmpty)
+    }
+
+     
+    private var assembledLine: String {
+        var parts = [lineAction.rawValue]
+        if lineAction.needsContent { parts.append(lineContent.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        return parts.joined(separator: ",")
+    }
+
+    private var canAddLine: Bool {
+        !lineAction.needsContent || !lineContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var title: HakoDisplayText {
+        if pickingGeo, let resource = lineAction.hakoMacGeoResource { return resource.rowTitle }
+        if addingLine { return .copy("Add Rule") }
+        if pickingPolicy { return .copy("Select Policy") }
+        return .copy(value == nil ? "New Rule Set" : "Edit Rule Set")
+    }
+
+    var body: some View {
+        HakoMacSheetFrame(
+            title: title, subtitle: (pickingPolicy || addingLine) ? nil : .copy("My Rules"),
+            width: 560, height: 520
+        ) {
+            if pickingGeo, let resource = lineAction.hakoMacGeoResource, let geoValues {
+                HakoMacGeoValuePickerPage(
+                    resource: resource, current: lineContent, load: geoValues,
+                    identifier: "configuration-center.rule-editor.rule-set.geo"
+                ) { picked in
+                    lineContent = picked
+                    pickedFrom = resource
+                    pickingGeo = false
+                }
+            } else if addingLine {
+                lineForm
+            } else if pickingPolicy {
+                HakoMacTargetPickerPage(
+                    candidates: candidates, current: policy,
+                    identifier: "configuration-center.rule-editor.rule-set.policy"
+                ) { picked in
+                    policy = picked
+                    pickingPolicy = false
+                }
+            } else {
+                form
+            }
+        } leading: {
+            if pickingGeo {
+                Button { pickingGeo = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.rule-editor.rule-set.geo.back")
+            } else if addingLine {
+                Button { addingLine = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.rule-editor.rule-set.line.back")
+            } else if pickingPolicy {
+                Button { pickingPolicy = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.rule-editor.rule-set.policy.back")
+            }
+        } trailing: {
+            if addingLine, !pickingGeo {
+                HakoMacSheetButtons(
+                    closeIdentifier: "configuration-center.rule-editor.rule-set.line.cancel",
+                    primaryTitle: .copy("Add"),
+                    primaryIdentifier: "configuration-center.rule-editor.rule-set.line.add",
+                    primaryDisabled: !canAddLine,
+                    onClose: { addingLine = false },
+                    onPrimary: addLine
+                )
+            } else if !pickingPolicy, !pickingGeo {
+                HakoMacSheetButtons(
+                    closeIdentifier: "configuration-center.rule-editor.rule-set.cancel",
+                    primaryTitle: .copy("Save"),
+                    primaryIdentifier: "configuration-center.rule-editor.rule-set.save",
+                    primaryDisabled: !canSave,
+                    isBusy: busy,
+                    onClose: close,
+                    onPrimary: commit
+                )
+            }
+        }
+        .onChange(of: lineAction) { changed in
+             
+             
+            if changed.hakoMacGeoResource != pickedFrom { lineContent = ""; pickedFrom = nil }
+        }
+    }
+
+    private var form: some View {
+        HakoMacSheetForm {
+            Section {
+                TextField(text: $name, prompt: Text(hako: .copy("e.g. 🎬 Netflix"))) { Text(hako: .copy("Name")) }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.rule-editor.rule-set.name")
+            }
+            Section {
+                Picker(selection: $kind) {
+                    Text(hako: .copy("Link")).tag(Kind.link)
+                    Text(hako: .copy("Manual")).tag(Kind.manual)
+                } label: {
+                    Text(hako: .copy("Rules From"))
+                }
+                .pickerStyle(.segmented)
+                .disabled(busy)
+                .accessibilityIdentifier("configuration-center.rule-editor.rule-set.kind")
+                if kind == .link {
+                    TextField(text: $link, prompt: Text(verbatim: "https://")) { Text(hako: .copy("Link")) }
+                        .disabled(busy)
+                        .accessibilityIdentifier("configuration-center.rule-editor.rule-set.input")
+                } else {
+                     
+                     
+                     
+                    ForEach(lines) { line in
+                        HakoMacRuleSetLineRow(line: line)
+                            .disabled(busy)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    lines.removeAll { $0.id == line.id }
+                                } label: {
+                                    Text(hako: .copy("Delete"))
+                                }
+                            }
+                    }
+                    .onDelete { offsets in lines.remove(atOffsets: offsets) }
+                    HakoMacListAddRow(.copy("Add Rule")) {
+                        lineAction = .domainSuffix
+                        lineContent = ""
+                        pickedFrom = nil
+                        addingLine = true
+                    }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.rule-editor.rule-set.line.open")
+                }
+            } footer: {
+                Text(hako: .copy(kind == .link
+                    ? "A text, YAML or MRS rule set the app downloads and keeps updated."
+                    : "Add the rules this set matches. The policy is chosen below, not written on each rule."))
+            }
+            Section {
+                HakoMacTargetRow(
+                    title: .copy("Policy"), value: policy,
+                    identifier: "configuration-center.rule-editor.rule-set.policy.row"
+                ) { pickingPolicy = true }
+                .disabled(busy)
+            } footer: {
+                Text(hako: .copy("Traffic matching these rules goes to this policy. Saving adds the rule set to the current rules."))
+            }
+            if let error {
+                Section {
+                    Text(verbatim: error).foregroundStyle(.red)
+                        .accessibilityIdentifier("configuration-center.rule-editor.rule-set.error")
+                }
+            }
+        }
+    }
+
+     
+     
+     
+    private var lineForm: some View {
+        HakoMacSheetForm {
+            Section {
+                Picker(selection: $lineAction) {
+                    ForEach(Self.lineActions, id: \.self) { item in
+                        Text(verbatim: item.rawValue).tag(item)
+                    }
+                } label: {
+                    Text(hako: .copy("Rule Type"))
+                }
+                .accessibilityIdentifier("configuration-center.rule-editor.rule-set.line.action")
+                if let resource = lineAction.hakoMacGeoResource, geoValues != nil {
+                    HakoMacGeoValueRow(
+                        resource: resource, value: lineContent,
+                        identifier: "configuration-center.rule-editor.rule-set.line.geo"
+                    ) { pickingGeo = true }
+                } else if lineAction.needsContent {
+                    LabeledContent {
+                        TextField(text: $lineContent, prompt: Text(verbatim: lineAction.contentPlaceholder)) {
+                            Text(hako: .copy(lineAction.contentLabel))
+                        }
+                        .labelsHidden()
+                        .font(.body.monospaced())
+                        .multilineTextAlignment(.trailing)
+                        .accessibilityIdentifier("configuration-center.rule-editor.rule-set.line.content")
+                    } label: {
+                        Text(hako: .copy(lineAction.contentLabel))
+                    }
+                }
+                LabeledContent {
+                    Text(verbatim: assembledLine).font(.body.monospaced())
+                } label: {
+                    Text(hako: .copy("Rule"))
+                }
+            }
+        }
+    }
+
+    private func addLine() {
+        guard canAddLine else { return }
+        lines.append(Line(raw: assembledLine))
+        addingLine = false
+    }
+
+    private func commit() {
         guard canSave else { return }
         busy = true
         error = nil
         Task { @MainActor in
             defer { busy = false }
             do {
-                let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmed = input
                 let rules = try await download(trimmed)
-                try await commit(ConfigurationLocalRuleSet(name: name.trimmingCharacters(in: .whitespacesAndNewlines), input: trimmed, rules: rules))
+                let set = ConfigurationLocalRuleSet(
+                    id: value?.id ?? UUID().uuidString.lowercased(),
+                    name: name.trimmingCharacters(in: .whitespacesAndNewlines), input: trimmed, rules: rules
+                )
+                try await save(set, policy)
                 close()
             } catch {
                 self.error = error.localizedDescription
             }
         }
+    }
+}
+
+ 
+ 
+struct HakoMacRuleSetLineRow: View {
+    let line: HakoMacLocalRuleSetEditor.Line
+
+    var body: some View {
+        HStack(spacing: HakoTheme.Spacing.compact) {
+            if let action = line.action {
+                Text(verbatim: action.rawValue)
+                Spacer()
+                if !line.value.isEmpty {
+                    Text(verbatim: line.value)
+                        .font(.body.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            } else {
+                 
+                Text(verbatim: line.raw)
+                    .font(.body.monospaced())
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityIdentifier("configuration-center.rule-editor.rule-set.line.\(line.raw)")
     }
 }
 
