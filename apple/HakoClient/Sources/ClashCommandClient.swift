@@ -613,6 +613,9 @@ return
 
     }
 
+    private func startUITestLogStreamIfRequested() {}
+
+
 
 
     func bind(session: NETunnelProviderSession?) {
