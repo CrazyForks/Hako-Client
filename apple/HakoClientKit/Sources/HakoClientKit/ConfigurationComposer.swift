@@ -156,6 +156,14 @@ public enum ConfigurationComposer {
             let includes = ["include-all", "include-all-proxies", "include-all-providers"]
                 .contains { group.topLevelValue($0) == .scalar("true") }
             var rewritten: [OrderedJSON] = []
+             
+             
+             
+             
+             
+             
+             
+            var referencedNodes = 0, resolvedNodes = 0
             for member in members {
                 guard let name = member.compositionString else { rewritten.append(member); continue }
                 if originalNodes.contains(name) {
@@ -168,14 +176,26 @@ public enum ConfigurationComposer {
                     }
                      
                      
-                } else {
+                } else if groupNames.contains(name) || sourceGroupNames.contains(name) || Self.builtins.contains(name) {
                     rewritten.append(member)  
+                } else {
+                    referencedNodes += 1
+                    if let mapped = sources.lazy.compactMap({ nodeNames[$0.id]?[name] }).first {
+                        rewritten.append(.string(mapped))
+                        resolvedNodes += 1
+                    }
                 }
             }
             if group.topLevelValue("proxies") != nil {
                 value = value.settingTopLevel("proxies", to: .array(rewritten))
             }
-            if takesNodes || takesProviders || includes {
+             
+             
+             
+             
+            let onlyBuiltinsLeft = rewritten.allSatisfy { Self.builtins.contains($0.compositionString ?? "") }
+            let fallsBackToEveryNode = referencedNodes > 0 && resolvedNodes == 0 && onlyBuiltinsLeft
+            if takesNodes || takesProviders || includes || fallsBackToEveryNode {
                  
                  
                 value = value.settingTopLevel("include-all-proxies", to: .scalar("true"))
