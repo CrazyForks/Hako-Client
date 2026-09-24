@@ -189,6 +189,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
     }
 
     public var body: some View {
+        let _ = HakoPerf.count("profiles.body")
         pagePresentation(AnyView(routedRootPage))
             .hakoProductModal(
                 item: $activeCapability,
@@ -1188,6 +1189,7 @@ private struct HakoProfileRow<
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        let _ = HakoPerf.count("profiles.list.row")
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibilityProfileRow
@@ -1513,7 +1515,11 @@ private struct HakoProfileDetailView<
         activeCapability = capability
     }
 
-    @Environment(\.dismiss) private var dismiss
+     
+     
+     
+     
+    @State private var dismiss = HakoDismissHandle()
     @State private var isSavingSourceUpdates = false
     @State private var isDuplicating = false
      
@@ -1543,7 +1549,6 @@ private struct HakoProfileDetailView<
      
      
      
-    @Environment(\.hakoProductModalDismiss) private var productModalDismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var activeCapability:
         HakoProfilesCapabilityDestination?
@@ -1572,6 +1577,7 @@ private struct HakoProfileDetailView<
                 }
             }
         }
+        .hakoCapturesDismiss(dismiss)
         .hakoProductModal(
             item: $activeCapability,
             role: .page,
@@ -1595,7 +1601,8 @@ private struct HakoProfileDetailView<
     private func detailPage(
         _ profile: HakoProfileSnapshot
     ) -> some View {
-        HakoProductRootPage(
+        HakoPerf.count("profile.detail.body")
+        return HakoProductRootPage(
             palette: palette,
             accessibilityIdentifier: "profile-detail.root"
         ) {
@@ -1825,7 +1832,20 @@ private struct HakoProfileDetailView<
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    @ViewBuilder
     private var nameEditor: some View {
+         
+         
+         
+        if !isPastFirstFrame {
+            Text(verbatim: draftName)
+                .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
+        } else {
+            nameField
+        }
+    }
+
+    private var nameField: some View {
          
          
          
@@ -2397,11 +2417,7 @@ private struct HakoProfileDetailView<
      
      
     private func leave() {
-        if let productModalDismiss {
-            productModalDismiss()
-        } else {
-            dismiss()
-        }
+        dismiss.closeModalOrDismiss()
     }
 
     private func send(_ command: HakoProfilesCommand) {
@@ -2769,6 +2785,7 @@ struct HakoProfileGroup<
 
     @ViewBuilder
     var body: some View {
+        let _ = HakoPerf.count("profile.group")
         if nativeList || HakoPlatformLayout.pageUsesSystemSettingsIdiom {
              
              
@@ -2838,6 +2855,7 @@ struct HakoProfileActionRow<Icon: View>: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        let _ = HakoPerf.count("profile.action.row")
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibilityActionRow

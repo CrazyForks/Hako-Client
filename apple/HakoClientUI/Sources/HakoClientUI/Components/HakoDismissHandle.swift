@@ -67,6 +67,22 @@ struct HakoDismissPlacement: Equatable {
 @MainActor
 public final class HakoDismissHandle {
     private var action: (() -> Void)?
+     
+     
+     
+     
+     
+    private var productModal: (@MainActor () -> Void)?
+
+     
+    @MainActor
+    public func closeModalOrDismiss() {
+        if let productModal { productModal() } else { self() }
+    }
+
+    func bindProductModal(_ closer: (@MainActor () -> Void)?) {
+        productModal = closer
+    }
     private var placement = HakoDismissPlacement(
         depth: nil, isPushedPage: false, hostContext: .standalone, insideModal: false
     )
@@ -111,11 +127,13 @@ private struct HakoDismissCapture: View {
     @Environment(\.hakoIsPushedPage) private var isPushedPage
     @Environment(\.hakoNavigationHostContext) private var hostContext
     @Environment(\.hakoInsideModalPresentation) private var insideModal
+    @Environment(\.hakoProductModalDismiss) private var productModalDismiss
 
     var body: some View {
          
          
          
+        let _ = handle.bindProductModal(productModalDismiss)
         let _ = handle.bind(
             { dismiss() },
             placement: HakoDismissPlacement(

@@ -739,6 +739,7 @@ public struct HakoConfigurationSourceLibraryView: View {
         self.add = add; self.open = open; self.reload = reload; self.close = close
     }
     public var body: some View {
+        let _ = HakoPerf.count("nodes.tab.body")
         HakoConfigurationLibraryList(palette: palette, accessibilityIdentifier: "configuration.library.sources.content") {
             if !isReady {
                 HakoConfigurationLibraryCard(palette: palette, nativeList: true) {
@@ -1678,6 +1679,7 @@ struct HakoConfigurationLibraryRow: View {
     let count: HakoDisplayText
 
     var body: some View {
+        let _ = HakoPerf.count("library.row")
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(verbatim: title)
@@ -1730,6 +1732,7 @@ struct HakoConfigurationLibraryCard<Content: View>: View {
         self.title = title; self.count = count; self.palette = palette; self.nativeList = nativeList; self.content = content()
     }
     @ViewBuilder var body: some View {
+        let _ = HakoPerf.count("library.card")
         if nativeList || HakoPlatformLayout.pageUsesSystemSettingsIdiom {
             Section {
                 content
@@ -2065,6 +2068,7 @@ struct HakoConfigurationSubscriptionUsageView: View {
     let usage: ConfigurationSubscriptionUsage
     var detailed = false
     var body: some View {
+        let _ = HakoPerf.count("library.usage")
         VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
             if usage.total > 0 {
                 Text(hako: .format("%@ of %@ used", [bytes(usage.used), bytes(usage.total)]))

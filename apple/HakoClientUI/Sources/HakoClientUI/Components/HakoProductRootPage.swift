@@ -513,6 +513,7 @@ struct HakoProductRootPage<Content: View>: View {
     }
 
     var body: some View {
+        let _ = HakoPerf.count("root.page.body")
         Group {
             if regularShellScrollsContent {
                 productContent

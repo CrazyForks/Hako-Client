@@ -93,6 +93,7 @@ struct ProfileCenterAdapter: View {
     }
 
     var body: some View {
+        let _ = HakoPerf.count("center.body")
         HakoOptionalNavigationContainer(owns: ownsNavigationContainer) {
 #if os(iOS)
             HakoConfigurationCenterSections {
