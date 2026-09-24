@@ -1655,11 +1655,15 @@ final class ProfileActivationCoordinator {
                         ? ""
                         : " kept-old=\(materialized.staleFallbacks.count)")
             )
+             
+             
+             
             try await geodata.stage(
                 plan: plan,
                 homeDir: coreHomeDir,
                 maxBytesEach: Self.maxGeodataBytes,
-                preferBundled: true
+                preferBundled: true,
+                reuseExisting: true
             )
 
             stages.mark("geodata")

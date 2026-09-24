@@ -27,6 +27,7 @@ final class GeodataManager {
         homeDir: URL,
         maxBytesEach: Int,
         preferBundled: Bool = false,
+        reuseExisting: Bool = false,
         validatesWithCore: Bool = true
     ) async throws {
         guard !plan.geodata.isEmpty else { return }
@@ -50,6 +51,22 @@ final class GeodataManager {
             ) {
                 continue
             }
+            let namedURL = homeDir.appendingPathComponent(expectedName)
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+            if reuseExisting,
+               Self.readsAsDatabase(at: namedURL, kind: geo.kind, maxBytes: maxBytesEach) {
+                continue
+            }
              
              
              
@@ -63,7 +80,6 @@ final class GeodataManager {
             guard result.data.count <= maxBytesEach else {
                 throw DownloadError.tooLarge(result.data.count)
             }
-            let namedURL = homeDir.appendingPathComponent(expectedName)
              
              
              
@@ -91,6 +107,18 @@ final class GeodataManager {
             }
             try result.data.write(to: namedURL, options: Self.writeOptions)
         }
+    }
+
+     
+     
+     
+     
+     
+    static func readsAsDatabase(at url: URL, kind: String, maxBytes: Int) -> Bool {
+        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe),
+              data.count <= maxBytes
+        else { return false }
+        return rejectionReason(for: data, kind: kind) == nil
     }
 
     private func fileExtension(kind: String, url: URL) -> String {
