@@ -216,16 +216,10 @@ struct HakoProxiesSystemList<Icon: View>: View {
          
         ForEach(memberOrder(group)) { member in
             HakoProxyMemberListRow(
-                row: HakoProxyFrozenRow(
-                    name: member.name,
-                    type: member.type,
-                    chainedThrough: member.chainedThrough,
-                    groupName: group.name,
-                    isEmptyGroup: snapshot.proxies.isEmptyGroup(member),
-                    placeholderType: member.placeholderType
-                ),
+                row: HakoProxyFrozenRow(member, in: group, of: snapshot.proxies),
                 initialLatency: snapshot.proxies
                     .displayedLatency(for: member).normalized,
+                initialRoute: HakoProxyFrozenRow.route(of: member, in: snapshot.proxies),
                 failureCategory:
                     snapshot.proxies.failureCategories[member.name] ?? "",
                 isCurrent: member.name == current,
@@ -454,6 +448,44 @@ struct HakoProxyFrozenRow: Equatable, Identifiable {
     var placeholderType: String? = nil
 }
 
+extension HakoProxyFrozenRow {
+     
+     
+     
+     
+    static func route(
+        of member: HakoProxyMemberSnapshot,
+        in proxies: HakoProxiesSnapshot
+    ) -> String? {
+        guard member.isGroup,
+              let route = proxies.resolvedDisplayRoute(for: member),
+              route != member.name else { return nil }
+        return route
+    }
+
+     
+     
+     
+     
+     
+     
+     
+    init(
+        _ member: HakoProxyMemberSnapshot,
+        in group: HakoProxyGroupSnapshot,
+        of proxies: HakoProxiesSnapshot
+    ) {
+        self.init(
+            name: member.name,
+            type: member.type,
+            chainedThrough: member.chainedThrough,
+            groupName: group.name,
+            isEmptyGroup: proxies.isEmptyGroup(member),
+            placeholderType: member.placeholderType
+        )
+    }
+}
+
  
  
  
@@ -462,6 +494,7 @@ struct HakoProxyMemberListRow: View, Equatable {
     nonisolated static func == (a: Self, b: Self) -> Bool {
         a.row == b.row
             && a.initialLatency == b.initialLatency
+            && a.initialRoute == b.initialRoute
              
              
              
@@ -477,6 +510,12 @@ struct HakoProxyMemberListRow: View, Equatable {
 
     let row: HakoProxyFrozenRow
     let initialLatency: HakoProxyLatencyState
+     
+     
+     
+     
+    var initialRoute: String? = nil
+
      
      
      
@@ -500,9 +539,18 @@ struct HakoProxyMemberListRow: View, Equatable {
     var showsLatency: Bool = true
 
     @State private var liveLatency: HakoProxyLatencyState?
+    @State private var liveRoute: String?
 
     private var shownLatency: HakoProxyLatencyState {
         liveLatency ?? initialLatency
+    }
+
+     
+     
+     
+    private var shownRoute: String? {
+        guard let route = liveRoute ?? initialRoute, route != row.name else { return nil }
+        return route
     }
 
     var body: some View {
@@ -611,6 +659,15 @@ struct HakoProxyMemberListRow: View, Equatable {
     }
 
     private func apply(_ batch: HakoLatencyPulse) {
+         
+         
+         
+         
+         
+         
+        if !batch.isTesting, let terminal = batch.groupTerminals[row.name] {
+            liveRoute = terminal
+        }
         if !batch.isTesting {
             if let landed = batch.results[row.name] {
                 liveLatency = landed
@@ -650,6 +707,20 @@ struct HakoProxyMemberListRow: View, Equatable {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+        } else if let route = shownRoute {
+             
+             
+             
+             
+            HStack(spacing: 4) {
+                Text(hako: .verbatim(row.type.uppercased()))
+                HakoRegionalFlag.label("· \(route)", pointSize: 11, relativeTo: .caption2)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
         } else {
             Text(hako: .verbatim(row.type.uppercased()))
                 .font(.caption2)

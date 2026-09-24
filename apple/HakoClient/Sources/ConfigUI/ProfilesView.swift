@@ -119,6 +119,9 @@ final class ProfilesViewModel: ObservableObject {
     @Published private(set) var busyProfileID: String?
      
      
+    private var deletingProfileIDs: Set<String> = []
+     
+     
      
      
      
@@ -1924,23 +1927,36 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func delete(at offsets: IndexSet) {
-        for index in offsets {
-            delete(profiles[index])
+        let doomed = offsets.map { profiles[$0] }
+        Task { @MainActor in
+            for profile in doomed { await delete(profile) }
         }
     }
 
-    func delete(_ profile: Profile) {
+     
+     
+     
+     
+     
+     
+     
+    func delete(_ profile: Profile) async {
         guard profileStore != nil else { return }
         guard ProfileCenterPolicy.canDelete(
             profileID: profile.id,
             activeProfileID: activeProfileID,
             profiles: profiles
         ) else {
-            statusMessage = profile.id == LocalDefaultProfileProvisioner.profileID
-                ? "Direct is Clash's system fallback and cannot be deleted"
-                : "Switch to another profile before deleting"
+            statusMessage = refusalMessage(for: profile)
             return
         }
+         
+         
+         
+         
+        guard !deletingProfileIDs.contains(profile.id) else { return }
+        deletingProfileIDs.insert(profile.id)
+        defer { deletingProfileIDs.remove(profile.id) }
          
          
          
@@ -1950,13 +1966,36 @@ final class ProfilesViewModel: ObservableObject {
          
         if profile.id == activeProfileID,
            let fallback = profiles.first(where: { $0.id == LocalDefaultProfileProvisioner.profileID }) {
-            Task { @MainActor in
-                _ = await selectAndWait(fallback)
-                performDelete(profile)
+             
+             
+             
+             
+             
+            guard await selectAndWait(fallback) else {
+                statusMessage = .format(
+                    "%@ was not deleted: Clash could not switch to its built-in profile.",
+                    [profile.label]
+                )
+                return
             }
-            return
         }
         performDelete(profile)
+    }
+
+     
+     
+     
+     
+     
+    private func refusalMessage(for profile: Profile) -> HakoDisplayText {
+        if profile.id == LocalDefaultProfileProvisioner.profileID {
+            return "Direct is Clash's system fallback and cannot be deleted"
+        }
+        if profile.id == activeProfileID,
+           !profiles.contains(where: { $0.id == LocalDefaultProfileProvisioner.profileID }) {
+            return "Clash has no built-in profile to fall back to right now."
+        }
+        return "Switch to another profile before deleting"
     }
 
      

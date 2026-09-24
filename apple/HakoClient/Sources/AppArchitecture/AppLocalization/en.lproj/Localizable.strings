@@ -98,6 +98,7 @@
 "%@ unchanged" = "%@ unchanged";
 "%@ updated" = "%@ updated";
 "%@ used" = "%@ used";
+"%@ was not deleted: Clash could not switch to its built-in profile." = "%@ was not deleted: Clash could not switch to its built-in profile.";
 "%@ was not updated: %@." = "%@ was not updated: %@.";
 "%@ was replaced so the first lookup can succeed." = "%@ was replaced so the first lookup can succeed.";
 "%@ will switch when the current update finishes." = "%@ will switch when the current update finishes.";
@@ -607,6 +608,7 @@
 "Clash explicitly disables fallback to the default system resolver." = "Clash explicitly disables fallback to the default system resolver.";
 "Clash explicitly disables fallback to the default system resolver. A real-device leak test is still required before release." = "Clash explicitly disables fallback to the default system resolver. A real-device leak test is still required before release.";
 "Clash for Windows" = "Clash for Windows";
+"Clash has no built-in profile to fall back to right now." = "Clash has no built-in profile to fall back to right now.";
 "Clash has not received a usable network path yet. Try again after the network status appears." = "Clash has not received a usable network path yet. Try again after the network status appears.";
 "Clash is a network tool. You are responsible for making sure the way you use it complies with the laws that apply to you and with the terms of any service you connect through." = "Clash is a network tool. You are responsible for making sure the way you use it complies with the laws that apply to you and with the terms of any service you connect through.";
 "Clash is disconnected" = "Clash is disconnected";

@@ -868,7 +868,7 @@ struct ProfileCenterAdapter: View {
             guard let profile = appProfile(id) else {
                 return .none
             }
-            model.delete(profile)
+            await model.delete(profile)
             return model.profiles.contains {
                 $0.id == id.rawValue
             }

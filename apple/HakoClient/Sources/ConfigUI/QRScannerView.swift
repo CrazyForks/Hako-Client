@@ -172,6 +172,8 @@ struct QRScannerView: UIViewControllerRepresentable {
     final class ScannerViewController: UIViewController {
         weak var delegate: AVCaptureMetadataOutputObjectsDelegate?
         private let session = AVCaptureSession()
+         
+        private var canScan = true
 
         override func viewDidLoad() {
             super.viewDidLoad()
@@ -220,6 +222,7 @@ struct QRScannerView: UIViewControllerRepresentable {
 
         override func viewWillAppear(_ animated: Bool) {
             super.viewWillAppear(animated)
+            guard canScan else { return }
             DispatchQueue.global(qos: .userInitiated).async { [session] in
                 if !session.isRunning { session.startRunning() }
             }
@@ -232,7 +235,16 @@ struct QRScannerView: UIViewControllerRepresentable {
             }
         }
 
+         
+         
+         
+         
+         
+         
         private func showUnavailable() {
+            canScan = false
+            for output in session.outputs { session.removeOutput(output) }
+            for input in session.inputs { session.removeInput(input) }
             let label = UILabel()
             label.text = "Camera unavailable"
             label.textColor = .white

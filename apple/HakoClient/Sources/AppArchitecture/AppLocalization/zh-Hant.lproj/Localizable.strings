@@ -98,6 +98,7 @@
 "%@ unchanged" = "未變化 %@";
 "%@ updated" = "已更新 %@";
 "%@ used" = "已用 %@";
+"%@ was not deleted: Clash could not switch to its built-in profile." = "未刪除 %@：無法切換到內建設定檔。";
 "%@ was not updated: %@." = "%@ 未更新：%@。";
 "%@ was replaced so the first lookup can succeed." = "%@ 已被取代，好讓第一次查詢能成功。";
 "%@ will switch when the current update finishes." = "%@ 會在目前更新完成後切換。";
@@ -607,6 +608,7 @@
 "Clash explicitly disables fallback to the default system resolver." = "Clash 已顯式停用回落到系統預設解析器。";
 "Clash explicitly disables fallback to the default system resolver. A real-device leak test is still required before release." = "Clash 明確停用了回退到系統預設解析器。釋出前仍需在真機上做一次洩漏測試。";
 "Clash for Windows" = "Clash for Windows";
+"Clash has no built-in profile to fall back to right now." = "目前沒有可回退的內建設定檔。";
 "Clash has not received a usable network path yet. Try again after the network status appears." = "Clash 尚未獲得可用網路路徑。請等網路狀態出現後重試。";
 "Clash is a network tool. You are responsible for making sure the way you use it complies with the laws that apply to you and with the terms of any service you connect through." = "Clash 是一款網路工具。你有責任確保自己的使用方式符合適用於你的法律，以及你所接入服務的條款。";
 "Clash is disconnected" = "Clash 未連線";
