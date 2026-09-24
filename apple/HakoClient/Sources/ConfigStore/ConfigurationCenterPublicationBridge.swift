@@ -57,7 +57,13 @@ enum ConfigurationCenterPublicationBridge {
             let pending = Set((snapshot.pendingPublications ?? []).map(\.profileID))
             let count = snapshot.recipes.count
             snapshot.recipes.removeAll { !ids.contains($0.id) && !pending.contains($0.id) }
-            if snapshot.recipes.count != count {
+             
+             
+            let orphaned = snapshot.sources.compactMap { registrationOwner(of: $0.id) }
+                .filter { !ids.contains($0) && !pending.contains($0) }
+            var dropped = false
+            for owner in Set(orphaned) { dropped = dropOwnedRegistrations(of: owner, from: &snapshot) || dropped }
+            if snapshot.recipes.count != count || dropped {
                 _ = try library.commit(snapshot, payloads: [], expectedGeneration: snapshot.generation)
             }
             return
@@ -65,13 +71,49 @@ enum ConfigurationCenterPublicationBridge {
         throw ProfileStore.StoreError.unreadableStore
     }
 
+     
+     
+     
+    static func ownedRegistrations(of profileID: String) -> (sources: [String], rule: String) {
+        let sourceID = "legacy-" + profileID
+        return ([sourceID, ConfigurationLegacyRegistration.customNodeSourceID(for: profileID)], "rules-" + sourceID)
+    }
+
+     
+    static func registrationOwner(of sourceID: String) -> String? {
+        for prefix in ["legacy-nodes-", "legacy-"] where sourceID.hasPrefix(prefix) {
+            let owner = String(sourceID.dropFirst(prefix.count))
+            return owner.isEmpty ? nil : owner
+        }
+        return nil
+    }
+
+     
+     
+     
+     
+     
+     
+    @discardableResult
+    static func dropOwnedRegistrations(of profileID: String, from snapshot: inout ConfigurationLibrarySnapshot) -> Bool {
+        let owned = ownedRegistrations(of: profileID)
+        let usedSources = Set(snapshot.recipes.flatMap { $0.sources.map(\.id) + [$0.ruleSource.id] })
+        let usedRules = Set(snapshot.recipes.map(\.ruleSchemeID))
+        let before = snapshot.sources.count + snapshot.rules.count
+        snapshot.sources.removeAll { owned.sources.contains($0.id) && !usedSources.contains($0.id) }
+        if !usedRules.contains(owned.rule) { snapshot.rules.removeAll { $0.id == owned.rule } }
+        return snapshot.sources.count + snapshot.rules.count != before
+    }
+
     static func removeProfile(_ profile: Profile, library: ConfigurationLibraryStore, profileStore: ProfileStore) throws {
         var snapshot = try library.snapshot()
-        guard snapshot.recipes.contains(where: { $0.id == profile.id }) else {
+        let hadRecipe = snapshot.recipes.contains { $0.id == profile.id }
+        snapshot.recipes.removeAll { $0.id == profile.id }
+        let droppedRegistrations = dropOwnedRegistrations(of: profile.id, from: &snapshot)
+        guard hadRecipe || droppedRegistrations else {
             try profileStore.remove(id: profile.id); return
         }
         guard snapshot.pendingPublications?.isEmpty ?? true else { throw ConfigurationLibraryError.busy }
-        snapshot.recipes.removeAll { $0.id == profile.id }
         try profileStore.remove(id: profile.id)
         do { _ = try library.commit(snapshot, payloads: [], expectedGeneration: snapshot.generation) }
         catch {
