@@ -757,6 +757,11 @@ final class ExtensionProvider: NSObject {
         var error: NSError?
         HakoSetup(options, &error)
         if let error { throw error }
+#if os(macOS)
+         
+         
+        HakoConnectionOwnerBridge.install()
+#endif
         startupMemorySampler.mark("setup-done", token: samplingToken)
          
          
@@ -2149,3 +2154,68 @@ private final class StartupPlatformInterface: NSObject, HakoPlatformInterfacePro
     func getInterfaces() throws -> any HakoNetworkInterfaceIteratorProtocol { try owner().getInterfaces() }
     func underNetworkExtension() -> Bool { true }
 }
+
+#if os(macOS)
+ 
+ 
+ 
+ 
+final class HakoConnectionOwnerBridge: NSObject, HakoConnectionOwnerResolverProtocol, @unchecked Sendable {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var installed: HakoConnectionOwnerBridge?
+
+    private let client: HakoConnectionOwnerClient
+    private let tally = NSLock()
+    private var asked = 0
+    private var named = 0
+    private static let log = Logger(subsystem: "org.example.hako.demo.extension", category: "process-owner")
+
+    private init(client: HakoConnectionOwnerClient) {
+        self.client = client
+    }
+
+    static func install() {
+        lock.lock()
+        defer { lock.unlock() }
+        guard installed == nil,
+              let container = HakoAppIdentifiers.appGroupContainer,
+              let client = HakoConnectionOwnerClient(container: container)
+        else { return }
+        let bridge = HakoConnectionOwnerBridge(client: client)
+        installed = bridge
+        HakoSetConnectionOwnerResolver(bridge)
+    }
+
+    func findConnectionOwner(
+        _ ipProtocol: Int32, sourceAddress: String?, sourcePort: Int32,
+        destinationAddress: String?, destinationPort: Int32
+    ) throws -> HakoConnectionOwner {
+        let owner = sourceAddress.flatMap { source in
+            destinationAddress.flatMap { destination in
+                client.owner(
+                    ipProtocol: ipProtocol, sourceAddress: source, sourcePort: sourcePort,
+                    destinationAddress: destination, destinationPort: destinationPort
+                )
+            }
+        }
+        tally.lock()
+        asked += 1
+        if owner != nil { named += 1 }
+        let (n, hits) = (asked, named)
+        tally.unlock()
+        if n <= 20 || n % 500 == 0 {
+            Self.log.info("owner.ask n=\(n, privacy: .public) named=\(hits, privacy: .public) proto=\(ipProtocol, privacy: .public) src=\(sourceAddress ?? "", privacy: .public):\(sourcePort, privacy: .public) owner=\(owner?.processPath ?? "-", privacy: .public)")
+        }
+        guard let owner else {
+            throw NSError(domain: "HakoConnectionOwner", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "the app did not name this connection's owner",
+            ])
+        }
+        let result = HakoConnectionOwner()
+        result.userId = owner.userID
+        result.userName = owner.userName
+        result.processPath = owner.processPath
+        return result
+    }
+}
+#endif

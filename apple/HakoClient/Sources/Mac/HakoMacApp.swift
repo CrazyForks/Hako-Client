@@ -231,6 +231,10 @@ struct HakoMacApp: App {
              
              
             .modifier(HakoMacLiveResizeReporting())
+            .background(
+                HakoMacWindowReader { model.mainWindowDidAttach($0) }
+                    .frame(width: 0, height: 0)
+            )
              
              
              
@@ -245,6 +249,7 @@ struct HakoMacApp: App {
              
             .onAppear {
                 model.rememberWindowOpener(openWindow)
+                model.mainWindowContentDidAppear()
             }
             .task {
                 await model.prepare()
@@ -923,6 +928,9 @@ private final class HakoMacSceneModel: ObservableObject {
      
     private(set) var productIsVisible = true
     private var visibilityObserver: HakoMacProductVisibilityObserver?
+     
+     
+    private var ownerService: HakoMacOwnerService?
     private var menuGate: Set<AnyCancellable> = []
 
      
@@ -955,13 +963,43 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
+        let wasHolding = snapshotGate.held != nil
         snapshotGate.send(value)
+         
+         
+        if !wasHolding, snapshotGate.held != nil, !snapshotGate.isVisible {
+            Self.traceWindow("snapshot.gate hold revision=\(value.revision) profile=\(value.selectedProfile?.id.rawValue ?? "none") visible=\(snapshotGate.isVisible) menuTracking=\(snapshotGate.isMenuTracking) windowShows=\(snapshot.revision)")
+        }
+        let profileID = value.selectedProfile?.id.rawValue
+        if profileID != lastTracedProfileID {
+            Self.traceWindow("snapshot.profile \(lastTracedProfileID ?? "none")->\(profileID ?? "none") revision=\(value.revision) profiles=\(profiles.profiles.count) active=\(profiles.activeProfileID ?? "none")")
+            lastTracedProfileID = profileID
+        }
+    }
+
+     
+     
+    private var lastTracedProfileID: String?
+
+     
+     
+     
+     
+    private static func traceWindow(_ line: String) {
+        HakoMacDebugLog.note(line)
+        HakoLogStore.shared.append(line, stream: .app)
     }
 
      
      
     fileprivate var latestSnapshot: AppleClientSnapshot {
         snapshotGate.latest ?? snapshot
+    }
+
+     
+     
+    func mainWindowContentDidAppear() {
+        visibilityObserver?.windowContentDidAppear()
     }
 
      
@@ -974,10 +1012,16 @@ private final class HakoMacSceneModel: ObservableObject {
         if visible {
             connections.sync(command.isConnected)
             trafficFeed.traffic = trafficSnapshot(command.traffic)
+        } else if command.isConnected {
+            connections.pause()
         } else {
             connections.sync(false)
         }
+        let held = snapshotGate.held
         snapshotGate.setVisible(visible)
+        if let held, snapshotGate.held == nil {
+            Self.traceWindow("snapshot.gate flush revision=\(held.revision) profile=\(held.selectedProfile?.id.rawValue ?? "none")")
+        }
     }
 
     private func observeMenuTracking() {
@@ -988,6 +1032,9 @@ private final class HakoMacSceneModel: ObservableObject {
                 self.snapshotThaw?.cancel()
                 self.snapshotThaw = nil
                 self.menuTrackingDepth += 1
+                if !self.snapshotGate.isMenuTracking {
+                    Self.traceWindow("snapshot.gate menuTracking=true depth=\(self.menuTrackingDepth)")
+                }
                 self.snapshotGate.setMenuTracking(true)
             }
             .store(in: &menuGate)
@@ -999,6 +1046,7 @@ private final class HakoMacSceneModel: ObservableObject {
                 let work = DispatchWorkItem { [weak self] in
                     guard let self, self.menuTrackingDepth == 0 else { return }
                     self.snapshotThaw = nil
+                    Self.traceWindow("snapshot.gate menuTracking=false held=\(self.snapshotGate.held?.revision.description ?? "none")")
                     self.snapshotGate.setMenuTracking(false)
                 }
                 self.snapshotThaw = work
@@ -3137,6 +3185,11 @@ private final class HakoMacSceneModel: ObservableObject {
             HakoMacDebugLog.sink = HakoMacDebugLog.fileSink(working.appendingPathComponent("configuration-centre.debug.log"))
             HakoMacDebugLog.note("app.launch review=\(reviewContainer != nil)")
         }
+        if reviewContainer == nil, !false,
+           let container = HakoAppIdentifiers.appGroupContainer {
+            ownerService = HakoMacOwnerService(container: container)
+            ownerService?.start()
+        }
 
             backupScope = .ordinary
             profiles = ProfilesViewModel(vpn: vpn)
@@ -3174,6 +3227,7 @@ private final class HakoMacSceneModel: ObservableObject {
         visibilityObserver = HakoMacProductVisibilityObserver { [weak self] visible in
             self?.productVisibilityDidChange(visible)
         }
+        visibilityObserver?.trace = { Self.traceWindow($0) }
     }
 
      
@@ -3220,11 +3274,27 @@ private final class HakoMacSceneModel: ObservableObject {
         openWindowAction?(id: "main")
     }
 
+     
+     
+     
+     
+    private weak var mainWindow: NSWindow?
+    private var mainWindowClose: AnyCancellable?
+
+    func mainWindowDidAttach(_ window: NSWindow) {
+        guard window !== mainWindow else { return }
+        mainWindow = window
+        mainWindowClose = NotificationCenter.default
+            .publisher(for: NSWindow.willCloseNotification, object: window)
+            .sink { [weak self] _ in
+                self?.mainWindow = nil
+                self?.mainWindowClose = nil
+            }
+    }
+
     @discardableResult
     private func raiseExistingMainWindow() -> Bool {
-        guard let window = NSApplication.shared.windows.first(where: {
-            $0.level == .normal && $0.canBecomeKey
-        }) else { return false }
+        guard let window = mainWindow else { return false }
         window.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
         return true
@@ -4939,6 +5009,8 @@ private final class HakoMacSceneModel: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] status in
                 guard let self else { return }
+                HakoActivityIOSAdapter.tunnelIsUp = ["connected", "reasserting", "connecting"]
+                    .contains(status.lowercased())
                 command.sync(vpnStatus: status)
                  
                  

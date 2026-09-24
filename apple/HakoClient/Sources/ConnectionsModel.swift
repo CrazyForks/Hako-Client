@@ -37,7 +37,7 @@ enum ConnectionsParser {
          
 
         var seen = Set<String>()
-        return rows.compactMap { row -> HakoConnection? in
+        let parsed = rows.compactMap { row -> HakoConnection? in
             guard let id = row["id"] as? String, !id.isEmpty else { return nil }
             guard seen.insert(id).inserted else { return nil }
 
@@ -84,6 +84,13 @@ enum ConnectionsParser {
                 downloadSpeed: optionalNumber(row["downloadSpeed"])
             )
         }
+#if os(macOS)
+         
+         
+        return HakoMacProcessAttribution.shared.fill(parsed)
+#else
+        return parsed
+#endif
     }
 
     private static func string(_ value: Any?) -> String {
@@ -382,7 +389,9 @@ final class ConnectionsModel: ObservableObject {
         guard commandConnected, lease == nil else { return }
         generation &+= 1
         let token = generation
-        loading = true
+         
+         
+        loading = activityConnections.isEmpty
         error = ""
         lease = source.acquire { [weak self] event in
             guard let self, token == self.generation else { return }
@@ -419,6 +428,21 @@ final class ConnectionsModel: ObservableObject {
         closingAll = false
         activityConnections = []
         lastObservation = nil
+    }
+
+     
+     
+     
+     
+     
+    func pause() {
+        if usesStaticFixtureFeed { return }
+        generation &+= 1
+        lease?.release()
+        lease = nil
+        loading = false
+        closing = []
+        closingAll = false
     }
 
 

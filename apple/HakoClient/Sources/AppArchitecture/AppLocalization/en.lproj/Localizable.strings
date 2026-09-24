@@ -78,7 +78,9 @@
 "%@ provider source(s) were excluded. Those groups and rules stay empty until you point them at a source again." = "%@ provider source(s) were excluded. Those groups and rules stay empty until you point them at a source again.";
 "%@ proxies" = "%@ proxies";
 "%@ relay migrations" = "%@ relay migrations";
+"%@ request" = "%@ request";
 "%@ request in this session" = "%@ request in this session";
+"%@ requests" = "%@ requests";
 "%@ requests in this session" = "%@ requests in this session";
 "%@ resolvers raced; %@ answered first" = "%@ resolvers raced; %@ answered first";
 "%@ rule" = "%@ rule";
@@ -107,6 +109,7 @@
 "%@ · %d modified" = "%@ · %d modified";
 "%@ · Core default" = "%@ · Core default";
 "%@, current" = "%@, current";
+"%@/%@ rows selected" = "%@/%@ rows selected";
 "%@: this rule is kept but never matches here." = "%@: this rule is kept but never matches here.";
 "%@（↑%@ · ↓%@）" = "%1$@ (↑%2$@ · ↓%3$@)";
 "%d additional fields" = "%d additional fields";
@@ -644,10 +647,13 @@
 "Client Settings" = "Client Settings";
 "Client-managed Runtime" = "Client-managed Runtime";
 "Close" = "Close";
+"Close %@ Connections" = "Close %@ Connections";
 "Close All" = "Close All";
+"Close Connection" = "Close Connection";
 "Close all active connections?" = "Close all active connections?";
 "Close connection" = "Close connection";
 "Close connections on node switch" = "Close connections on node switch";
+"Closed" = "Closed";
 "Closing the active packet tunnel." = "Closing the active packet tunnel.";
 "Closing the tunnel" = "Closing the tunnel";
 "Code Editor" = "Code Editor";
@@ -771,6 +777,7 @@
 "Copy Default Configuration" = "Copy Default Rules";
 "Copy Diagnostic Code" = "Copy Diagnostic Code";
 "Copy Groups and Rules from Profile" = "Copy Groups and Rules from Profile";
+"Copy Host" = "Copy Host";
 "Copy Profile URL" = "Copy Profile URL";
 "Copy Rule Scheme" = "Copy Rule Scheme";
 "Copy Shell Command" = "Copy Shell Command";
@@ -939,6 +946,7 @@
 "Destination" = "Destination";
 "Destination ASN" = "Destination ASN";
 "Destination GeoIP" = "Destination GeoIP";
+"Destination IP" = "Destination IP";
 "Destination IP suffix" = "Destination IP suffix";
 "Destination IPv4 network" = "Destination IPv4 network";
 "Destination IPv6 network" = "Destination IPv6 network";
@@ -1376,6 +1384,7 @@
 "HomeKit Compatibility" = "HomeKit Compatibility";
 "Hop" = "Hop";
 "Hop Interval" = "Hop Interval";
+"Host" = "Host";
 "Host Key Algorithms" = "Host Key Algorithms";
 "Host Key Pinning" = "Host Key Pinning";
 "Human Test" = "Human Test";
@@ -2196,6 +2205,7 @@
 "Probe URL" = "Probe URL";
 "Probe URLs must be credential-free HTTPS URLs with a host." = "Probe URLs must be credential-free HTTPS URLs with a host.";
 "Probe interval" = "Probe interval";
+"Process" = "Process";
 "Process Lookup" = "Process Lookup";
 "Process name" = "Process name";
 "Process name matching a configured pattern" = "Process name matching a configured pattern";
@@ -2720,6 +2730,8 @@
 "Shortcuts, Controls, and widgets" = "Shortcuts, Controls, and widgets";
 "Show" = "Show";
 "Show Disconnect Message" = "Show Disconnect Message";
+"Show Only This Process" = "Show Only This Process";
+"Show Only This Proxy" = "Show Only This Proxy";
 "Show Profile" = "Show Profile";
 "Show Scripts" = "Show Scripts";
 "Show Speed in Menu Bar" = "Show Speed in Menu Bar";
@@ -3343,6 +3355,7 @@
 "This source version already exists with different contents." = "This source version already exists with different contents.";
 "This start loaded %@ of them · %@" = "This start loaded %@ of them · %@";
 "Ticked rule sets are not loaded on the next start. The source file is unchanged." = "Ticked rule sets are not loaded on the next start. The source file is unchanged.";
+"Time" = "Time";
 "Time Synchronization" = "Time Synchronization";
 "Timed out" = "Timed out";
 "Timeout" = "Timeout";
@@ -3526,6 +3539,7 @@
 "Used by %@ profiles" = "Used by %@ profiles";
 "Used by Profiles" = "Used by Profiles";
 "Used by node delay tests. Empty resets to the default endpoint." = "Used by node delay tests. Empty resets to the default endpoint.";
+"User ID" = "User ID";
 "User Selection" = "User Selection";
 "User-Agent" = "User-Agent";
 "Username" = "Username";

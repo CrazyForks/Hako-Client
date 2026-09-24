@@ -83,6 +83,14 @@ struct ConnectionsView: View {
 enum HakoActivityIOSAdapter {
     static let palette = HakoClientUI.HakoProductPalette.hakoProduct
 
+     
+     
+     
+     
+     
+     
+    static var tunnelIsUp = false
+
     static func snapshot(
         model: ConnectionsModel? = nil,
         isConnected: Bool,
@@ -185,6 +193,9 @@ enum HakoActivityIOSAdapter {
         }
         if isConnected || model?.connected == true {
             return .ready
+        }
+        if tunnelIsUp {
+            return model?.activityConnections.isEmpty == false ? .ready : .loading
         }
         return .disconnected
     }

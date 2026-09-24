@@ -78,7 +78,9 @@
 "%@ provider source(s) were excluded. Those groups and rules stay empty until you point them at a source again." = "已排除 %@ 个外部资源的来源。相关策略组与规则会保持为空，直到你重新指定来源。";
 "%@ proxies" = "%@ 个节点";
 "%@ relay migrations" = "%@ 项 relay 迁移";
+"%@ request" = "%@ 条请求";
 "%@ request in this session" = "本次会话 %@ 条请求";
+"%@ requests" = "%@ 条请求";
 "%@ requests in this session" = "本次会话 %@ 条请求";
 "%@ resolvers raced; %@ answered first" = "%@ 个解析器竞速，%@ 先返回";
 "%@ rule" = "%@ 条规则";
@@ -107,6 +109,7 @@
 "%@ · %d modified" = "%@ · 已修改 %d 项";
 "%@ · Core default" = "%@ · 内核默认";
 "%@, current" = "%@（当前）";
+"%@/%@ rows selected" = "已选 %@/%@ 行";
 "%@: this rule is kept but never matches here." = "%@：这条规则保留着，但在这里匹配不到。";
 "%@（↑%@ · ↓%@）" = "%1$@（↑%2$@ · ↓%3$@）";
 "%d additional fields" = "%d 个附加字段";
@@ -644,10 +647,13 @@
 "Client Settings" = "客户端设置";
 "Client-managed Runtime" = "客户端托管的运行时";
 "Close" = "关闭";
+"Close %@ Connections" = "关闭 %@ 条连接";
 "Close All" = "全部关闭";
+"Close Connection" = "关闭连接";
 "Close all active connections?" = "关闭全部活动连接？";
 "Close connection" = "关闭连接";
 "Close connections on node switch" = "切换节点时断开连接";
+"Closed" = "已结束";
 "Closing the active packet tunnel." = "正在关闭当前 packet tunnel。";
 "Closing the tunnel" = "正在关闭隧道";
 "Code Editor" = "代码编辑器";
@@ -771,6 +777,7 @@
 "Copy Default Configuration" = "复制默认配置";
 "Copy Diagnostic Code" = "复制诊断代码";
 "Copy Groups and Rules from Profile" = "从配置复制分组与规则";
+"Copy Host" = "复制主机";
 "Copy Profile URL" = "复制配置链接";
 "Copy Rule Scheme" = "复制规则方案";
 "Copy Shell Command" = "复制终端代理命令";
@@ -939,6 +946,7 @@
 "Destination" = "目标地址";
 "Destination ASN" = "目标 ASN";
 "Destination GeoIP" = "目标 GeoIP";
+"Destination IP" = "目标 IP";
 "Destination IP suffix" = "目标 IP 后缀";
 "Destination IPv4 network" = "目标 IPv4 网段";
 "Destination IPv6 network" = "目标 IPv6 网段";
@@ -1376,6 +1384,7 @@
 "HomeKit Compatibility" = "HomeKit 兼容";
 "Hop" = "中转";
 "Hop Interval" = "跳跃间隔 (hop-interval)";
+"Host" = "主机";
 "Host Key Algorithms" = "主机密钥算法";
 "Host Key Pinning" = "主机密钥固定";
 "Human Test" = "人工测试";
@@ -2196,6 +2205,7 @@
 "Probe URL" = "探测 URL";
 "Probe URLs must be credential-free HTTPS URLs with a host." = "探测 URL 必须是不含凭据、带主机名的 HTTPS URL。";
 "Probe interval" = "探测间隔";
+"Process" = "进程";
 "Process Lookup" = "进程查询";
 "Process name" = "进程名称";
 "Process name matching a configured pattern" = "匹配所设模式的进程名称";
@@ -2720,6 +2730,8 @@
 "Shortcuts, Controls, and widgets" = "快捷指令、控件与小组件";
 "Show" = "显示";
 "Show Disconnect Message" = "显示断开信息";
+"Show Only This Process" = "只看此进程";
+"Show Only This Proxy" = "只看此代理";
 "Show Profile" = "查看这份配置";
 "Show Scripts" = "查看脚本库";
 "Show Speed in Menu Bar" = "在菜单栏显示速度";
@@ -3343,6 +3355,7 @@
 "This source version already exists with different contents." = "这个来源版本已存在，但内容不同。";
 "This start loaded %@ of them · %@" = "本次启动装载了其中 %@ 个 · %@";
 "Ticked rule sets are not loaded on the next start. The source file is unchanged." = "勾掉的规则集下次启动不装。源文件不改。";
+"Time" = "时间";
 "Time Synchronization" = "时间同步";
 "Timed out" = "超时";
 "Timeout" = "超时";
@@ -3526,6 +3539,7 @@
 "Used by %@ profiles" = "被 %@ 份配置使用";
 "Used by Profiles" = "使用此来源的配置";
 "Used by node delay tests. Empty resets to the default endpoint." = "用于节点延迟测试。留空则恢复默认端点。";
+"User ID" = "用户 ID";
 "User Selection" = "用户选择";
 "User-Agent" = "User-Agent";
 "Username" = "用户名";

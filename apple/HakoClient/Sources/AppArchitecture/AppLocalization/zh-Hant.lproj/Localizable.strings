@@ -78,7 +78,9 @@
 "%@ provider source(s) were excluded. Those groups and rules stay empty until you point them at a source again." = "已排除 %@ 個外部資源的來源。相關策略群組與規則會保持為空，直到你重新指定來源。";
 "%@ proxies" = "%@ 個節點";
 "%@ relay migrations" = "%@ 項 relay 遷移";
+"%@ request" = "%@ 條請求";
 "%@ request in this session" = "本次工作階段 %@ 條請求";
+"%@ requests" = "%@ 條請求";
 "%@ requests in this session" = "本次工作階段 %@ 條請求";
 "%@ resolvers raced; %@ answered first" = "%@ 個解析器競速，%@ 先回傳";
 "%@ rule" = "%@ 條規則";
@@ -107,6 +109,7 @@
 "%@ · %d modified" = "%@ · 已修改 %d 項";
 "%@ · Core default" = "%@ · 核心預設";
 "%@, current" = "%@（目前）";
+"%@/%@ rows selected" = "已選 %@/%@ 行";
 "%@: this rule is kept but never matches here." = "%@：這條規則保留著，但在這裡符合不到。";
 "%@（↑%@ · ↓%@）" = "%1$@（↑%2$@ · ↓%3$@）";
 "%d additional fields" = "%d 個附加欄位";
@@ -644,10 +647,13 @@
 "Client Settings" = "用戶端設定";
 "Client-managed Runtime" = "用戶端託管的執行階段";
 "Close" = "關閉";
+"Close %@ Connections" = "關閉 %@ 條連線";
 "Close All" = "全部關閉";
+"Close Connection" = "關閉連線";
 "Close all active connections?" = "關閉全部活動連線？";
 "Close connection" = "關閉連線";
 "Close connections on node switch" = "切換節點時中斷連線";
+"Closed" = "已結束";
 "Closing the active packet tunnel." = "正在關閉目前 packet tunnel。";
 "Closing the tunnel" = "正在關閉通道";
 "Code Editor" = "程式碼編輯器";
@@ -771,6 +777,7 @@
 "Copy Default Configuration" = "複製預設設定檔";
 "Copy Diagnostic Code" = "複製診斷程式碼";
 "Copy Groups and Rules from Profile" = "從設定檔複製群組與規則";
+"Copy Host" = "拷貝主機";
 "Copy Profile URL" = "複製設定檔網址";
 "Copy Rule Scheme" = "複製規則方案";
 "Copy Shell Command" = "複製終端機代理指令";
@@ -939,6 +946,7 @@
 "Destination" = "目標位址";
 "Destination ASN" = "目標 ASN";
 "Destination GeoIP" = "目標 GeoIP";
+"Destination IP" = "目標 IP";
 "Destination IP suffix" = "目標 IP 後綴";
 "Destination IPv4 network" = "目標 IPv4 網段";
 "Destination IPv6 network" = "目標 IPv6 網段";
@@ -1376,6 +1384,7 @@
 "HomeKit Compatibility" = "HomeKit 相容";
 "Hop" = "中轉";
 "Hop Interval" = "跳躍間隔 (hop-interval)";
+"Host" = "主機";
 "Host Key Algorithms" = "主機金鑰演算法";
 "Host Key Pinning" = "主機金鑰固定";
 "Human Test" = "人工測試";
@@ -2196,6 +2205,7 @@
 "Probe URL" = "探測 URL";
 "Probe URLs must be credential-free HTTPS URLs with a host." = "探測 URL 必須是不含認證資訊、帶主機名的 HTTPS URL。";
 "Probe interval" = "探測間隔";
+"Process" = "程序";
 "Process Lookup" = "程序查詢";
 "Process name" = "程序名稱";
 "Process name matching a configured pattern" = "符合所設模式的程序名稱";
@@ -2720,6 +2730,8 @@
 "Shortcuts, Controls, and widgets" = "捷徑、控制項目與小工具";
 "Show" = "顯示";
 "Show Disconnect Message" = "顯示中斷資訊";
+"Show Only This Process" = "只看此程序";
+"Show Only This Proxy" = "只看此代理";
 "Show Profile" = "檢視這份設定檔";
 "Show Scripts" = "檢視指令碼庫";
 "Show Speed in Menu Bar" = "在選單列顯示速度";
@@ -3343,6 +3355,7 @@
 "This source version already exists with different contents." = "這個來源版本已存在，但內容不同。";
 "This start loaded %@ of them · %@" = "本次啟動裝載了其中 %@ 個 · %@";
 "Ticked rule sets are not loaded on the next start. The source file is unchanged." = "勾掉的規則集下次啟動不裝。原始檔不改。";
+"Time" = "時間";
 "Time Synchronization" = "時間同步";
 "Timed out" = "逾時";
 "Timeout" = "逾時";
@@ -3526,6 +3539,7 @@
 "Used by %@ profiles" = "被 %@ 份設定檔使用";
 "Used by Profiles" = "使用此來源的設定";
 "Used by node delay tests. Empty resets to the default endpoint." = "用於節點延遲測試。留空則恢復預設端點。";
+"User ID" = "使用者 ID";
 "User Selection" = "使用者選擇";
 "User-Agent" = "User-Agent";
 "Username" = "使用者名稱";

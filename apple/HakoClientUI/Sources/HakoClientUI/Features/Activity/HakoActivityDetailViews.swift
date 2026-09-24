@@ -181,10 +181,20 @@ public struct HakoConnectionsView<Icon: View>: View {
      
     @State private var preparedSummaries: [HakoActivityChainSummary] = []
      
+    @State private var preparedBarTotal = 0
+    @State private var preparedBarSummaries: [HakoActivityChainSummary] = []
+     
      
     @State private var hasPrepared = false
     @State private var selected:
         HakoActivityConnectionSnapshot?
+     
+     
+     
+    @State private var preparedConnections: [HakoActivityConnectionSnapshot] = []
+    @State private var preparedTraffic: (upload: Int64, download: Int64) = (0, 0)
+    @State private var tableSelectionCount = 0
+    @Environment(\.hakoPushRoute) private var pushRoute
 
     public init(
         snapshot: AppleClientSnapshot,
@@ -205,6 +215,46 @@ public struct HakoConnectionsView<Icon: View>: View {
     }
 
     public var body: some View {
+        content
+            .accessibilityIdentifier("connections.overview")
+            .accessibilityValue(activityAccessibilityValue)
+             
+             
+             
+             
+            .task(id: preparationKey) { await prepareConnections() }
+            .hakoActivityLensToolbar(active: isShown) { toolbarContent }
+            .confirmationDialog(
+                "Close all active connections?",
+                isPresented: $confirmsCloseAll
+            ) {
+                Button("Close All", role: .destructive) {
+                    send(.closeAllConnections)
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Apps may reconnect automatically.")
+            }
+            .modifier(
+                HakoActivityDetailHost(
+                    selected: $selected,
+                    title: "Connection Details",
+                    actions: actions,
+                    snapshot: snapshot
+                )
+            )
+    }
+
+    @ViewBuilder
+    private var content: some View {
+#if os(macOS)
+        macTable
+#else
+        list
+#endif
+    }
+
+    private var list: some View {
         List {
             if !keywords.isEmpty {
                 filterSection
@@ -320,37 +370,76 @@ public struct HakoConnectionsView<Icon: View>: View {
          
         .hakoListRetainsRowSelection()
         .hakoActivityListCanvas(palette.canvas)
-        .accessibilityIdentifier("connections.overview")
-        .accessibilityValue(activityAccessibilityValue)
-         
-         
-         
-         
-        .task(id: preparationKey) { await prepareConnections() }
         .refreshable {
             await perform(.refresh)
         }
-        .hakoActivityLensToolbar(active: isShown) { toolbarContent }
-        .confirmationDialog(
-            "Close all active connections?",
-            isPresented: $confirmsCloseAll
-        ) {
-            Button("Close All", role: .destructive) {
-                send(.closeAllConnections)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Apps may reconnect automatically.")
-        }
-        .modifier(
-            HakoActivityDetailHost(
-                selected: $selected,
-                title: "Connection Details",
-                actions: actions,
-                snapshot: snapshot
-            )
-        )
     }
+
+#if os(macOS)
+     
+     
+     
+    private var macTable: some View {
+        VStack(alignment: .leading, spacing: HakoTheme.Spacing.compact) {
+            if let error = snapshot.activity.errorDescription, !error.isEmpty {
+                HakoActivityMacBanner(
+                    message: error,
+                    retry: snapshot.activity.phase == .failed ? { send(.refresh) } : nil
+                )
+            }
+            HakoActivityMacFilterBar(
+                summaries: preparedBarSummaries,
+                total: preparedBarTotal,
+                keywords: $keywords
+            )
+            if hasPrepared && preparedConnections.isEmpty {
+                ScrollView { emptyState }
+            } else {
+                HakoActivityTableCard(palette: palette) {
+                HakoActivityTable(
+                    kind: .connections,
+                    rows: preparedConnections.map(HakoActivityTableRow.init(connection:)),
+                    locale: locale,
+                    canClose: snapshot.activity.canManageConnections
+                        && !snapshot.activity.isClosingAll,
+                    onOpen: { row in openDetails(row.connection, title: "Connection Details") },
+                    onClose: { rows in
+                        for row in rows { send(.closeConnection(id: row.connection.id)) }
+                    },
+                    onFilter: { keywords.insert($0) },
+                    onSelectionCount: { tableSelectionCount = $0 }
+                )
+                }
+            }
+            HakoActivityMacStatusLine(
+                count: preparedConnections.count,
+                total: preparedTotal,
+                selected: tableSelectionCount,
+                upload: preparedTraffic.upload,
+                download: preparedTraffic.download,
+                kind: .connections
+            )
+        }
+        .padding(.vertical, HakoTheme.Spacing.standard)
+    }
+
+    private func openDetails(_ connection: HakoActivityConnectionSnapshot, title: String) {
+        guard let pushRoute else { selected = connection; return }
+        let token = UUID()
+        let actions = actions
+        let snapshot = snapshot
+        HakoViewRouteRegistry.set(token, ownership: .oneShot, onReturn: {}) {
+            AnyView(HakoActivityMacConnectionDetail(
+                connection: connection, title: title, palette: palette
+            ) { text in
+                Task { @MainActor in
+                    try? await actions.perform(.activity(.copyText(text)), allowedBy: snapshot)
+                }
+            })
+        }
+        pushRoute(HakoViewRoute(id: token))
+    }
+#endif
 
     private var visibleConnections:
         [HakoActivityConnectionRowModel]
@@ -402,28 +491,84 @@ public struct HakoConnectionsView<Icon: View>: View {
         let result = await Task.detached(priority: .userInitiated) {
             () -> (
                 rows: [HakoActivityConnectionRowModel],
+                connections: [HakoActivityConnectionSnapshot],
+                traffic: (upload: Int64, download: Int64),
                 total: Int,
-                summaries: [HakoActivityChainSummary]
+                summaries: [HakoActivityChainSummary],
+                barTotal: Int,
+                barSummaries: [HakoActivityChainSummary]
             ) in
-            let full = HakoActivityProjection.connections(
-                values, query: query, sort: sort, keywords: keywords,
+#if os(macOS)
+             
+             
+             
+             
+             
+             
+            let outbounds = Set(values.compactMap(\.chains.first))
+            let chosen = keywords.intersection(outbounds).map { $0.lowercased() }
+            let projectionKeywords = keywords.subtracting(outbounds)
+#else
+            let projectionKeywords = keywords
+#endif
+            let projected = HakoActivityProjection.connections(
+                values, query: query, sort: sort, keywords: projectionKeywords,
                 limit: nil
             )
+#if os(macOS)
+            let unchosen = projected
+            let full = chosen.isEmpty ? projected : projected.filter { connection in
+                chosen.allSatisfy { keyword in
+                    connection.process.lowercased() == keyword
+                        || connection.chains.contains { $0.lowercased() == keyword }
+                }
+            }
+#else
+            let full = projected
+#endif
+#if os(macOS)
+             
+             
+            var upload: Int64 = 0
+            var download: Int64 = 0
+            for connection in full {
+                upload = upload &+ connection.upload
+                download = download &+ connection.download
+            }
+            return (
+                rows: [],
+                connections: Array(full.prefix(HakoActivityProjection.tableRenderCap)),
+                traffic: (upload, download),
+                total: full.count,
+                summaries: HakoActivityProjection.chainSummaries(full),
+                barTotal: unchosen.count,
+                barSummaries: HakoActivityProjection.chainSummaries(unchosen)
+            )
+#else
             return (
                 rows: HakoActivityRowTextFactory.rows(
                     Array(full.prefix(HakoActivityProjection.connectionRenderCap)),
                     locale: locale
                 ),
+                connections: [],
+                traffic: (0, 0),
                 total: full.count,
-                summaries: HakoActivityProjection.chainSummaries(full)
+                summaries: HakoActivityProjection.chainSummaries(full),
+                barTotal: 0,
+                barSummaries: []
             )
+#endif
         }.value
          
          
         if Task.isCancelled { return }
         prepared = result.rows
+        preparedConnections = result.connections
+        preparedTraffic = result.traffic
         preparedTotal = result.total
         preparedSummaries = result.summaries
+        preparedBarTotal = result.barTotal
+        preparedBarSummaries = result.barSummaries
         hasPrepared = true
     }
 
@@ -519,6 +664,9 @@ public struct HakoConnectionsView<Icon: View>: View {
          
         ToolbarItem(placement: .primaryAction) {
             ControlGroup {
+#if !os(macOS)
+                 
+                 
                 Menu {
                     Picker("Sort", selection: $sort) {
                         ForEach(
@@ -537,12 +685,15 @@ public struct HakoConnectionsView<Icon: View>: View {
                     )
                 }
                 .accessibilityIdentifier("connections.sort")
+#endif
 
                 if snapshot.activity.canManageConnections {
+#if !os(macOS)
                      
                      
                      
                     HakoToolbarDivider()
+#endif
 
                     Button(role: .destructive) {
                         confirmsCloseAll = true
@@ -622,6 +773,56 @@ public struct HakoRequestsView<Icon: View>: View {
     }
 
     public var body: some View {
+        requestsContent
+         
+        .hakoActivityLensToolbar(active: isShown) {
+            ToolbarItem(placement: .primaryAction) {
+                 
+                 
+                 
+                 
+                ControlGroup {
+                Button {
+                    autoScrollToNewest.toggle()
+                } label: {
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    Label(
+                        autoScrollToNewest
+                            ? "Pause auto-scroll"
+                            : "Resume auto-scroll",
+                        systemImage:
+                            autoScrollToNewest
+                            ? HakoSymbol.pause.rawValue
+                            : HakoSymbol.play.rawValue   
+                    )
+                }
+                .accessibilityIdentifier("requests.autoScroll")
+                }
+                .hakoReaderControlGroupStyle()
+            }
+        }
+        .modifier(
+            HakoActivityDetailHost(
+                selected: $selected,
+                title: "Request Details",
+                actions: actions,
+                snapshot: snapshot
+            )
+        )
+        .accessibilityIdentifier("requests.overview")
+    }
+
+    @ViewBuilder
+    private var requestsContent: some View {
+#if os(macOS)
+        macTable
+#else
         ScrollViewReader { proxy in
             List {
                 if !keywords.isEmpty {
@@ -726,49 +927,74 @@ public struct HakoRequestsView<Icon: View>: View {
                 }
             }
         }
-         
-        .hakoActivityLensToolbar(active: isShown) {
-            ToolbarItem(placement: .primaryAction) {
-                 
-                 
-                 
-                 
-                ControlGroup {
-                Button {
-                    autoScrollToNewest.toggle()
-                } label: {
-                     
-                     
-                     
-                     
-                     
-                     
-                     
-                    Label(
-                        autoScrollToNewest
-                            ? "Pause auto-scroll"
-                            : "Resume auto-scroll",
-                        systemImage:
-                            autoScrollToNewest
-                            ? HakoSymbol.pause.rawValue
-                            : HakoSymbol.play.rawValue   
-                    )
-                }
-                .accessibilityIdentifier("requests.autoScroll")
-                }
-                .hakoReaderControlGroupStyle()
-            }
-        }
-        .modifier(
-            HakoActivityDetailHost(
-                selected: $selected,
-                title: "Request Details",
-                actions: actions,
-                snapshot: snapshot
-            )
-        )
-        .accessibilityIdentifier("requests.overview")
+#endif
     }
+
+#if os(macOS)
+    @State private var tableSelectionCount = 0
+    @Environment(\.hakoPushRoute) private var pushRoute
+
+     
+     
+     
+    private var macTable: some View {
+        let entries = entries
+        return VStack(alignment: .leading, spacing: HakoTheme.Spacing.compact) {
+            HakoActivityMacFilterBar(summaries: [], total: entries.count, keywords: $keywords)
+            if entries.isEmpty {
+                ScrollView {
+                    HakoEmptyState(
+                        title: query.isEmpty && keywords.isEmpty ? "No Requests" : "No Matches",
+                        message: requestEmptyMessage,
+                        isLoading: snapshot.activity.phase == .loading
+                    ) {
+                        icon(query.isEmpty && keywords.isEmpty ? .listBulletRectanglePortrait : .magnifyingglass)
+                    }
+                    .padding(.vertical, HakoTheme.Spacing.section)
+                }
+            } else {
+                HakoActivityTableCard(palette: palette) {
+                HakoActivityTable(
+                    kind: .requests,
+                    rows: entries.map(HakoActivityTableRow.init(request:)),
+                    locale: rowLocale,
+                    canClose: false,
+                    followsNewest: autoScrollToNewest,
+                    onOpen: { row in openDetails(row.connection) },
+                    onFilter: { keywords.insert($0) },
+                    onSelectionCount: { tableSelectionCount = $0 }
+                )
+                }
+            }
+            HakoActivityMacStatusLine(
+                count: entries.count,
+                total: entries.count,
+                selected: tableSelectionCount,
+                upload: nil,
+                download: nil,
+                kind: .requests
+            )
+        }
+        .padding(.vertical, HakoTheme.Spacing.standard)
+    }
+
+    private func openDetails(_ connection: HakoActivityConnectionSnapshot) {
+        guard let pushRoute else { selected = connection; return }
+        let token = UUID()
+        let actions = actions
+        let snapshot = snapshot
+        HakoViewRouteRegistry.set(token, ownership: .oneShot, onReturn: {}) {
+            AnyView(HakoActivityMacConnectionDetail(
+                connection: connection, title: "Request Details", palette: palette
+            ) { text in
+                Task { @MainActor in
+                    try? await actions.perform(.activity(.copyText(text)), allowedBy: snapshot)
+                }
+            })
+        }
+        pushRoute(HakoViewRoute(id: token))
+    }
+#endif
 
      
     @State private var projection = HakoActivityProjectionMemo()

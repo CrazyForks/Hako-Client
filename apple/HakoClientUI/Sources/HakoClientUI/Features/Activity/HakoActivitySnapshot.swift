@@ -118,6 +118,24 @@ public struct HakoActivityConnectionSnapshot:
         return overflow ? .max : value
     }
 
+     
+     
+    public func attributed(process: String, processPath: String, uid: Int64) -> Self {
+        Self(
+            id: id, destination: destination, source: source, network: network,
+            route: route, rule: rule, upload: upload, download: download,
+            start: start, uid: uid, host: host, sourceIP: sourceIP,
+            sourcePort: sourcePort, destinationIP: destinationIP,
+            destinationPort: destinationPort, dnsMode: dnsMode,
+            process: process, processPath: processPath,
+            remoteDestination: remoteDestination, sourceGeoIP: sourceGeoIP,
+            destinationGeoIP: destinationGeoIP, destinationIPASN: destinationIPASN,
+            sourceIPASN: sourceIPASN, specialRules: specialRules,
+            specialProxy: specialProxy, chains: chains, rulePayload: rulePayload,
+            uploadSpeed: uploadSpeed, downloadSpeed: downloadSpeed
+        )
+    }
+
     public var ruleDescription: String {
         rulePayload.isEmpty
             ? rule

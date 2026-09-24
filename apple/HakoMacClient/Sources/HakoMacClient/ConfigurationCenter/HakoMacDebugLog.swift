@@ -27,10 +27,21 @@ public enum HakoMacDebugLog {
     }
 
      
+     
+     
+    public static let fileLimitBytes = 2 * 1024 * 1024
+
+     
     public static func fileSink(_ file: URL) -> (String) -> Void {
         try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         return { line in
             let data = Data((line + "\n").utf8)
+            if let size = (try? FileManager.default.attributesOfItem(atPath: file.path))?[.size] as? Int,
+               size >= fileLimitBytes {
+                let aside = file.appendingPathExtension("1")
+                try? FileManager.default.removeItem(at: aside)
+                try? FileManager.default.moveItem(at: file, to: aside)
+            }
             if let handle = try? FileHandle(forWritingTo: file) {
                 defer { try? handle.close() }
                 _ = try? handle.seekToEnd()
