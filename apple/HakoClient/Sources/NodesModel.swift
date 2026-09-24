@@ -898,11 +898,26 @@ enum NodeInventory {
      
      
      
+     
+     
+     
+     
+     
+     
+     
     static func probeURLsByMember(
         in groups: [ProxyGroup],
         fallback: String
     ) -> [String: String] {
         var urls: [String: String] = [:]
+        for group in groups where ProxyGroupControlKind(rawType: group.type).canBeUnpinned {
+            guard let endpoint = group.testURL else { continue }
+            for member in group.members {
+                let resolved = group.memberResolvedNames[member] ?? member
+                guard urls[resolved] == nil else { continue }
+                urls[resolved] = endpoint
+            }
+        }
         for group in groups {
             for member in group.members {
                 let resolved = group.memberResolvedNames[member] ?? member
@@ -1190,6 +1205,8 @@ final class NodesModel: ObservableObject {
     var testing: Bool { isTestingLatency }
 
     private weak var command: NodesCommanding?
+     
+    private var unfixingGroups: Set<String> = []
      
      
      
@@ -1539,6 +1556,36 @@ final class NodesModel: ObservableObject {
             refuse(group: group, because: "A \(target.type) group has no pin to release.")
             return
         }
+         
+         
+         
+        guard !unfixingGroups.contains(group) else { return }
+        unfixingGroups.insert(group)
+        defer { unfixingGroups.remove(group) }
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        if isTestingLatency {
+            HakoLogStore.shared.append(
+                "unfix  group=\(group)  sweep in progress, releasing without re-measuring",
+                stream: .app, level: .info
+            )
+        } else {
+            HakoLogStore.shared.append(
+                "unfix  group=\(group)  re-measuring against \(target.testURL ?? "the app endpoint") before release",
+                stream: .app, level: .info
+            )
+            await test(group: target)
+        }
         if let preferences, let pinned = preferences.load()?.selectedMap[group] {
             guard preferences.clearSelection(group: group) else {
                  
@@ -1689,9 +1736,20 @@ final class NodesModel: ObservableObject {
         )
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
     func test(group: ProxyGroup) async {
         await runLatencyTest(
-            plan: makeLatencyPlan(groups: [group], visibleGroupNames: [group.name])
+            plan: makeLatencyPlan(groups: [group], visibleGroupNames: [group.name]),
+            endpoint: group.testURL
         )
     }
 
@@ -1947,7 +2005,9 @@ final class NodesModel: ObservableObject {
         }
     }
 
-    private func runLatencyTest(plan: LatencyProbePlan) async {
+     
+     
+    private func runLatencyTest(plan: LatencyProbePlan, endpoint: String? = nil) async {
         guard let command, command.isConnected else { return }
 
         latencyRunID &+= 1
@@ -2103,7 +2163,7 @@ final class NodesModel: ObservableObject {
                             phase.set("urltest")
                             let probe = await command.nodesTestDelayWithReason(
                                 name: name,
-                                url: urlsByMember[name] ?? testURL
+                                url: endpoint ?? urlsByMember[name] ?? testURL
                             )
                             if probe.delay == -2 { return .deferred }
                             if probe.delay <= 0 {
