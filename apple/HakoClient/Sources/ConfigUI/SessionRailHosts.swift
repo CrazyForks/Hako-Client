@@ -102,6 +102,7 @@ struct ProxiesOverviewHost: View {
                  
                 nowByGroup: nodes.nowByGroup,
                 resolvedNowByGroup: nodes.resolvedNowByGroup,
+                fixedByGroup: nodes.fixedByGroup,
                 catalog: nodes.groups,
                 runtimeNodes: nodes.runtimeProxies,
                 providerCatalog: nodes.runtimeProviderCatalog,

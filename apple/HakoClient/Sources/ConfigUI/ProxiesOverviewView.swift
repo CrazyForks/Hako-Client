@@ -13,6 +13,8 @@ struct ProxiesRuntimeFacts {
     var nowByGroup: [String: String] = [:]
     var resolvedNowByGroup: [String: String] = [:]
      
+    var fixedByGroup: [String: String] = [:]
+     
      
      
     var catalog: [ProxyGroup] = []
@@ -597,6 +599,21 @@ struct ProxiesOverviewAdapter: View {
      
      
      
+     
+     
+     
+    static func pinnedSelection(
+        projected: String?,
+        kernelFixed: String?,
+        isConnected: Bool
+    ) -> String? {
+        projected ?? (isConnected ? kernelFixed : nil)
+    }
+
+     
+     
+     
+     
     private var sweepHoldKey: ProxiesSweepSnapshotHold.Key {
         ProxiesSweepSnapshotHold.Key(
             preferences: preferences,
@@ -636,6 +653,8 @@ struct ProxiesOverviewAdapter: View {
          
          
          
+         
+        let pins = effectiveRuntime.fixedByGroup
         let projection = HakoPerf.measure("proxies.snapshot.groups") {
             projections.groups(groupsKey) {
                 let all = HakoPerf.measure("proxies.compose.groups") {
@@ -655,7 +674,7 @@ struct ProxiesOverviewAdapter: View {
                             mode: outboundMode,
                             name: \.name
                         ),
-                        configuredSelection: group.configuredSelection,
+                        configuredSelection: Self.pinnedSelection(projected: group.configuredSelection, kernelFixed: pins[group.name], isConnected: isConnected),
                         runtimeSelection: isConnected ? effectiveRuntime.nowByGroup[group.name] : nil,
                         resolvedRuntimeRoute: isConnected ? effectiveRuntime.resolvedNowByGroup[group.name] : nil,
                         icon: group.icon,

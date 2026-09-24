@@ -34,6 +34,13 @@ struct ProxyGroup: Identifiable, Equatable {
      
      
     let emptyFallback: String?
+     
+     
+     
+     
+     
+     
+    let fixed: String?
     var id: String { name }
      
      
@@ -61,12 +68,14 @@ struct ProxyGroup: Identifiable, Equatable {
          hidden: Bool = false,
          testURL: String? = nil,
          iconURL: String? = nil,
-         emptyFallback: String? = nil) {
+         emptyFallback: String? = nil,
+         fixed: String? = nil) {
         self.hidden = hidden
         self.memberPlaceholderTypes = memberPlaceholderTypes
         self.testURL = testURL
         self.iconURL = iconURL
         self.emptyFallback = emptyFallback
+        self.fixed = fixed
         self.name = name
         self.type = type
         self.now = now
@@ -690,7 +699,7 @@ enum NodeInventory {
         var rawGroups: [
             String: (
                 type: String, now: String, members: [String], hidden: Bool,
-                testURL: String?, iconURL: String?, emptyFallback: String?
+                testURL: String?, iconURL: String?, emptyFallback: String?, fixed: String?
             )
         ] = [:]
         var proxyTypes: [String: String] = [:]
@@ -771,7 +780,9 @@ enum NodeInventory {
                     proxy["hidden"] as? Bool ?? false,
                     declaredURL,
                     declaredIcon,
-                    (proxy["emptyFallback"] as? String).flatMap { $0.isEmpty ? nil : native($0) }
+                    (proxy["emptyFallback"] as? String).flatMap { $0.isEmpty ? nil : native($0) },
+                     
+                    (proxy["fixed"] as? String).flatMap { $0.isEmpty ? nil : native($0) }
                 )
             }
         }
@@ -807,7 +818,8 @@ enum NodeInventory {
                 hidden: value.hidden,
                 testURL: value.testURL,
                 iconURL: value.iconURL,
-                emptyFallback: value.emptyFallback
+                emptyFallback: value.emptyFallback,
+                fixed: value.fixed
             )
         }
          
@@ -884,7 +896,8 @@ enum NodeInventory {
                 hidden: group.hidden,
                 testURL: group.testURL,
                 iconURL: group.iconURL,
-                emptyFallback: group.emptyFallback
+                emptyFallback: group.emptyFallback,
+                fixed: group.fixed
             )
         }
     }
@@ -1023,6 +1036,8 @@ final class NodesModel: ObservableObject {
      
     private(set) var nowByGroup: [String: String] = [:]
     private(set) var resolvedNowByGroup: [String: String] = [:]
+     
+    private(set) var fixedByGroup: [String: String] = [:]
     private(set) var runtimeProxies: [ProxiesOverviewModel.Proxy] = []
 
     private func deriveGroupSelections() {
@@ -1033,6 +1048,10 @@ final class NodesModel: ObservableObject {
             uniquingKeysWith: { first, _ in first }
         )
         resolvedNowByGroup = Self.groupTerminals(groups)
+        fixedByGroup = Dictionary(
+            groups.compactMap { group in group.fixed.map { (group.name, $0) } },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 
      
@@ -2894,7 +2913,8 @@ final class NodesModel: ObservableObject {
             memberGroupNames: current.memberGroupNames,
             memberResolvedNames: current.memberResolvedNames,
             configurationDetails: current.configurationDetails,
-            hidden: current.hidden
+            hidden: current.hidden,
+            fixed: current.fixed
         )
     }
 
