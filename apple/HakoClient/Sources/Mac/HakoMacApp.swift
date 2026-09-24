@@ -3133,14 +3133,11 @@ private final class HakoMacSceneModel: ObservableObject {
     }
 
     private var outboundMode: Profile.OutboundMode {
-        if command.isConnected,
-           let live = Profile.OutboundMode(
-               rawValue: command.mode.lowercased()
-           )
-        {
-            return live
-        }
-        return currentProfile.map(profiles.outboundMode) ?? .rule
+        HakoMacOutboundModeResolution.resolve(
+            vpnStatus: vpn.status,
+            liveMode: command.mode,
+            saved: currentProfile.map(profiles.outboundMode) ?? .rule
+        )
     }
 
      
@@ -3873,6 +3870,27 @@ private final class HakoMacSceneModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+enum HakoMacOutboundModeResolution {
+    static func resolve(vpnStatus: String, liveMode: String, saved: Profile.OutboundMode) -> Profile.OutboundMode {
+        let tunnelUp = ["connected", "reasserting"].contains(vpnStatus.lowercased())
+        if tunnelUp, liveMode != "—", let live = Profile.OutboundMode(rawValue: liveMode.lowercased()) {
+            return live
+        }
+        return saved
     }
 }
 
