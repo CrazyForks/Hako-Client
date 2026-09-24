@@ -130,6 +130,11 @@ public struct HakoMoreSnapshot: Codable, Equatable, Sendable {
                 subtitle: "Encrypted resolvers, no packet tunnel",
                 badge: dnsOnlyActive ? "Active" : nil
             )
+        case .ipStack:
+            return HakoProductDestinationPresentation(
+                title: .copy(destination.title),
+                subtitle: "IP query mode and automatic tunnel IPv6"
+            )
         case .tunnel:
             return HakoProductDestinationPresentation(
                 title: .copy(destination.title),

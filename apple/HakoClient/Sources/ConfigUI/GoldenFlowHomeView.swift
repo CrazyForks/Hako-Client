@@ -1285,6 +1285,7 @@ struct GoldenFlowHomeAdapter: View {
                 activeProfileName: currentProfile?.label,
                 vpnStatus: vpn.status,
                 errorMessage: connectionErrorMessage,
+                vpnAuthorization: vpn.systemVPNAuthorization,
                 errorIsStartupStopped: vpn.reportableLastError.isEmpty
                     && startupExplanation != nil,
                 allowsSystemVPNProfileReset:

@@ -47,7 +47,10 @@ enum OverrideEntryCount {
             .first(where: { $0.id == capability })
         else { return [] }
         let owned = placement.sourceKeys
-        return renderedKeys.filter { key in
+         
+         
+        let ipStackOwned: Set<String> = ["ipv6", "dns.ipv6"]
+        return renderedKeys.subtracting(ipStackOwned).filter { key in
             owned.contains { key == $0 || key.hasPrefix("\($0).") }
         }
     }

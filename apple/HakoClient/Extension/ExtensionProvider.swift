@@ -75,9 +75,15 @@ final class ExtensionProvider: NSObject {
      
      
      
-    private var tunnelIPv6Settings: NEIPv6Settings?
-     
-    private var ipv6ReapplySequence: UInt64 = 0
+    private let settingsWriter = TunnelNetworkSettingsWriter()
+    private var settingsGeneration: TunnelNetworkSettingsWriter.Generation?
+    private var ipStackSettings = PacketTunnelIPStackSettings.default
+    private var offeredNetworkSettings: NEPacketTunnelNetworkSettings?
+    private var offeredTunnelSession: ProviderTunnelSessionLease.Session?
+    private var offeredSettingsRevision: UInt64 = 0
+    private var appliedSettingsRevision: UInt64?
+    private var desiredPathHasIPv6 = false
+    private var ipv6ReapplyTask: Task<Void, Never>?
     private var tunStrictRouteRequested = false
      
      
@@ -159,13 +165,18 @@ final class ExtensionProvider: NSObject {
 
     }
 
-    private func startPathMonitor() -> PhysicalPathStartupGate.Generation {
+    private func startPathMonitor(
+        settingsGeneration: TunnelNetworkSettingsWriter.Generation,
+        ipStack: PacketTunnelIPStackSettings
+    ) -> PhysicalPathStartupGate.Generation {
         let monitor = physicalPathMonitorFactory()
         pathLock.lock()
         defaultInterfaceIndex = 0
         defaultInterfaceName = ""
         defaultInterfaceType = ""
         defaultPathIsSatisfied = false
+        defaultPathSupportsIPv4 = false
+        defaultPathSupportsIPv6 = false
         defaultPathIsExpensive = false
         defaultPathIsConstrained = false
         physicalPathUpdateCount = 0
@@ -181,7 +192,8 @@ final class ExtensionProvider: NSObject {
         ) { [weak self] snapshot in
             guard let self else { return }
             pathLock.lock()
-            let ipv6SupportChanged = defaultPathSupportsIPv6 != snapshot.supportsIPv6
+            let ipv6SupportChanged = (defaultPathIsSatisfied && defaultPathSupportsIPv6)
+                != (snapshot.isReady && snapshot.supportsIPv6)
             defaultInterfaceIndex = snapshot.interfaceIndex
             defaultInterfaceName = snapshot.interfaceName
             defaultInterfaceType = snapshot.interfaceType
@@ -208,6 +220,12 @@ final class ExtensionProvider: NSObject {
             }
             let listener = interfaceListener
             pathLock.unlock()
+            if ipv6SupportChanged, ipStack.tunIPv6Mode == .automatic {
+                self.scheduleIPv6DeclarationFollowingPath(
+                    hasIPv6: snapshot.isReady && snapshot.supportsIPv6,
+                    generation: settingsGeneration
+                )
+            }
 #if os(iOS) || os(macOS)
              
             widgetMailbox.pathChanged(interfaceType: snapshot.interfaceType)
@@ -223,50 +241,117 @@ final class ExtensionProvider: NSObject {
                 supportsIPv4: snapshot.supportsIPv4,
                 supportsIPv6: snapshot.supportsIPv6
             )
-            if ipv6SupportChanged {
-                scheduleIPv6DeclarationFollowingPath(supportsIPv6: snapshot.supportsIPv6)
+        }
+    }
+
+    private func scheduleIPv6DeclarationFollowingPath(
+        hasIPv6: Bool, generation: TunnelNetworkSettingsWriter.Generation
+    ) {
+        settingsWriter.updateDesired(in: generation) {
+            withStateLock {
+                desiredPathHasIPv6 = hasIPv6
+                ipv6ReapplyTask?.cancel()
+                ipv6ReapplyTask = Task { [weak self] in
+                    do {
+                        try await Task.sleep(nanoseconds: 1_000_000_000)
+                        guard let self else { return }
+                        try await self.reconcileTunnelSettings(in: generation)
+                    } catch is CancellationError {
+                         
+                    } catch {
+                        guard let self, self.settingsWriter.isCurrent(generation) else { return }
+                        HakoLogStore.shared.append(
+                            "tun: IPv6 re-declaration failed: \(error.localizedDescription)", stream: .app
+                        )
+                    }
+                }
             }
         }
+    }
+
+    private struct SettingsPlan {
+        let settings: NEPacketTunnelNetworkSettings
+        let revision: UInt64
+        let session: ProviderTunnelSessionLease.Session?
+    }
+
+     
+     
+    private var desiredIPv6Declaration: Bool {
+        ipStackSettings.tunIPv6Mode.declaresIPv6(
+            coreOffersIPv6: offeredNetworkSettings?.ipv6Settings != nil,
+            pathReady: desiredPathHasIPv6, supportsIPv6: desiredPathHasIPv6
+        )
+    }
+
+    private func offerTunnelSettings(
+        _ settings: NEPacketTunnelNetworkSettings, strictRoute: Bool,
+        in generation: TunnelNetworkSettingsWriter.Generation,
+        session: ProviderTunnelSessionLease.Session? = nil
+    ) throws {
+        guard settingsWriter.updateDesired(in: generation, when: { self.isTunnelSessionCurrent(session) }, {
+            withStateLock {
+                offeredNetworkSettings = settings
+                offeredTunnelSession = session
+                offeredSettingsRevision &+= 1
+                tunStrictRouteRequested = strictRoute
+            }
+        }) else { throw CancellationError() }
     }
 
      
      
      
-     
-     
-    private func scheduleIPv6DeclarationFollowingPath(supportsIPv6: Bool) {
-        let sequence: UInt64 = withStateLock {
-            ipv6ReapplySequence &+= 1
-            return ipv6ReapplySequence
-        }
-        Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-            guard let self else { return }
-            let planned: NEPacketTunnelNetworkSettings? = withStateLock {
-                guard ipv6ReapplySequence == sequence,
-                      let current = networkSettings,
-                      let offered = tunnelIPv6Settings,
-                      (current.ipv6Settings != nil) != supportsIPv6
-                else { return nil }
-                guard let copy = current.copy() as? NEPacketTunnelNetworkSettings else { return nil }
-                copy.ipv6Settings = supportsIPv6 ? offered : nil
-                return copy
+    private func reconcileTunnelSettings(in generation: TunnelNetworkSettingsWriter.Generation) async throws {
+        while true {
+            try Task.checkCancellation()
+            var appliedIPv6: Bool?
+            let outcome = try await settingsWriter.perform(in: generation, prepare: { dirty -> SettingsPlan? in
+                let session = self.withStateLock { self.offeredTunnelSession }
+                guard self.isTunnelSessionCurrent(session) else { return nil }
+                return self.withStateLock {
+                    guard let offered = self.offeredNetworkSettings else { return nil }
+                    let declares = self.desiredIPv6Declaration
+                    if !dirty, self.appliedSettingsRevision == self.offeredSettingsRevision,
+                       let current = self.networkSettings,
+                       (current.ipv6Settings != nil) == declares { return nil }
+                    let settings = offered.copy() as! NEPacketTunnelNetworkSettings
+                    if !declares { settings.ipv6Settings = nil }
+                    return SettingsPlan(settings: settings, revision: self.offeredSettingsRevision, session: session)
+                }
+            }, apply: { plan in
+                try await self.tunnelProvider.setTunnelNetworkSettings(plan.settings)
+            }, accept: { plan in
+                self.isTunnelSessionCurrent(plan.session)
+            }, publish: { plan in
+                self.withStateLock {
+                    self.networkSettings = plan.settings
+                    self.appliedSettingsRevision = plan.revision
+                    appliedIPv6 = plan.settings.ipv6Settings != nil
+                }
+            })
+            guard settingsWriter.isCurrent(generation) else { throw CancellationError() }
+            if let appliedIPv6 {
+                HakoLogStore.shared.append("tun: IPv6 declaration applied=\(appliedIPv6)", stream: .app)
             }
-            guard let planned else { return }
-            do {
-                try await tunnelProvider.setTunnelNetworkSettings(planned)
-                withStateLock { networkSettings = planned }
-                HakoLogStore.shared.append(
-                    "tun: IPv6 \(supportsIPv6 ? "declared" : "withdrawn") — physical path \(supportsIPv6 ? "gained" : "lost") IPv6",
-                    stream: .app
-                )
-            } catch {
-                HakoLogStore.shared.append(
-                    "tun: IPv6 re-declaration failed: \(error.localizedDescription)",
-                    stream: .app
-                )
-            }
+            if outcome != .superseded { return }
         }
+    }
+
+    private func clearTunnelSettings(in generation: TunnelNetworkSettingsWriter.Generation) async throws {
+         
+         
+        let cleanup = Task {
+            try await self.settingsWriter.perform(in: generation, prepare: { _ -> Bool? in true }, apply: { _ in
+                try await self.tunnelProvider.setTunnelNetworkSettings(nil)
+            }, publish: { _ in
+                self.withStateLock {
+                    self.networkSettings = nil
+                    self.appliedSettingsRevision = nil
+                }
+            })
+        }
+        _ = try await cleanup.value
     }
 
     private func stopPathMonitor() {
@@ -366,6 +451,17 @@ final class ExtensionProvider: NSObject {
     }
 
     private func start0(samplingToken outputSamplingToken: inout StartupMemorySampler.Token?) async throws {
+        let ipStack = try PacketTunnelIPStackSettings.decode(providerConfiguration:
+            (tunnelProvider.protocolConfiguration as? NETunnelProviderProtocol)?.providerConfiguration
+        )
+        let settingsGeneration = settingsWriter.advanceGeneration()
+        settingsWriter.commitIfCurrent(settingsGeneration) {
+            withStateLock {
+                self.settingsGeneration = settingsGeneration
+                ipStackSettings = ipStack
+                desiredPathHasIPv6 = false
+            }
+        }
          
          
          
@@ -382,6 +478,10 @@ final class ExtensionProvider: NSObject {
         let samplingToken = startupMemorySampler.begin(container: container)
         outputSamplingToken = samplingToken
         withStateLock { startupSamplingToken = samplingToken }
+        HakoLogStore.shared.append(
+            "IP Stack: queryMode=\(ipStack.queryMode.rawValue) tunIPv6Mode=\(ipStack.tunIPv6Mode.rawValue)",
+            stream: .app
+        )
 
          
          
@@ -390,7 +490,7 @@ final class ExtensionProvider: NSObject {
          
          
         let gateStartedAt = DispatchTime.now().uptimeNanoseconds
-        let pathGeneration = startPathMonitor()
+        let pathGeneration = startPathMonitor(settingsGeneration: settingsGeneration, ipStack: ipStack)
         startupMemorySampler.mark("path-monitor-started", token: samplingToken)
 
          
@@ -415,9 +515,14 @@ final class ExtensionProvider: NSObject {
             "system resolvers before the tunnel: \(systemResolverLines.isEmpty ? "none" : systemResolverLines.split(separator: "\n").joined(separator: " "))",
             stream: .app
         )
-        preapplyTunnelSettingsIfKnown(container: container, samplingToken: samplingToken)
+        preapplyTunnelSettingsIfKnown(
+            container: container, samplingToken: samplingToken, generation: settingsGeneration,
+            pathGeneration: pathGeneration, ipStack: ipStack
+        )
 
         let options = HakoSetupOptions()
+        options.ipQueryMode = ipStack.queryMode.rawValue
+        options.tunIPv6Mode = ipStack.tunIPv6Mode.rawValue
         startupMemorySampler.mark("options-allocated", token: samplingToken)
         options.basePath = container.path
         options.workingPath = container.appendingPathComponent("working").path
@@ -554,7 +659,9 @@ final class ExtensionProvider: NSObject {
 
 
 
-        guard let service = HakoNewService(StartupPlatformInterface(provider: self, samplingToken: samplingToken), &error) else {
+        guard let service = HakoNewService(StartupPlatformInterface(
+            provider: self, samplingToken: samplingToken, settingsGeneration: settingsGeneration
+        ), &error) else {
             throw error ?? ExtensionError.serviceUnavailable("NewService returned nil")
         }
         startupMemorySampler.mark("service-created", token: samplingToken)
@@ -701,6 +808,7 @@ final class ExtensionProvider: NSObject {
     }
 
     private func teardownResources(policy: ProviderTeardownPolicy) async {
+        let cleanupGeneration = settingsWriter.advanceGeneration()
          
          
          
@@ -713,16 +821,26 @@ final class ExtensionProvider: NSObject {
          
          
          
-        let (svc, bridge, hadNetworkSettings) = withStateLock {
-            () -> (HakoBoxService?, PacketFlowBridge?, Bool) in
+        let (svc, bridge) = withStateLock {
+            () -> (HakoBoxService?, PacketFlowBridge?) in
             let s = service
             let b = packetFlowBridge
-            let had = networkSettings != nil
+            ipv6ReapplyTask?.cancel()
+            ipv6ReapplyTask = nil
+            preappliedTunnel?.cancel()
+            preappliedTunnel = nil
+            preappliedDescriptor = nil
+            preappliedTunIntent = ""
+            settingsGeneration = nil
+            offeredNetworkSettings = nil
+            offeredTunnelSession = nil
+            appliedSettingsRevision = nil
+            desiredPathHasIPv6 = false
             service = nil
             packetFlowBridge = nil
             networkSettings = nil
             tunStrictRouteRequested = false
-            return (s, b, had)
+            return (s, b)
         }
         if let svc {
             do {
@@ -737,9 +855,9 @@ final class ExtensionProvider: NSObject {
             }
         }
         bridge?.stop()
-        if policy.clearsNetworkSettings, hadNetworkSettings {
+        if policy.clearsNetworkSettings, settingsWriter.hasSubmittedSettings {
             do {
-                try await tunnelProvider.setTunnelNetworkSettings(nil)
+                try await clearTunnelSettings(in: cleanupGeneration)
             } catch {
                 log.error("clear tunnel settings failed: \(error.localizedDescription, privacy: .private)")
             }
@@ -1065,12 +1183,13 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
     func openTun(_ options: (any HakoTunOptionsProtocol)?, ret0_: UnsafeMutablePointer<Int32>?) throws {
          
          
-        try openTun(options, ret0_: ret0_, samplingToken: nil)
+        guard let generation = withStateLock({ settingsGeneration }) else { throw CancellationError() }
+        try openTun(options, ret0_: ret0_, samplingToken: nil, generation: generation)
     }
 
     fileprivate func openTun(
         _ options: (any HakoTunOptionsProtocol)?, ret0_: UnsafeMutablePointer<Int32>?,
-        samplingToken: StartupMemorySampler.Token?
+        samplingToken: StartupMemorySampler.Token?, generation: TunnelNetworkSettingsWriter.Generation
     ) throws {
         guard let options else {
             throw ExtensionError.serviceUnavailable("OpenTun: nil options")
@@ -1081,14 +1200,14 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
          
          
          
-        let session = tunnelSessionLease.begin()
+        let session = try beginTunnelSession(in: generation)
         let fd: Int32
         do {
             fd = try runBlocking { [self] in
-                try await openTun0(options, session: session, samplingToken: samplingToken)
+                try await openTun0(options, session: session, samplingToken: samplingToken, generation: generation)
             }
         } catch {
-            tunnelSessionLease.invalidate()
+            abandonTunnelSession(session, generation: generation)
             throw error
         }
         ret0_.pointee = fd
@@ -1097,8 +1216,17 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
     private func openTun0(
         _ options: any HakoTunOptionsProtocol,
         session: ProviderTunnelSessionLease.Session,
-        samplingToken: StartupMemorySampler.Token?
+        samplingToken: StartupMemorySampler.Token?, generation: TunnelNetworkSettingsWriter.Generation
     ) async throws -> Int32 {
+        var capturedIPStack: PacketTunnelIPStackSettings?
+        guard commitSettingsContext(generation: generation, session: session, {
+            capturedIPStack = withStateLock { ipStackSettings }
+        }), let ipStack = capturedIPStack else { throw CancellationError() }
+        guard options.getIPv6Mode() == ipStack.tunIPv6Mode.rawValue else {
+            throw ExtensionError.serviceUnavailable(
+                "OpenTun: Core IPv6 mode does not match the saved VPN IP Stack settings"
+            )
+        }
         startupMemorySampler.note("tun: open-entered", token: samplingToken)
         let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "127.0.0.1")
         let effectiveMTU = options.getMTU()
@@ -1188,18 +1316,7 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
             ).map { NEIPv6Route(destinationAddress: $0.address, networkPrefixLength: NSNumber(value: $0.prefix)) }
              
              
-            let pathSupportsIPv6: Bool = { pathLock.lock(); defer { pathLock.unlock() }; return defaultPathSupportsIPv6 }()
-            withStateLock { tunnelIPv6Settings = v6 }
-            if HakoTunnelRouteShaping.declaresIPv6(
-                coreOffersIPv6: true, physicalPathSupportsIPv6: pathSupportsIPv6
-            ) {
-                settings.ipv6Settings = v6
-            } else {
-                HakoLogStore.shared.append(
-                    "tun: IPv6 not declared — the physical path has no IPv6 (the core offered \(v6Addr.joined(separator: ", ")))",
-                    stream: .app
-                )
-            }
+            settings.ipv6Settings = v6
         }
 
         let strictRoute = options.getStrictRoute()
@@ -1218,14 +1335,18 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
                 .map { "\($0.destinationAddress)/\($0.destinationNetworkPrefixLength)" },
             inet6ExcludedRoutes: (settings.ipv6Settings?.excludedRoutes ?? [])
                 .map { "\($0.destinationAddress)/\($0.destinationNetworkPrefixLength)" },
-            strictRoute: strictRoute
+            strictRoute: strictRoute,
+            queryMode: ipStack.queryMode.rawValue,
+            ipv6Mode: ipStack.tunIPv6Mode.rawValue
         )
          
          
          
-        if let claimed = try await claimPreappliedTunnel(matching: requested, samplingToken: samplingToken) {
+        if let claimed = try await claimPreappliedTunnel(
+            matching: requested, samplingToken: samplingToken, generation: generation, session: session
+        ) {
             startupMemorySampler.note("tun: pre-applied claimed", token: samplingToken)
-            let published = tunnelSessionLease.commitIfCurrent(session) {
+            let published = commitTunnelSession(session, generation: generation) {
                 HakoLogStore.shared.markTunnelEstablished()
             }
             guard published else {
@@ -1243,19 +1364,16 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
             )
             return claimed
         }
-        withStateLock {
-            tunStrictRouteRequested = strictRoute
-            networkSettings = settings
-        }
+        try offerTunnelSettings(settings, strictRoute: strictRoute, in: generation, session: session)
          
          
          
         startupMemorySampler.note("tun: settings-built", token: samplingToken)
-        try await tunnelProvider.setTunnelNetworkSettings(settings)
+        try await reconcileTunnelSettings(in: generation)
         startupMemorySampler.note("tun: settings-applied", token: samplingToken)
 
 
-        currentPacketFlowBridge?.stop()
+        try detachPacketFlowBridge(in: generation, session: session)?.stop()
         let provider = tunnelProvider
         let bridge = PacketFlowBridge(
             packetFlow: provider.packetFlow,
@@ -1275,7 +1393,7 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
          
          
         var rememberedKey = ""
-        let published = tunnelSessionLease.commitIfCurrent(session) {
+        let published = commitTunnelSession(session, generation: generation) {
             HakoLogStore.shared.markTunnelEstablished()
             withStateLock { packetFlowBridge = bridge }
             rememberedKey = rememberPreapplied(requested)
@@ -1292,7 +1410,8 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
                 "packet bridge stopped  fd=\(bridgeFD) reason=session-superseded preapplied=not-remembered",
                 stream: .app
             )
-            await compensateLateTunnelSettings()
+             
+             
             throw ExtensionError.serviceUnavailable(
                 "the tunnel session was superseded before it was established"
             )
@@ -1313,36 +1432,68 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
         return bridgeFD
     }
 
-     
-     
-     
-     
-     
-     
-     
-     
-     
-    private func compensateLateTunnelSettings() async {
-        var owed = false
-        tunnelSessionLease.compensateIfIdle { owed = true }
-        guard owed else { return }
-         
-         
-         
-         
-        let owned = withStateLock { () -> Bool in
-            guard networkSettings != nil else { return false }
-            networkSettings = nil
-            return true
+    private func commitTunnelSession(
+        _ session: ProviderTunnelSessionLease.Session,
+        generation: TunnelNetworkSettingsWriter.Generation,
+        _ commit: () -> Void
+    ) -> Bool {
+        commitSettingsContext(generation: generation, session: session, commit)
+    }
+
+    private func beginTunnelSession(in generation: TunnelNetworkSettingsWriter.Generation) throws -> ProviderTunnelSessionLease.Session {
+        var session: ProviderTunnelSessionLease.Session?
+        guard settingsWriter.commitIfCurrent(generation, {
+            session = tunnelSessionLease.begin()
+        }), let session else { throw CancellationError() }
+        return session
+    }
+
+    private func abandonTunnelSession(
+        _ session: ProviderTunnelSessionLease.Session, generation: TunnelNetworkSettingsWriter.Generation
+    ) {
+        settingsWriter.commitIfCurrent(generation) {
+            tunnelSessionLease.invalidate(ifCurrent: session)
         }
-        guard owned else { return }
-        do {
-            try await tunnelProvider.setTunnelNetworkSettings(nil)
-        } catch {
-            log.error(
-                "late tunnel settings not cleared: \(error.localizedDescription, privacy: .public)"
-            )
+    }
+
+    private func isTunnelSessionCurrent(_ session: ProviderTunnelSessionLease.Session?) -> Bool {
+        guard let session else { return true }
+        return tunnelSessionLease.commitIfCurrent(session, {})
+    }
+
+     
+     
+     
+    @discardableResult
+    private func commitSettingsContext(
+        generation: TunnelNetworkSettingsWriter.Generation,
+        session: ProviderTunnelSessionLease.Session?, requiringReconciled: Bool = false,
+        _ commit: () -> Void
+    ) -> Bool {
+        var accepted = false
+        settingsWriter.commitIfCurrent(generation, requiringReconciled: requiringReconciled) {
+            if let session {
+                accepted = tunnelSessionLease.commitIfCurrent(session, commit)
+            } else {
+                commit()
+                accepted = true
+            }
         }
+        return accepted
+    }
+
+    private func detachPacketFlowBridge(
+        in generation: TunnelNetworkSettingsWriter.Generation,
+        session: ProviderTunnelSessionLease.Session? = nil
+    ) throws -> PacketFlowBridge? {
+        var bridge: PacketFlowBridge?
+        guard commitSettingsContext(generation: generation, session: session, {
+            withStateLock {
+                bridge = packetFlowBridge
+                packetFlowBridge = nil
+            }
+        }) else { throw CancellationError() }
+        return bridge
     }
 
      
@@ -1351,10 +1502,14 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
      
      
      
-    private func preapplyTunnelSettingsIfKnown(container: URL, samplingToken: StartupMemorySampler.Token?) {
+    private func preapplyTunnelSettingsIfKnown(
+        container: URL, samplingToken: StartupMemorySampler.Token?,
+        generation: TunnelNetworkSettingsWriter.Generation,
+        pathGeneration: PhysicalPathStartupGate.Generation, ipStack: PacketTunnelIPStackSettings
+    ) {
 
 
-        guard let stored = try? ConfigResourceStore(containerURL: container).loadCurrent()
+        guard (try? ConfigResourceStore(containerURL: container).loadCurrent()) != nil
         else { return }
          
          
@@ -1370,7 +1525,8 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
          
         withStateLock { preappliedTunIntent = fingerprint }
         let known = PreappliedTunnelStore(defaults: defaults)
-            .descriptor(forTunIntent: fingerprint)
+            .descriptor(forTunIntent: fingerprint, queryMode: ipStack.queryMode.rawValue,
+                        ipv6Mode: ipStack.tunIPv6Mode.rawValue)
          
          
          
@@ -1381,14 +1537,16 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
         )
         guard let known else { return }
         let provider = tunnelProvider
-        let pathSupportsIPv6: Bool = { pathLock.lock(); defer { pathLock.unlock() }; return defaultPathSupportsIPv6 }()
-        let settings = Self.networkSettings(from: known, declaresIPv6: pathSupportsIPv6)
+        let settings = Self.networkSettings(from: known)
         let task = Task<Int32, Error> { [weak self] in
-            try await provider.setTunnelNetworkSettings(settings)
             guard let self else { throw ExtensionError.serviceUnavailable("provider went away") }
+            try await self.waitForPhysicalPath(pathGeneration)
+            try Task.checkCancellation()
+            try self.offerTunnelSettings(settings, strictRoute: known.strictRoute, in: generation)
+            try await self.reconcileTunnelSettings(in: generation)
 
 
-            self.currentPacketFlowBridge?.stop()
+            try self.detachPacketFlowBridge(in: generation)?.stop()
             let bridge = PacketFlowBridge(
                 packetFlow: provider.packetFlow,
                 configuration: self.packetFlowConfiguration
@@ -1396,10 +1554,11 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
                 provider?.cancelTunnelWithError(error)
             }
             let fd = try bridge.start()
-            self.withStateLock {
-                self.packetFlowBridge = bridge
-                self.networkSettings = settings
-                self.tunStrictRouteRequested = known.strictRoute
+            guard !Task.isCancelled, self.settingsWriter.commitIfCurrent(generation, {
+                self.withStateLock { self.packetFlowBridge = bridge }
+            }) else {
+                bridge.stop()
+                throw CancellationError()
             }
             return fd
         }
@@ -1440,8 +1599,7 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
      
      
     private static func networkSettings(
-        from descriptor: PreappliedTunnelDescriptor,
-        declaresIPv6: Bool
+        from descriptor: PreappliedTunnelDescriptor
     ) -> NEPacketTunnelNetworkSettings {
         let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "127.0.0.1")
         settings.mtu = NSNumber(value: descriptor.mtu)
@@ -1460,9 +1618,7 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
             settings.ipv4Settings = ipv4
         }
         let v6 = descriptor.inet6Addresses.compactMap(Self.splitPrefix)
-        if HakoTunnelRouteShaping.declaresIPv6(
-            coreOffersIPv6: !v6.isEmpty, physicalPathSupportsIPv6: declaresIPv6
-        ) {
+        if !v6.isEmpty {
             let ipv6 = NEIPv6Settings(
                 addresses: v6.map(\.0),
                 networkPrefixLengths: v6.map { NSNumber(value: Int($0.1) ?? 128) }
@@ -1500,28 +1656,51 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
      
     private func claimPreappliedTunnel(
         matching requested: PreappliedTunnelDescriptor,
-        samplingToken: StartupMemorySampler.Token?
+        samplingToken: StartupMemorySampler.Token?, generation: TunnelNetworkSettingsWriter.Generation,
+        session: ProviderTunnelSessionLease.Session? = nil
     ) async throws -> Int32? {
-        let (task, applied) = withStateLock {
-            (preappliedTunnel, preappliedDescriptor)
-        }
-        guard let task else { return nil }
-        withStateLock {
-            preappliedTunnel = nil
-            preappliedDescriptor = nil
-        }
+        var taken: (Task<Int32, Error>?, PreappliedTunnelDescriptor?) = (nil, nil)
+        guard commitSettingsContext(generation: generation, session: session, {
+            withStateLock {
+                taken = (preappliedTunnel, preappliedDescriptor)
+                preappliedTunnel = nil
+                preappliedDescriptor = nil
+            }
+        }) else { throw CancellationError() }
+        guard let task = taken.0 else { return nil }
+        let applied = taken.1
         guard applied == requested else {
              
              
              
              
             _ = try? await task.value
-            currentPacketFlowBridge?.stop()
+            try detachPacketFlowBridge(in: generation, session: session)?.stop()
             startupMemorySampler.note("tun: pre-applied discarded (settings changed)", token: samplingToken)
             return nil
         }
         do {
-            return try await task.value
+            let fd = try await task.value
+             
+             
+             
+            while true {
+                try await reconcileTunnelSettings(in: generation)
+                var matches = false
+                commitSettingsContext(generation: generation, session: session, requiringReconciled: true) {
+                    matches = withStateLock {
+                        let matches = appliedSettingsRevision == offeredSettingsRevision
+                            && networkSettings != nil
+                            && (networkSettings?.ipv6Settings != nil) == desiredIPv6Declaration
+                        if matches { offeredTunnelSession = session }
+                        return matches
+                    }
+                }
+                guard settingsWriter.isCurrent(generation), isTunnelSessionCurrent(session) else { throw CancellationError() }
+                if matches { return fd }
+            }
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
              
              
@@ -1538,7 +1717,8 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
     private func rememberPreapplied(_ descriptor: PreappliedTunnelDescriptor) -> String {
         let fingerprint = withStateLock { preappliedTunIntent }
         PreappliedTunnelStore(defaults: UserDefaults(suiteName: appGroupID))
-            .remember(descriptor, forTunIntent: fingerprint)
+            .remember(descriptor, forTunIntent: fingerprint, queryMode: descriptor.queryMode,
+                      ipv6Mode: descriptor.ipv6Mode)
         return fingerprint
     }
 
@@ -1740,10 +1920,13 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
 private final class StartupPlatformInterface: NSObject, HakoPlatformInterfaceProtocol {
     private weak var provider: ExtensionProvider?
     private let samplingToken: StartupMemorySampler.Token
+    private let settingsGeneration: TunnelNetworkSettingsWriter.Generation
 
-    init(provider: ExtensionProvider, samplingToken: StartupMemorySampler.Token) {
+    init(provider: ExtensionProvider, samplingToken: StartupMemorySampler.Token,
+         settingsGeneration: TunnelNetworkSettingsWriter.Generation) {
         self.provider = provider
         self.samplingToken = samplingToken
+        self.settingsGeneration = settingsGeneration
     }
 
     private func owner() throws -> ExtensionProvider {
@@ -1753,7 +1936,7 @@ private final class StartupPlatformInterface: NSObject, HakoPlatformInterfacePro
 
     func writeLog(_ message: String?) { provider?.writeLog(message) }
     func openTun(_ options: (any HakoTunOptionsProtocol)?, ret0_: UnsafeMutablePointer<Int32>?) throws {
-        try owner().openTun(options, ret0_: ret0_, samplingToken: samplingToken)
+        try owner().openTun(options, ret0_: ret0_, samplingToken: samplingToken, generation: settingsGeneration)
     }
     func usePlatformAutoDetectControl() -> Bool { true }
     func autoDetectControl(_ fd: Int32) throws { try owner().autoDetectControl(fd) }

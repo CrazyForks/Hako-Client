@@ -624,9 +624,7 @@ final class ProfileActivationCoordinator {
              try ScriptLibrary.apply(id: $0, to: $1, profileName: $2)
          },
          activator: @escaping (URL) throws -> Void,
-         preflight: @escaping (String) -> PreflightOutcome = {
-             PreflightService.check(finalYAML: $0)
-         },
+         preflight: ((String) -> PreflightOutcome)? = nil,
           
          stagingPublisher: @escaping (String, Int, Bool) -> Void = {
              ProviderStagingPublisher.publish(
@@ -673,7 +671,9 @@ final class ProfileActivationCoordinator {
         self.subscriptions = SubscriptionManager(downloader: downloader, credentials: credentials)
         self.materializer = ProviderMaterializer(downloader: downloader, credentials: credentials)
         self.geodata = GeodataManager(downloader: downloader)
-        self.preflight = preflight
+        self.preflight = preflight ?? { finalYAML in
+            PreflightService.check(finalYAML: finalYAML, container: coreHomeDir.deletingLastPathComponent())
+        }
         self.now = now
         self.log = log
     }

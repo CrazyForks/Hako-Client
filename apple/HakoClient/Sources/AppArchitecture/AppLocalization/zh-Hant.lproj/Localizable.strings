@@ -140,6 +140,7 @@
 "443 or 8000-9000" = "443 or 8000-9000";
 "50 Mbps" = "50 Mbps";
 "7 days" = "7 天";
+"A VPN operation is already in progress. Wait for it to finish before changing IP Stack settings." = "VPN 操作正在進行。請等待完成後再更改 IP Stack 設定。";
 "A WireGuard peer's reserved value is exactly three bytes. Give it three, or clear it." = "WireGuard 的 peer 的 reserved 恰好是三個位元組。給它三個，或者清空。";
 "A and AAAA are answered by the system resolver, so no single upstream can be credited for the address below." = "A 與 AAAA 由系統解析器回答，因此下方網址無法歸到某一個上游解析器。";
 "A and AAAA are resolved the way every app on this device resolves, so Local Mappings and Fake-IP show up here exactly as they affect your traffic. Other record types are asked of the core's configured resolvers." = "A 與 AAAA 按本機每個 App 解析的同一條路解析，因此本機對映與 Fake-IP 在這裡的表現與你的流量一致。其他記錄類型詢問核心設定的解析器。";
@@ -298,6 +299,7 @@
 "All traffic" = "全部";
 "Allow Insecure" = "允許不安全連線";
 "Allow Low Data automatic updates" = "低資料模式下允許自動更新";
+"Allow VPN setup to connect." = "請完成系統授權，隨後自動連線";
 "Allow metered automatic updates" = "計費網路下允許自動更新";
 "Allowed IPs" = "Allowed IPs";
 "Allowed latency difference (ms)" = "允許的延遲差（毫秒）";
@@ -357,6 +359,7 @@
 "Apple routes v4 / v6" = "Apple 路由 v4 / v6";
 "Applies only while proxy-server nameservers are configured." = "僅在設定了 proxy-server-nameserver 時生效。";
 "Apply before profile rules" = "先於設定檔規則生效";
+"Applying IP Stack settings…" = "正在App IP Stack 設定…";
 "Apps may reconnect automatically." = "App可能會自動重新連線。";
 "At least one relay member is missing from the generated proxy inventory." = "生成的代理清單中缺少至少一個 relay 成員。";
 "At most 30 reports or 8 MB are kept. New reports replace the oldest local copies." = "最多保留 30 份報告或 8 MB，新報告會取代最舊的本機副本。";
@@ -448,6 +451,7 @@
 "Changes apply immediately. System Default follows the language selected in iOS Settings." = "更改會立即生效。「跟隨系統」使用 iOS 設定中選擇的語言。";
 "Changing the link clears cached update metadata. The current working revision remains available if the next sync fails." = "更改連結會清除快取的更新元資料。若下次同步失敗，目前可用版本仍然保留。";
 "Changing these can cut battery drain on mobile. Zero asks the system for its default." = "修改這些可減少行動裝置的電量消耗。填 0 表示由系統決定。";
+"Changing this setting restarts the VPN." = "注意：修改此項會重新啟動 VPN。";
 "Check" = "檢測";
 "Check DNS Now" = "立即檢測 DNS";
 "Check DNS now" = "立即檢查 DNS";
@@ -657,6 +661,7 @@
 "Contributors" = "貢獻者";
 "Control Center" = "控制中心";
 "Control D Unfiltered" = "Control D Unfiltered";
+"Control IPv6 traffic in the tunnel:\nOff: Do not handle IPv6 traffic in the tunnel.\nAutomatic: Decide based on the current network.\nOn: Always handle IPv6 traffic in the tunnel. This may cause problems on networks without IPv6 support." = "是否開啟 TUN 的 IPv6 流量轉發：\n- 關：不處理 TUN 中的 IPv6 流量；\n- 自動：根據目前網路環境自動決定；\n- 開啟：強制接管 TUN 的 IPv6 流量（在不支援 IPv6 的網路環境下開啟此項可能會出現異常）。";
 "Control Server" = "控制伺服器";
 "Control name resolution and local mappings" = "管理網域解析與本機對映";
 "Copied" = "已複製";
@@ -1195,15 +1200,24 @@
 "INFO [TCP] connected api.example.com:443 via PROXY[Singapore 01]" = "INFO [TCP] connected api.example.com:443 via PROXY[Singapore 01]";
 "INFO logs cleared" = "INFO logs cleared";
 "IP Preference" = "IP 偏好";
+"IP Query Mode" = "IP 查詢模式";
 "IP Stack" = "IP 堆疊";
+"IP Stack preferences could not be saved (%@), and the previous VPN settings could not be restored (%@). The VPN was not restarted." = "無法儲存 IP Stack 偏好設定（%@），且無法回復之前的 VPN 設定（%@）。VPN 未重新啟動。";
+"IP Stack settings were saved, but the VPN did not restart. Connect again to apply them." = "IP Stack 設定已儲存，但 VPN 未能重新啟動。請重新連線以App 設定。";
 "IP Version" = "IP 版本";
+"IP address families are controlled in More > IP Stack." = "IP 網址族請前往「更多 > IP Stack」設定。";
 "IP addresses only." = "僅填寫 IP 網址。";
+"IP query mode and automatic tunnel IPv6" = "IP 查詢模式與 TUN IPv6 自動設定";
+"IPv4 & IPv6" = "IPv4 & IPv6";
 "IPv4 + IPv6" = "IPv4 + IPv6";
 "IPv4 Address" = "IPv4 網址";
+"IPv4 Only" = "僅 IPv4";
+"IPv4 Only: Use IPv4 for requests, do not send AAAA DNS queries, and reject IPv6 connections.\nIPv4 & IPv6: Query A and AAAA concurrently and prefer the faster response.\nPrefer IPv4: Query A and AAAA concurrently. Use IPv4 results when available, otherwise use IPv6.\nPrefer IPv6: Query A and AAAA concurrently. Use IPv6 results when available, otherwise use IPv4." = "- 僅 IPv4：只使用 IPv4 進行請求，不發起 AAAA 的 DNS 查詢，拒絕所有 IPv6 連線；\n- IPv4 & IPv6：併發發起 A 和 AAAA 的 DNS 查詢，優先使用回應速度更快的結果；\n- IPv4 優先：併發發起 A 和 AAAA 的 DNS 查詢，優先使用 IPv4 結果，如果無 IPv4 記錄則切換到 IPv6 結果；\n- IPv6 優先：併發發起 A 和 AAAA 的 DNS 查詢，優先使用 IPv6 結果，如果無 IPv6 記錄則切換到 IPv4 結果。";
 "IPv4 pool" = "IPv4 位址池";
 "IPv4-only" = "僅 IPv4";
 "IPv4-to-IPv6 Dialer Conversion" = "IPv4 轉 IPv6 撥號轉換";
 "IPv6 Address" = "IPv6 網址";
+"IPv6 Only (Use with Caution)" = "僅 IPv6（謹慎選擇）";
 "IPv6 is off in this profile, so AAAA is answered empty without asking" = "這份設定檔關閉了 IPv6，所以 AAAA 不詢問、直接回傳空";
 "IPv6 pool" = "IPv6 位址池";
 "IPv6 timeout" = "IPv6 逾時";
@@ -1864,6 +1878,9 @@
 "Pre-shared Key" = "預共享金鑰";
 "Predicted" = "預測次數";
 "Prefer HTTP/3" = "優先 HTTP/3";
+"Prefer IPv4" = "IPv4 優先";
+"Prefer IPv4 and Prefer IPv6 wait for both A and AAAA queries to finish, which may add latency. Changing this setting restarts the VPN." = "注意：「IPv4 優先」和「IPv6 優先」會等待 A 和 AAAA 查詢全部完成後再進行處理，可能會引發一些延遲。修改此項會重新啟動 VPN。";
+"Prefer IPv6" = "IPv6 優先";
 "Prepare this profile once before editing individual nodes." = "先準備一次此設定檔，再編輯單個節點。";
 "Prepare this profile once to sync providers or view their live status." = "先準備一次此設定檔，才能同步集合或檢視其即時狀態。";
 "Prepare this profile to manage providers" = "先準備此設定檔，才能管理集合";
@@ -2156,6 +2173,7 @@
 "Restored backup" = "已回復的備份";
 "Restoring backup…" = "正在回復備份…";
 "Restoring will remove %@ local profile(s); if it cannot finish, Clash keeps your current data." = "回復將移除 %@ 個本機設定檔；若無法完成，Clash 會保留目前資料。";
+"Restricted by IP Stack settings" = "由 IP Stack 設定限制";
 "Result · Dark · Large text" = "Result · Dark · Large text";
 "Results" = "結果";
 "Resume auto-scroll" = "恢復自動滾動";
@@ -2496,8 +2514,14 @@
 "TLS proxy with session-pool controls and optional UDP support." = "TLS 代理，帶工作階段池控制與可選 UDP 支援。";
 "TLS-oriented Trojan proxy with optional WebSocket or gRPC transport." = "面向 TLS 的 Trojan 代理，可選 WebSocket 或 gRPC 傳輸。";
 "TUIC Demo" = "TUIC Demo";
+"TUN IPv6 Configuration" = "TUN IPv6 設定";
+"TUN IPv6: Automatic" = "自動";
+"TUN IPv6: Off" = "關";
+"TUN IPv6: On" = "開啟";
 "Tabs" = "標籤頁";
 "Tailscale Demo" = "Tailscale Demo";
+"Tap Retry, then allow VPN setup." = "點重試，並允許加入 VPN 設定";
+"Tap START, then allow VPN setup." = "點啟動，並允許加入 VPN 設定";
 "Tap any backup or prior version to preview it. Swipe a current backup left to delete it; swipe a conflict copy right to keep it as the iCloud version." = "點一下任一備份或歷史版本即可預覽。左滑目前備份可刪除；右滑衝突副本可將其保留為 iCloud 版本。";
 "Tap the power button to connect." = "點一下電源按鈕連線。";
 "Tap to edit. Use Reorder to change match priority." = "點一下編輯。用「重新排序」改變符合優先順序。";
@@ -2721,6 +2745,7 @@
 "The rule provider references a member of the rule bundle archive. Clash must materialize the matching bundle before activation." = "該規則集合引用了規則包檔案的成員。Clash 須在啟用前物化對應的規則包。";
 "The running proxy group did not confirm the selected route." = "執行中的策略群組未確認所選線路。";
 "The running tunnel did not take the change, so nothing was changed." = "執行中的通道沒有接受這次變更，因此沒有任何改動。";
+"The saved IP Stack settings are invalid or require a newer app version. They have not been changed." = "已儲存的 IP Stack 設定無效或需要更高版本的App，原設定未被修改。";
 "The saved configuration is damaged. Import it again." = "儲存的設定已損壞，請重新匯入。";
 "The saved link carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them." = "儲存的連結攜帶登入資訊或查詢參數。移除後只保留 scheme、主機與路徑；若提供方需要這些參數，可能需要重新匯入。";
 "The saved runtime has no matching source profile." = "已儲存的執行階段沒有符合的源設定檔。";
@@ -3060,6 +3085,7 @@
 "VLESS outbound with flow, transport, TLS, Reality, and packet modes." = "VLESS 出站，支援 flow、傳輸、TLS、Reality 與 packet 模式。";
 "VMess Demo" = "VMess Demo";
 "VMess outbound with selectable transport, TLS, Reality, and packet modes." = "VMess 出站，可選傳輸、TLS、Reality 與 packet 模式。";
+"VPN Authorization" = "VPN 授權";
 "VPN Connected" = "VPN 已連線";
 "VPN Profile" = "VPN 設定檔";
 "VPN Profile Reset" = "VPN 設定檔已重置";
@@ -3084,7 +3110,9 @@
 "Visual settings only" = "僅使用視覺化設定";
 "WARN network path changed; flushing stale connections" = "WARN network path changed; flushing stale connections";
 "Wait for the current LAN proxy change to finish." = "請等待目前區域網路代理變更完成。";
+"Waiting for VPN authorization. Complete the system confirmation in Settings to continue." = "正在等待 VPN 授權。請在系統設定中完成確認後繼續。";
 "Waiting for the network" = "等待網路";
+"Waiting for the system to confirm the VPN settings. You can leave this page or stop the VPN." = "正在等待系統確認 VPN 設定。你可以離開此頁面或停止 VPN。";
 "WebSocket Path" = "WebSocket 路徑";
 "What DNS-only Does" = "僅 DNS 模式做什麼";
 "What each source cost to load this start. Temporary parse memory is returned by the system after startup." = "本次啟動各來源的裝載開銷。解析期的臨時記憶體啟動後由系統收回。";
@@ -3222,6 +3250,7 @@
 "not written in this configuration" = "這份設定裡沒寫";
 "on-demand: %@" = "隨選連線：%@";
 "ordered network rule" = "有序網路規則";
+"permission denied" = "權限遭拒";
 "preflight failed" = "預檢失敗";
 "present, and nothing reads it" = "留著，但沒有人讀它";
 "preview.kind.runtime" = "執行階段";
@@ -3287,6 +3316,11 @@
 "udp / tcp / tls / https / quic address" = "udp / tcp / tls / https / quic address";
 "unexpected response" = "意外的回應";
 "until %@" = "%@ 到期";
+"vpn authorization save began" = "VPN 授權儲存開始";
+"vpn authorization save confirmed" = "VPN 授權儲存已確認";
+"vpn authorization still waiting" = "仍在等待 VPN 授權";
+"vpn start cancelled before request" = "VPN 啟動在請求前取消";
+"vpn start cancelled during preparation" = "VPN 啟動在準備期間取消";
 "“%@” has no subscription link yet — this configuration is a template, and that line still holds placeholder text. Open it and paste your own subscription link." = "「%@」還沒有訂閱連結——這份設定是模板，那一行填的還是佔位文字。開啟它，把你自己的訂閱連結粘進去。";
 "↑%@ · ↓%@" = "↑%1$@ · ↓%2$@";
 "≈ figures are estimates: entry count × a measured slope, or the staged file's size on disk." = "≈ 為估算值：條數 × 實測斜率，或其檔案在磁碟的大小。";

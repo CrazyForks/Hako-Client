@@ -120,6 +120,9 @@ struct LegacySettingsAttention: Equatable, Identifiable {
 
     private static func make(configBlocker: LegacyGlobalConfigMigrationBlocker, profiles: [Profile]) -> LegacySettingsAttention? {
         switch configBlocker {
+        case .coreSetupFailed(let message):
+            return .init(kind: .profileNotPreparable(profileID: nil, label: nil),
+                         message: .verbatim(message), actions: [ok], emphasised: false)
         case .storageUnavailable:
              
             return nil

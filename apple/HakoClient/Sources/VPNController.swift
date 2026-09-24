@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import Hako
+import HakoClientUI
 import NetworkExtension
 
  
@@ -392,51 +393,34 @@ enum AppConfigurationPreflight {
     static func validate(
         _ configContent: String,
         container: URL,
-        fallbackCode: Int
+        fallbackCode: Int,
+        settings: IPStackSettings? = nil
     ) throws -> PlatformConfigIntent {
-        let setup = HakoSetupOptions()
-        setup.basePath = container.path
-        setup.workingPath = container.appendingPathComponent("working").path
-        setup.tempPath = container.appendingPathComponent("temp").path
-        setup.timeZone = TimeZone.current.identifier
-        setup.logMaxLines = 1_000
-        setup.memoryLimit = 0
-        setup.disablePersistentCache = true
-         
-         
-         
-         
-         
-        setup.systemDNSServerLines = HakoSystemResolverLines()
-        var setupError: NSError?
-        HakoSetup(setup, &setupError)
-        if let setupError { throw setupError }
-
-        var checkError: NSError?
-        guard HakoCheckConfig(configContent, &checkError) else {
-            throw checkError ?? NSError(
-                domain: "HakoClient.Configuration",
-                code: fallbackCode,
-                userInfo: [NSLocalizedDescriptionKey: "Configuration failed preflight"]
-            )
+        let outcome = PreflightService.check(finalYAML: configContent, container: container, settings: settings)
+        guard outcome.ok, let intent = outcome.intentJSON else {
+            throw NSError(domain: "HakoClient.Configuration", code: fallbackCode,
+                          userInfo: [NSLocalizedDescriptionKey: outcome.errorMessage ?? "Configuration failed preflight"])
         }
-        return try inspectRoutingIntent(configContent)
+        return try JSONDecoder().decode(PlatformConfigIntent.self, from: Data(intent.utf8))
     }
 
-    static func inspectRoutingIntent(_ configContent: String) throws -> PlatformConfigIntent {
-        var error: NSError?
-        guard let box = HakoPlatformConfigIntentJSON(configContent, &error) else {
-            throw error ?? NSError(
-                domain: "HakoClient.Configuration",
-                code: 3,
-                userInfo: [NSLocalizedDescriptionKey: "Unable to inspect configuration routing intent"]
-            )
+    static func inspectRoutingIntent(
+        _ configContent: String, container: URL? = nil, settings: IPStackSettings? = nil
+    ) throws -> PlatformConfigIntent {
+        guard let container = container ?? AppCoreSetup.applicationContainer else {
+            throw NSError(domain: "HakoClient.Configuration", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "App Group container unavailable"])
         }
-        return try JSONDecoder().decode(
-            PlatformConfigIntent.self,
-            from: Data(box.value.utf8)
-        )
+        return try AppCoreSetup.withConfiguration(container: container, settings: settings) {
+            var error: NSError?
+            guard let box = HakoPlatformConfigIntentJSON(configContent, &error) else {
+                throw error ?? NSError(domain: "HakoClient.Configuration", code: 3,
+                    userInfo: [NSLocalizedDescriptionKey: "Unable to inspect configuration routing intent"])
+            }
+            return try JSONDecoder().decode(PlatformConfigIntent.self, from: Data(box.value.utf8))
+        }
     }
+
 }
 
  
@@ -478,8 +462,17 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
      
     @Published private(set) var hasLoadedStatus = false
-    @Published var lastError: String = ""
+    @Published var lastError: String = "" {
+        didSet { installationReadError = nil }
+    }
+     
+    private var installationReadError: String?
     @Published private(set) var configurationNotice: String = ""
+    @Published private(set) var vpnAuthorization: HakoVPNAuthorizationState?
+
+    var systemVPNAuthorization: HakoVPNAuthorizationState? {
+        vpnAuthorization ?? (hasLoadedStatus && systemVPNInstallationKnown && manager == nil ? .required : nil)
+    }
      
      
      
@@ -495,6 +488,8 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     @Published private(set) var tunnelSettings = VPNTunnelSettings()
 
     private var manager: NETunnelProviderManager?
+    private var systemVPNInstallationKnown = false
+    private var installationReadGeneration: UInt64 = 0
     private var observer: NSObjectProtocol?
      
      
@@ -507,12 +502,14 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
      
     private var statusLoad: Task<Void, Never>?
+    private var connectionStatusGeneration: UInt64 = 0
 
     private let extensionBundleID = HakoAppIdentifiers.packetTunnelExtensionBundleID
     private let preferences: UserDefaults
     private let operatingModeStore: NetworkOperatingModeStore
     private let dnsOnlyConfigurationIsInstalled: @Sendable () async -> Bool
     private let usesUITestFixtures: Bool
+    private let systemVPNManagers: @MainActor () async throws -> [NETunnelProviderManager]
 
      
      
@@ -550,6 +547,75 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
     var clientPreferences: UserDefaults { preferences }
 
+    @Published private(set) var applyingIPStackSettings = false
+    @Published private(set) var ipStackSaveNotice = ""
+    private let profileWriter: IPStackProfileWriter
+    private var profileWriteIntentGeneration: UInt64 = 0
+
+
+    @MainActor
+    func updateIPStackSettings(_ settings: IPStackSettings) async throws {
+        guard !applyingIPStackSettings, !connectionRequests.isBusy else {
+            throw IPStackSettingsApplicationError.operationInProgress
+        }
+        let stopAtEntry = userStopEpoch
+        applyingIPStackSettings = true
+        defer { applyingIPStackSettings = false; ipStackSaveNotice = "" }
+        var restoreInstalledProtocol: (() async throws -> Void)?
+        try await IPStackSettingsApplication.apply(
+            settings, defaults: preferences,
+            saveProtocol: { [self] snapshot in
+                let installed: NETunnelProviderManager?
+                if let manager { installed = manager }
+                else {
+                    installed = try await Self.boundedLoadAll().first {
+                        Self.isOwnedSystemVPNProfile($0, providerBundleIdentifier: extensionBundleID)
+                    }
+                }
+                 
+                guard let installed else { return }
+                let previous = IPStackSystemProfileSnapshot(installed)
+                installed.protocolConfiguration = try configuredProtocol(from: installed, ipStack: snapshot)
+                do {
+                    try await saveIPStackProfile(installed)
+                    adoptManager(installed)
+                    if userStopEpoch != stopAtEntry { installed.connection.stopVPNTunnel() }
+                    restoreInstalledProtocol = { [self] in
+                        previous.apply(to: installed, disarm: userStopEpoch != stopAtEntry)
+                        try await saveIPStackProfile(installed)
+                        if userStopEpoch != stopAtEntry { installed.connection.stopVPNTunnel() }
+                    }
+                } catch {
+                    previous.apply(to: installed)
+                    throw error
+                }
+            },
+            restoreProtocol: { try await restoreInstalledProtocol?() },
+            withProfileWrite: { [self] in try await profileWriter.settingsTransaction($0) },
+            isRunning: { [self] in userStopEpoch == stopAtEntry && ["connected", "connecting", "reasserting"].contains(status) },
+            restart: { [self] in
+                guard await restartTunnel(site: .intentRestart) else {
+                    throw NSError(domain: "HakoClient.IPStack", code: 1, userInfo: [
+                        NSLocalizedDescriptionKey: lastError.isEmpty
+                            ? String(localized: "IP Stack settings were saved, but the VPN did not restart. Connect again to apply them.")
+                            : lastError,
+                    ])
+                }
+            }
+        )
+    }
+
+    private func saveIPStackProfile(_ manager: NETunnelProviderManager) async throws {
+        let frozen = IPStackSystemProfileSnapshot(manager)
+        try await IPStackProfileWriter.awaitConfirmation(operation: { [self] in
+            frozen.apply(to: manager)
+            try await rawSaveToPreferences(manager)
+        }, onWaiting: { [self] in
+            ipStackSaveNotice = String(localized: "Waiting for the system to confirm the VPN settings. You can leave this page or stop the VPN.")
+        })
+        ipStackSaveNotice = ""
+    }
+
      
      
      
@@ -570,7 +636,9 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
          
          
         dnsOnlyConfigurationIsInstalled: (@Sendable () async -> Bool)? = nil,
-        usesUITestFixtures: Bool = false
+        usesUITestFixtures: Bool = false,
+        systemVPNManagers: (@MainActor () async throws -> [NETunnelProviderManager])? = nil,
+        profileWriter: IPStackProfileWriter? = nil
     ) {
         let preferences = preferences ?? .standard
         self.preferences = preferences
@@ -582,6 +650,8 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
             return snapshot != .notInstalled
         }
         self.usesUITestFixtures = usesUITestFixtures
+        self.systemVPNManagers = systemVPNManagers ?? { try await Self.boundedLoadAll() }
+        self.profileWriter = profileWriter ?? IPStackProfileWriter()
         clearLegacyKillSwitchPreferences()
         tunnelSettings = VPNTunnelSettings.load(from: preferences)
     }
@@ -623,16 +693,53 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
      
     private func loadInstalledManager() async {
+        await refreshSystemVPNInstallation()
+    }
+
+     
+     
+     
+    func refreshSystemVPNInstallation() async {
+        _ = await refreshInstalledManagerIfIdle()
+    }
+
+    private func refreshInstalledManagerIfIdle() async -> Bool {
+        guard !connectionRequests.isBusy, !profileWriter.isBusy else { return false }
+        let intent = profileWriteIntentGeneration
+        let writerRevision = profileWriter.revision
+        installationReadGeneration &+= 1
+        let readGeneration = installationReadGeneration
+        func isCurrent() -> Bool {
+            !Task.isCancelled && intent == profileWriteIntentGeneration
+                && writerRevision == profileWriter.revision
+                && readGeneration == installationReadGeneration
+                && !connectionRequests.isBusy && !profileWriter.isBusy
+        }
         do {
-            let managers = try await Self.boundedLoadAll()
-            adoptManager(managers.first)
-            if let manager { updateInstalledRoutingPolicy(from: manager) }
+            let installed = try await systemVPNManagers().first {
+                Self.isOwnedSystemVPNProfile($0, providerBundleIdentifier: extensionBundleID)
+            }
+            guard isCurrent() else { return false }
+            let wasInstalled = manager != nil
+            adoptManager(installed)
+            if let installed {
+                updateInstalledRoutingPolicy(from: installed)
+                vpnAuthorization = nil
+            } else if wasInstalled {
+                vpnAuthorization = nil
+            }
+            if installationReadError != nil { lastError = "" }
             hasLoadedStatus = true
             updateStatus()
+            return true
         } catch {
-            lastError = VPNDisconnectErrorPresentation.startMessage(
-                for: error as NSError
-            )
+            guard isCurrent() else { return false }
+             
+            systemVPNInstallationKnown = false
+            vpnAuthorization = nil
+            lastError = VPNDisconnectErrorPresentation.startMessage(for: error as NSError)
+            installationReadError = lastError
+            return false
         }
     }
 
@@ -644,17 +751,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
             let recoveredInterruptedResourceProfile = false
 
             try await refreshConfigurationRoutingIntent()
-            let managers = try await Self.boundedLoadAll()
-            adoptManager(managers.first)
-            if let manager {
-                updateInstalledRoutingPolicy(from: manager)
-            }
-             
-             
-             
-             
-            hasLoadedStatus = true
-            updateStatus()
+            guard await refreshInstalledManagerIfIdle() else { return }
             let needsRecoveryApply = recoveredInterruptedFixture
                 || recoveredInterruptedPacketFlowProfile
                 || recoveredInterruptedResourceProfile
@@ -709,7 +806,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
 
             manager = nil
             let fresh = NETunnelProviderManager()
-            let tunnel = configuredProtocol(from: fresh)
+            let tunnel = try configuredProtocol(from: fresh)
             routingPolicy.apply(to: tunnel)
             fresh.protocolConfiguration = tunnel
             fresh.localizedDescription = Self.vpnProfileTitle
@@ -788,7 +885,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                 try await waitUntilDisconnected(mgr.connection)
             }
 
-            let tunnelProtocol = configuredProtocol(from: mgr)
+            let tunnelProtocol = try configuredProtocol(from: mgr)
             routingPolicy.apply(to: tunnelProtocol)
             mgr.protocolConfiguration = tunnelProtocol
             mgr.localizedDescription = Self.vpnProfileTitle
@@ -819,7 +916,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
      
      
-    private func stageConfig() async throws -> String? {
+    private func stageConfig(settings: IPStackSettings) async throws -> String? {
         guard let container = HakoAppIdentifiers.appGroupContainer
         else {
             throw NSError(
@@ -831,7 +928,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         let working = container.appendingPathComponent("working")
         try? FileManager.default.createDirectory(at: working, withIntermediateDirectories: true)
         try BundledGeodataProvisioner.seedAllMissing(into: working)
-        Self.ensureCoreSetup(container: container)
+        try Self.ensureCoreSetup(container: container, settings: settings)
 
         let store = try ConfigResourceStore(containerURL: container)
         let profileStore = ProfileStore(
@@ -883,7 +980,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                         "The local profile source is unavailable"]
                 )
             }
-            try await activationCoordinator(store: store, container: container)
+            try await activationCoordinator(store: store, container: container, settings: settings)
                 .activate(profile: profile, sourceYAML: sourceYAML)
         }
         #if !os(tvOS)
@@ -891,6 +988,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         #endif
         let preparation = try await ActiveRevisionMigrator(
             store: store,
+            preflight: { PreflightService.check(finalYAML: $0, container: container, settings: settings) },
             rebuild: { [weak self] pointer in
                 guard let self else {
                     throw PipelineError.sourceUnavailable(
@@ -900,14 +998,15 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                 return try await self.regenerateRuntime(
                     replacing: pointer,
                     store: store,
-                    container: container
+                    container: container,
+                    settings: settings
                 )
             }
         ).prepareForStart()
         guard let activeYAML = preparation.configuration.text else {
             throw ConfigResourceStoreError.configurationIsNotUTF8
         }
-        try applyConfigurationRoutingIntent(activeYAML)
+        applyConfigurationRoutingIntent(try AppConfigurationPreflight.inspectRoutingIntent(activeYAML, container: container, settings: settings))
 
         return preparation.userNotice
     }
@@ -918,7 +1017,8 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     private func regenerateRuntime(
         replacing pointer: ActiveConfigurationPointer,
         store: ConfigResourceStore,
-        container: URL
+        container: URL,
+        settings: IPStackSettings
     ) async throws -> ActiveConfigurationPointer {
         let working = container.appendingPathComponent("working", isDirectory: true)
         let profileStore = ProfileStore(
@@ -944,7 +1044,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         let sidecar = working
             .appendingPathComponent("store/\(profile.id)", isDirectory: true)
             .appendingPathComponent("source.yaml")
-        let coordinator = activationCoordinator(store: store, container: container)
+        let coordinator = try activationCoordinator(store: store, container: container, settings: settings)
         if let source = try? String(contentsOf: sidecar, encoding: .utf8),
            !source.isEmpty {
             return try await coordinator.regenerateRuntime(
@@ -996,8 +1096,8 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
      
      
-    func activationCoordinator(store: ConfigResourceStore, container: URL) -> ProfileActivationCoordinator {
-        Self.ensureCoreSetup(container: container)  
+    func activationCoordinator(store: ConfigResourceStore, container: URL, settings: IPStackSettings? = nil) throws -> ProfileActivationCoordinator {
+        try Self.ensureCoreSetup(container: container, settings: settings)
         let working = container.appendingPathComponent("working")
         return ProfileActivationCoordinator(
             store: store,
@@ -1016,7 +1116,8 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
             runtimeOverride: { [preferences = self.preferences] in
                 FlClashRuntimeConfig.load(from: preferences)
             },
-            activator: { _ in })
+            activator: { _ in },
+            preflight: { PreflightService.check(finalYAML: $0, container: container, settings: settings) })
     }
 
      
@@ -1030,7 +1131,11 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                 globalScript: nil
             )
         }
-        Self.ensureCoreSetup(container: container)
+        do { try Self.ensureCoreSetup(container: container) }
+        catch {
+            lastError = error.localizedDescription
+            return .init(globalConfig: .blocked(.coreSetupFailed(error.localizedDescription)), globalScript: nil)
+        }
         let working = container.appendingPathComponent("working")
         let globalConfig = LegacyGlobalConfigMigrationCoordinator.run(
             workingDirectory: working,
@@ -1050,22 +1155,8 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
 
      
      
-    private static var coreSetupDone = false
-    private static func ensureCoreSetup(container: URL) {
-        guard !coreSetupDone else { return }
-        let options = HakoSetupOptions()
-        options.basePath = container.path
-        options.workingPath = container.appendingPathComponent("working").path
-        options.tempPath = container.appendingPathComponent("temp").path
-        options.timeZone = TimeZone.current.identifier
-        options.logMaxLines = 100
-        options.memoryLimit = 50 * 1024 * 1024
-        options.disablePersistentCache = true
-         
-        options.systemDNSServerLines = HakoSystemResolverLines()
-        var error: NSError?
-        HakoSetup(options, &error)
-        coreSetupDone = error == nil
+    private static func ensureCoreSetup(container: URL, settings: IPStackSettings? = nil) throws {
+        try AppCoreSetup.ensure(container: container, settings: settings, memoryLimit: 50 * 1024 * 1024)
     }
 
      
@@ -1202,9 +1293,21 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     }
 
      
-    private func boundedSave(_ manager: NETunnelProviderManager) async throws {
-        try await Self.withNETimeout(seconds: 15, .nePreferencesTimeout) {
+    private func rawSaveToPreferences(_ manager: NETunnelProviderManager, disarmOnly: Bool = false) async throws {
+        let frozen = IPStackSystemProfileSnapshot(manager)
+        try await profileWriter.saveConfirmed(frozen, to: manager, disarmOnly: disarmOnly) {
             try await manager.saveToPreferences()
+        }
+    }
+
+    private func boundedSave(_ manager: NETunnelProviderManager, whileIntent intent: UInt64? = nil, disarmOnly: Bool = false) async throws {
+        let frozen = IPStackSystemProfileSnapshot(manager)
+        try await Self.withNETimeout(seconds: 15, .nePreferencesTimeout) { [self] in
+            try await profileWriter.run { [self] in
+                if let intent, intent != profileWriteIntentGeneration { throw CancellationError() }
+                frozen.apply(to: manager)
+                try await rawSaveToPreferences(manager, disarmOnly: disarmOnly)
+            }
         }
     }
 
@@ -1488,13 +1591,22 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     func start(
         origin: TunnelRequestCoalescer.Origin = .gesture
     ) async -> Bool {
-        await connectionRequests.run(origin: origin) { [weak self] in
-            guard let self else { return false }
-            return await self.performStart()
+        do { try profileWriter.requireStartReady() }
+        catch { lastError = error.localizedDescription; return false }
+        let cancellation = VPNStartCancellation()
+        return await withTaskCancellationHandler {
+            await connectionRequests.run(origin: origin) { [weak self] in
+                guard let self, !cancellation.isCancelled else { return false }
+                self.profileWriteIntentGeneration &+= 1
+                return await self.performStart(
+                    writeIntent: self.profileWriteIntentGeneration, cancellation: cancellation)
+            }
+        } onCancel: {
+            cancellation.cancel()
         }
     }
 
-    private func performStart() async -> Bool {
+    private func performStart(writeIntent: UInt64, cancellation: VPNStartCancellation) async -> Bool {
          
          
          
@@ -1512,49 +1624,133 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         if operatingModeStore.current == .dnsOnly {
             operatingModeStore.set(.packetTunnel)
         }
+        let waitingMessage = String(localized: "Waiting for VPN authorization. Complete the system confirmation in Settings to continue.")
+        let began = Date()
+        var phase = "prepare"
+        var needsAuthorization = false
+        lastError = ""
+        vpnAuthorization = nil
+        func checkStartIntent() throws {
+            try Task.checkCancellation()
+            guard writeIntent == profileWriteIntentGeneration, !cancellation.isCancelled
+            else { throw CancellationError() }
+        }
+        defer {
+            if self.configurationNotice == waitingMessage { self.configurationNotice = "" }
+            if vpnAuthorization == .waiting { vpnAuthorization = nil }
+        }
         do {
-            let configurationNotice = try await stageConfig()
-            let mgr = try await currentOrNewManager()
-            let proto = configuredProtocol(from: mgr)
+            try checkStartIntent()
+            let ipStack = try IPStackSettings.load(from: preferences)
+            let configurationNotice = try await stageConfig(settings: ipStack)
+            try checkStartIntent()
+            let installed = try await loadSystemVPNStartProfile(isCurrent: {
+                writeIntent == self.profileWriteIntentGeneration && !cancellation.isCancelled
+            })
+            try checkStartIntent()
+            let mgr = installed.manager
+            needsAuthorization = installed.needsAuthorization
+            if needsAuthorization { vpnAuthorization = .waiting }
+            let proto = try configuredProtocol(from: mgr, ipStack: ipStack)
             routingPolicy.apply(to: proto)
             mgr.protocolConfiguration = proto
             mgr.localizedDescription = Self.vpnProfileTitle
             mgr.isEnabled = true
             try applyOnDemand(to: mgr)
-            try await boundedSave(mgr)
-            try await boundedLoad(mgr)  
-            adoptManager(mgr)
-            updateInstalledRoutingPolicy(from: mgr)
-            routingPolicyNeedsApply = false
-            startFailureTracker.beginStart()
-             
-             
-             
-             
-             
-             
-            let statusBefore = connectionStatusLabel(mgr.connection.status)
-            try mgr.connection.startVPNTunnel()
-            updateStatus()
-            HakoLogStore.shared.append(
-                {
-                    let before = statusBefore
+            let frozen = IPStackSystemProfileSnapshot(mgr)
+            try await VPNStartAuthorization.perform(
+                save: { [self] in
+                    phase = "save"
+                    try await profileWriter.run { [self] in
+                        guard writeIntent == profileWriteIntentGeneration, !cancellation.isCancelled
+                        else { throw CancellationError() }
+                        frozen.apply(to: mgr)
+                        HakoLogStore.shared.append("vpn authorization save began", stream: .app, level: .warning)
+                        try await rawSaveToPreferences(mgr)
+                        HakoLogStore.shared.append("vpn authorization save confirmed", stream: .app, level: .warning)
+                    }
+                },
+                reload: { [self] in
+                    phase = "reload"
+                    vpnAuthorization = nil
+                    try await boundedLoad(mgr)
+                },
+                start: { [self] in
+                    phase = "start"
+                    adoptManager(mgr)
+                    updateInstalledRoutingPolicy(from: mgr)
+                    routingPolicyNeedsApply = false
+                    startFailureTracker.beginStart()
+                    let before = connectionStatusLabel(mgr.connection.status)
+                    try mgr.connection.startVPNTunnel()
+                    updateStatus()
                     let after = connectionStatusLabel(mgr.connection.status)
-                    return "vpn start requested  before=\(before) after=\(after)"
-                }(),
-                stream: .app, level: .warning)
-            lastError = ""
-            self.configurationNotice = configurationNotice ?? ""
-            scheduleStartOutcomeWatchdog()
+                    HakoLogStore.shared.append(
+                        "vpn start requested  before=\(before) after=\(after)",
+                        stream: .app, level: .warning)
+                    lastError = ""
+                    self.configurationNotice = configurationNotice ?? ""
+                    scheduleStartOutcomeWatchdog()
+                },
+                abort: { [self] in
+                     
+                     
+                    await Task { @MainActor in
+                        do {
+                            try await profileWriter.run { [self] in
+                                if mgr.isOnDemandEnabled {
+                                    try await rawSaveToPreferences(mgr, disarmOnly: true)
+                                }
+                            }
+                        } catch {
+                            HakoLogStore.shared.append(
+                                "vpn cancelled-start disarm failed: \(error)", stream: .app, level: .warning)
+                        }
+                        mgr.connection.stopVPNTunnel()
+                    }.value
+                },
+                isCurrent: { [self] in
+                    writeIntent == profileWriteIntentGeneration && !cancellation.isCancelled
+                },
+                onWaiting: { [weak self] in
+                    guard let self, writeIntent == self.profileWriteIntentGeneration,
+                          !cancellation.isCancelled else { return }
+                    self.configurationNotice = waitingMessage
+                    if needsAuthorization { self.vpnAuthorization = .waiting }
+                    HakoLogStore.shared.append("vpn authorization still waiting", stream: .app, level: .warning)
+                })
             return true
+        } catch is CancellationError {
+            startFailureTracker.cancelStart()
+            HakoLogStore.shared.append("vpn start cancelled before request", stream: .app, level: .warning)
+            return false
         } catch {
             startFailureTracker.cancelStart()
+            guard writeIntent == profileWriteIntentGeneration,
+                  !cancellation.isCancelled, !Task.isCancelled else {
+                HakoLogStore.shared.append("vpn start cancelled during preparation", stream: .app, level: .warning)
+                return false
+            }
+            let failure = error as NSError
+            let elapsed = Int(Date().timeIntervalSince(began) * 1_000)
             HakoLogStore.shared.append(
-                { let code = (error as NSError).code; return "vpn start refused  code=\(code)" }(),
+                "vpn start refused  phase=\(phase) domain=\(failure.domain) code=\(failure.code) elapsedMs=\(elapsed) error=\(failure.localizedDescription) details=\(failure)",
                 stream: .app, level: .warning)
-            lastError = VPNDisconnectErrorPresentation.startMessage(for: error as NSError)
+            presentSystemVPNStartFailure(error, phase: phase, needsAuthorization: needsAuthorization)
             return false
         }
+    }
+
+    func presentSystemVPNStartFailure(_ error: Error, phase: String, needsAuthorization: Bool) {
+        if needsAuthorization, phase == "save",
+           VPNStartAuthorization.isPermissionDenial(error as NSError) {
+            vpnAuthorization = .notCompleted
+            lastError = ""
+            return
+        }
+        vpnAuthorization = nil
+        lastError = error is NETimeoutError ? error.localizedDescription
+            : VPNDisconnectErrorPresentation.startMessage(for: error as NSError)
     }
 
      
@@ -1678,6 +1874,9 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         origin: TunnelRequestCoalescer.Origin? = nil,
         alongside: (@MainActor () -> Void)? = nil
     ) async {
+        profileWriteIntentGeneration &+= 1
+        let writeIntent = profileWriteIntentGeneration
+        if applyingIPStackSettings { manager?.connection.stopVPNTunnel() }
         let origin = origin ?? (site == .userButton ? .gesture : .programmatic)
          
          
@@ -1689,17 +1888,17 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         }
         await connectionRequests.run(origin: origin) { [weak self] in
             alongside?()
-            await self?.performStop(site: site)
+            await self?.performStop(site: site, writeIntent: writeIntent)
             return false
         }
     }
 
-    private func performStop(site: VPNStopSite) async {
+    private func performStop(site: VPNStopSite, writeIntent: UInt64) async {
         startFailureTracker.cancelStart()
         guard let manager else { return }
-        if Self.disarmOnDemandForUserStop(manager) {
+        if Self.disarmOnDemandForUserStop(manager) || applyingIPStackSettings {
             do {
-                try await boundedSave(manager)
+                try await boundedSave(manager, whileIntent: writeIntent, disarmOnly: true)
             } catch {
                  
                  
@@ -1718,7 +1917,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
          
         lastStopUserInitiated = true
         userStopInFlight = true
-        manager.connection.stopVPNTunnel()
+        if profileWriteIntentGeneration == writeIntent { manager.connection.stopVPNTunnel() }
     }
 
      
@@ -1775,9 +1974,11 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         return true
     }
 
-    private func configuredProtocol(from manager: NETunnelProviderManager) -> NETunnelProviderProtocol {
-        let tunnelProtocol = (manager.protocolConfiguration as? NETunnelProviderProtocol)
+    private func configuredProtocol(from manager: NETunnelProviderManager, ipStack: IPStackSettings? = nil) throws -> NETunnelProviderProtocol {
+        let tunnelProtocol = (manager.protocolConfiguration?.copy() as? NETunnelProviderProtocol)
             ?? NETunnelProviderProtocol()
+        let snapshot = try ipStack ?? IPStackSettings.load(from: preferences)
+        tunnelProtocol.providerConfiguration = try snapshot.applying(to: tunnelProtocol.providerConfiguration)
         tunnelProtocol.providerBundleIdentifier = extensionBundleID
         tunnelProtocol.serverAddress = Self.vpnProfileDescription
          
@@ -1786,9 +1987,41 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         return tunnelProtocol
     }
 
+    struct SystemVPNStartProfile {
+        let manager: NETunnelProviderManager
+        let needsAuthorization: Bool
+    }
+
+    func loadSystemVPNStartProfile(isCurrent: () -> Bool) async throws -> SystemVPNStartProfile {
+        let intent = profileWriteIntentGeneration
+        try Task.checkCancellation()
+        guard isCurrent(), intent == profileWriteIntentGeneration else { throw CancellationError() }
+        let installed: NETunnelProviderManager?
+        do {
+            installed = try await systemVPNManagers().first {
+                Self.isOwnedSystemVPNProfile($0, providerBundleIdentifier: extensionBundleID)
+            }
+        } catch {
+            try Task.checkCancellation()
+            guard isCurrent(), intent == profileWriteIntentGeneration else { throw CancellationError() }
+            systemVPNInstallationKnown = false
+            throw error
+        }
+        try Task.checkCancellation()
+        guard isCurrent(), intent == profileWriteIntentGeneration else { throw CancellationError() }
+         
+         
+        adoptManager(installed)
+        hasLoadedStatus = true
+        updateStatus()
+        return SystemVPNStartProfile(
+            manager: installed ?? NETunnelProviderManager(),
+            needsAuthorization: installed == nil)
+    }
+
     private func currentOrNewManager() async throws -> NETunnelProviderManager {
         if let manager { return manager }
-        let managers = try await Self.boundedLoadAll()
+        let managers = try await systemVPNManagers()
         if let installed = managers.first {
             return installed
         }
@@ -1830,6 +2063,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     }
 
     private func refreshConfigurationRoutingIntent() async throws {
+        let ipStack = try IPStackSettings.load(from: preferences)
         if let container = HakoAppIdentifiers.appGroupContainer {
             do {
                 let intent = try await Task.detached {
@@ -1837,7 +2071,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                     guard let content = stored.text else {
                         throw ConfigResourceStoreError.configurationIsNotUTF8
                     }
-                    return try AppConfigurationPreflight.inspectRoutingIntent(content)
+                    return try AppConfigurationPreflight.inspectRoutingIntent(content, settings: ipStack)
                 }.value
                 applyConfigurationRoutingIntent(intent)
                 return
@@ -1849,7 +2083,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         guard let bundled = Bundle.main.url(forResource: "config", withExtension: "yaml") else { return }
         let content = try String(contentsOf: bundled, encoding: .utf8)
         let intent = try await Task.detached {
-            try AppConfigurationPreflight.inspectRoutingIntent(content)
+            try AppConfigurationPreflight.inspectRoutingIntent(content, settings: ipStack)
         }.value
         applyConfigurationRoutingIntent(intent)
     }
@@ -1925,12 +2159,14 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
     private func adoptManager(_ mgr: NETunnelProviderManager?) {
         manager = mgr
+        systemVPNInstallationKnown = true
         observeStatus()
     }
 
     private func observeStatus() {
-        guard let connection = manager?.connection else { return }
         if let observer { NotificationCenter.default.removeObserver(observer) }
+        observer = nil
+        guard let connection = manager?.connection else { return }
         observer = NotificationCenter.default.addObserver(
             forName: .NEVPNStatusDidChange, object: connection, queue: .main
         ) { [weak self] _ in
@@ -1939,6 +2175,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     }
 
     private func handleStatusChange() async {
+        connectionStatusGeneration &+= 1
         guard let connection = manager?.connection else {
             updateStatus()
             return
@@ -2012,7 +2249,10 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     }
 
     func refreshLastDisconnectErrorAfterFailedStart() async {
-        guard lastError.isEmpty,
+         
+         
+        guard startFailureTracker.isAwaitingResult,
+              lastError.isEmpty,
               let connection = manager?.connection,
               connection.status == .disconnected || connection.status == .invalid
         else { return }
@@ -2021,27 +2261,38 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     }
 
     private func resolveLastDisconnectError(on connection: NEVPNConnection) async {
-        let error = await fetchLastDisconnectError(on: connection)
-        if let error {
-             
-             
-             
-             
-             
-             
-             
-             
-            HakoLogStore.shared.append(
-                {
-                    let domain = error.domain
-                    let code = error.code
-                    return "vpn disconnect error  domain=\(domain) code=\(code)"
-                }(),
-                stream: .app, level: .warning)
-            lastError = VPNDisconnectErrorPresentation.message(for: error)
-        } else {
-            lastError = VPNDisconnectErrorPresentation.genericStartFailureMessage
-        }
+        let intent = profileWriteIntentGeneration
+        let statusGeneration = connectionStatusGeneration
+        await VPNStartAuthorization.resolveFailure(
+            fetch: { [self] in await fetchLastDisconnectError(on: connection) },
+            isCurrent: { [self] in
+                manager?.connection === connection
+                    && profileWriteIntentGeneration == intent
+                    && connectionStatusGeneration == statusGeneration
+                    && (connection.status == .disconnected || connection.status == .invalid)
+            },
+            publish: { [self] error in
+                if let error {
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    HakoLogStore.shared.append(
+                        {
+                            let domain = error.domain
+                            let code = error.code
+                            return "vpn disconnect error  domain=\(domain) code=\(code)"
+                        }(),
+                        stream: .app, level: .warning)
+                    lastError = VPNDisconnectErrorPresentation.message(for: error)
+                } else {
+                    lastError = VPNDisconnectErrorPresentation.genericStartFailureMessage
+                }
+            })
     }
 
     private func fetchLastDisconnectError(on connection: NEVPNConnection) async -> NSError? {

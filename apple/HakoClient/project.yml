@@ -553,6 +553,7 @@ targets:
     - path: Sources/ConfigStore/InvalidDomainSites.swift
     - path: Sources/ConfigStore/OrderedJSON.swift
     - path: Sources/ConfigStore/PreflightService.swift
+    - path: Sources/ConfigStore/AppCoreSetup.swift
     - path: Sources/ConfigStore/BundledGeodataProvisioner.swift
     - path: Sources/ConfigStore/GeoSiteCompiler.swift
     - path: Sources/ConfigStore/GeoIPCompiler.swift
@@ -565,6 +566,7 @@ targets:
     - path: Sources/ProfileListenerPorts.swift
     - path: Sources/ConfigStore/CredentialStore.swift
     - path: Sources/ConfigUI/ClientUserAgent.swift
+    - path: Sources/ConfigUI/IPStackSettings.swift
     - path: Shared/HakoLogStore.swift
       group: Shared
     - path: Shared/HakoAppGroupContainer.swift

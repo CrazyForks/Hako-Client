@@ -13,6 +13,7 @@ struct LegacyGlobalConfigMigrationPlan: Equatable {
 }
 
 enum LegacyGlobalConfigMigrationBlocker: Equatable {
+    case coreSetupFailed(String)
     case sourceUnavailable(profileIndex: Int)
     case conflictingState(profileIndex: Int)
     case runtimeGenerationFailed(profileIndex: Int)
@@ -24,6 +25,7 @@ enum LegacyGlobalConfigMigrationBlocker: Equatable {
 
     var userMessage: String {
         switch self {
+        case .coreSetupFailed(let message): return message
         case .sourceUnavailable:
             return "A configuration source is unavailable. Sync or restore it, then retry the upgrade."
         case .conflictingState:

@@ -564,6 +564,7 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
                 snapshot.home.traffic.coreStartedAtUnixSeconds,
             isConnected: snapshot.home.connection.phase == .connected,
             isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+                && snapshot.home.connection.title != "VPN Authorization"
         )
     }
 

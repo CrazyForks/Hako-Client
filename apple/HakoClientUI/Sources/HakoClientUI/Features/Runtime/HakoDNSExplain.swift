@@ -42,6 +42,8 @@ public struct HakoDNSExplain: Equatable, Sendable {
          
          
         case ipv6Disabled = "ipv6-disabled"
+         
+        case ipStack = "ip-stack"
     }
 
     public struct CacheState: Equatable, Sendable {
@@ -227,6 +229,8 @@ public extension HakoDNSExplain {
             return .copy("Answered by a hosts entry; no resolver was asked")
         case .fakeIP:
             return .copy("Answered by Fake-IP; no resolver was asked")
+        case .ipStack:
+            return .copy("Restricted by IP Stack settings")
         case .ipv6Disabled:
             return .copy("IPv6 is off in this profile, so AAAA is answered empty without asking")
         case .policy:

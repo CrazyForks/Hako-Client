@@ -757,7 +757,7 @@ struct ProfileFinalConfigurationView: View {
         .task(id: finalYAML) {
             let yaml = finalYAML
             verdict = await Task.detached(priority: .userInitiated) {
-                PreflightService.check(finalYAML: yaml)
+                PreflightService.checkApplication(finalYAML: yaml)
             }.value
         }
     }

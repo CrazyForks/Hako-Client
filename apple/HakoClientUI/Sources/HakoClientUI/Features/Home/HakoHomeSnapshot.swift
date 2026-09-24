@@ -138,10 +138,17 @@ public struct HakoHomeConnectionIssue:
     }
 }
 
+public enum HakoVPNAuthorizationState: String, Codable, Equatable, Sendable {
+    case required
+    case waiting
+    case notCompleted
+}
+
 public struct HakoHomeConnectionFacts: Codable, Equatable, Sendable {
     public var activeProfileName: String?
     public var vpnStatus: String
     public var errorMessage: String
+    public var vpnAuthorization: HakoVPNAuthorizationState?
      
      
      
@@ -157,6 +164,7 @@ public struct HakoHomeConnectionFacts: Codable, Equatable, Sendable {
         activeProfileName: String?,
         vpnStatus: String,
         errorMessage: String = "",
+        vpnAuthorization: HakoVPNAuthorizationState? = nil,
         errorIsStartupStopped: Bool = false,
         allowsSystemVPNProfileReset: Bool = false,
         isSwitchingProxy: Bool = false,
@@ -169,6 +177,7 @@ public struct HakoHomeConnectionFacts: Codable, Equatable, Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         self.vpnStatus = vpnStatus
         self.errorMessage = errorMessage
+        self.vpnAuthorization = vpnAuthorization
         self.errorIsStartupStopped = errorIsStartupStopped
         self.allowsSystemVPNProfileReset = allowsSystemVPNProfileReset
         self.isSwitchingProxy = isSwitchingProxy
@@ -261,6 +270,21 @@ public enum HakoHomeConnectionPresenter {
 
         if !hasProfile {
             return .unavailable
+        }
+        if let authorization = facts.vpnAuthorization, issue == nil,
+           !["connected", "connecting", "reasserting", "disconnecting"].contains(status) {
+            let waiting = authorization == .waiting
+            return .init(
+                phase: waiting ? .connecting : .ready,
+                title: "VPN Authorization",
+                subtitle: waiting
+                    ? "Allow VPN setup to connect."
+                    : authorization == .notCompleted
+                        ? "Tap Retry, then allow VPN setup."
+                        : "Tap START, then allow VPN setup.",
+                primaryAction: waiting ? .cancel : .connect,
+                primaryActionTitle: waiting ? nil : authorization == .notCompleted ? "Retry" : "START"
+            )
         }
         if facts.isSwitchingProxy
             && ["connected", "reasserting"].contains(status)

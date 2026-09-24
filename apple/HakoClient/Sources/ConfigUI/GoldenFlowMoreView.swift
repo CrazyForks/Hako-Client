@@ -278,6 +278,15 @@ struct GoldenFlowMoreDestinationAdapter: View {
                  
                 HakoMacTunnelSettingsView(vpn: vpn)
 #endif
+            case .ipStack:
+                IPStackSettingsView(
+                    defaults: vpn.clientPreferences,
+                    connectionIsTransitioning:
+                        ["connecting", "disconnecting", "reasserting"].contains(vpn.status),
+                    applicationInProgress: vpn.applyingIPStackSettings,
+                    saveNotice: vpn.ipStackSaveNotice,
+                    applySettings: { try await vpn.updateIPStackSettings($0) }
+                )
             case .systemIntegrations:
                 SystemIntegrationsView()
             case .dnsOnly:

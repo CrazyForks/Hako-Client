@@ -1340,13 +1340,9 @@ private struct HakoDNSAdvancedView<Icon: View>: View {
                     upstreamDefault: UpstreamTextDefault.pinned(for: "dns.enhanced-mode"),
                     identifier: "profile-dns.mode"
                 )
-                HakoDNSFieldRows.triStatePicker(
-                    "Return IPv6 results",
-                    selection: $draft.ipv6,
-                    inherited: snapshot.inherited.bool("dns.ipv6"),
-                    upstreamDefault: UpstreamBoolDefault.value(for: "dns.ipv6"),
-                    identifier: "profile-dns.ipv6"
-                )
+                Text("IP address families are controlled in More > IP Stack.")
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("profile-dns.ipStack")
                 HakoDNSFieldRows.trailingNumberField(
                     "IPv6 wait (ms)",
                     text: $draft.ipv6Timeout,

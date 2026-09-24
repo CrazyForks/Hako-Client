@@ -246,7 +246,7 @@ final class HakoTVProfileCoordinator {
      
      
     func commitStart(
-        configure: @escaping @MainActor (any HakoTVSystemProfile) -> Void,
+        configure: @escaping @MainActor (any HakoTVSystemProfile) throws -> Void,
         shouldAbort: @escaping @MainActor () -> Bool
     ) async throws {
         var failure: Error?
@@ -264,9 +264,9 @@ final class HakoTVProfileCoordinator {
                     return
                 }
             }
-            configure(profile)
-            self.arm(profile, wanted: self.intent)
             do {
+                try configure(profile)
+                self.arm(profile, wanted: self.intent)
                 try await self.save(profile)
                 self.install(profile)
                 try await HakoTVTunnelController.bounded(self.timeout) { try await profile.loadFromPreferences() }

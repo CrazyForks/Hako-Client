@@ -1448,36 +1448,9 @@ final class ProfilesViewModel: ObservableObject {
          
          
 #if os(macOS)
-         
-         
-         
-         
-        let setup = HakoSetupOptions()
-        setup.basePath = container.path
-        setup.workingPath = container.appendingPathComponent("working").path
-        setup.tempPath = container.appendingPathComponent("temp").path
-        setup.timeZone = TimeZone.current.identifier
-        setup.logMaxLines = 100
-        setup.runtimeProfile = "macosPacketTunnel"
-        setup.disablePersistentCache = true
-         
-         
-         
-        setup.systemDNSServerLines = HakoSystemResolverLines()
-        var setupError: NSError?
-        HakoSetup(setup, &setupError)
-        if let setupError { throw setupError }
-
-        var error: NSError?
-        guard HakoCheckConfig(document, &error) else {
-             
-             
-             
-             
-             
-             
-             
-            throw error ?? HakoCoreRefusal()
+        try AppCoreSetup.withConfiguration(container: container) {
+            var error: NSError?
+            guard HakoCheckConfig(document, &error) else { throw error ?? HakoCoreRefusal() }
         }
 #else
         _ = try AppConfigurationPreflight.validate(
@@ -2839,7 +2812,7 @@ final class ProfilesViewModel: ObservableObject {
                 "the shared configuration store is unavailable"
             )
         }
-        let coordinator = vpn.activationCoordinator(store: store, container: container)
+        let coordinator = try vpn.activationCoordinator(store: store, container: container)
         _ = try await coordinator.activate(
             profile: profile,
             sourceYAML: try storedSourceYAML(for: profile)
@@ -2852,7 +2825,7 @@ final class ProfilesViewModel: ObservableObject {
         let preflight = await Task.detached(priority: .userInitiated) { () -> ([String], PreflightOutcome) in
             (
                 (try? ConfigTransforms.planResources(mergedYAML: activeYAML).notices) ?? [],
-                PreflightService.check(finalYAML: activeYAML)
+                PreflightService.check(finalYAML: activeYAML, container: container)
             )
         }.value
         notices = preflight.0
@@ -3352,7 +3325,7 @@ final class ProfilesViewModel: ObservableObject {
         var pipelineSucceeded = false
         do {
             let store = try ConfigResourceStore(containerURL: container)
-            let coordinator = vpn.activationCoordinator(store: store, container: container)
+            let coordinator = try vpn.activationCoordinator(store: store, container: container)
             let sourceYAML = try storedSourceYAML(
                 for: profile,
                 preferCachedSource: preferCachedSource
@@ -3376,7 +3349,7 @@ final class ProfilesViewModel: ObservableObject {
             let preflight = await Task.detached(priority: .userInitiated) { () -> ([String], PreflightOutcome) in
                 (
                     (try? ConfigTransforms.planResources(mergedYAML: activeYAML).notices) ?? [],
-                    PreflightService.check(finalYAML: activeYAML)
+                    PreflightService.check(finalYAML: activeYAML, container: container)
                 )
             }.value
             notices = preflight.0

@@ -31,6 +31,7 @@ public enum HakoMoreDestination:
     case backupRestore
     case onDemand
     case tunnel
+    case ipStack
     case systemIntegrations
     case dnsOnly
     case dnsAndHosts
@@ -49,6 +50,7 @@ public enum HakoMoreDestination:
         case .geoResources: "Geo Resources"
         case .backupRestore: "Backup & Restore"
         case .onDemand: "On Demand"
+        case .ipStack: "IP Stack"
         case .tunnel: "Tunnel"
         case .systemIntegrations: "Shortcuts & Controls"
         case .dnsOnly: "DNS-only"
@@ -68,6 +70,7 @@ public enum HakoMoreDestination:
         case .geoResources: .globeAsiaAustralia
         case .backupRestore: .arrowClockwiseIcloud
         case .onDemand: .appBadgeCheckmarkFill
+        case .ipStack: .globeBadgeChevronBackward
         case .tunnel: .arrowLeftAndRightSquareFill
         case .systemIntegrations: .arrowTriangleSwap
         case .dnsOnly: .lockShield
@@ -87,6 +90,7 @@ public enum HakoMoreDestination:
         case .geoResources: .green
         case .backupRestore: .teal
         case .onDemand: .cyan
+        case .ipStack: .blue
         case .tunnel: .blue
         case .systemIntegrations: .indigo
         case .dnsOnly: .teal
@@ -120,7 +124,7 @@ public enum HakoMoreCatalog {
      
      
     private static var connectionBehaviorDestinations: [HakoMoreDestination] {
-        [.onDemand, .tunnel, .dnsOnly]
+        [.onDemand, .tunnel, .ipStack, .dnsOnly]
     }
 
      

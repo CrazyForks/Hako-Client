@@ -242,17 +242,18 @@ final class HakoTVTunnelController: ObservableObject {
     private func performConnect(_ subscription: HakoTVSubscription) async {
         state.issue = nil
         do {
+            let ipStack = try AppCoreSetup.currentSettings()
             if needsActivation(for: subscription) {
                 state.pipelinePhase = .downloading
                 defer { state.pipelinePhase = nil }
-                try await activate(subscription) { [weak self] phase in self?.state.pipelinePhase = phase }
+                try await activate(subscription, settings: ipStack) { [weak self] phase in self?.state.pipelinePhase = phase }
             }
              
              
             if let container, let store = try? ConfigResourceStore(containerURL: container),
                let expected = try? store.activeIdentity() {
                 do {
-                    _ = try await HakoTVConfigPipeline(container: container, session: session).recoverRules(expected: expected)
+                    _ = try await HakoTVConfigPipeline(container: container, session: session, settings: ipStack).recoverRules(expected: expected)
                     loadActiveConfigurationFacts()
                 } catch is CancellationError {
                     throw CancellationError()
@@ -263,7 +264,7 @@ final class HakoTVTunnelController: ObservableObject {
                 }
             }
             try Task.checkCancellation()
-            try await start()
+            try await start(settings: ipStack)
         } catch is CancellationError {
              
              
@@ -715,9 +716,9 @@ final class HakoTVTunnelController: ObservableObject {
      
      
      
-    private func activate(_ subscription: HakoTVSubscription, report: @escaping @MainActor (HakoTVConfigPipeline.Phase) -> Void) async throws {
+    private func activate(_ subscription: HakoTVSubscription, settings: IPStackSettings? = nil, report: @escaping @MainActor (HakoTVConfigPipeline.Phase) -> Void) async throws {
         guard let container else { throw ControllerError.appGroupUnavailable }
-        let pipeline = HakoTVConfigPipeline(container: container, session: session)
+        let pipeline = HakoTVConfigPipeline(container: container, session: session, settings: settings)
         let activation = try await pipeline.activate(subscription: subscription) { phase in
             Task { @MainActor in report(phase) }
         }
@@ -801,7 +802,7 @@ final class HakoTVTunnelController: ObservableObject {
 
      
 
-    private func start() async throws {
+    private func start(settings: IPStackSettings? = nil) async throws {
          
          
          
@@ -809,11 +810,20 @@ final class HakoTVTunnelController: ObservableObject {
          
          
         let epoch = stopEpoch
+        let ipStackSnapshot = try settings ?? IPStackSettings.load(
+            from: UserDefaults(suiteName: HakoAppIdentifiers.appGroup) ?? .standard
+        )
+        if let container {
+            try AppCoreSetup.ensure(container: container, settings: ipStackSnapshot)
+        }
         try await coordinator.commitStart(
             configure: { profile in
-                let tunnelProtocol = (profile.protocolConfiguration as? NETunnelProviderProtocol) ?? NETunnelProviderProtocol()
+                let tunnelProtocol = (profile.protocolConfiguration?.copy() as? NETunnelProviderProtocol) ?? NETunnelProviderProtocol()
                 tunnelProtocol.providerBundleIdentifier = HakoAppIdentifiers.tvPacketTunnelExtensionBundleID
                 tunnelProtocol.serverAddress = Self.vpnProfileDescription
+                tunnelProtocol.providerConfiguration = try ipStackSnapshot.applying(
+                    to: tunnelProtocol.providerConfiguration
+                )
                 profile.protocolConfiguration = tunnelProtocol
                 profile.localizedDescription = Self.vpnProfileTitle
                 profile.isEnabled = true

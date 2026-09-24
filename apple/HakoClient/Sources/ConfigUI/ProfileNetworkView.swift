@@ -582,7 +582,7 @@ struct GlobalCoreBehaviorSettingsView: View {
 
      
      
-    private static let pageKeyPaths = ["ipv6", "unified-delay", "tcp-concurrent"]
+    private static let pageKeyPaths = ["unified-delay", "tcp-concurrent"]
 
      
      
@@ -631,13 +631,9 @@ struct GlobalCoreBehaviorSettingsView: View {
                 }
             }
             Section {
-                DNSFieldRows.overrideMenuRow(
-                    "IPv6",
-                    $network.ipv6,
-                    inherited: network.inheritedBase("ipv6"),
-                    upstreamDefault: UpstreamBoolDefault.value(for: "ipv6"),
-                    identifier: "global-core.ipv6"
-                )
+                Text("IP address families are controlled in More > IP Stack.")
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("global-core.ipStack")
                 DNSFieldRows.overrideMenuRow(
                     "Unified delay",
                     $network.unifiedDelay,

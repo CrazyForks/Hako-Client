@@ -489,7 +489,7 @@ final class ProvidersModel: ObservableObject {
                     contentsOf: fileURL,
                     options: [.mappedIfSafe, .uncached]
                 )
-                let coordinator = vpn.activationCoordinator(store: store, container: container)
+                let coordinator = try vpn.activationCoordinator(store: store, container: container)
                 let publication = try await coordinator.sideLoadProvider(
                     named: name,
                     data: data,
@@ -574,7 +574,7 @@ final class ProvidersModel: ObservableObject {
                 self.load()
             }
             do {
-                let coordinator = self.vpn.activationCoordinator(
+                let coordinator = try self.vpn.activationCoordinator(
                     store: store,
                     container: container
                 )
@@ -654,7 +654,7 @@ final class ProvidersModel: ObservableObject {
          
          
         let outcome = await Task.detached(priority: .userInitiated) {
-            PreflightService.check(finalYAML: activeYAML)
+            PreflightService.checkApplication(finalYAML: activeYAML)
         }.value
         guard let intentJSON = outcome.intentJSON,
               let intent = try? JSONDecoder().decode(PlatformConfigIntent.self,
@@ -1215,7 +1215,7 @@ enum ProviderRefreshService {
         command: ClashCommandClient
     ) async throws -> ProviderSideUpdateOutcome {
         try Task.checkCancellation()
-        let coordinator = vpn.activationCoordinator(
+        let coordinator = try vpn.activationCoordinator(
             store: store,
             container: container
         )

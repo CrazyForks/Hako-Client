@@ -418,6 +418,7 @@ struct AppShellView: View {
              
             ICloudAutoBackup.shared.setForeground(phase == .active)
             if phase == .active {
+                Task { await vpn.refreshSystemVPNInstallation() }
                 command.sync(vpnStatus: vpn.status)
                 syncConnectionsForSelectedTab(isForeground: true)
 

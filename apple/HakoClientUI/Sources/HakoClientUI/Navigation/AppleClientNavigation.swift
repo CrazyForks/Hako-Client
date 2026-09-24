@@ -89,7 +89,7 @@ public enum AppleClientDestination: Hashable, Sendable {
              
              
             case .root, .dnsAndHosts, .geoResources, .backupRestore,
-                 .onDemand, .tunnel, .systemIntegrations, .dnsOnly,
+                 .onDemand, .tunnel, .ipStack, .systemIntegrations, .dnsOnly,
                  .tunnelAndRoutes, .coreBehavior, .clientSettings,
                  .appearance, .developer:
                 .more
