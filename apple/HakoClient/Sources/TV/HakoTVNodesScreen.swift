@@ -40,11 +40,22 @@ struct HakoTVNodesScreen: View {
     @State private var shownGroupName: String?
 
      
-    private var visibleGroups: [HakoProxyGroupSnapshot] {
-        guard state.observations.proxies.hasValue else { return [] }
-        return Self.visibleGroups(state.proxyGroups, mode: state.observations.mode.hasValue ? state.outboundMode : .rule)
+     
+    private var browsingMode: HakoTVOutboundMode {
+        state.observations.mode.hasValue ? state.outboundMode : .rule
     }
 
+     
+    private var visibleGroups: [HakoProxyGroupSnapshot] {
+        guard state.observations.proxies.hasValue else { return [] }
+        return Self.visibleGroups(state.proxyGroups, mode: browsingMode)
+    }
+
+     
+     
+     
+     
+     
     private var shownGroup: HakoProxyGroupSnapshot? {
         visibleGroups.first { $0.name == shownGroupName } ?? visibleGroups.first
     }
@@ -115,7 +126,7 @@ struct HakoTVNodesScreen: View {
         if let group = shownGroup {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(Self.header(for: group))
+                    Text(Self.header(for: group, mode: browsingMode))
                         .font(.caption)
                         .textCase(.uppercase)
                         .foregroundStyle(.tertiary)
@@ -143,11 +154,11 @@ struct HakoTVNodesScreen: View {
                 }
                 ScrollView {
                     LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 20), count: Self.columnCount(for: group)),
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 20), count: Self.columnCount(for: group, mode: browsingMode)),
                         alignment: .leading,
                         spacing: 20
                     ) {
-                        ForEach(group.members) { member in
+                        ForEach(Self.browsedMembers(of: group, mode: browsingMode)) { member in
                             cell(member, in: group)
                         }
                     }
@@ -291,7 +302,16 @@ struct HakoTVNodesScreen: View {
      
      
     static func columnCount(for group: HakoProxyGroupSnapshot) -> Int {
-        let longest = group.members.map(\.name.count).max() ?? 0
+        columnCount(for: group.members)
+    }
+
+     
+    static func columnCount(for group: HakoProxyGroupSnapshot, mode: HakoTVOutboundMode) -> Int {
+        columnCount(for: browsedMembers(of: group, mode: mode))
+    }
+
+    private static func columnCount(for members: [HakoProxyMemberSnapshot]) -> Int {
+        let longest = members.map(\.name.count).max() ?? 0
         return longest > longNameThreshold ? 2 : 3
     }
 
@@ -313,6 +333,25 @@ struct HakoTVNodesScreen: View {
      
      
      
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static func browsedMembers(of group: HakoProxyGroupSnapshot, mode: HakoTVOutboundMode) -> [HakoProxyMemberSnapshot] {
+        ProxyBrowsingVisibility.members(
+            group.members,
+            of: group.name,
+            mode: .init(coreValue: mode.kernelToken),
+            name: { $0.name }
+        )
+    }
+
     static func visibleGroups(
         _ groups: [HakoProxyGroupSnapshot],
         mode: HakoTVOutboundMode
@@ -346,8 +385,16 @@ struct HakoTVNodesScreen: View {
      
      
     static func header(for group: HakoProxyGroupSnapshot) -> String {
-        let count = group.members.count
-        return count == 1
+        header(for: group, count: group.members.count)
+    }
+
+     
+    static func header(for group: HakoProxyGroupSnapshot, mode: HakoTVOutboundMode) -> String {
+        header(for: group, count: browsedMembers(of: group, mode: mode).count)
+    }
+
+    private static func header(for group: HakoProxyGroupSnapshot, count: Int) -> String {
+        count == 1
             ? String(localized: "\(group.name) · 1 node · \(group.type)")
             : String(localized: "\(group.name) · \(count) nodes · \(group.type)")
     }
