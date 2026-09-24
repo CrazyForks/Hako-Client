@@ -22,7 +22,7 @@ extension ConfigurationLibraryStore {
                          resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws -> PreparedConfigurationCreation {
         guard let sourceID = draft.originalSourceID, draft.selectedSourceIDs == [sourceID],
               !starting.recipes.contains(where: { $0.id == profileID }) else {
-            throw ConfigurationLibraryError.invalidIdentifier
+            throw ConfigurationLibraryError.invalidIdentifier.noted()
         }
         var source: ConfigurationSourcePayload
         if let staged = draft.newSources.first(where: { $0.record.id == sourceID }) { source = staged }
@@ -82,7 +82,7 @@ public extension ConfigurationLibraryStore {
          
          
         guard !current.sources.contains(where: { $0.id == replacement.record.id }) else {
-            throw ConfigurationLibraryError.invalidIdentifier
+            throw ConfigurationLibraryError.invalidIdentifier.noted()
         }
         current.recipes.removeAll { $0.id == profileID }
         var draft = ConfigurationCreationDraft(); draft.useOriginal(replacement)
@@ -122,9 +122,9 @@ public extension ConfigurationLibraryStore {
         guard let existing = current.recipes.first(where: { $0.id == profileID }) else {
             throw ConfigurationLibraryError.missingDependency(profileID)
         }
-        guard (existing.preservesOriginal == true) != uses else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard (existing.preservesOriginal == true) != uses else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         guard existing.sources.count == 1, let reference = existing.sources.first else {
-            throw ConfigurationLibraryError.invalidIdentifier
+            throw ConfigurationLibraryError.invalidIdentifier.noted()
         }
         guard !current.sources.contains(where: { $0.id == reference.id && $0.isRetainedSnapshot == true }) else {
             throw ConfigurationLibraryError.retainedSnapshot

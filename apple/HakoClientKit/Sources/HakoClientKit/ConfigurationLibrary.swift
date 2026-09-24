@@ -298,6 +298,26 @@ public struct ConfigurationCreationDraft: Equatable, Sendable {
     }
 }
 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+public enum ConfigurationLibraryDiagnostics {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var last: String?
+    public static var lastIdentifierNote: String? {
+        lock.lock(); defer { lock.unlock() }
+        return last
+    }
+    static func record(_ note: String) {
+        lock.lock(); defer { lock.unlock() }
+        last = note
+    }
+}
+
 public enum ConfigurationLibraryError: LocalizedError, Equatable {
     case invalidAdvancedSettings
     case invalidIdentifier
@@ -397,7 +417,7 @@ public final class ConfigurationLibraryStore: Sendable {
         var candidate = try snapshot()
         guard candidate.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
         guard !candidate.sources.contains(where: { $0.id == source.record.id }) else {
-            throw ConfigurationLibraryError.invalidIdentifier
+            throw ConfigurationLibraryError.invalidIdentifier.noted()
         }
         candidate.sources.append(source.record)
         if source.record.hasRules && source.record.registersSuppliedRules != false {
@@ -479,7 +499,7 @@ public final class ConfigurationLibraryStore: Sendable {
             let pending = candidate.pendingPublications ?? []
             guard Set(pending.map(\.profileID)).count == pending.count,
                   publications.allSatisfy({ pending.contains($0.reference) }) else {
-                throw ConfigurationLibraryError.invalidIdentifier
+                throw ConfigurationLibraryError.invalidIdentifier.noted()
             }
             for reference in pending {
                 let existingFile = try publicationURL(reference)
@@ -524,7 +544,7 @@ public final class ConfigurationLibraryStore: Sendable {
 
     private func publicationURL(_ reference: ConfigurationPublicationReference) throws -> URL {
         guard Self.safeID(reference.profileID), Self.safeID(reference.version) else {
-            throw ConfigurationLibraryError.invalidIdentifier
+            throw ConfigurationLibraryError.invalidIdentifier.noted()
         }
         return directory.appendingPathComponent("publications").appendingPathComponent(reference.profileID)
             .appendingPathComponent(reference.version + ".json")
@@ -567,7 +587,7 @@ public final class ConfigurationLibraryStore: Sendable {
               Set(publications.map(\.reference)).count == publications.count,
               Set(pending) == Set(publications.map(\.reference)),
               pending.allSatisfy({ ref in archive.snapshot.recipes.contains { $0.id == ref.profileID } }) else {
-            throw ConfigurationLibraryError.invalidIdentifier
+            throw ConfigurationLibraryError.invalidIdentifier.noted()
         }
         for reference in pending { _ = try publicationURL(reference) }
         try validate(archive.snapshot, payloads: archive.payloads)
@@ -577,12 +597,12 @@ public final class ConfigurationLibraryStore: Sendable {
         guard candidate.schemaVersion == 1 else { throw ConfigurationLibraryError.unreadable }
         func unique(_ ids: [String]) throws {
             guard ids.allSatisfy(Self.safeID), Set(ids).count == ids.count else {
-                throw ConfigurationLibraryError.invalidIdentifier
+                throw ConfigurationLibraryError.invalidIdentifier.noted()
             }
         }
         try unique(candidate.sources.map(\.id)); try unique(candidate.rules.map(\.id)); try unique(candidate.recipes.map(\.id))
         let payloadReferences = payloads.map { ConfigurationSourceVersion($0.record) }
-        guard Set(payloadReferences).count == payloadReferences.count else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard Set(payloadReferences).count == payloadReferences.count else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         let sourceIDs = Set(candidate.sources.map(\.id))
         let ruleIDs = Set(candidate.rules.map(\.id))
         func require(_ reference: ConfigurationSourceVersion, archivedSettings: Bool = false) throws {
@@ -596,7 +616,7 @@ public final class ConfigurationLibraryStore: Sendable {
         for source in candidate.sources {
             try require(.init(source))
             if let chain = source.nodeChain {
-                guard source.origin == .customNodes, source.suppliesNodes else { throw ConfigurationLibraryError.invalidIdentifier }
+                guard source.origin == .customNodes, source.suppliesNodes else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
                 for hop in chain.hops {
                     guard hop.source.id != source.id,
                           candidate.sources.first(where: { $0.id == hop.source.id })?.nodeChain == nil else {
@@ -617,7 +637,7 @@ public final class ConfigurationLibraryStore: Sendable {
                 throw ConfigurationLibraryError.emptyNodeNameservers
             }
             if recipe.preservesOriginal == true {
-                guard recipe.sources == [recipe.ruleSource] else { throw ConfigurationLibraryError.invalidIdentifier }
+                guard recipe.sources == [recipe.ruleSource] else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
             } else {
             guard ruleIDs.contains(recipe.ruleSchemeID),
                   candidate.rules.first(where: { $0.id == recipe.ruleSchemeID })?.sourceID == recipe.ruleSource.id else {
@@ -626,13 +646,13 @@ public final class ConfigurationLibraryStore: Sendable {
             }
             if let scopes = recipe.nodeScopes {
                 guard scopes.allSatisfy({ entry in recipe.sources.contains { $0.id == entry.key } && !entry.value.isEmpty }) else {
-                    throw ConfigurationLibraryError.invalidIdentifier
+                    throw ConfigurationLibraryError.invalidIdentifier.noted()
                 }
             }
             try unique(recipe.sources.map(\.id))
             for reference in recipe.sources + [recipe.ruleSource] { try require(reference) }
             if let reference = recipe.settingsSource {
-                guard recipe.settingsJSON != nil else { throw ConfigurationLibraryError.invalidIdentifier }
+                guard recipe.settingsJSON != nil else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
                 try require(reference, archivedSettings: true)
             }
         }
@@ -647,7 +667,7 @@ public final class ConfigurationLibraryStore: Sendable {
             guard (payload.resourceFiles ?? [:]).keys.allSatisfy(Self.safeResourceName),
                   (sourceIDs.contains(payload.record.id) || candidate.recipes.contains { $0.settingsSource == ConfigurationSourceVersion(payload.record) }),
                   case .object = try OrderedJSON.parse(payload.documentJSON) else {
-                throw ConfigurationLibraryError.invalidIdentifier
+                throw ConfigurationLibraryError.invalidIdentifier.noted()
             }
         }
     }
@@ -658,7 +678,7 @@ public final class ConfigurationLibraryStore: Sendable {
         }
     }
     private func versionDirectory(_ ref: ConfigurationSourceVersion) throws -> URL {
-        guard Self.safeID(ref.id), Self.safeID(ref.version) else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard Self.safeID(ref.id), Self.safeID(ref.version) else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         return directory.appendingPathComponent("sources").appendingPathComponent(ref.id).appendingPathComponent(ref.version)
     }
     private static var writeOptions: Data.WritingOptions {
@@ -702,7 +722,7 @@ public final class ConfigurationLibraryStore: Sendable {
             let folder = staging.appendingPathComponent("resources")
             try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
             for (name, data) in resources {
-                guard Self.safeResourceName(name) else { throw ConfigurationLibraryError.invalidIdentifier }
+                guard Self.safeResourceName(name) else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
                 try data.write(to:folder.appendingPathComponent(name),options:Self.writeOptions)
             }
             try JSONEncoder().encode(resources.keys.sorted()).write(
@@ -721,7 +741,7 @@ public final class ConfigurationLibraryStore: Sendable {
         let names = try JSONDecoder().decode([String].self,from:Data(contentsOf:index))
         var result: [String: Data] = [:]
         for name in names {
-            guard Self.safeResourceName(name) else { throw ConfigurationLibraryError.invalidIdentifier }
+            guard Self.safeResourceName(name) else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
             result[name] = try Data(contentsOf:folder.appendingPathComponent("resources").appendingPathComponent(name))
         }
         return result
@@ -884,5 +904,16 @@ extension ConfigurationLibraryStore {
             if isEmpty(profileDirectory) { try? fm.removeItem(at: profileDirectory) }
         }
         return result
+    }
+}
+
+public extension ConfigurationLibraryError {
+     
+     
+     
+     
+    func noted(_ detail: String? = nil, file: StaticString = #fileID, line: UInt = #line) -> ConfigurationLibraryError {
+        ConfigurationLibraryDiagnostics.record("\(file):\(line)" + (detail.map { " " + $0 } ?? ""))
+        return self
     }
 }

@@ -5,6 +5,19 @@ import UniformTypeIdentifiers
 
  
  
+ 
+ 
+ 
+ 
+ 
+@MainActor
+private func hakoLogConfigurationWriteFailure(_ error: Error) {
+    let note = ConfigurationLibraryDiagnostics.lastIdentifierNote ?? "-"
+    HakoLogStore.shared.append(
+        "configuration centre write failed: \(error.localizedDescription) [\(note)]",
+        stream: .app, level: .warning)
+}
+
 struct ConfigurationCreationAdapter: View {
     @Environment(\.hakoShellLayout) private var shellLayout
     @ObservedObject var model: ProfilesViewModel
@@ -222,7 +235,10 @@ struct ConfigurationCreationAdapter: View {
         Task {
             defer { busy = false }
             do { try await operation() }
-            catch { errorMessage = error.localizedDescription }
+            catch {
+                errorMessage = error.localizedDescription
+                hakoLogConfigurationWriteFailure(error)
+            }
         }
     }
 

@@ -2,6 +2,19 @@ import SwiftUI
 import HakoClientKit
 
  
+ 
+ 
+ 
+ 
+enum HakoTowerRulesErrorText {
+    static func describe(_ error: Error) -> String {
+        let sentence = error.localizedDescription
+        guard let library = error as? ConfigurationLibraryError, library == .invalidIdentifier,
+              let note = ConfigurationLibraryDiagnostics.lastIdentifierNote else { return sentence }
+        return sentence + " [" + note + "]"
+    }
+}
+
 public struct HakoTowerRulesLibraryView: View {
     public let palette: HakoProductPalette
     public let library: ConfigurationLibrarySnapshot
@@ -661,7 +674,7 @@ public struct HakoTowerRuleCustomizationView: View {
                     try value.addRuleSet(key: key, name: entry.displayName, rules: content, defaultRoute: entry.defaultRoute.rawValue)
                     return value
                 }
-            } catch { self.error = error.localizedDescription }
+            } catch { self.error = HakoTowerRulesErrorText.describe(error) }
         }
     }
     private func toggleLocal(_ item: ConfigurationLocalRuleSet) {
@@ -689,7 +702,7 @@ public struct HakoTowerRuleCustomizationView: View {
     }
     private func change(_ transform: @escaping @Sendable (ConfigurationRuleDraft) throws -> ConfigurationRuleDraft) {
         Task { @MainActor in
-            do { try await apply(transform) } catch { self.error = error.localizedDescription }
+            do { try await apply(transform) } catch { self.error = HakoTowerRulesErrorText.describe(error) }
         }
     }
     private func receiveSaved(_ value: ConfigurationRuleDraft) async {
@@ -734,12 +747,12 @@ public struct HakoTowerRuleCustomizationView: View {
         Task { @MainActor in
             defer { busy = false }
             do { let saved = try await save(value); await receiveSaved(saved); completion(true); then() }
-            catch { await receivePending(value); self.error = error.localizedDescription; completion(false) }
+            catch { await receivePending(value); self.error = HakoTowerRulesErrorText.describe(error); completion(false) }
         }
     }
     private func perform(_ operation: @escaping @MainActor () async throws -> Void) {
         guard !busy else { return }; busy = true; error = nil
-        Task { @MainActor in defer { busy = false }; do { try await operation() } catch { self.error = error.localizedDescription } }
+        Task { @MainActor in defer { busy = false }; do { try await operation() } catch { self.error = HakoTowerRulesErrorText.describe(error) } }
     }
 }
 
@@ -758,7 +771,7 @@ private struct HakoTowerNameEditor: View {
     private func commit(_ completion: @escaping (Bool) -> Void = { _ in }) {
         guard !busy, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { completion(false); return }
         busy = true; error = nil
-        Task { @MainActor in defer { busy = false }; do { try await save(name); completion(true) } catch { self.error = error.localizedDescription; completion(false) } }
+        Task { @MainActor in defer { busy = false }; do { try await save(name); completion(true) } catch { self.error = HakoTowerRulesErrorText.describe(error); completion(false) } }
     }
     var body: some View {
         Form { Section("Scheme Name") { TextField("Name", text: $name).accessibilityIdentifier("configuration.rules.copy.name") }; if let error { Text(verbatim: error).foregroundStyle(.orange) } }
@@ -834,7 +847,7 @@ private struct HakoTowerLocalRuleEditor: View {
     private func commit(_ completion: @escaping (Bool) -> Void = { _ in }) {
         guard !busy, ready else { completion(false); return }
         busy = true; error = nil
-        Task { @MainActor in defer { busy = false }; do { try await save(name, contents, policy); completion(true) } catch { self.error = error.localizedDescription; completion(false) } }
+        Task { @MainActor in defer { busy = false }; do { try await save(name, contents, policy); completion(true) } catch { self.error = HakoTowerRulesErrorText.describe(error); completion(false) } }
     }
     var body: some View {
         Form {
@@ -1251,7 +1264,7 @@ private struct HakoTowerGroupEditor: View {
                     }
                 }
                 try await save(document); completion(true)
-            } catch { self.error = error.localizedDescription; completion(false) }
+            } catch { self.error = HakoTowerRulesErrorText.describe(error); completion(false) }
         }
     }
 }

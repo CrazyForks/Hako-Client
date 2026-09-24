@@ -38,7 +38,7 @@ public struct ConfigurationNodeScope: Codable, Equatable, Sendable {
     public var isEmpty: Bool { (!includesInlineNodes || inlineNodeNames?.isEmpty == true) && providerKeys.isEmpty }
 
     public func applying(to input: ConfigurationInput) throws -> ConfigurationInput {
-        guard !isEmpty, Set(providerKeys).count == providerKeys.count else { throw ConfigurationLibraryError.invalidIdentifier }
+        guard !isEmpty, Set(providerKeys).count == providerKeys.count else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         let document = input.document
         func entries(_ key: String) -> [(key: String, value: OrderedJSON)] {
             guard case .object(let values) = document.topLevelValue(key) else { return [] }; return values
