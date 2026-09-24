@@ -109,6 +109,12 @@ public struct HakoProfileSnapshot:
      
      
     public let overrideScriptName: String?
+     
+     
+     
+     
+     
+    public let customRulesCount: Int
     public let isComposed: Bool?
      
      
@@ -149,10 +155,12 @@ public struct HakoProfileSnapshot:
         canUseOriginalConfiguration: Bool = false,
         configurationSourceNames: [String]? = nil, configurationRuleName: String? = nil,
         followsConfigurationSourceUpdates: Bool? = nil,
-        overrideScriptName: String? = nil
+        overrideScriptName: String? = nil,
+        customRulesCount: Int = 0
     ) {
         self.id = id
         self.overrideScriptName = overrideScriptName
+        self.customRulesCount = max(0, customRulesCount)
         self.followsConfigurationSourceUpdates = followsConfigurationSourceUpdates
         self.isComposed = isComposed
         self.canUseOriginalConfiguration = canUseOriginalConfiguration
@@ -175,6 +183,12 @@ public struct HakoProfileSnapshot:
         self.requiresPlaintextExportConfirmation =
             requiresPlaintextExportConfirmation
         self.featureAvailability = featureAvailability
+    }
+
+     
+     
+    public static func customRulesValue(count: Int, locale: Locale) -> HakoDisplayText {
+        count <= 0 ? .copy("None") : .verbatim(HakoCopy.format("%d rules", locale: locale, count))
     }
 
     public var canRename: Bool {

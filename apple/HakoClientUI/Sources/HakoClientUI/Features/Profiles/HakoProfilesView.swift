@@ -1560,6 +1560,7 @@ private struct HakoProfileDetailView<
      
      
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.locale) private var locale
     @State private var activeCapability:
         HakoProfilesCapabilityDestination?
     @State private var showsDeleteConfirmation = false
@@ -1634,12 +1635,9 @@ private struct HakoProfileDetailView<
                 if !profile.heldBackUpdates.isEmpty {
                     heldBackSection(profile)
                 }
-                if profile.canEditSource
-                    || profile.canDuplicate
-                    || profile.canExport
-                {
-                    manageSection(profile)
-                }
+                 
+                 
+                manageSection(profile)
                 networkSection(profile)
                 if profile.canOpenRuntimePreview
                     || profile.canRestoreLastKnownGood
@@ -2182,6 +2180,19 @@ private struct HakoProfileDetailView<
                 .accessibilityIdentifier("profile-detail.edit-source")
                 HakoRowDivider()
             }
+             
+             
+             
+             
+             
+            Button { activeCapability = .rules(profile.id) } label: {
+                HakoProfileActionRow(title: "Custom Rules",
+                    value: HakoProfileSnapshot.customRulesValue(count: profile.customRulesCount, locale: locale),
+                    symbol: .ruleDomain, tint: .primary, icon: icon)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("profile-detail.custom-rules")
+            HakoRowDivider()
             Button { activeCapability = .override(profile.id) } label: {
                 HakoProfileActionRow(title: "Overrides and Scripts",
                     value: profile.overrideScriptName.map { .verbatim($0) },

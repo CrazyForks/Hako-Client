@@ -414,7 +414,8 @@ struct ProfileCenterAdapter: View {
             },
             followsConfigurationSourceUpdates: configurationLibrary.recipes.first(where: { $0.id == profile.id })?.followsUpdates,
             overrideScriptName: profile.overwriteMode == .script
-                ? scripts.first { $0.id == profile.selectedScriptID }?.label : nil
+                ? scripts.first { $0.id == profile.selectedScriptID }?.label : nil,
+            customRulesCount: profile.override.appendRules.count
         )
     }
 
