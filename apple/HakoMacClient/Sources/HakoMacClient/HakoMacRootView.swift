@@ -75,6 +75,10 @@ public struct HakoMacRootView: View {
          
          
          
+        .background(HakoMacSidebarLock())
+         
+         
+         
         .environment(
             \.hakoFullWidthSegmentedPickerAdapter,
             HakoMacPlatformPresentation.fullWidthSegmentedPickerAdapter
