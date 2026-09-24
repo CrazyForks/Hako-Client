@@ -327,6 +327,8 @@ struct ProfileCenterAdapter: View {
      
      
      
+     
+     
     struct LibraryProfileFacts: Equatable {
         var lastUpdatedAt: Date?
         var usage: ConfigurationSubscriptionUsage?
@@ -341,7 +343,7 @@ struct ProfileCenterAdapter: View {
             }
         }
         return LibraryProfileFacts(lastUpdatedAt: links.map(\.updatedAt).max(),
-                                   usage: links.count == 1 ? links[0].subscriptionUsage : nil)
+                                   usage: recipe.sources.count == 1 && links.count == 1 ? links[0].subscriptionUsage : nil)
     }
 
     private static func subscriptionSnapshot(upload: Int64, download: Int64, total: Int64, expire: Int64) -> HakoProfileSubscriptionSnapshot {
