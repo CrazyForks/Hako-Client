@@ -339,7 +339,14 @@ public struct HakoMacConfigurationInspector: View {
                 HStack(spacing: HakoTheme.Spacing.compact) {
                     VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
                         Text(hako: .copy("Use Original Configuration"))
-                        if let name = originalSourceName {
+                         
+                         
+                         
+                         
+                         
+                        if scriptTakesOver {
+                            Text(hako: .copy("Taken over by the override script")).font(.subheadline).foregroundStyle(.tertiary)
+                        } else if let name = originalSourceName {
                             Text(verbatim: name).font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
@@ -367,6 +374,11 @@ public struct HakoMacConfigurationInspector: View {
             .accessibilityValue(Text(hako: Self.sourcesValue(sources, chosen: chosenSources)))
             .accessibilityIdentifier("configuration-center.configuration.sources.all")
             .hakoMacCardRow()
+             
+             
+             
+             
+             
             HakoMacRoutedRow {
                 HakoMacConfigurationSchemesPage(
                     shelves: ruleShelves, chosen: $chosenScheme,
@@ -374,9 +386,10 @@ public struct HakoMacConfigurationInspector: View {
                 )
                 .navigationTitle(Text(hako: .copy("Rule Scheme")))
             } label: {
-                HakoMacPushRowLabel(.copy("Rule Scheme"), value: schemeValue)
+                HakoMacPushRowLabel(.copy("Rule Scheme"), value: schemeRowValue)
             }
-            .accessibilityValue(Text(hako: schemeValue))
+            .disabled(scriptTakesOver)
+            .accessibilityValue(Text(hako: schemeRowValue))
             .accessibilityIdentifier("configuration-center.configuration.schemes.all")
             .hakoMacCardRow()
             }
@@ -417,6 +430,14 @@ public struct HakoMacConfigurationInspector: View {
         schemes.first { $0.id == chosenScheme }.map { .verbatim($0.displayLabel) } ?? .copy("Choose a rule scheme")
     }
 
+     
+     
+    private var scriptTakesOver: Bool { scripts.selectedID != nil }
+
+    private var schemeRowValue: HakoDisplayText {
+        scriptTakesOver ? .copy("Taken over by the override script") : schemeValue
+    }
+
     private func chooseScheme(_ id: String) {
         guard id != chosenScheme else { return }
         chosenScheme = id
@@ -428,16 +449,6 @@ public struct HakoMacConfigurationInspector: View {
         HakoMacCardSection {
              
              
-             
-            HakoMacRoutedRow(onReturn: { Task { @MainActor in scripts = await scriptsActions.load() } }) {
-                HakoMacScriptsPage(actions: scriptsActions, initial: scripts)
-                    .navigationTitle(Text(hako: .copy("Overrides and Scripts")))
-            } label: {
-                HakoMacPushRowLabel(.copy("Overrides and Scripts"), value: scripts.selectedID.flatMap { id in scripts.scripts.first { $0.id == id } }
-                    .map { .verbatim($0.label) } ?? .copy("None"))
-            }
-            .accessibilityIdentifier("configuration-center.configuration.scripts")
-            .hakoMacCardRow()
              
              
              
@@ -455,6 +466,18 @@ public struct HakoMacConfigurationInspector: View {
                 .accessibilityIdentifier("configuration-center.configuration.custom-rules")
                 .hakoMacCardRow()
             }
+             
+             
+             
+            HakoMacRoutedRow(onReturn: { Task { @MainActor in scripts = await scriptsActions.load() } }) {
+                HakoMacScriptsPage(actions: scriptsActions, initial: scripts)
+                    .navigationTitle(Text(hako: .copy("Overrides and Scripts")))
+            } label: {
+                HakoMacPushRowLabel(.copy("Overrides and Scripts"), value: scripts.selectedID.flatMap { id in scripts.scripts.first { $0.id == id } }
+                    .map { .verbatim($0.label) } ?? .copy("None"))
+            }
+            .accessibilityIdentifier("configuration-center.configuration.scripts")
+            .hakoMacCardRow()
         }
     }
 
@@ -657,16 +680,23 @@ struct HakoMacTrailingChevron: View {
 struct HakoMacPushRowLabel: View {
     let title: HakoDisplayText
     var value: HakoDisplayText? = nil
+     
+     
+     
+     
+    @Environment(\.isEnabled) private var isEnabled
     init(_ title: HakoDisplayText, value: HakoDisplayText? = nil) { self.title = title; self.value = value }
 
     var body: some View {
         HStack(spacing: HakoTheme.Spacing.compact) {
-            Text(hako: title)
+            Text(hako: title).foregroundStyle(isEnabled ? .primary : .tertiary)
             Spacer()
-            if let value { Text(hako: value).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail) }
+            if let value {
+                Text(hako: value).foregroundStyle(isEnabled ? .secondary : .tertiary).lineLimit(1).truncationMode(.tail)
+            }
              
              
-            HakoMacTrailingChevron()
+            if isEnabled { HakoMacTrailingChevron() }
         }
         .contentShape(Rectangle())
     }
