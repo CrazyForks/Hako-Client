@@ -757,6 +757,20 @@ final class ProviderMaterializer {
                  
                  
                  
+                if forceRefresh.contains(provider.name) || localOverrides[provider.name] != nil {
+                    throw ProviderValidationFailure(
+                        provider: provider.name,
+                        underlying: validationError ?? NSError(
+                            domain: "HakoClient.Provider", code: 1,
+                            userInfo: [NSLocalizedDescriptionKey:
+                                ProviderValidationWarning.clientAuthoredReason])
+                    )
+                }
+                 
+                 
+                 
+                 
+                 
                  
                  
                  
