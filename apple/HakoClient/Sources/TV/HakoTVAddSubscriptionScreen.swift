@@ -25,7 +25,17 @@ struct HakoTVAddSubscriptionScreen: View {
 
     @State private var urlText = ""
     @State private var nameText = ""
+    @State private var rules = HakoTVAddSubscriptionScreen.initialRules
     @State private var refusal: String?
+
+     
+     
+    static let rulesChoices: [HakoTVProfileRules] = HakoTVProfileRules.allCases
+    static let initialRules: HakoTVProfileRules = HakoTVProfileRules.initialChoice
+
+    static var rulesExplanation: String {
+        String(localized: "Default Rules and Lazy Rules use only the nodes from this URL. Profile's own rules run the configuration as written.")
+    }
 
     static var whatHappens: String {
         String(localized: "The URL is what gets remembered. The configuration behind it is downloaded again whenever this Apple TV needs it.")
@@ -84,6 +94,30 @@ struct HakoTVAddSubscriptionScreen: View {
                     .foregroundStyle(.orange)
                     .accessibilityIdentifier("tvos.subscription.refusal")
             }
+            Text("Rules")
+                .font(.caption)
+                .textCase(.uppercase)
+                .foregroundStyle(.tertiary)
+                .padding(.top, 8)
+             
+             
+            ForEach(Self.rulesChoices) { choice in
+                Button {
+                    rules = choice
+                } label: {
+                    HStack {
+                        Text(choice.title)
+                        Spacer()
+                        if choice == rules {
+                            Image(systemName: HakoSymbol.checkmark.rawValue)
+                        }
+                    }
+                }
+                .accessibilityIdentifier("tvos.subscription.rules.\(choice.rawValue)")
+            }
+            Text(Self.rulesExplanation)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             Text("Name")
                 .font(.caption)
                 .textCase(.uppercase)
@@ -126,7 +160,7 @@ struct HakoTVAddSubscriptionScreen: View {
             return
         }
         do {
-            try store.add(urlString: urlText, name: nameText)
+            try store.add(urlString: urlText, name: nameText, rules: rules)
             refusal = nil
             onAdded()
         } catch {

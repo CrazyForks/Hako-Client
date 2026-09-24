@@ -68,6 +68,8 @@
 "Currently in force: %@ · changing this takes effect immediately, without reconnecting" = "目前生效：%@ · 更改立即生效，無需重新連線";
 "DNS" = "DNS";
 "DNS mode" = "DNS 模式";
+"Default Rules" = "預設設定檔";
+"Default Rules and Lazy Rules use only the nodes from this URL. Profile's own rules run the configuration as written." = "預設設定檔與懶人設定檔只取這條網址裡的節點；設定檔自帶規則照原樣執行整份設定檔。";
 "Destination" = "目標";
 "Diagnostics" = "診斷";
 "Direct" = "直連";
@@ -109,6 +111,7 @@
 "Last problem" = "最近一次問題";
 "Last read %@" = "上次讀取 %@";
 "Latency values are the last test results; reading the list does not run a test." = "延遲數值來自上次測試；讀取列表不會進行測試。";
+"Lazy Rules" = "懶人設定檔";
 "Let other devices on your network use this Apple TV as their HTTP or SOCKS5 proxy, with the port, username and password your profile names. The tunnel has to be running." = "讓本網路上的其他裝置把這台 Apple TV 當作 HTTP 或 SOCKS5 代理使用，連接埠、使用者名稱和密碼都按你的設定檔來。通道必須在執行。";
 "Let profiles listen on the local network" = "允許設定檔在區域網路上監聽";
 "Live" = "即時";
@@ -158,6 +161,7 @@
 "Never matches" = "永不符合";
 "No %@ connections" = "沒有%@的連線";
 "No automatic backup yet. Turn on “Keep iCloud backup current” on your iPhone or Mac." = "還沒有自動備份。請在 iPhone 或 Mac 上開啟「保持 iCloud 備份最新」。";
+"No nodes were found at this URL." = "這條網址裡沒有讀到節點。";
 "No policy groups in this configuration" = "此設定中沒有策略群組";
 "No profiles on this Apple TV" = "這台 Apple TV 上還沒有設定檔";
 "No route" = "連不上";
@@ -198,6 +202,7 @@
 "Profile Unavailable" = "設定檔不可用";
 "Profile listeners" = "設定檔的監聽";
 "Profile remote URL is invalid." = "設定檔的遠端 URL 無效。";
+"Profile's own rules" = "設定檔自帶規則";
 "Profiles" = "設定檔";
 "Providers" = "Provider";
 "Proxied" = "代理";
@@ -288,6 +293,7 @@
 "The profile URL could not be fetched: the request timed out." = "無法取得設定連結：請求逾時。";
 "The profile could not be downloaded: %@" = "設定檔下載失敗：%@";
 "The profile did not come back as text." = "設定檔回傳的不是文字。";
+"The profile in use fetches its configuration again right away. Another profile applies the choice when it is next used." = "使用中的設定檔會立即重新取得；其他設定檔在下次使用時生效。";
 "The profile in use. Press to see its address or remove it." = "正在使用的設定檔。按下可檢視它的網址或將其移除。";
 "The profile is larger than this Apple TV accepts." = "設定檔內容超過了這台 Apple TV 接受的大小。";
 "The profile is not something the tunnel can read: %@" = "這份設定檔不是通道能讀取的內容：%@";
@@ -320,6 +326,7 @@
 "The tunnel's own resolvers, as the profile names them." = "通道自己的解析器，按設定檔中的寫法。";
 "The tunnel's own resolvers, as the profile names them. Not a system DNS setting — an Apple TV has none to change; the policy editor stays on your phone." = "通道自己的解析器，按設定檔中的寫法。這不是系統 DNS 設定——Apple TV 沒有可改的系統 DNS；策略編輯器留在手機上。";
 "These are the tunnel's own resolvers, from the profile — not a system DNS setting. An Apple TV has none to change; the policy editor stays on your phone." = "這些是通道自己的解析器，來自設定檔——不是系統 DNS 設定。Apple TV 沒有可改的系統 DNS；策略編輯器留在手機上。";
+"This URL is a node list, not a configuration. Choose Default Rules or Lazy Rules for this profile." = "這條網址只有節點，不是完整設定檔。請為這個設定檔改選預設設定檔或懶人設定檔。";
 "This address is already in the list, as “%@”." = "這個網址已經在列表裡了，叫「%@」。";
 "This group picks its own member." = "該群組自行選擇成員。";
 "This item is still required, or is missing." = "這一項仍被需要，或者已缺失。";

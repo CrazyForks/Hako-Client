@@ -72,6 +72,19 @@ enum HakoTVSubscriptionFetcher {
         userAgent: String,
         maximumBytes: Int = maximumBytes
     ) async throws -> HakoTVFetchedSubscription {
+        let fetched = try await fetchBody(url, session: session, userAgent: userAgent, maximumBytes: maximumBytes)
+        guard let yaml = String(data: fetched.body, encoding: .utf8) else { throw FetchError.notText }
+        return HakoTVFetchedSubscription(yaml: yaml, userInfo: fetched.userInfo, panelName: fetched.panelName)
+    }
+
+     
+     
+    static func fetchBody(
+        _ url: URL,
+        session: URLSession,
+        userAgent: String,
+        maximumBytes: Int = maximumBytes
+    ) async throws -> HakoTVFetchedBody {
         var request = URLRequest(url: url)
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 30
@@ -92,13 +105,19 @@ enum HakoTVSubscriptionFetcher {
             if Task.isCancelled { throw CancellationError() }
             throw FetchError.transport(error.localizedDescription)
         }
-        guard let yaml = String(data: data, encoding: .utf8) else { throw FetchError.notText }
-        return HakoTVFetchedSubscription(
-            yaml: yaml,
+        return HakoTVFetchedBody(
+            body: data,
             userInfo: response?.value(forHTTPHeaderField: "subscription-userinfo"),
             panelName: PanelName.suggested(fromContentDisposition: response?.value(forHTTPHeaderField: "Content-Disposition"))
         )
     }
+}
+
+ 
+struct HakoTVFetchedBody: Equatable {
+    let body: Data
+    let userInfo: String?
+    let panelName: String?
 }
 
  

@@ -560,6 +560,8 @@ targets:
     - path: Sources/ConfigStore/ProviderStagingPublisher.swift
     - path: Sources/AppArchitecture/UDPFallbackGuard.swift
     - path: Sources/AppArchitecture/ProxyBrowsingVisibility.swift
+    - path: Sources/AppArchitecture/ProxyImportBridge.swift
+    - path: Sources/ConfigStore/SubscriptionError.swift
     - path: Shared/LocalNetworkPermission.swift
     - path: Sources/ConfigStore/CoreLogExcerpt.swift
     - path: Sources/ProxyShareModel.swift

@@ -54,8 +54,13 @@ struct HakoTVShell: View {
      
      
     @State private var editDoor: EditDoor?
+    @State private var rulesDoor: RulesDoor?
 
     struct EditDoor: Identifiable, Hashable {
+        let id: HakoTVSubscription.ID
+    }
+     
+    struct RulesDoor: Identifiable, Hashable {
         let id: HakoTVSubscription.ID
     }
      
@@ -246,8 +251,21 @@ struct HakoTVShell: View {
                                 Task { await tunnel.refresh(subscription: subscription) }
                             }
                         } : nil,
-                        onEdit: { editDoor = EditDoor(id: id) }
+                        onEdit: { editDoor = EditDoor(id: id) },
+                        onRules: { rulesDoor = RulesDoor(id: id) }
                     )
+                }
+                .navigationDestination(item: $rulesDoor) { door in
+                    HakoTVProfileRulesScreen(store: $store, id: door.id) { row in
+                         
+                        rulesDoor = nil
+                         
+                         
+                         
+                         
+                        guard live, store.current?.id == row.id else { return }
+                        Task { await tunnel.refresh(subscription: row) }
+                    }
                 }
                 .navigationDestination(item: $editDoor) { door in
                     HakoTVEditSubscriptionScreen(store: $store, id: door.id) { newAddress in

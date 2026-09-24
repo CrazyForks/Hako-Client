@@ -153,12 +153,22 @@ final class HakoTVConfigPipeline {
             panelName = nil
         } else {
             progress(.downloading)
-            let fetched = try await HakoTVSubscriptionFetcher.fetch(
+            let fetched = try await HakoTVSubscriptionFetcher.fetchBody(
                 subscription.requestURL,
                 session: session,
                 userAgent: userAgent
             )
-            sourceYAML = fetched.yaml
+             
+             
+             
+             
+            do {
+                sourceYAML = try HakoTVComposedProfile.document(body: fetched.body, rules: subscription.effectiveRules)
+            } catch let error as HakoTVSubscriptionFetcher.FetchError {
+                throw error
+            } catch {
+                throw PipelineError.invalidConfiguration(error.localizedDescription)
+            }
             userInfo = fetched.userInfo
             panelName = fetched.panelName
         }

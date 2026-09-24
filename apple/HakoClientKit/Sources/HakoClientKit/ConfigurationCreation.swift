@@ -624,7 +624,9 @@ public extension ConfigurationBuiltins {
     static var schemes: [ConfigurationRuleScheme] { [basicScheme, lazyScheme] }
     static var records: [ConfigurationSourceRecord] { [basicRecord, lazyRecord] }
 
-    static func source(for id: String) throws -> ConfigurationSourcePayload? {
+     
+     
+    public static func source(for id: String) throws -> ConfigurationSourcePayload? {
         if id == basicRuleID { return basicSource }
         if id == lazyRuleID { return try lazySource() }
         return nil

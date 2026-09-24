@@ -68,6 +68,8 @@
 "Currently in force: %@ · changing this takes effect immediately, without reconnecting" = "Currently in force: %@ · changing this takes effect immediately, without reconnecting";
 "DNS" = "DNS";
 "DNS mode" = "DNS mode";
+"Default Rules" = "Default Rules";
+"Default Rules and Lazy Rules use only the nodes from this URL. Profile's own rules run the configuration as written." = "Default Rules and Lazy Rules use only the nodes from this URL. Profile's own rules run the configuration as written.";
 "Destination" = "Destination";
 "Diagnostics" = "Diagnostics";
 "Direct" = "Direct";
@@ -109,6 +111,7 @@
 "Last problem" = "Last problem";
 "Last read %@" = "Last read %@";
 "Latency values are the last test results; reading the list does not run a test." = "Latency values are the last test results; reading the list does not run a test.";
+"Lazy Rules" = "Lazy Rules";
 "Let other devices on your network use this Apple TV as their HTTP or SOCKS5 proxy, with the port, username and password your profile names. The tunnel has to be running." = "Let other devices on your network use this Apple TV as their HTTP or SOCKS5 proxy, with the port, username and password your profile names. The tunnel has to be running.";
 "Let profiles listen on the local network" = "Let profiles listen on the local network";
 "Live" = "Live";
@@ -158,6 +161,7 @@
 "Never matches" = "Never matches";
 "No %@ connections" = "No %@ connections";
 "No automatic backup yet. Turn on “Keep iCloud backup current” on your iPhone or Mac." = "No automatic backup yet. Turn on “Keep iCloud backup current” on your iPhone or Mac.";
+"No nodes were found at this URL." = "No nodes were found at this URL.";
 "No policy groups in this configuration" = "No policy groups in this configuration";
 "No profiles on this Apple TV" = "No profiles on this Apple TV";
 "No route" = "No route";
@@ -198,6 +202,7 @@
 "Profile Unavailable" = "Profile Unavailable";
 "Profile listeners" = "Profile listeners";
 "Profile remote URL is invalid." = "Profile remote URL is invalid.";
+"Profile's own rules" = "Profile's own rules";
 "Profiles" = "Profiles";
 "Providers" = "Providers";
 "Proxied" = "Proxied";
@@ -288,6 +293,7 @@
 "The profile URL could not be fetched: the request timed out." = "The profile URL could not be fetched: the request timed out.";
 "The profile could not be downloaded: %@" = "The profile could not be downloaded: %@";
 "The profile did not come back as text." = "The profile did not come back as text.";
+"The profile in use fetches its configuration again right away. Another profile applies the choice when it is next used." = "The profile in use fetches its configuration again right away. Another profile applies the choice when it is next used.";
 "The profile in use. Press to see its address or remove it." = "The profile in use. Press to see its address or remove it.";
 "The profile is larger than this Apple TV accepts." = "The profile is larger than this Apple TV accepts.";
 "The profile is not something the tunnel can read: %@" = "The profile is not something the tunnel can read: %@";
@@ -320,6 +326,7 @@
 "The tunnel's own resolvers, as the profile names them." = "The tunnel's own resolvers, as the profile names them.";
 "The tunnel's own resolvers, as the profile names them. Not a system DNS setting — an Apple TV has none to change; the policy editor stays on your phone." = "The tunnel's own resolvers, as the profile names them. Not a system DNS setting — an Apple TV has none to change; the policy editor stays on your phone.";
 "These are the tunnel's own resolvers, from the profile — not a system DNS setting. An Apple TV has none to change; the policy editor stays on your phone." = "These are the tunnel's own resolvers, from the profile — not a system DNS setting. An Apple TV has none to change; the policy editor stays on your phone.";
+"This URL is a node list, not a configuration. Choose Default Rules or Lazy Rules for this profile." = "This URL is a node list, not a configuration. Choose Default Rules or Lazy Rules for this profile.";
 "This address is already in the list, as “%@”." = "This address is already in the list, as “%@”.";
 "This group picks its own member." = "This group picks its own member.";
 "This item is still required, or is missing." = "This item is still required, or is missing.";

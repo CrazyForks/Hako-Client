@@ -32,6 +32,7 @@ struct HakoTVSubscriptionDetailScreen: View {
      
     enum Verb: Hashable, CaseIterable {
         case update
+        case rules
         case edit
         case use
         case remove
@@ -39,6 +40,7 @@ struct HakoTVSubscriptionDetailScreen: View {
         var title: String {
             switch self {
             case .update: String(localized: "Update now")
+            case .rules: String(localized: "Rules")
             case .edit: String(localized: "Edit")
             case .use: String(localized: "Use this profile")
             case .remove: String(localized: "Remove")
@@ -48,6 +50,7 @@ struct HakoTVSubscriptionDetailScreen: View {
         var identifier: String {
             switch self {
             case .update: "update"
+            case .rules: "rules"
             case .edit: "edit"
             case .use: "use"
             case .remove: "remove"
@@ -68,6 +71,8 @@ struct HakoTVSubscriptionDetailScreen: View {
     var onUpdate: (() -> Void)?
      
     var onEdit: () -> Void = {}
+     
+    var onRules: () -> Void = {}
 
     @State private var asksToRemove = false
 
@@ -107,7 +112,7 @@ struct HakoTVSubscriptionDetailScreen: View {
     private var actions: some View {
         List {
             Section {
-                ForEach(Self.verbs(isCurrent: isCurrent), id: \.self) { verb in
+                ForEach(Self.verbs(isCurrent: isCurrent, isFetchable: subscription?.hasFetchableAddress ?? false), id: \.self) { verb in
                     Button(role: verb == .remove ? .destructive : nil) {
                         perform(verb)
                     } label: {
@@ -115,6 +120,15 @@ struct HakoTVSubscriptionDetailScreen: View {
                             HStack(spacing: 16) {
                                 if isUpdating { ProgressView() }
                                 Text(Self.updateRowTitle(updating: isUpdating))
+                            }
+                        } else if verb == .rules {
+                             
+                             
+                            HStack {
+                                Text(verb.title)
+                                Spacer()
+                                Text(subscription?.effectiveRules.title ?? "")
+                                    .foregroundStyle(.secondary)
                             }
                         } else {
                             Text(verb.title)
@@ -138,6 +152,8 @@ struct HakoTVSubscriptionDetailScreen: View {
             } else {
                 store.markUpdated(id, at: Date())
             }
+        case .rules:
+            onRules()
         case .edit:
             onEdit()
         case .use:
@@ -194,8 +210,11 @@ struct HakoTVSubscriptionDetailScreen: View {
      
      
      
-    static func verbs(isCurrent: Bool) -> [Verb] {
-        isCurrent ? [.update, .edit, .remove] : [.edit, .use, .remove]
+     
+    static func verbs(isCurrent: Bool, isFetchable: Bool = true) -> [Verb] {
+        var verbs: [Verb] = isCurrent ? [.update, .rules, .edit, .remove] : [.rules, .edit, .use, .remove]
+        if !isFetchable { verbs.removeAll { $0 == .rules } }
+        return verbs
     }
 
     static func updateRowTitle(updating: Bool) -> String {
