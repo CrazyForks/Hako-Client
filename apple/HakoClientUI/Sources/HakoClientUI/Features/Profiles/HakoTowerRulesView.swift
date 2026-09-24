@@ -725,6 +725,61 @@ public enum HakoTowerGroupIcon {
     }
 }
 
+ 
+ 
+ 
+ 
+ 
+public enum HakoTowerGroupIconEcho: Equatable {
+    case emoji(String)
+    case symbol(HakoSymbol)
+    case image(host: String)
+    case nothingDraws
+
+    public static func of(_ icon: String) -> HakoTowerGroupIconEcho? {
+        switch HakoProxyGroupIconKind.of(icon) {
+        case .none: return nil
+        case .emoji(let value)?: return .emoji(value)
+        case .symbol(let symbol)?: return .symbol(symbol)
+        case .remote(let host)?: return .image(host: host)
+        case .unrecognized?: return .nothingDraws
+        }
+    }
+
+     
+     
+    public var label: String {
+        switch self {
+        case .emoji, .symbol: return "Shows as"
+        case .image: return "Image on"
+        case .nothingDraws: return "Saved with the group, but nothing draws it."
+        }
+    }
+}
+
+struct HakoTowerGroupIconEchoRow: View {
+    let icon: String
+
+    var body: some View {
+        if let echo = HakoTowerGroupIconEcho.of(icon) {
+            HStack {
+                Text(LocalizedStringKey(echo.label))
+                    .foregroundStyle(echo == .nothingDraws ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                Spacer(minLength: 8)
+                switch echo {
+                case .emoji(let emoji): Text(verbatim: emoji).foregroundStyle(.secondary)
+                case .symbol(let symbol): Image(systemName: symbol.rawValue).foregroundStyle(.secondary)
+                case .image(let host): Text(verbatim: host).foregroundStyle(.secondary)
+                case .nothingDraws: EmptyView()
+                }
+            }
+            .font(.footnote)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("configuration.rules.group.icon.echo")
+        }
+    }
+}
+
 private struct HakoTowerGroupEditor: View {
     let group: ConfigurationRuleDraft.Group
     let all: [ConfigurationRuleDraft.Group]
@@ -781,11 +836,13 @@ private struct HakoTowerGroupEditor: View {
                 Section("名称与 Emoji") {
                     TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name")
                     TextField("Icon URL", text: $icon, prompt: Text(verbatim: "https://…")).autocorrectionDisabled().accessibilityIdentifier("configuration.rules.group.icon")
+                    HakoTowerGroupIconEchoRow(icon: icon)
                 }
             } else {
                 Section("名称与 Emoji") {
                     TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name")
                     TextField("Icon URL", text: $icon, prompt: Text(verbatim: "https://…")).autocorrectionDisabled().accessibilityIdentifier("configuration.rules.group.icon")
+                    HakoTowerGroupIconEchoRow(icon: icon)
                 }
                 Section {
                     Picker("Group Type", selection: $kind) { ForEach(Array(Set([group.type, "select", "url-test", "fallback"])).sorted(), id: \.self) { Text(verbatim: $0).tag($0) } }.accessibilityIdentifier("configuration.rules.group.type")
