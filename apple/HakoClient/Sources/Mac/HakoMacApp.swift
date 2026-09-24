@@ -1909,7 +1909,7 @@ private final class HakoMacSceneModel: ObservableObject {
                 HakoMacConfigurationInspector(
                     profile: profile,
                     sources: snapshot.sources.filter(\.suppliesNodes),
-                    schemes: configurationLibrary.ruleShelves.flatMap(\.schemes),
+                    ruleShelves: configurationLibrary.ruleShelves,
                     recipe: snapshot.recipes.first { $0.id == id.rawValue },
                     scriptsActions: scriptsActions(profileID: id),
                     profileURL: appProfile.flatMap { if case .url(let url) = $0.source { url } else { nil } },

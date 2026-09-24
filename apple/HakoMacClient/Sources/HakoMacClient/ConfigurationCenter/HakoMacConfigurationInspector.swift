@@ -79,6 +79,8 @@ public struct HakoMacConfigurationInspectorActions {
 public struct HakoMacConfigurationInspector: View {
     private let profile: HakoProfileSnapshot
     private let sources: [ConfigurationSourceRecord]
+     
+    private let ruleShelves: [HakoMacRuleLibraryShelf]
     private let schemes: [ConfigurationRuleScheme]
     private let recipe: ConfigurationRecipe?
     private let scriptsActions: HakoMacScriptsActions
@@ -99,7 +101,7 @@ public struct HakoMacConfigurationInspector: View {
     public init(
         profile: HakoProfileSnapshot,
         sources: [ConfigurationSourceRecord],
-        schemes: [ConfigurationRuleScheme],
+        ruleShelves: [HakoMacRuleLibraryShelf],
         recipe: ConfigurationRecipe?,
         scriptsActions: HakoMacScriptsActions,
         profileURL: String? = nil,
@@ -108,6 +110,8 @@ public struct HakoMacConfigurationInspector: View {
     ) {
         self.profile = profile
         self.sources = sources
+        let schemes = ruleShelves.flatMap(\.schemes)
+        self.ruleShelves = ruleShelves
         self.schemes = schemes
         self.recipe = recipe
         self.scriptsActions = scriptsActions
@@ -297,7 +301,7 @@ public struct HakoMacConfigurationInspector: View {
             .accessibilityIdentifier("configuration-center.configuration.sources.all")
             HakoRoutedViewLink {
                 HakoMacConfigurationSchemesPage(
-                    schemes: schemes, chosen: $chosenScheme,
+                    shelves: ruleShelves, chosen: $chosenScheme,
                     choose: chooseScheme, page: { door(.scheme($0)) }
                 )
                 .navigationTitle(Text(hako: .copy("Rule Scheme")))
@@ -660,15 +664,29 @@ struct HakoMacConfigurationSourcesPage: View {
         return sources.filter { $0.label.localizedCaseInsensitiveContains(needle) }
     }
 
+     
+     
+     
+    static func shelves(_ sources: [ConfigurationSourceRecord]) -> [HakoMacNodeLibraryShelf] {
+        HakoMacNodeLibraryGroup.allCases.compactMap { group in
+            let members = sources.filter { group.contains($0) }
+            return members.isEmpty ? nil : HakoMacNodeLibraryShelf(group: group, sources: members)
+        }
+    }
+
     var body: some View {
         List {
-            Section {
-                ForEach(shown) { source in
-                    HakoMacConfigurationSourceRow(
-                        source: source, chosen: chosen.contains(source.id),
-                        toggle: { toggle(source.id) },
-                        inspect: { scopeSource = HakoMacScopeRequest(source: source, chosen: chosen.contains(source.id)) }
-                    )
+            ForEach(Self.shelves(shown)) { shelf in
+                Section {
+                    ForEach(shelf.sources) { source in
+                        HakoMacConfigurationSourceRow(
+                            source: source, chosen: chosen.contains(source.id),
+                            toggle: { toggle(source.id) },
+                            inspect: { scopeSource = HakoMacScopeRequest(source: source, chosen: chosen.contains(source.id)) }
+                        )
+                    }
+                } header: {
+                    Text(hako: .copy(shelf.group.title))
                 }
             }
         }
@@ -687,26 +705,36 @@ struct HakoMacConfigurationSourcesPage: View {
  
  
 struct HakoMacConfigurationSchemesPage: View {
-    let schemes: [ConfigurationRuleScheme]
+     
+     
+     
+    let shelves: [HakoMacRuleLibraryShelf]
     @Binding var chosen: String
     let choose: (String) -> Void
     let page: (String) -> AnyView
     @State private var filter = ""
 
-    private var shown: [ConfigurationRuleScheme] {
+    private var shown: [HakoMacRuleLibraryShelf] {
         let needle = filter.trimmingCharacters(in: .whitespaces)
-        guard !needle.isEmpty else { return schemes }
-        return schemes.filter { $0.displayLabel.localizedCaseInsensitiveContains(needle) }
+        guard !needle.isEmpty else { return shelves }
+        return shelves.compactMap { shelf in
+            let members = shelf.schemes.filter { $0.displayLabel.localizedCaseInsensitiveContains(needle) }
+            return members.isEmpty ? nil : HakoMacRuleLibraryShelf(section: shelf.section, schemes: members)
+        }
     }
 
     var body: some View {
         List {
-            Section {
-                ForEach(shown) { scheme in
-                    HakoMacConfigurationSchemeRow(
-                        scheme: scheme, chosen: scheme.id == chosen,
-                        choose: { choose(scheme.id) }, page: { page(scheme.id) }
-                    )
+            ForEach(shown) { shelf in
+                Section {
+                    ForEach(shelf.schemes) { scheme in
+                        HakoMacConfigurationSchemeRow(
+                            scheme: scheme, chosen: scheme.id == chosen,
+                            choose: { choose(scheme.id) }, page: { page(scheme.id) }
+                        )
+                    }
+                } header: {
+                    Text(hako: .copy(shelf.section.title))
                 }
             }
         }
