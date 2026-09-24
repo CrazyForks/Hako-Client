@@ -313,6 +313,8 @@ public struct HakoMacConfigurationWizardSheet: View {
                 HakoMacCardSection(.copy("Original Configuration")) {
                     VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
                         Text(hako: .copy("Use Original Configuration")).foregroundStyle(Color.accentColor)
+                         
+                        Text(verbatim: candidate.label).font(.subheadline)
                         Text(hako: .copy("Runs the configuration as received, with its own proxy groups, rules and DNS."))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)

@@ -298,6 +298,12 @@ public struct HakoMacConfigurationInspector: View {
      
      
     private var usesOriginal: Bool { recipe.map { $0.preservesOriginal == true } ?? true }
+     
+     
+    private var originalSourceName: String? {
+        let id = recipe?.sources.first?.id ?? "legacy-" + profile.id.rawValue
+        return sources.first { $0.id == id }?.label ?? (recipe == nil ? profile.label : nil)
+    }
 
     private var composition: some View {
         Section {
@@ -307,8 +313,18 @@ public struct HakoMacConfigurationInspector: View {
              
              
             if offersOriginal {
+                 
+                 
+                 
+                 
+                 
                 Toggle(isOn: Binding(get: { usesOriginal }, set: { actions.setOriginalUse($0) })) {
-                    Text(hako: .copy("Use Original Configuration"))
+                    VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
+                        Text(hako: .copy("Use Original Configuration"))
+                        if let name = originalSourceName {
+                            Text(verbatim: name).font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .disabled(profile.isBusy)
                 .accessibilityIdentifier("configuration-center.configuration.original")
