@@ -543,6 +543,22 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
     public let actionRefusals: [String: String]
 
      
+     
+     
+     
+     
+     
+     
+     
+     
+    public let editableMembers: Set<String>
+
+     
+    public func canEdit(_ member: HakoProxyMemberSnapshot) -> Bool {
+        !member.isGroup && editableMembers.contains(member.name)
+    }
+
+     
     public func offersUnpin(for group: HakoProxyGroupSnapshot) -> Bool {
         guard canUnpinGroups == true else { return false }
          
@@ -571,7 +587,8 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
         catalogState: HakoProxiesCatalogState? = nil,
         canRefreshCatalog: Bool? = nil,
         canUnpinGroups: Bool? = nil,
-        actionRefusals: [String: String] = [:]
+        actionRefusals: [String: String] = [:],
+        editableMembers: Set<String> = []
     ) {
         self.groups = groups
         self.hiddenGroups = hiddenGroups
@@ -622,6 +639,7 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
         self.canRefreshCatalog = canRefreshCatalog
         self.canUnpinGroups = canUnpinGroups
         self.actionRefusals = actionRefusals
+        self.editableMembers = editableMembers
     }
 
     public static let empty = HakoProxiesSnapshot()

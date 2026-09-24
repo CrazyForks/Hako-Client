@@ -676,6 +676,13 @@ struct ProxiesOverviewAdapter: View {
                 )
             }
         }
+         
+         
+         
+         
+        let editableMembers: Set<String> = editMember == nil
+            ? []
+            : Set(sourceModel.proxies.map(\.name))
         let providers = HakoPerf.measure("proxies.snapshot.providers") {
             ProxiesRuntimeCatalogComposer.providers(
                 source: sourceModel.providers,
@@ -759,15 +766,15 @@ struct ProxiesOverviewAdapter: View {
                 initiallyExpandedGroup:
                     initiallyExpandedGroup,
                 rememberedExpandedGroups: rememberedExpandedGroups,
-                displayPreferences: preferences
-            ,
+                displayPreferences: preferences,
                 canRefreshCatalog: refreshCatalog != nil,
                  
                  
                  
                  
                 canUnpinGroups: unpinGroup != nil,
-                actionRefusals: actionRefusals
+                actionRefusals: actionRefusals,
+                editableMembers: editableMembers
             ),
             capabilities: AppleClientCapabilities([
                 .proxies: .available,

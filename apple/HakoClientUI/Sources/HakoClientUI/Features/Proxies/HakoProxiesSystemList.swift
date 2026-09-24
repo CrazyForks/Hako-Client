@@ -245,9 +245,9 @@ struct HakoProxiesSystemList<Icon: View>: View {
                     choiceRefusal = nil
                     send(.select(group: group.name, member: member.name))
                 },
-                editNode: member.isGroup
-                    ? nil
-                    : { send(.editMember(name: member.name)) },
+                editNode: snapshot.proxies.canEdit(member)
+                    ? { send(.editMember(name: member.name)) }
+                    : nil,
                 testNode: member.isGroup
                     ? nil
                     : { send(.testMember(name: member.name)) },
@@ -305,7 +305,9 @@ struct HakoProxiesSystemList<Icon: View>: View {
                         latencyPulse: latencyPulse,
                         latencyPulseSnapshot: latencyPulseSnapshot,
                         select: nil,
-                        editNode: { send(.editMember(name: node.name)) },
+                        editNode: snapshot.proxies.editableMembers.contains(node.name)
+                            ? { send(.editMember(name: node.name)) }
+                            : nil,
                         testNode: { send(.testMember(name: node.name)) },
                         inspectNode: HakoProxyBrowsing.inspects(
                             HakoProxyMemberSnapshot(name: node.name, type: node.type)
@@ -464,6 +466,9 @@ struct HakoProxyMemberListRow: View, Equatable {
             && a.canTest == b.canTest
             && a.showsLatency == b.showsLatency
             && a.density == b.density
+             
+             
+            && (a.editNode == nil) == (b.editNode == nil)
     }
 
     let row: HakoProxyFrozenRow

@@ -35,12 +35,24 @@ struct ProxiesOverviewHost: View {
     @State private var providerUpdateDeferred: HakoDisplayText?
      
     @State private var inspectingNode: ProxyNodeInspection?
+     
+     
+     
+     
+     
+     
+    @State private var offersNodeEditing = false
 
     var body: some View {
         HakoPerf.measure("proxies.host.body") {
             hosted.hakoProductModal(item: $inspectingNode, role: .form) { inspection in
                 nodeDetailSheet(for: inspection)
             }
+        }
+        .task(id: profile.id) {
+            offersNodeEditing = ProxyNodeEditPolicy.isEditable(
+                hasStoredSource: profiles.sourceYAML(for: profile) != nil
+            )
         }
 
 
@@ -224,6 +236,14 @@ struct ProxiesOverviewHost: View {
              
             actionRefusals: nodes.actionRefusals,
             testMember: { name in Task { await nodes.test(name) } },
+             
+             
+             
+             
+             
+            editMember: offersNodeEditing
+                ? { name in inspectingNode = ProxyNodeInspection(name: name) }
+                : nil,
             inspectMember: { name in inspectingNode = ProxyNodeInspection(name: name) },
             initiallyExpandedGroup: initiallyExpandedGroup,
             rememberedExpandedGroups: nodes.unfoldedGroups,
