@@ -865,12 +865,22 @@ public struct HakoLogsView<Icon: View>: View {
     @ViewBuilder
     private var listBody: some View {
         VStack(spacing: 0) {
-            if !severities.isEmpty {
+             
+             
+             
+             
+            if !shownSeverities.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: HakoTheme.Spacing.compact) {
-                        ForEach(severities.sorted { $0.title < $1.title }) { severity in
+                        ForEach(shownSeverities.sorted { $0.title < $1.title }) { severity in
                             HakoActivityKeywordButton(title: .copy(severity.title)) {
-                                severities.remove(severity)
+                                 
+                                 
+                                 
+                                 
+                                severities.removeAll()
+                                send(.setLogLevelDirective(nil))
+                                _ = severity
                             }
                         }
                     }
@@ -927,6 +937,13 @@ public struct HakoLogsView<Icon: View>: View {
      
      
     @State private var projection = HakoActivityProjectionMemo()
+
+     
+     
+     
+    private var shownSeverities: Set<HakoActivityLogSeverity> {
+        HakoActivityLogSeverity.expandedSeverities(from: severities)
+    }
 
     private var entries: [HakoActivityLogEntry] {
         projection.logs(
@@ -1077,49 +1094,45 @@ public struct HakoLogsView<Icon: View>: View {
                     }
                 } label: {
                     let isSelected = severities.contains(severity) || snapshot.activity.logLevelDirective == severity.rawValue
-                    Label(
-                        severity.title,
-                        systemImage: isSelected
-                            ? HakoSymbol.checkmark.rawValue
-                            : severity.symbol.rawValue
-                    )
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    if isSelected {
+                        Label(severity.title, systemImage: HakoSymbol.checkmark.rawValue)
+                    } else {
+                        Text(hako: .copy(severity.title))
+                    }
                 }
             }
 
-            Divider()
-
-            Button {
-                if snapshot.activity.logLevelDirective == "silent" {
-                    severities.removeAll()
-                    send(.setLogLevelDirective(nil))
-                } else {
-                    severities.removeAll()
-                    send(.setLogLevelDirective("silent"))
-                }
-            } label: {
-                Label(
-                    "Silent",
-                    systemImage: snapshot.activity.logLevelDirective == "silent"
-                        ? HakoSymbol.checkmark.rawValue
-                        : HakoSymbol.eyeSlash.rawValue
-                )
-            }
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
         } label: {
              
              
-            if snapshot.activity.logLevelDirective == "silent" {
-                Label(
-                    "Levels · Silent",
-                    systemImage: HakoSymbol.eyeSlash.rawValue
-                )
-            } else {
-                Label(
-                    severities.isEmpty
-                        ? "Levels"
-                        : "Levels · \(severities.count)",
-                    systemImage: HakoSymbol.line3HorizontalDecrease.rawValue
-                )
-            }
+             
+             
+             
+             
+            Label(
+                shownSeverities.isEmpty
+                    ? "Levels"
+                    : "Levels · \(shownSeverities.count)",
+                systemImage: HakoSymbol.line3HorizontalDecrease.rawValue
+            )
         }
     }
 

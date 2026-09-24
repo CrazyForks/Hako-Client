@@ -219,7 +219,18 @@ public enum HakoLogSettings {
                !profileLevel.isEmpty {
                 return profileLevel.lowercased()
             }
-            return "warning"
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+            return "info"
         }
     }
 

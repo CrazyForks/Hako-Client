@@ -557,23 +557,21 @@ public extension AppleClientActions {
                 }
                 openMore(destination)
             },
-            AppleClientActions(capability: .activity) { action in
-                guard case .activity(let command) = action else { return }
-                let defaults = UserDefaults.standard
-                switch command {
-                case .setLogLevelDirective(let raw):
-                    let directiveKey = "logs.levelDirective"
-                    if let raw, !raw.isEmpty {
-                        defaults.set(raw, forKey: directiveKey)
-                    } else {
-                        defaults.removeObject(forKey: directiveKey)
-                    }
-                case .setLogSeverityFilter(let levels):
-                    defaults.set(levels, forKey: "logs.levels")
-                default:
-                    break
-                }
-            },
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
         ])
     }
 
