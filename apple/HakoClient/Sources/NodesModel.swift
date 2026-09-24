@@ -1039,7 +1039,9 @@ final class NodesModel: ObservableObject {
      
      
      
-    @Published private(set) var foldStateRecorded = false
+     
+     
+    private(set) var foldStateRecorded = false
     var readerFoldedAllGroups: Bool { foldStateRecorded && unfoldedGroups.isEmpty }
     @Published private(set) var isSwitchingProxy = false {
         didSet { HakoPerf.count("pub.nodes.switching") }
@@ -1470,14 +1472,40 @@ final class NodesModel: ObservableObject {
             : sentence
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    private var readerFoldBase: Set<String> {
+        !foldStateRecorded || unfoldedGroups.count > 1 ? [] : unfoldedGroups
+    }
+
+     
+     
+     
+     
+    nonisolated static func storedFoldStateIsTheReaders(_ stored: Set<String>?) -> Bool {
+        stored.map { $0.count <= 1 } ?? false
+    }
+
     func setExpanded(_ expanded: Bool, group: String) {
-        foldStateRecorded = true
+        var next = readerFoldBase
         if expanded {
-            unfoldedGroups.insert(group)
+            next.insert(group)
             currentGroupName = group
         } else {
-            unfoldedGroups.remove(group)
+            next.remove(group)
         }
+        foldStateRecorded = true
+        unfoldedGroups = next
         preferences?.savePresentation(
             currentGroup: currentGroupName,
             unfoldedGroups: unfoldedGroups
@@ -1496,12 +1524,14 @@ final class NodesModel: ObservableObject {
      
     func setExpanded(_ expanded: Bool, groups names: [String]) {
         guard !names.isEmpty else { return }
-        foldStateRecorded = true
+        var next = readerFoldBase
         if expanded {
-            unfoldedGroups.formUnion(names)
+            next.formUnion(names)
         } else {
-            unfoldedGroups.subtract(names)
+            next.subtract(names)
         }
+        foldStateRecorded = true
+        unfoldedGroups = next
         preferences?.savePresentation(
             currentGroup: currentGroupName,
             unfoldedGroups: unfoldedGroups
@@ -2848,7 +2878,10 @@ final class NodesModel: ObservableObject {
         } ?? state.profileID) + "|" + selectionFingerprint
         guard runtimeKey != restoredRuntimeKey else { return }
         currentGroupName = state.currentGroupName
-        foldStateRecorded = state.unfoldedGroups != nil
+         
+         
+         
+        foldStateRecorded = Self.storedFoldStateIsTheReaders(state.unfoldedGroups)
         unfoldedGroups = state.unfoldedGroups ?? Set(groups.map(\.name))
 
          
