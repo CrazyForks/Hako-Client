@@ -46,6 +46,7 @@
 "%@ groups" = "%@ groups";
 "%@ had been held to an older copy of the profile URL and now follows it again. Changed with that: %@. If any of these was your own edit, set it again." = "%@ had been held to an older copy of the profile URL and now follows it again. Changed with that: %@. If any of these was your own edit, set it again.";
 "%@ is active" = "%@ is active";
+"%@ is already being deleted." = "%@ is already being deleted.";
 "%@ is decided by the platform, so what you wrote is not used." = "%@ is decided by the platform, so what you wrote is not used.";
 "%@ is not a list of named definitions" = "%@ is not a list of named definitions";
 "%@ is not a valid domain." = "%@ is not a valid domain.";

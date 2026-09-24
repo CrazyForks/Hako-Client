@@ -306,6 +306,7 @@ struct ProfileCenterAdapter: View {
             profiles: HakoProfilesSnapshot(
                  
                  
+                 
                 profiles: catalogProfiles.compactMap { profileSnapshot($0, scripts: scripts) },
                  
                  

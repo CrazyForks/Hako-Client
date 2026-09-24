@@ -550,7 +550,13 @@ struct ProxiesOverviewAdapter: View {
         HakoLatencyPulse(
             results: results ?? latencyStates,
             testing: testingNames,
-            groupTerminals: effectiveRuntime.resolvedNowByGroup,
+             
+             
+             
+             
+             
+             
+            groupTerminals: isConnected ? effectiveRuntime.resolvedNowByGroup : [:],
             completed: latencyCompletedCount,
             total: latencyTotalCount,
             isTesting: isTesting

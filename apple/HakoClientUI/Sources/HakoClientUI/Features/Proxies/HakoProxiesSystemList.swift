@@ -663,20 +663,28 @@ struct HakoProxyMemberListRow: View, Equatable {
          
          
          
-         
-         
-        if !batch.isTesting, let terminal = batch.groupTerminals[row.name] {
-            liveRoute = terminal
-        }
         if !batch.isTesting {
-            if let landed = batch.results[row.name] {
+            liveRoute = batch.groupTerminals[row.name]
+        }
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        let latencyKey = shownRoute ?? row.name
+        if !batch.isTesting {
+            if let landed = batch.results[latencyKey] {
                 liveLatency = landed
             } else if liveLatency == .testing {
                 liveLatency = .untested
             }
-        } else if let landed = batch.results[row.name] {
+        } else if let landed = batch.results[latencyKey] {
             liveLatency = landed
-        } else if batch.testing.contains(row.name) {
+        } else if batch.testing.contains(latencyKey) {
             liveLatency = .testing
         }
     }

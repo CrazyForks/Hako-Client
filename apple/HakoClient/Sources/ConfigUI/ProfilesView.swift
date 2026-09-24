@@ -1954,7 +1954,14 @@ final class ProfilesViewModel: ObservableObject {
          
          
          
-        guard !deletingProfileIDs.contains(profile.id) else { return }
+         
+         
+         
+         
+        guard !deletingProfileIDs.contains(profile.id) else {
+            statusMessage = .format("%@ is already being deleted.", [profile.label])
+            return
+        }
         deletingProfileIDs.insert(profile.id)
         defer { deletingProfileIDs.remove(profile.id) }
          
@@ -1991,8 +1998,12 @@ final class ProfilesViewModel: ObservableObject {
         if profile.id == LocalDefaultProfileProvisioner.profileID {
             return "Direct is Clash's system fallback and cannot be deleted"
         }
+         
+         
+         
         if profile.id == activeProfileID,
-           !profiles.contains(where: { $0.id == LocalDefaultProfileProvisioner.profileID }) {
+           !profiles.contains(where: { $0.id == LocalDefaultProfileProvisioner.profileID }),
+           !profiles.contains(where: { $0.id != profile.id }) {
             return "Clash has no built-in profile to fall back to right now."
         }
         return "Switch to another profile before deleting"

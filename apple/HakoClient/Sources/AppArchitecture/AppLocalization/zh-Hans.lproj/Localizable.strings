@@ -46,6 +46,7 @@
 "%@ groups" = "%@ 个分组";
 "%@ had been held to an older copy of the profile URL and now follows it again. Changed with that: %@. If any of these was your own edit, set it again." = "%@ 此前被冻结在配置链接的一份旧副本上，现已改为跟随配置链接。随之变化：%@。如果其中有你自己改过的，请重新设置一次。";
 "%@ is active" = "%@ 已生效";
+"%@ is already being deleted." = "%@ 正在删除中。";
 "%@ is decided by the platform, so what you wrote is not used." = "%@ 由平台决定，你写的值不会被采用。";
 "%@ is not a list of named definitions" = "%@ 不是一组带名字的定义";
 "%@ is not a valid domain." = "%@ 不是有效的域名。";
