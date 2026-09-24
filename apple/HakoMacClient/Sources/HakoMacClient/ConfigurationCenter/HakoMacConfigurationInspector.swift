@@ -804,9 +804,22 @@ struct HakoMacConfigurationSourcesPage: View {
     }
 
     private var shown: [ConfigurationSourceRecord] {
+        let offered = Self.offered(sources, chosen: chosen)
         let needle = filter.trimmingCharacters(in: .whitespaces)
-        guard !needle.isEmpty else { return sources }
-        return sources.filter { $0.label.localizedCaseInsensitiveContains(needle) }
+        guard !needle.isEmpty else { return offered }
+        return offered.filter { $0.label.localizedCaseInsensitiveContains(needle) }
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+    static func offered(_ sources: [ConfigurationSourceRecord], chosen: Set<String>) -> [ConfigurationSourceRecord] {
+        sources.filter { $0.isRetainedSnapshot != true || chosen.contains($0.id) }
     }
 
      
