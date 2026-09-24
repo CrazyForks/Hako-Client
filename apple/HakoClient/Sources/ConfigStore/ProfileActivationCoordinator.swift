@@ -780,6 +780,15 @@ final class ProfileActivationCoordinator {
          runtimeOverride: @escaping () -> OverrideSpec = {
              FlClashRuntimeConfig.load()
          },
+          
+          
+          
+          
+          
+          
+          
+          
+         logDefaults: UserDefaults = UserDefaults(suiteName: HakoAppIdentifiers.appGroup) ?? .standard,
          profileScript: @escaping (String?, String, String) throws -> String = {
              try ScriptLibrary.apply(id: $0, to: $1, profileName: $2)
          },
@@ -830,6 +839,7 @@ final class ProfileActivationCoordinator {
         self.activationFetchBudget = activationFetchBudget
         self.globalOverride = globalOverride
         self.runtimeOverride = runtimeOverride
+        self.logDefaults = logDefaults
         self.profileScript = profileScript
         self.configScript = configScript
         self.postMergeScript = postMergeScript
@@ -1384,6 +1394,8 @@ final class ProfileActivationCoordinator {
      
      
     private var lastProfileLogLevel: String?
+     
+    private let logDefaults: UserDefaults
 
     private func prepareConfig(raw: String, profile: Profile) throws -> String {
         let stages = try ProfileRuntimeConfigBuilder.buildStages(
@@ -1402,7 +1414,8 @@ final class ProfileActivationCoordinator {
              
              
              
-            postMergeScript: postMergeScript
+            postMergeScript: postMergeScript,
+            logLevelDirective: HakoLogSettings.levelDirective(from: logDefaults)
         )
         lastProviderMerge = stages.providerMerge
         lastProfileLogLevel = stages.profileLogLevel
@@ -1777,10 +1790,7 @@ final class ProfileActivationCoordinator {
              
              
              
-            HakoLogSettings.setActiveProfileLogLevel(
-                lastProfileLogLevel,
-                in: UserDefaults(suiteName: HakoAppIdentifiers.appGroup) ?? .standard
-            )
+            HakoLogSettings.setActiveProfileLogLevel(lastProfileLogLevel, in: logDefaults)
              
              
              
