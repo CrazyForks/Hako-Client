@@ -156,6 +156,32 @@ final class ExtensionProvider: NSObject {
     private var providerWakeCount: UInt64 = 0
      
     private var interfaceListener: (any HakoInterfaceUpdateListenerProtocol)?
+     
+     
+    private var physicalPathMonitor: (any PhysicalPathMonitoring)?
+     
+     
+     
+     
+     
+    private var bearerWitnessProbe: BearerWitnessSystemStackProbe!
+
+    private func makeBearerWitnessProbe() -> BearerWitnessSystemStackProbe {
+        let queue = DispatchQueue(label: "org.example.hako.bearer-witness-probe")
+        return BearerWitnessSystemStackProbe(
+            queue: queue,
+            readHealth: { HakoDialHealthJSON() },
+            dialer: AppleSystemStackDialer(queue: queue) { [weak self] in
+                guard let self else { return nil }
+                pathLock.lock(); defer { pathLock.unlock() }
+                return physicalPathMonitor?.currentPhysicalInterface
+            },
+            report: { address, atUnix, connected, tookMillis, failure in
+                HakoReportSystemStackProbe(address, atUnix, connected, tookMillis, failure)
+            },
+            log: { HakoLogStore.shared.append($0, stream: .app) }
+        )
+    }
 
     init(
         tunnelProvider: NEPacketTunnelProvider,
@@ -167,6 +193,7 @@ final class ExtensionProvider: NSObject {
         self.startupMemorySampler = startupMemorySampler
         self.physicalPathMonitorFactory = physicalPathMonitorFactory
         super.init()
+        bearerWitnessProbe = makeBearerWitnessProbe()
     }
 
     static func makeDefaultPhysicalPathMonitor() -> any PhysicalPathMonitoring {
@@ -181,6 +208,7 @@ final class ExtensionProvider: NSObject {
     ) -> PhysicalPathStartupGate.Generation {
         let monitor = physicalPathMonitorFactory()
         pathLock.lock()
+        physicalPathMonitor = monitor
         defaultInterfaceIndex = 0
         defaultInterfaceName = ""
         defaultInterfaceType = ""
@@ -444,6 +472,7 @@ final class ExtensionProvider: NSObject {
         }
         pathLock.lock()
         interfaceListener = nil
+        physicalPathMonitor = nil
         defaultInterfaceIndex = 0
         defaultInterfaceName = ""
         defaultInterfaceType = ""
@@ -1305,6 +1334,7 @@ extension ExtensionProvider: HakoPlatformInterfaceProtocol {
          
          
         HakoLogStore.shared.append(message, stream: .core)
+        bearerWitnessProbe.observe(coreLine: message)
     }
 
      

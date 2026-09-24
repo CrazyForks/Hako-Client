@@ -839,14 +839,25 @@ public final class HakoLogStore: @unchecked Sendable {
      
      
      
+     
+     
+     
+     
+     
+     
+     
     @discardableResult
-    public func writeExport(to destination: URL) -> Bool {
+    public func writeExport(to destination: URL, device: String = "") -> Bool {
         let fileManager = self.fileManager
         guard fileManager.createFile(atPath: destination.path, contents: nil) else {
             return false
         }
         guard let handle = try? FileHandle(forWritingTo: destination) else { return false }
         defer { try? handle.close() }
+        if !device.isEmpty {
+            let body = device.hasSuffix("\n") ? device : "\(device)\n"
+            try? handle.write(contentsOf: Data("===== device =====\n\(body)".utf8))
+        }
         let urls = queue.sync { HakoLogStream.allCases.map { ($0, files(for: $0)) } }
         var sections: [(label: String, urls: [URL])] = urls.map { ($0.0.rawValue, $0.1) }
         if let container = directory?.deletingLastPathComponent() {
@@ -857,7 +868,8 @@ public final class HakoLogStore: @unchecked Sendable {
             }
         }
         for (index, section) in sections.enumerated() {
-            let header = (index == 0 ? "" : "\n") + "===== \(section.label) =====\n"
+            let gap = index == 0 && device.isEmpty ? "" : "\n"
+            let header = "\(gap)===== \(section.label) =====\n"
             try? handle.write(contentsOf: Data(header.utf8))
             for url in section.urls {
                 guard let reader = try? FileHandle(forReadingFrom: url) else { continue }

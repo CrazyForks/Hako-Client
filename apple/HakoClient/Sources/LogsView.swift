@@ -201,7 +201,9 @@ enum LogExportName {
     static func write(now: Date = Date()) -> URL? {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(current(now)).log")
-        guard HakoLogStore.shared.writeExport(to: url) else { return nil }
+        guard HakoLogStore.shared.writeExport(to: url, device: LogExportDeviceFacts.current(now: now).render()) else {
+            return nil
+        }
         return url
     }
 
@@ -417,7 +419,7 @@ struct LogsContent: View {
 #if os(macOS)
         MacSavePanel.write(
             suggestedName: "\(LogExportName.current()).log",
-            writing: { HakoLogStore.shared.writeExport(to: $0) },
+            writing: { HakoLogStore.shared.writeExport(to: $0, device: LogExportDeviceFacts.current().render()) },
             onFailure: { message in exportError = message }
         )
 #else
