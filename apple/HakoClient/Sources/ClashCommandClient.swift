@@ -134,6 +134,17 @@ struct RuntimeRouteContext: Equatable, Sendable {
     }
 }
 
+ 
+ 
+enum ControlConnectFailureLogGate {
+    static let repeatInterval: TimeInterval = 60
+    static func shouldLog(_ message: String, after last: (message: String, at: Date)?, now: Date) -> Bool {
+        guard let last else { return true }
+        if last.message != message { return true }
+        return now.timeIntervalSince(last.at) >= repeatInterval
+    }
+}
+
 struct RuntimeRouteEvidence: Codable, Equatable, Sendable {
     enum Kind: String, Codable, Sendable {
         case runtimeControlConnected = "runtime-control-connected"
@@ -490,7 +501,19 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
     private static let logBatchNanoseconds: UInt64 = 100_000_000
 
     private var client: HakoClashAPIClient?
-    private var providerSession: NETunnelProviderSession?
+     
+     
+    private var boundSession: NETunnelProviderSession?
+     
+     
+     
+     
+     
+    private var sessionProvider: (() -> NETunnelProviderSession?)?
+    private var providerSession: NETunnelProviderSession? { sessionProvider?() ?? boundSession }
+     
+     
+    private var lastConnectFailureLog: (message: String, at: Date)?
     private var clientHandler: HandlerProxy?
     private var connectTask: Task<Void, Never>?
     private var nativeConnectTask: Task<Void, Never>?
@@ -593,7 +616,16 @@ return
 
 
     func bind(session: NETunnelProviderSession?) {
-        providerSession = session
+        boundSession = session
+        if wantsConnection { connectIfNeeded() }
+    }
+
+     
+     
+     
+     
+    func bind(sessionProvider: @escaping () -> NETunnelProviderSession?) {
+        self.sessionProvider = sessionProvider
         if wantsConnection { connectIfNeeded() }
     }
 
@@ -1958,7 +1990,19 @@ return
          
          
          
-        guard let providerSession else { return }
+         
+         
+         
+         
+         
+         
+         
+         
+        guard let providerSession else {
+            noteConnectFailure("no-tunnel-session-yet;retrying")
+            scheduleReconnect(token: generation)
+            return
+        }
         guard let container = HakoAppIdentifiers.appGroupContainer
         else {
             lastError = "App Group container unavailable"
@@ -1973,10 +2017,16 @@ return
         runtimeIdentityCache.invalidate()
         let token = generation
         isConnecting = true
+        armAttemptWatchdog(token: token)
         connectTask = Task { [weak self] in
             do {
                 let hello = try await HakoClient(session: providerSession).hello()
-                await self?.nativeCleanup?.value
+                 
+                 
+                 
+                 
+                 
+                await Self.awaitBounded(self?.nativeCleanup, seconds: 5)
                 guard !Task.isCancelled else { return }
                 self?.openNativeClient(
                     socketPath: container.appendingPathComponent("clash.sock").path,
@@ -2180,6 +2230,7 @@ return
         closeNativeControlAttempt()
         isConnected = false
         lastError = error.localizedDescription
+        noteConnectFailure("connect-failed:" + error.localizedDescription)
          
          
         isReopeningControlSession = false
@@ -2229,7 +2280,45 @@ return
         peerCapabilities = []
         publishRuntimeDiagnostics(nil)
         if !message.isEmpty { lastError = message }
+        noteConnectFailure("stream-disconnected:" + (message.isEmpty ? "(no-reason-given)" : message))
         scheduleReconnect(token: generation)
+    }
+
+     
+     
+     
+     
+    private func noteConnectFailure(_ message: String, now: Date = Date()) {
+        guard ControlConnectFailureLogGate.shouldLog(message, after: lastConnectFailureLog, now: now) else { return }
+        lastConnectFailureLog = (message, now)
+        HakoLogStore.shared.append("control-session/" + message, stream: .app, level: .warning)
+    }
+
+     
+     
+     
+     
+    static let attemptWedgeSeconds: TimeInterval = 45
+
+    private func armAttemptWatchdog(token: UInt64) {
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(Self.attemptWedgeSeconds * 1_000_000_000))
+            guard let self, token == self.generation, self.isConnecting, self.wantsConnection else { return }
+            self.noteConnectFailure("attempt-wedged:\(Int(Self.attemptWedgeSeconds))s;reopening")
+            self.reconnectIfNeeded()
+        }
+    }
+
+     
+     
+    private nonisolated static func awaitBounded(_ task: Task<Void, Never>?, seconds: Double) async {
+        guard let task else { return }
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await task.value }
+            group.addTask { try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000)) }
+            await group.next()
+            group.cancelAll()
+        }
     }
 
     private func scheduleReconnect(token: UInt64) {

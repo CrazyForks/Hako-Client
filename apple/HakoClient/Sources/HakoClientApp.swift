@@ -1029,6 +1029,10 @@ struct AppShellView: View {
 
     private func rebind() {
         HakoPerf.measure("shell.rebind") {
+             
+             
+             
+            command.bind(sessionProvider: { [weak vpn] in vpn?.session })
             command.bind(session: vpn.session)
             command.sync(vpnStatus: vpn.status)
             stats.bind(session: vpn.session, command: command)
