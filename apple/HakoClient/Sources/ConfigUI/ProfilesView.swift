@@ -1953,8 +1953,8 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
-    func updateGlobalLANShare(
-        allowLAN: Bool?, mixedPort: Int32?, profileID: String
+    func updateLANShare(
+        _ override: KernelLANShareOverride, profileID: String
     ) throws {
         guard let profileStore,
               let latest = profileStore.load().first(where: { $0.id == profileID })
@@ -1963,14 +1963,12 @@ final class ProfilesViewModel: ObservableObject {
                 "the profile is no longer available"
             )
         }
-        var patch = OverridePatch(patchJSON: settingsProfile(for: latest).override.patchJSON)
-        patch.setValue(allowLAN, at: ["allow-lan"])
-        if let mixedPort {
-            patch.setValue(Int(mixedPort), at: ["mixed-port"])
-        }
+        var patch = OverridePatch(patchJSON: latest.override.patchJSON)
+        patch.setValue(override.allowLAN, at: ["allow-lan"])
+        patch.setValue(override.mixedPort.map { Int($0) }, at: ["mixed-port"])
         var candidate = latest
         candidate.override.patchJSON = patch.patchJSON
-        try updateGlobalConfiguration(candidate, replacing: ["allow-lan", "mixed-port"])
+        try updateConfiguration(candidate)
     }
 
      
@@ -1978,27 +1976,25 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
-     
     func kernelLANShareBinding() -> KernelLANShareBinding {
-        let runtimeDefaults = runtimeDefaults
-        return KernelLANShareBinding(
+        KernelLANShareBinding(
             profileSourceYAML: { [weak self] in
                 guard let self,
                       let active = self.profiles.first(where: { $0.id == self.activeProfileID })
                 else { return nil }
                 return self.sourceYAML(for: active)
             },
-            override: {
-                let patch = OverridePatch(patchJSON: FlClashRuntimeConfig.load(from: runtimeDefaults).patchJSON)
-                return KernelLANShareOverride(patch: patch)
+            override: { [weak self] in
+                guard let self,
+                      let active = self.profiles.first(where: { $0.id == self.activeProfileID })
+                else { return KernelLANShareOverride() }
+                return KernelLANShareOverride(patch: OverridePatch(patchJSON: active.override.patchJSON))
             },
             writeOverride: { [weak self] override in
                 guard let self, let id = self.activeProfileID else {
                     throw PipelineError.sourceUnavailable("the profile is no longer available")
                 }
-                try self.updateGlobalLANShare(
-                    allowLAN: override.allowLAN, mixedPort: override.mixedPort, profileID: id
-                )
+                try self.updateLANShare(override, profileID: id)
             },
             setPermitted: {
                 LocalNetworkPermission.setPermitted(

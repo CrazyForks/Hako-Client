@@ -2334,6 +2334,7 @@
 "Read Only" = "唯讀";
 "Read a profile from the clipboard." = "從剪貼簿讀一份設定。";
 "Read from Source" = "讀取的內容";
+"Read from the profile's allow-lan and mixed-port. Changing either here overrides this profile only; clear the port to follow the profile again. Takes effect the next time the tunnel starts." = "讀取設定檔裡的 allow-lan 與 mixed-port。在這裡改動只覆寫這一份設定檔；清空連接埠即恢復照設定檔讀取。下次連線生效。";
 "Read only" = "唯讀";
 "Reading backup…" = "正在讀取備份…";
 "Reading the current proxy catalog." = "正在讀取目前的代理目錄。";
@@ -3266,7 +3267,6 @@
 "This is not a rule head Clash's iOS editor recognizes." = "這不是 Clash iOS 編輯器可識別的規則頭。";
 "This is not valid YAML. Check the line the editor marked, then save again." = "這不是有效的 YAML。檢查編輯器標出的那一行，然後重新儲存。";
 "This is not valid configuration YAML: %@" = "這不是有效的設定 YAML：%@";
-"This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts." = "對應設定檔裡的 allow-lan：設定檔寫了就照設定檔讀取，沒寫時開啟開關即寫入覆寫；下次連線生效。";
 "This item is still required, or is missing." = "這一項仍被需要，或者已缺失。";
 "This local rule set will be deleted. Rule schemes in the library will also remove rules added from it." = "此本機規則集將被刪除，規則庫中引用它的方案也會移除對應規則。";
 "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed." = "此模式下所有流量不經過代理，因此不列出代理群組與節點。";

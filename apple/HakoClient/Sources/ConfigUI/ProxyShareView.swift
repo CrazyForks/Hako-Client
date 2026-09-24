@@ -32,6 +32,10 @@ struct ProxyShareView: View {
         case external
     }
     @State private var portText = ""
+     
+     
+     
+    @State private var corePortText = ""
     @State private var username = ""
     @State private var password = ""
     @State private var confirmsReset = false
@@ -61,6 +65,7 @@ struct ProxyShareView: View {
         .hakoDetailPageInsets()
         .task {
             hydrateDraft(overwriteUsername: true)
+            corePortText = model.kernelSharePortText
              
              
              
@@ -90,6 +95,7 @@ struct ProxyShareView: View {
         }
         .onReceive(model.terminalListenerDidChange) { _ in
             hydrateDraft(overwriteUsername: false)
+            corePortText = model.kernelSharePortText
         }
         .confirmationDialog(
             "Reset LAN proxy credentials?",
@@ -338,10 +344,11 @@ struct ProxyShareView: View {
     @ViewBuilder
     private var coreSections: some View {
         coreSwitchSection
-        if kernelShare.isOn, let listener = kernelShare.listener {
-            coreListenerSection(listener)
-            coreConnectSection(listener)
-        }
+         
+         
+         
+         
+        coreListenerSection(kernelShare.listener, sharing: kernelShare.isOn)
         if model.terminalListener != nil {
             terminalSection
         }
@@ -390,7 +397,7 @@ struct ProxyShareView: View {
                     .accessibilityIdentifier("proxyShare.error")
             }
         } footer: {
-            Text("This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts.")
+            Text("Read from the profile's allow-lan and mixed-port. Changing either here overrides this profile only; clear the port to follow the profile again. Takes effect the next time the tunnel starts.")
         }
     }
 
@@ -437,66 +444,89 @@ struct ProxyShareView: View {
      
      
      
-    private func coreListenerSection(_ listener: ProfileListenerPorts) -> some View {
+    private func coreListenerSection(_ listener: ProfileListenerPorts?, sharing: Bool) -> some View {
         Section {
-            if let mixed = listener.mixedPort {
-                OverviewValueRow(title: "Port", value: .verbatim(String(mixed)))
-                    .accessibilityIdentifier("proxyShare.listener.port")
-                OverviewValueRow(title: "Protocols", value: .copy("HTTP + SOCKS5"))
-                    .accessibilityIdentifier("proxyShare.listener.protocols")
-            } else {
-                if let http = listener.httpPort {
-                    OverviewValueRow(title: "HTTP Port", value: .verbatim(String(http)))
-                        .accessibilityIdentifier("proxyShare.listener.port")
+             
+             
+             
+             
+            HakoFieldRow(
+                "Port",
+                hint: String(KernelLANShare.defaultPort),
+                text: $corePortText,
+                monospaced: true,
+                 
+                 
+                compactValue: true,
+                identifier: "proxyShare.core.port",
+                onEditingEnded: {
+                    let typed = corePortText
+                    Task {
+                        await model.setKernelSharePort(text: typed)
+                        corePortText = model.kernelSharePortText
+                    }
                 }
-                if let socks = listener.socksPort {
-                    OverviewValueRow(title: "SOCKS5 Port", value: .verbatim(String(socks)))
-                        .accessibilityIdentifier("proxyShare.listener.port")
-                }
-            }
-            OverviewValueRow(
-                title: "Authentication",
-                value: listener.credentials.map { .verbatim($0.username) } ?? .copy("Not set")
             )
-            .accessibilityIdentifier("proxyShare.listener.authentication")
-        } header: {
-            Text("Listener")
-        } footer: {
-            Text(hako: .copy(
-                listener.credentials == nil
-                    ? "The profile sets no authentication: anyone on this network can use this proxy."
-                    : "Credentials come from the profile's authentication."
-            ))
-        }
-    }
-
-     
-     
-    private func coreConnectSection(_ listener: ProfileListenerPorts) -> some View {
-        let ports = listener.mixedPort.map { [$0] }
-            ?? [listener.httpPort, listener.socksPort].compactMap { $0 }
-        return Section {
-            if reachableAddresses.isEmpty {
-                HakoStatusMessage(
-                    text: .copy("No usable Wi-Fi or Personal Hotspot address is available."),
-                    kind: .information
+            .keyboardType(.numberPad)
+            if let listener {
+                if listener.mixedPort != nil {
+                    OverviewValueRow(title: "Protocols", value: .copy("HTTP + SOCKS5"))
+                        .accessibilityIdentifier("proxyShare.listener.protocols")
+                } else {
+                    if let http = listener.httpPort {
+                        OverviewValueRow(title: "HTTP Port", value: .verbatim(String(http)))
+                            .accessibilityIdentifier("proxyShare.listener.port")
+                    }
+                    if let socks = listener.socksPort {
+                        OverviewValueRow(title: "SOCKS5 Port", value: .verbatim(String(socks)))
+                            .accessibilityIdentifier("proxyShare.listener.port")
+                    }
+                }
+                OverviewValueRow(
+                    title: "Authentication",
+                    value: listener.credentials.map { .verbatim($0.username) } ?? .copy("Not set")
                 )
-            } else {
-                ForEach(reachableAddresses, id: \.self) { address in
-                    ForEach(ports, id: \.self) { port in
-                        Text(ProxyShareEndpointFormatter.format(address: address, port: port))
-                            .font(HakoPlatformLayout.pageUsesSystemSettingsIdiom ? HakoMacSettingsType.mono : .subheadline.monospaced())
-                            .textSelection(.enabled)
-                             
-                             
-                            .id("core:\(address):\(port)")
+                .accessibilityIdentifier("proxyShare.listener.authentication")
+                 
+                 
+                 
+                if sharing {
+                    let ports = listener.mixedPort.map { [$0] }
+                        ?? [listener.httpPort, listener.socksPort].compactMap { $0 }
+                    if reachableAddresses.isEmpty {
+                        HakoStatusMessage(
+                            text: .copy("No usable Wi-Fi or Personal Hotspot address is available."),
+                            kind: .information
+                        )
+                    } else {
+                        ForEach(reachableAddresses, id: \.self) { address in
+                            ForEach(ports, id: \.self) { port in
+                                Text(ProxyShareEndpointFormatter.format(address: address, port: port))
+                                    .font(HakoPlatformLayout.pageUsesSystemSettingsIdiom ? HakoMacSettingsType.mono : .subheadline.monospaced())
+                                    .textSelection(.enabled)
+                                     
+                                     
+                                    .id("core:\(address):\(port)")
+                            }
+                        }
                     }
                 }
             }
         } header: {
-            Text("Connect From Another Device")
+            Text("Listener")
         } footer: {
-            Text("Point the other device at one address above, over HTTP or SOCKS5.")
+            if let listener {
+                VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
+                    Text(hako: .copy(
+                        listener.credentials == nil
+                            ? "The profile sets no authentication: anyone on this network can use this proxy."
+                            : "Credentials come from the profile's authentication."
+                    ))
+                    if sharing {
+                        Text("Point the other device at one address above, over HTTP or SOCKS5.")
+                    }
+                }
+            }
         }
     }
 

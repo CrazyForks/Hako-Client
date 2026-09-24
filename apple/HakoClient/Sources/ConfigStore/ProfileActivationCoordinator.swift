@@ -253,8 +253,19 @@ enum ProfileRuntimeConfigBuilder {
                 overrideJSON: overrideJSON(from: OverrideSpec(appendRules: kept, prependRules: spec.prependRules))
             )
         case .custom:
-            profileWorking = try (profile.customOverwrite ?? CustomOverwriteSpec())
+            let overwritten = try (profile.customOverwrite ?? CustomOverwriteSpec())
                 .applyForFinalRuntimeMigration(to: raw)
+             
+             
+             
+             
+             
+            let listener = OverridePatch(patchJSON: profile.override.patchJSON)
+                .retainingTopLevelKeys(OverridePatch.listenerKeys)
+            profileWorking = listener.patchJSON.isEmpty ? overwritten : try ConfigTransforms.mergeOverride(
+                raw: overwritten,
+                overrideJSON: overrideJSON(from: OverrideSpec(patchJSON: listener.patchJSON))
+            )
         }
 
         var effectiveGlobal = profile.migratedGlobalOverride ?? globalOverride

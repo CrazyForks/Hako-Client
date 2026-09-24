@@ -2334,6 +2334,7 @@
 "Read Only" = "Read Only";
 "Read a profile from the clipboard." = "Read a profile from the clipboard.";
 "Read from Source" = "Read from Source";
+"Read from the profile's allow-lan and mixed-port. Changing either here overrides this profile only; clear the port to follow the profile again. Takes effect the next time the tunnel starts." = "Read from the profile's allow-lan and mixed-port. Changing either here overrides this profile only; clear the port to follow the profile again. Takes effect the next time the tunnel starts.";
 "Read only" = "Read only";
 "Reading backup…" = "Reading backup…";
 "Reading the current proxy catalog." = "Reading the current proxy catalog.";
@@ -3266,7 +3267,6 @@
 "This is not a rule head Clash's iOS editor recognizes." = "This is not a rule head Clash's iOS editor recognizes.";
 "This is not valid YAML. Check the line the editor marked, then save again." = "This is not valid YAML. Check the line the editor marked, then save again.";
 "This is not valid configuration YAML: %@" = "This is not valid configuration YAML: %@";
-"This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts." = "This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts.";
 "This item is still required, or is missing." = "This item is still required, or is missing.";
 "This local rule set will be deleted. Rule schemes in the library will also remove rules added from it." = "This local rule set will be deleted. Rule schemes in the library will also remove rules added from it.";
 "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed." = "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed.";

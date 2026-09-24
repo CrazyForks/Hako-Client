@@ -23,9 +23,27 @@ struct OverridePatch {
      
      
      
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static let listenerKeys: Set<String> = [
+        "allow-lan", "mixed-port", "port", "socks-port",
+    ]
+
+     
+     
+     
+     
+     
     static let globalRuntimeKeys: Set<String> = [
-        "mixed-port", "socks-port", "port", "redir-port", "tproxy-port",
-        "mode", "allow-lan", "log-level", "ipv6", "find-process-mode",
+        "redir-port", "tproxy-port",
+        "mode", "log-level", "ipv6", "find-process-mode",
         "keep-alive-interval", "keep-alive-idle", "disable-keep-alive",
         "unified-delay", "tcp-concurrent", "tun", "dns", "geox-url",
         "geodata-loader", "geosite-matcher", "global-ua",

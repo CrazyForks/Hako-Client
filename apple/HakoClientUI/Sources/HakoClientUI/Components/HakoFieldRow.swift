@@ -14,6 +14,11 @@ public struct HakoFieldRow: View {
     private let compactValue: Bool
     private let identifier: String?
     private let subtitle: HakoDisplayText?
+     
+     
+     
+     
+    private let onEditingEnded: (() -> Void)?
     @FocusState private var focused: Bool
 
     public init(
@@ -26,7 +31,8 @@ public struct HakoFieldRow: View {
         suffix: String? = nil,
         compactValue: Bool = false,
         identifier: String? = nil,
-        subtitle: HakoDisplayText? = nil
+        subtitle: HakoDisplayText? = nil,
+        onEditingEnded: (() -> Void)? = nil
     ) {
         self.title = title
         self.hint = hint
@@ -38,6 +44,7 @@ public struct HakoFieldRow: View {
         self.compactValue = compactValue
         self.identifier = identifier
         self.subtitle = subtitle
+        self.onEditingEnded = onEditingEnded
     }
 
     public var body: some View {
@@ -151,6 +158,10 @@ public struct HakoFieldRow: View {
          
          
         .onDisappear { focused = false }
+        .onChange(of: focused) { isFocused in
+            if !isFocused { onEditingEnded?() }
+        }
+        .onSubmit { onEditingEnded?() }
         .accessibilityElement(children: .contain)
         .hakoFieldRowIdentifier(identifier)
     }

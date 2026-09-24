@@ -596,7 +596,6 @@ struct KernelLANShare: Equatable {
  
  
  
- 
 struct KernelLANShareOverride: Equatable {
     var allowLAN: Bool?
     var mixedPort: Int32?
@@ -768,11 +767,68 @@ final class ProxyShareModel: ObservableObject {
      
      
      
+     
     func setKernelShare(on: Bool) async {
+        await writeKernelShare(showing: on) { current, profile in
+            var override = current
+            override.allowLAN = on == profile.allowLAN ? nil : on
+            if on, !current.hasListener(over: profile.listener) {
+                override.mixedPort = KernelLANShare.defaultPort
+            }
+            if !on, profile.listener == nil, current.mixedPort == KernelLANShare.defaultPort {
+                override.mixedPort = nil
+            }
+            return (override, permitted: on)
+        }
+    }
+
+     
+     
+     
+     
+    func setKernelSharePort(text: String) async {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        var typed: Int32?
+        if !trimmed.isEmpty {
+            guard trimmed.unicodeScalars.allSatisfy(CharacterSet.decimalDigits.contains),
+                  let port = Int32(trimmed),
+                  (HakoProxyShareMinimumPort...HakoProxyShareMaximumPort).contains(port)
+            else {
+                errorMessage = ProxyShareError.invalidPort.localizedDescription
+                objectWillChange.send()
+                return
+            }
+            typed = port
+        }
+        await writeKernelShare { current, profile in
+            var override = current
+            override.mixedPort = typed == profile.listener?.mixedPort ? nil : typed
+            return (override, permitted: nil)
+        }
+    }
+
+     
+     
+     
+    var kernelSharePortText: String {
+        (kernelShareBinding?.override().mixedPort ?? kernelShare.listener?.mixedPort)
+            .map(String.init) ?? ""
+    }
+
+     
+     
+     
+     
+     
+    private func writeKernelShare(
+        showing pressed: Bool? = nil,
+        _ decide: (KernelLANShareOverride, (listener: ProfileListenerPorts?, allowLAN: Bool))
+            -> (KernelLANShareOverride, permitted: Bool?)
+    ) async {
         guard let binding = kernelShareBinding else { return }
         kernelShareGeneration &+= 1
         let token = kernelShareGeneration
-        kernelShareInFlight = on
+        if let pressed { kernelShareInFlight = pressed }
         defer {
             if token == kernelShareGeneration { kernelShareInFlight = nil }
         }
@@ -784,23 +840,17 @@ final class ProxyShareModel: ObservableObject {
             (listener: source.flatMap(parser),
              allowLAN: source.map { ProfileListenerPorts.configuredAllowLAN(yaml: $0) } ?? false)
         }.value
-         
-         
-         
         guard token == kernelShareGeneration,
               !Task.isCancelled,
               binding.profileID() == profileID,
               binding.profileSourceYAML() == source,
               binding.override() == current else { return }
-        let profileAsksForIt = profile.allowLAN
-        var override = KernelLANShareOverride()
-        override.allowLAN = on == profileAsksForIt ? nil : on
-        if on, !current.hasListener(over: profile.listener) {
-            override.mixedPort = KernelLANShare.defaultPort
-        }
+        let (override, permitted) = decide(current, profile)
         do {
-            try binding.writeOverride(override)
-            binding.setPermitted(on)
+            if override != current {
+                try binding.writeOverride(override)
+            }
+            if let permitted { binding.setPermitted(permitted) }
             errorMessage = ""
         } catch {
             errorMessage = error.localizedDescription
