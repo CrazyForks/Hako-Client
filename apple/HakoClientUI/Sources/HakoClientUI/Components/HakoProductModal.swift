@@ -518,13 +518,26 @@ public extension View {
          
          
          
-        sheet(item: HakoModalItemSplit.binding(item, keeping: { !immersive($0) })) { value in
+        let sheetItem = HakoModalItemSplit.binding(item, keeping: { !immersive($0) })
+        let coverItem = HakoModalItemSplit.binding(item, keeping: immersive)
+        sheet(item: sheetItem) { value in
             content(value)
                 .hakoModalPresentation(role)
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                .environment(\.hakoProductModalDismiss) { sheetItem.wrappedValue = nil }
         }
-        .fullScreenCover(item: HakoModalItemSplit.binding(item, keeping: immersive)) { value in
+        .fullScreenCover(item: coverItem) { value in
             content(value)
                 .hakoModalPresentation(role)
+                .environment(\.hakoProductModalDismiss) { coverItem.wrappedValue = nil }
         }
 #endif
     }
@@ -549,6 +562,8 @@ public extension View {
         sheet(isPresented: isPresented) {
             content()
                 .hakoModalPresentation(role)
+                 
+                .environment(\.hakoProductModalDismiss) { isPresented.wrappedValue = false }
         }
 #endif
     }
