@@ -76,7 +76,7 @@ public enum HakoMacNodeLibraryGroup: CaseIterable, Sendable {
      
     public var title: String {
         switch self {
-        case .subscriptions: "From Subscriptions"
+        case .subscriptions: "From Profile URLs"
         case .files: "From Files"
         case .customNodes: "Custom Nodes"
         case .proxyChains: "Proxy Chains"
@@ -131,6 +131,14 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
     }
 
     @Published public private(set) var snapshot = ConfigurationLibrarySnapshot()
+     
+     
+     
+     
+    @Published public private(set) var nodeShelves: [HakoMacNodeLibraryShelf] = []
+    @Published public private(set) var ruleShelves: [HakoMacRuleLibraryShelf] = []
+     
+    @Published public private(set) var schemeUsage: [String: Int] = [:]
     @Published public private(set) var phase: Phase = .idle
      
     @Published public private(set) var isBusy = false
@@ -160,7 +168,11 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
     @discardableResult
     public func apply(_ next: ConfigurationLibrarySnapshot) -> Bool {
         guard next.generation >= snapshot.generation else { return false }
+        guard next != snapshot || phase != .ready else { return true }
         snapshot = next
+        nodeShelves = Self.nodeShelves(next)
+        ruleShelves = Self.ruleShelves(next)
+        schemeUsage = next.recipes.reduce(into: [:]) { counts, recipe in counts[recipe.ruleSchemeID, default: 0] += 1 }
         return true
     }
 
@@ -279,6 +291,10 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
     }
 
      
+     
+    public func usageCount(ofScheme id: String) -> Int { schemeUsage[id] ?? 0 }
+
+     
     public func source(of scheme: ConfigurationRuleScheme) -> ConfigurationSourceRecord? {
         snapshot.sources.first { $0.id == scheme.sourceID }
     }
@@ -287,9 +303,17 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
  
 public enum HakoMacSubscriptionUsageCopy {
      
-    public static func traffic(_ usage: ConfigurationSubscriptionUsage) -> HakoDisplayText {
+     
+    @MainActor private static let bytes: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .binary
+        return formatter
+    }()
+    private static let dateFormatters = HakoMacDateFormatterCache(dateStyle: .medium, timeStyle: .none)
+
+     
+    @MainActor public static func traffic(_ usage: ConfigurationSubscriptionUsage) -> HakoDisplayText {
+        let formatter = bytes
         let used = formatter.string(fromByteCount: usage.used)
         guard usage.total > 0 else { return .format("Used %@", [used]) }
         return .format("%@ of %@ used", [used, formatter.string(fromByteCount: usage.total)])
@@ -299,10 +323,31 @@ public enum HakoMacSubscriptionUsageCopy {
     public static func expiry(_ usage: ConfigurationSubscriptionUsage, locale: Locale) -> HakoDisplayText? {
         guard usage.expire > 0 else { return nil }
         let date = Date(timeIntervalSince1970: TimeInterval(usage.expire))
+        return .format("Expires %@", [dateFormatters.formatter(for: locale).string(from: date)])
+    }
+}
+
+ 
+ 
+public final class HakoMacDateFormatterCache: @unchecked Sendable {
+    private let dateStyle: DateFormatter.Style
+    private let timeStyle: DateFormatter.Style
+    private var formatters: [String: DateFormatter] = [:]
+    private let lock = NSLock()
+
+    public init(dateStyle: DateFormatter.Style, timeStyle: DateFormatter.Style) {
+        self.dateStyle = dateStyle
+        self.timeStyle = timeStyle
+    }
+
+    public func formatter(for locale: Locale) -> DateFormatter {
+        lock.lock(); defer { lock.unlock() }
+        if let cached = formatters[locale.identifier] { return cached }
         let formatter = DateFormatter()
         formatter.locale = locale
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return .format("Expires %@", [formatter.string(from: date)])
+        formatter.dateStyle = dateStyle
+        formatter.timeStyle = timeStyle
+        formatters[locale.identifier] = formatter
+        return formatter
     }
 }

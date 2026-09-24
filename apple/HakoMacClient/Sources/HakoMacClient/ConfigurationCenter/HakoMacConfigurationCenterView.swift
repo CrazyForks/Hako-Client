@@ -68,7 +68,7 @@ public struct HakoMacConfigurationCenterView<Configurations: View, Nodes: View, 
                         Text(hako: .copy(item.title)).tag(item)
                     }
                 } label: {
-                    Text(hako: .copy("Configuration Center"))
+                    Text(hako: .copy("Profile Center"))
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()

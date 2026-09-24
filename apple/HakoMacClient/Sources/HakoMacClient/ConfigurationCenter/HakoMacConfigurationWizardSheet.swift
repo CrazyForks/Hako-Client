@@ -73,9 +73,8 @@ public enum HakoMacConfigurationWizardRules {
  
  
  
+ 
 public struct HakoMacConfigurationWizardSheet: View {
-    private enum Route: Hashable { case addSource }
-
     @ObservedObject private var model: HakoMacConfigurationLibraryModel
     private let actions: HakoMacConfigurationWizardActions
     private let created: () -> Void
@@ -83,7 +82,7 @@ public struct HakoMacConfigurationWizardSheet: View {
     @Environment(\.locale) private var locale
     @State private var draft = ConfigurationCreationDraft()
     @State private var creationID = UUID().uuidString.lowercased()
-    @State private var path: [Route] = []
+    @State private var addingSource = false
     @State private var busy = false
     @State private var error: String?
 
@@ -99,51 +98,71 @@ public struct HakoMacConfigurationWizardSheet: View {
 
     private var canAdvance: Bool { HakoMacConfigurationWizardRules.canAdvance(draft) && !busy }
 
+    private var stepTitle: HakoDisplayText {
+        switch draft.step {
+        case .sources: .copy("Select Nodes")
+        case .rules: .copy("Select Rules")
+        case .finish: .copy("Add Profile")
+        }
+    }
+
+    private var stepSubtitle: HakoDisplayText {
+        switch draft.step {
+        case .sources: .copy("Node Library")
+        case .rules: .copy("Keep the document's nodes, rules and settings.")
+        case .finish: .copy("Configuration")
+        }
+    }
+
     public var body: some View {
-        VStack(spacing: 0) {
-            NavigationStack(path: $path) {
-                List {
-                    switch draft.step {
-                    case .sources: sourcesStep
-                    case .rules: rulesStep
-                    case .finish: finishStep
-                    }
-                    if let error {
-                        Section {
-                            Text(verbatim: error).foregroundStyle(.red)
-                                .accessibilityIdentifier("configuration-center.wizard.error")
-                        }
-                    }
-                }
-                .listStyle(.inset)
-                .accessibilityIdentifier("configuration-center.wizard")
-                .navigationDestination(for: Route.self) { route in
-                    switch route {
-                    case .addSource:
-                        HakoMacSourceImportPage(
-                            purpose: .nodes,
-                            actions: actions.sourceImport,
-                            accept: { payload in
-                                draft.add(payload, rule: nil)
-                                path.removeAll()
-                            },
-                            close: { path.removeAll() }
-                        )
-                    }
+        HakoMacSheetFrame(title: stepTitle, subtitle: draft.step == .finish ? nil : stepSubtitle, width: 600, height: 560) {
+            Group {
+                switch draft.step {
+                case .sources: sourcesStep
+                case .rules: rulesStep
+                case .finish: finishStep
                 }
             }
-             
-             
-            if path.isEmpty { bar }
+            .accessibilityIdentifier("configuration-center.wizard")
+        } leading: {
+            if draft.step != .sources {
+                Button(action: back) { Text(hako: .copy("Back")) }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.wizard.back")
+            }
+            if let error {
+                Text(verbatim: error).foregroundStyle(.red).font(.subheadline).lineLimit(2)
+                    .accessibilityIdentifier("configuration-center.wizard.error")
+            }
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.wizard.cancel",
+                primaryTitle: draft.step == .finish ? .copy("Save") : .copy("Next"),
+                primaryIdentifier: "configuration-center.wizard.next",
+                primaryDisabled: !canAdvance,
+                isBusy: busy,
+                onClose: { dismiss() },
+                onPrimary: advance
+            )
         }
-        .frame(width: 600, height: 560)
         .task { if model.phase == .idle { await model.reload() } }
+        .sheet(isPresented: $addingSource) {
+            HakoMacSourceImportSheet(
+                purpose: .nodes,
+                actions: actions.sourceImport,
+                accept: { payload in
+                    draft.add(payload, rule: nil)
+                    addingSource = false
+                },
+                close: { addingSource = false }
+            )
+        }
     }
 
      
 
     private var sourcesStep: some View {
-        Group {
+        List {
             if !draft.newSources.isEmpty {
                 Section {
                     ForEach(Array(draft.newSources.enumerated()), id: \.offset) { _, payload in
@@ -160,7 +179,7 @@ public struct HakoMacConfigurationWizardSheet: View {
                     Text(hako: .copy("Add Source"))
                 }
             }
-            ForEach(HakoMacConfigurationLibraryModel.nodeShelves(model.snapshot)) { shelf in
+            ForEach(model.nodeShelves) { shelf in
                 Section {
                     ForEach(shelf.sources) { source in
                         HakoMacChoiceRow(
@@ -177,29 +196,22 @@ public struct HakoMacConfigurationWizardSheet: View {
                 }
             }
             Section {
-                NavigationLink(value: Route.addSource) {
-                    Label {
-                        Text(hako: .copy("Add Source"))
-                    } icon: {
-                        HakoSymbolImage(symbol: .plusCircle)
-                    }
-                }
-                .accessibilityIdentifier("configuration-center.wizard.add-source")
-            } footer: {
-                Text(hako: .copy("Subscription links and install links both work."))
+                HakoMacListAddRow(.copy("Add Source")) { addingSource = true }
+                    .accessibilityIdentifier("configuration-center.wizard.add-source")
             }
         }
+        .listStyle(.inset)
     }
 
     private var rulesStep: some View {
         let selected = HakoMacConfigurationWizardRules.defaultRuleID(draft)
-        return Group {
-            ForEach(HakoMacConfigurationLibraryModel.ruleShelves(model.snapshot)) { shelf in
+        return List {
+            ForEach(model.ruleShelves) { shelf in
                 Section {
                     ForEach(shelf.schemes) { scheme in
                         HakoMacChoiceRow(
                             title: .verbatim(scheme.displayLabel),
-                            subtitle: .format("Used by %@ configurations", [String(model.configurations(usingScheme: scheme.id).count)]),
+                            subtitle: .format("Used by %@ profiles", [String(model.usageCount(ofScheme: scheme.id))]),
                             style: .single,
                             isSelected: scheme.id == selected,
                             identifier: "configuration-center.wizard.rule.\(scheme.id)",
@@ -211,68 +223,30 @@ public struct HakoMacConfigurationWizardSheet: View {
                 }
             }
         }
+        .listStyle(.inset)
     }
 
     private var finishStep: some View {
-        Section {
-            HakoMacFieldRow(.copy("Name"), prompt: HakoCopy.string("Name", locale: locale), text: $draft.label,
-                            identifier: "configuration-center.wizard.name")
-                .disabled(busy)
-            HakoMacNavigationRowLabel(
-                .copy("Node Sources"),
-                value: .verbatim((draft.newSources.map(\.record.label)
-                    + HakoMacConfigurationWizardRules.chosenSources(draft, in: model.snapshot)
-                        .filter { record in !draft.newSources.contains { $0.record.id == record.id } }
-                        .map(\.label))
-                    .joined(separator: ", "))
-            )
-            HakoMacNavigationRowLabel(
-                .copy("Rule Scheme"),
-                value: .verbatim(model.snapshot.effectiveRuleScheme(HakoMacConfigurationWizardRules.defaultRuleID(draft))?.displayLabel ?? "")
-            )
-        } header: {
-            Text(hako: .copy("Configuration"))
-        }
-    }
-
-     
-
-    private var bar: some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Text(hako: .copy("Cancel"))
-            }
-            .keyboardShortcut(.cancelAction)
-            .disabled(busy)
-            .accessibilityIdentifier("configuration-center.wizard.cancel")
-            Spacer()
-            Text(hako: stepTitle)
-                .font(.headline)
-                .accessibilityIdentifier("configuration-center.wizard.step")
-            Spacer()
-            if draft.step != .sources {
-                Button(action: back) { Text(hako: .copy("Back")) }
+        HakoMacSheetForm {
+            Section {
+                TextField(text: $draft.label, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
                     .disabled(busy)
-                    .accessibilityIdentifier("configuration-center.wizard.back")
+                    .accessibilityIdentifier("configuration-center.wizard.name")
+                LabeledContent {
+                    Text(verbatim: (draft.newSources.map(\.record.label)
+                        + HakoMacConfigurationWizardRules.chosenSources(draft, in: model.snapshot)
+                            .filter { record in !draft.newSources.contains { $0.record.id == record.id } }
+                            .map(\.label))
+                        .joined(separator: ", "))
+                } label: {
+                    Text(hako: .copy("Node Sources"))
+                }
+                LabeledContent {
+                    Text(verbatim: model.snapshot.effectiveRuleScheme(HakoMacConfigurationWizardRules.defaultRuleID(draft))?.displayLabel ?? "")
+                } label: {
+                    Text(hako: .copy("Rule Scheme"))
+                }
             }
-            Button(action: advance) {
-                HakoActionProgressLabel(draft.step == .finish ? .copy("Save") : .copy("Next"), isBusy: busy)
-            }
-            .keyboardShortcut(.defaultAction)
-            .disabled(!canAdvance)
-            .accessibilityIdentifier("configuration-center.wizard.next")
-        }
-        .padding(HakoTheme.Spacing.row)
-        .background(.bar)
-    }
-
-    private var stepTitle: HakoDisplayText {
-        switch draft.step {
-        case .sources: .copy("Select Nodes")
-        case .rules: .copy("Select Rules")
-        case .finish: .copy("Add Configuration")
         }
     }
 

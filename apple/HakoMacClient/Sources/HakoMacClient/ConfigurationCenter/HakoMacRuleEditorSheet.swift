@@ -99,6 +99,9 @@ public struct HakoMacRuleEditorSheet: View {
     @Environment(\.locale) private var locale
     @State private var state: HakoMacRuleEditorState?
     @State private var baseline: ConfigurationRuleDraft?
+     
+     
+    @State private var edited = false
     @State private var loadError: String?
     @State private var error: String?
     @State private var busy = false
@@ -111,30 +114,53 @@ public struct HakoMacRuleEditorSheet: View {
         self.saved = saved
     }
 
-    private var dirty: Bool {
-        guard let state, let baseline else { return false }
-        return state.draft != baseline
-    }
+    private var dirty: Bool { edited && state != nil && baseline != nil }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            Group {
-                if let state {
-                    content(state)
-                } else if let loadError {
-                    VStack(spacing: HakoTheme.Spacing.row) {
-                        Text(verbatim: loadError).foregroundStyle(.red)
-                        Button { Task { await load() } } label: { Text(hako: .copy("Retry")) }
-                            .accessibilityIdentifier("configuration-center.rule-editor.retry")
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+        HakoMacSheetFrame(
+            title: .verbatim(state?.draft.label ?? ""),
+            subtitle: state.map { HakoDisplayText.format("%@ rules", [String($0.draft.rows.count)]) },
+            width: 680,
+            height: 640
+        ) {
+            if let state {
+                content(state)
+            } else if let loadError {
+                HakoMacSheetPlaceholder(
+                    title: .copy("Rule Library"), message: loadError,
+                    retry: { Task { await load() } },
+                    retryIdentifier: "configuration-center.rule-editor.retry"
+                )
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            bar
+        } leading: {
+            Menu {
+                Button { sheet = .duplicate } label: { Text(hako: .copy("Duplicate")) }
+                Button { sheet = .source } label: { Text(hako: .copy("Edit Rules Source")) }
+                Divider()
+                Button(role: .destructive) { confirmsReset = true } label: { Text(hako: .copy("Reset")) }
+            } label: {
+                Text(hako: .copy("Manage"))
+            }
+            .fixedSize()
+            .disabled(busy || state == nil)
+            .accessibilityIdentifier("configuration-center.rule-editor.more")
+            if let error {
+                Text(verbatim: error).foregroundStyle(.red).font(.subheadline).lineLimit(2)
+                    .accessibilityIdentifier("configuration-center.rule-editor.error")
+            }
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.rule-editor.cancel",
+                primaryTitle: .copy("Save"),
+                primaryIdentifier: "configuration-center.rule-editor.save",
+                primaryDisabled: !dirty || busy,
+                isBusy: busy,
+                onClose: { if dirty { confirmsDiscard = true } else { dismiss() } },
+                onPrimary: save
+            )
         }
-        .frame(width: 680, height: 640)
         .task { if state == nil { await load() } }
         .sheet(item: $sheet) { item in
             if let state {
@@ -184,7 +210,7 @@ public struct HakoMacRuleEditorSheet: View {
             Button(role: .destructive) { dismiss() } label: { Text(hako: .copy("Discard Changes")) }
             Button(role: .cancel) {} label: { Text(hako: .copy("Cancel")) }
         } message: {
-            Text(hako: .copy("This configuration has changes that have not been saved."))
+            Text(hako: .copy("This profile has changes that have not been saved."))
         }
         .alert(Text(hako: .copy("Reset")), isPresented: $confirmsReset) {
             Button(role: .destructive) {
@@ -203,12 +229,6 @@ public struct HakoMacRuleEditorSheet: View {
             rulesSection(state.draft)
             groupsSection(state.draft)
             ruleSetsSection(state)
-            if let error {
-                Section {
-                    Text(verbatim: error).foregroundStyle(.red)
-                        .accessibilityIdentifier("configuration-center.rule-editor.error")
-                }
-            }
         }
         .listStyle(.inset)
         .hakoFrameWatch("configuration-rule-editor")
@@ -224,7 +244,7 @@ public struct HakoMacRuleEditorSheet: View {
                 ruleRow(row, draft: draft)
             }
         } header: {
-            Text(hako: .format("%@ rules", [String(draft.rows.count)]))
+            Text(hako: .copy("Rules"))
         }
     }
 
@@ -368,49 +388,11 @@ public struct HakoMacRuleEditorSheet: View {
 
      
 
-    private var bar: some View {
-        HStack {
-            Button {
-                if dirty { confirmsDiscard = true } else { dismiss() }
-            } label: {
-                Text(hako: .copy("Cancel"))
-            }
-            .keyboardShortcut(.cancelAction)
-            .disabled(busy)
-            .accessibilityIdentifier("configuration-center.rule-editor.cancel")
-            Spacer()
-            Text(verbatim: state?.draft.label ?? "")
-                .font(.headline)
-                .lineLimit(1)
-            Spacer()
-            Menu {
-                Button { sheet = .duplicate } label: { Text(hako: .copy("Duplicate")) }
-                Button { sheet = .source } label: { Text(hako: .copy("Edit Rules Source")) }
-                Divider()
-                Button(role: .destructive) { confirmsReset = true } label: { Text(hako: .copy("Reset")) }
-            } label: {
-                HakoSymbolImage(symbol: .ellipsisCircle)
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .disabled(busy || state == nil)
-            .accessibilityLabel(Text(hako: .copy("Manage")))
-            .accessibilityIdentifier("configuration-center.rule-editor.more")
-            Button(action: save) { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!dirty || busy)
-                .accessibilityIdentifier("configuration-center.rule-editor.save")
-        }
-        .padding(HakoTheme.Spacing.row)
-        .background(.bar)
-    }
-
-     
-
     private func mutate(_ change: (inout ConfigurationRuleDraft) -> Void) {
         guard var current = state else { return }
         change(&current.draft)
         state = current
+        edited = true
         error = nil
     }
 
@@ -419,6 +401,7 @@ public struct HakoMacRuleEditorSheet: View {
         do {
             try change(&current.draft)
             state = current
+            edited = true
             error = nil
         } catch {
             self.error = error.localizedDescription
@@ -490,6 +473,7 @@ public struct HakoMacRuleEditorSheet: View {
         } else {
             state = next
             baseline = next.draft
+            edited = false
         }
     }
 
@@ -502,6 +486,7 @@ public struct HakoMacRuleEditorSheet: View {
                 current.draft = reloaded
                 self.state = current
                 baseline = reloaded
+                edited = false
                 saved()
             }
         }
@@ -570,13 +555,16 @@ struct HakoMacRuleRowEditor: View {
         return parts.joined(separator: ",")
     }
 
-    private var canSave: Bool {
-        !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
+    private var canSave: Bool { !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
-        VStack(spacing: 0) {
-            List {
+        HakoMacSheetFrame(
+            title: rowID == nil ? .copy("Add Rule") : .copy("Rule"),
+            subtitle: .verbatim(raw),
+            width: 560,
+            height: rowID == nil ? 480 : 340
+        ) {
+            HakoMacSheetForm {
                 if rowID == nil {
                     Section {
                         Picker(selection: $action) {
@@ -588,8 +576,11 @@ struct HakoMacRuleRowEditor: View {
                         }
                         .accessibilityIdentifier("configuration-center.rule-editor.rule.action")
                         if action.needsContent {
-                            HakoMacFieldRow(.verbatim(action.contentLabel), prompt: action.contentPlaceholder, text: $content,
-                                            monospaced: true, identifier: "configuration-center.rule-editor.rule.content")
+                            TextField(text: $content, prompt: Text(verbatim: action.contentPlaceholder)) {
+                                Text(verbatim: action.contentLabel)
+                            }
+                            .font(.body.monospaced())
+                            .accessibilityIdentifier("configuration-center.rule-editor.rule.content")
                         }
                         Picker(selection: $target) {
                             ForEach(targets, id: \.self) { name in Text(verbatim: name).tag(name) }
@@ -597,30 +588,30 @@ struct HakoMacRuleRowEditor: View {
                             Text(hako: .copy("Policy Groups"))
                         }
                         .accessibilityIdentifier("configuration-center.rule-editor.rule.target")
-                    } header: {
-                        Text(hako: .copy("Add Rule"))
                     }
                     .onChange(of: assembled) { value in raw = value }
                 }
                 Section {
-                    HakoMacFieldRow(.copy("Rule"), prompt: "DOMAIN-SUFFIX,example.com,DIRECT", text: $raw,
-                                    monospaced: true, identifier: "configuration-center.rule-editor.rule.raw")
-                    HakoMacToggleRow(.copy("Enabled"), isOn: $enabled, identifier: "configuration-center.rule-editor.rule.enabled")
-                    HakoMacFieldRow(.copy("Comment"), prompt: "", text: $note, identifier: "configuration-center.rule-editor.rule.comment")
+                    TextField(text: $raw, prompt: Text(verbatim: "DOMAIN-SUFFIX,example.com,DIRECT")) { Text(hako: .copy("Rule")) }
+                        .font(.body.monospaced())
+                        .accessibilityIdentifier("configuration-center.rule-editor.rule.raw")
+                    Toggle(isOn: $enabled) { Text(hako: .copy("Enabled")) }
+                        .accessibilityIdentifier("configuration-center.rule-editor.rule.enabled")
+                    TextField(text: $note, prompt: Text(hako: .copy("Comment"))) { Text(hako: .copy("Comment")) }
+                        .accessibilityIdentifier("configuration-center.rule-editor.rule.comment")
                 }
             }
-            .listStyle(.inset)
             .accessibilityIdentifier("configuration-center.rule-editor.rule-sheet")
-            HakoMacSheetActionBar(
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.rule-editor.rule.cancel",
                 primaryTitle: .copy("Done"),
                 primaryIdentifier: "configuration-center.rule-editor.rule.done",
-                primaryDisabled: !canSave, isBusy: false,
-                closeIdentifier: "configuration-center.rule-editor.rule.cancel",
-                onPrimary: { commit(raw.trimmingCharacters(in: .whitespacesAndNewlines), enabled, note); close() },
-                onClose: close
+                primaryDisabled: !canSave,
+                onClose: close,
+                onPrimary: { commit(raw.trimmingCharacters(in: .whitespacesAndNewlines), enabled, note); close() }
             )
         }
-        .frame(width: 560, height: rowID == nil ? 460 : 320)
         .onAppear { if rowID == nil { raw = assembled } }
     }
 }
@@ -643,26 +634,30 @@ struct HakoMacRuleGroupEditor: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        HakoMacSheetFrame(
+            title: document.isEmpty ? .copy("Add Group") : .copy("Group"),
+            subtitle: .copy("Policy Groups"),
+            width: 560, height: 440
+        ) {
             TextEditor(text: $text)
                 .font(.body.monospaced())
+                .padding(12)
                 .accessibilityIdentifier("configuration-center.rule-editor.group.text")
+        } leading: {
             if let error {
-                Text(verbatim: error).foregroundStyle(.red).padding(HakoTheme.Spacing.row)
+                Text(verbatim: error).foregroundStyle(.red).font(.subheadline).lineLimit(2)
                     .accessibilityIdentifier("configuration-center.rule-editor.group.error")
             }
-            HakoMacSheetActionBar(
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.rule-editor.group.cancel",
                 primaryTitle: .copy("Done"),
                 primaryIdentifier: "configuration-center.rule-editor.group.done",
-                primaryDisabled: text == document || text.isEmpty, isBusy: false,
-                closeIdentifier: "configuration-center.rule-editor.group.cancel",
-                onPrimary: {
-                    do { try commit(text); close() } catch { self.error = error.localizedDescription }
-                },
-                onClose: close
+                primaryDisabled: text == document || text.isEmpty,
+                onClose: close,
+                onPrimary: { do { try commit(text); close() } catch { self.error = error.localizedDescription } }
             )
         }
-        .frame(width: 560, height: 420)
     }
 }
 
@@ -682,26 +677,26 @@ struct HakoMacRuleSourceEditor: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        HakoMacSheetFrame(title: .copy("Edit Rules Source"), width: 700, height: 580) {
             TextEditor(text: $draft)
                 .font(.body.monospaced())
+                .padding(12)
                 .accessibilityIdentifier("configuration-center.rule-editor.source.text")
+        } leading: {
             if let error {
-                Text(verbatim: error).foregroundStyle(.red).padding(HakoTheme.Spacing.row)
+                Text(verbatim: error).foregroundStyle(.red).font(.subheadline).lineLimit(2)
                     .accessibilityIdentifier("configuration-center.rule-editor.source.error")
             }
-            HakoMacSheetActionBar(
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.rule-editor.source.cancel",
                 primaryTitle: .copy("Done"),
                 primaryIdentifier: "configuration-center.rule-editor.source.done",
-                primaryDisabled: draft == text, isBusy: false,
-                closeIdentifier: "configuration-center.rule-editor.source.cancel",
-                onPrimary: {
-                    do { try commit(draft); close() } catch { self.error = error.localizedDescription }
-                },
-                onClose: close
+                primaryDisabled: draft == text,
+                onClose: close,
+                onPrimary: { do { try commit(draft); close() } catch { self.error = error.localizedDescription } }
             )
         }
-        .frame(width: 680, height: 560)
     }
 }
 
@@ -723,18 +718,18 @@ struct HakoMacLocalRuleSetEditor: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            List {
+        HakoMacSheetFrame(title: .copy("Add Rule Set"), subtitle: .copy("My Rules"), width: 560, height: 440) {
+            HakoMacSheetForm {
                 Section {
-                    HakoMacFieldRow(.copy("Name"), prompt: HakoCopy.string("Name", locale: locale), text: $name,
-                                    identifier: "configuration-center.rule-editor.rule-set.name")
+                    TextField(text: $name, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
+                        .disabled(busy)
+                        .accessibilityIdentifier("configuration-center.rule-editor.rule-set.name")
                     TextEditor(text: $input)
                         .font(.body.monospaced())
-                        .frame(minHeight: 160)
+                        .frame(minHeight: 140)
+                        .disabled(busy)
                         .accessibilityLabel(Text(hako: .copy("Rule Set")))
                         .accessibilityIdentifier("configuration-center.rule-editor.rule-set.input")
-                } header: {
-                    Text(hako: .copy("Add Rule Set"))
                 }
                 if let error {
                     Section {
@@ -743,17 +738,17 @@ struct HakoMacLocalRuleSetEditor: View {
                     }
                 }
             }
-            .listStyle(.inset)
-            HakoMacSheetActionBar(
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.rule-editor.rule-set.cancel",
                 primaryTitle: .copy("Save"),
                 primaryIdentifier: "configuration-center.rule-editor.rule-set.save",
-                primaryDisabled: !canSave, isBusy: busy,
-                closeIdentifier: "configuration-center.rule-editor.rule-set.cancel",
-                onPrimary: save,
-                onClose: close
+                primaryDisabled: !canSave,
+                isBusy: busy,
+                onClose: close,
+                onPrimary: save
             )
         }
-        .frame(width: 560, height: 420)
     }
 
     private func save() {
@@ -794,24 +789,25 @@ struct HakoMacNamePrompt: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            List {
+        HakoMacSheetFrame(title: title, width: 480, height: 230) {
+            HakoMacSheetForm {
                 Section {
-                    HakoMacFieldRow(.copy("Name"), prompt: HakoCopy.string("Name", locale: locale), text: $name,
-                                    identifier: "configuration-center.rule-editor.duplicate.name")
-                } header: {
-                    Text(hako: title)
+                    TextField(text: $name, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
+                        .disabled(busy)
+                        .accessibilityIdentifier("configuration-center.rule-editor.duplicate.name")
                 }
                 if let error {
                     Section { Text(verbatim: error).foregroundStyle(.red) }
                 }
             }
-            .listStyle(.inset)
-            HakoMacSheetActionBar(
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.rule-editor.duplicate.cancel",
                 primaryTitle: .copy("Save"),
                 primaryIdentifier: "configuration-center.rule-editor.duplicate.save",
-                primaryDisabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || busy, isBusy: busy,
-                closeIdentifier: "configuration-center.rule-editor.duplicate.cancel",
+                primaryDisabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || busy,
+                isBusy: busy,
+                onClose: close,
                 onPrimary: {
                     busy = true
                     error = nil
@@ -820,10 +816,8 @@ struct HakoMacNamePrompt: View {
                         do { try await commit(name.trimmingCharacters(in: .whitespacesAndNewlines)); close() }
                         catch { self.error = error.localizedDescription }
                     }
-                },
-                onClose: close
+                }
             )
         }
-        .frame(width: 480, height: 220)
     }
 }

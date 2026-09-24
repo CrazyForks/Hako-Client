@@ -1101,15 +1101,19 @@ private final class HakoMacSceneModel: ObservableObject {
         if let profile = profiles.profiles.first(where: { $0.id == profileID.rawValue }) {
             switch door {
             case .network:
-                ProfileNetworkSettingsView(profile: profile, sourceYAML: profiles.baseYAML(for: profile)) { [profiles] draft in
-                    try profiles.updateNetwork(draft)
+                HakoMacSharedPageSheet { [profiles] in
+                    ProfileNetworkSettingsView(profile: profile, sourceYAML: profiles.baseYAML(for: profile)) { draft in
+                        try profiles.updateNetwork(draft)
+                    }
                 }
             case .trust:
-                ProfileTrustPage(profile: profile, sourceYAML: profiles.sourceYAML(for: profile),
-                                 patchJSON: profile.override.patchJSON) { [profiles] patchJSON in
-                    var draft = ProfileAdvancedOverridesDraft(profile: profile)
-                    draft.rawPatchJSON = patchJSON
-                    try profiles.updateAdvancedOverrides(draft)
+                HakoMacSharedPageSheet { [profiles] in
+                    ProfileTrustPage(profile: profile, sourceYAML: profiles.sourceYAML(for: profile),
+                                     patchJSON: profile.override.patchJSON) { patchJSON in
+                        var draft = ProfileAdvancedOverridesDraft(profile: profile)
+                        draft.rawPatchJSON = patchJSON
+                        try profiles.updateAdvancedOverrides(draft)
+                    }
                 }
             case .subscriptionSettings:
                 HakoMacSubscriptionSettingsPage(
@@ -1117,7 +1121,7 @@ private final class HakoMacSceneModel: ObservableObject {
                     actions: subscriptionActions(profileID: profileID)
                 )
             case .scripts:
-                HakoMacScriptsPage(actions: scriptsActions(profileID: profileID))
+                HakoMacScriptsSheet(configurationName: profile.label, actions: scriptsActions(profileID: profileID))
             }
         } else {
             EmptyView()
@@ -1187,7 +1191,7 @@ private final class HakoMacSceneModel: ObservableObject {
                     saved.schemeID, label: name, generation: library.snapshot.generation
                 ))
             },
-            download: { input in try await HakoMacRuleReader.rules(input) }
+            download: { input in try await ConfigurationTowerRuleReader.rules(input) }
         )
     }
 
@@ -2136,7 +2140,9 @@ private final class HakoMacSceneModel: ObservableObject {
                                 delete: { list.perform(.delete(id: $0)) }
                             )
                             .sheet(item: self.inspectedConfigurationBinding) { selection in
+                                 
                                 self.configurationDetail(selection, in: list)
+                                    .hakoModalPresentation(.fitted)
                             }
                             .sheet(isPresented: self.showsConfigurationWizardBinding) {
                                 HakoMacConfigurationWizardSheet(
@@ -2144,6 +2150,7 @@ private final class HakoMacSceneModel: ObservableObject {
                                     actions: self.configurationWizardActions,
                                     created: {}
                                 )
+                                .hakoModalPresentation(.fitted)
                             }
                         )
                     }
@@ -3565,63 +3572,5 @@ extension HakoMacSceneModel {
             self?.copyShellCommand(externalIP: externalIP)
         }
         return actions
-    }
-}
-
- 
- 
- 
- 
-enum HakoMacRuleReader {
-    static func normalizedURL(_ value: String) -> String {
-        let value = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard var parts = URLComponents(string: value) else { return value }
-        if parts.host == "github.com" {
-            let path = parts.path.split(separator: "/").map(String.init)
-            if path.count > 4, path[2] == "blob" {
-                parts.host = "raw.githubusercontent.com"
-                parts.path = "/" + ([path[0], path[1]] + Array(path.dropFirst(3))).joined(separator: "/")
-            }
-        }
-        return parts.string ?? value
-    }
-
-    static func rules(_ input: String) async throws -> [String] {
-        var text = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let url = URL(string: normalizedURL(text)), ["https", "http"].contains(url.scheme?.lowercased() ?? "") {
-            var request = URLRequest(url: url)
-            request.timeoutInterval = 30
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-                  data.count <= 32 * 1024 * 1024, let decoded = String(data: data, encoding: .utf8)
-            else { throw ConfigurationLibraryError.unreadable }
-            text = decoded
-        }
-        let raw = text
-        return try await Task.detached {
-            let lines: [String]
-            if raw.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("payload:") {
-                let object = try OrderedJSON.parse(ConfigTransforms.yamlToJSON(raw))
-                guard case .array(let values) = object.topLevelValue("payload") else { throw ConfigurationLibraryError.missingRules }
-                lines = try values.map { value in
-                    guard case .string(let line) = value else { throw ConfigurationLibraryError.missingRules }
-                    return line
-                }
-            } else {
-                lines = raw.split(whereSeparator: \.isNewline)
-                    .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty && !$0.hasPrefix("#") && !$0.hasPrefix("//") }
-            }
-            guard !lines.isEmpty else { throw ConfigurationLibraryError.missingRules }
-            let document = OrderedJSON.object([
-                ("rule-providers", .object([("check", .object([
-                    ("type", .string("inline")), ("behavior", .string("classical")),
-                    ("payload", .array(lines.map(OrderedJSON.string))),
-                ]))])),
-                ("rules", .array([.string("RULE-SET,check,DIRECT"), .string("MATCH,DIRECT")])),
-            ])
-            try ConfigTransforms.validateSource(document.serialized())
-            return lines
-        }.value
     }
 }

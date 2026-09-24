@@ -124,16 +124,14 @@ public struct HakoMacScriptsPage: View {
             }
             if state.patchFieldCount > 0 {
                 Section {
-                    HakoMacActionRow(
-                        .copy("Field Patch"),
-                        actionTitle: .copy("Clear Field Patch"),
-                        action: { perform { try await actions.clearPatch() } }
-                    ) {
+                    LabeledContent {
+                        Button { perform { try await actions.clearPatch() } } label: { Text(hako: .copy("Clear Field Patch")) }
+                            .disabled(busy)
+                            .accessibilityIdentifier("configuration-center.scripts.patch")
+                    } label: {
+                        Text(hako: .copy("Field Patch"))
                         Text(hako: .format("%@ fields", [String(state.patchFieldCount)]))
-                            .foregroundStyle(.secondary)
                     }
-                    .disabled(busy)
-                    .accessibilityIdentifier("configuration-center.scripts.patch")
                 }
             }
             if !state.exceptions.isEmpty {
@@ -151,7 +149,7 @@ public struct HakoMacScriptsPage: View {
                             .accessibilityIdentifier("configuration-center.scripts.exception.\(index)")
                     }
                 } header: {
-                    Text(hako: .copy("This Configuration's Exceptions"))
+                    Text(hako: .copy("This Profile's Exceptions"))
                 }
             }
             if let error {
@@ -207,6 +205,27 @@ public struct HakoMacScriptsPage: View {
 
  
  
+public struct HakoMacScriptsSheet: View {
+    private let configurationName: String
+    private let actions: HakoMacScriptsActions
+    @Environment(\.dismiss) private var dismiss
+
+    public init(configurationName: String, actions: HakoMacScriptsActions) {
+        self.configurationName = configurationName
+        self.actions = actions
+    }
+
+    public var body: some View {
+        HakoMacSheetFrame(title: .copy("Overrides and Scripts"), subtitle: .verbatim(configurationName), width: 600, height: 520) {
+            HakoMacScriptsPage(actions: actions)
+        } trailing: {
+            HakoMacSheetButtons(closeTitle: .copy("Close"), closeIdentifier: "configuration-center.scripts.close", onClose: { dismiss() })
+        }
+    }
+}
+
+ 
+ 
  
  
 struct HakoMacScriptAddSheet: View {
@@ -215,7 +234,7 @@ struct HakoMacScriptAddSheet: View {
         var id: Int { rawValue }
         var title: String {
             switch self {
-            case .link: "Link"
+            case .link: "URL"
             case .file: "File"
             case .manual: "Manual"
             }
@@ -242,73 +261,72 @@ struct HakoMacScriptAddSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Picker(selection: $tab) {
-                ForEach(Tab.allCases) { item in Text(hako: .copy(item.title)).tag(item) }
-            } label: {
-                Text(hako: .copy("Add Script"))
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .padding(HakoTheme.Spacing.row)
-            .accessibilityIdentifier("configuration-center.script-add.tabs")
-            List {
-                switch tab {
-                case .link:
-                    Section {
-                        HakoMacFieldRow(.copy("Link"), prompt: "https://", text: $link,
-                                        identifier: "configuration-center.script-add.link")
-                            .disabled(busy)
-                    }
-                case .file:
-                    Section {
-                        HakoMacActionRow(.copy("Choose File"), actionTitle: .copy("Choose File"),
-                                         action: { choosingFile = true }) {
-                            if !name.isEmpty { Text(verbatim: name).foregroundStyle(.secondary) }
+        HakoMacSheetFrame(title: .copy("Add Script"), subtitle: .copy("Scripts"), width: 560, height: 500) {
+            VStack(spacing: 0) {
+                Picker(selection: $tab) {
+                    ForEach(Tab.allCases) { item in Text(hako: .copy(item.title)).tag(item) }
+                } label: {
+                    Text(hako: .copy("Add Script"))
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .padding(.top, 16)
+                .accessibilityIdentifier("configuration-center.script-add.tabs")
+                HakoMacSheetForm {
+                    switch tab {
+                    case .link:
+                        Section {
+                            TextField(text: $link, prompt: Text(verbatim: "https://")) { Text(hako: .copy("URL")) }
+                                .disabled(busy)
+                                .accessibilityIdentifier("configuration-center.script-add.link")
                         }
-                        .disabled(busy)
-                        .accessibilityIdentifier("configuration-center.script-add.choose-file")
-                        HakoMacFieldRow(.copy("Name"), prompt: HakoCopy.string("Name", locale: locale), text: $name,
-                                        identifier: "configuration-center.script-add.file-name")
-                            .disabled(busy)
+                    case .file:
+                        Section {
+                            LabeledContent {
+                                Button { choosingFile = true } label: { Text(hako: .copy("Choose File")) }
+                                    .disabled(busy)
+                                    .accessibilityIdentifier("configuration-center.script-add.choose-file")
+                            } label: {
+                                Text(hako: name.isEmpty ? .copy("File") : .verbatim(name))
+                            }
+                            TextField(text: $name, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
+                                .disabled(busy)
+                                .accessibilityIdentifier("configuration-center.script-add.file-name")
+                        }
+                    case .manual:
+                        Section {
+                            TextField(text: $name, prompt: Text(hako: .copy("New Script"))) { Text(hako: .copy("Name")) }
+                                .disabled(busy)
+                                .accessibilityIdentifier("configuration-center.script-add.name")
+                            TextEditor(text: $scriptBody)
+                                .font(.body.monospaced())
+                                .frame(minHeight: 180)
+                                .disabled(busy)
+                                .accessibilityLabel(Text(hako: .copy("Script")))
+                                .accessibilityIdentifier("configuration-center.script-add.body")
+                        }
                     }
-                case .manual:
-                    Section {
-                        HakoMacFieldRow(.copy("Name"), prompt: HakoCopy.string("New Script", locale: locale), text: $name,
-                                        identifier: "configuration-center.script-add.name")
-                            .disabled(busy)
-                        TextEditor(text: $scriptBody)
-                            .font(.body.monospaced())
-                            .frame(minHeight: 200)
-                            .disabled(busy)
-                            .accessibilityLabel(Text(hako: .copy("Script")))
-                            .accessibilityIdentifier("configuration-center.script-add.body")
+                    if let error {
+                        Section {
+                            Text(verbatim: error).foregroundStyle(.red)
+                                .accessibilityIdentifier("configuration-center.script-add.error")
+                        }
                     }
                 }
-                if let error {
-                    Section {
-                        Text(verbatim: error).foregroundStyle(.red)
-                            .accessibilityIdentifier("configuration-center.script-add.error")
-                    }
-                }
+                .accessibilityIdentifier("configuration-center.script-add")
             }
-            .listStyle(.inset)
-            .accessibilityIdentifier("configuration-center.script-add")
-            HStack {
-                Button(action: close) { Text(hako: .copy("Cancel")) }
-                    .keyboardShortcut(.cancelAction)
-                    .disabled(busy)
-                    .accessibilityIdentifier("configuration-center.script-add.cancel")
-                Spacer()
-                Button(action: add) { HakoActionProgressLabel(.copy("Add"), isBusy: busy) }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!canAdd)
-                    .accessibilityIdentifier("configuration-center.script-add.add")
-            }
-            .padding(HakoTheme.Spacing.row)
-            .background(.bar)
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.script-add.cancel",
+                primaryTitle: .copy("Add"),
+                primaryIdentifier: "configuration-center.script-add.add",
+                primaryDisabled: !canAdd,
+                isBusy: busy,
+                onClose: close,
+                onPrimary: add
+            )
         }
-        .frame(width: 560, height: 480)
         .onChange(of: tab) { _ in error = nil }
         .fileImporter(isPresented: $choosingFile, allowedContentTypes: [.plainText, .text, .javaScript].compactMap { $0 }) { result in
             switch result {

@@ -61,13 +61,16 @@ public enum HakoMacSourceImportPurpose: Sendable {
  
  
  
-public struct HakoMacSourceImportPage: View {
+ 
+ 
+ 
+public struct HakoMacSourceImportSheet: View {
     public enum Tab: Int, CaseIterable, Identifiable {
         case link, file, nodes, manual
         public var id: Int { rawValue }
         var title: String {
             switch self {
-            case .link: "Link"
+            case .link: "URL"
             case .file: "File"
             case .nodes: "Nodes"
             case .manual: "Manual"
@@ -85,11 +88,11 @@ public struct HakoMacSourceImportPage: View {
     @State private var label = ""
     @State private var fileName = ""
     @State private var text = ""
+    @State private var nodesText = ""
     @State private var choosingFile = false
     @State private var preview: ConfigurationSourcePayload?
     @State private var busy = false
     @State private var error: String?
-    @State private var nodesText = ""
     @State private var ruleAction: HakoStructuredRule.Action = .domainSuffix
     @State private var ruleContent = ""
     @State private var ruleTarget = "DIRECT"
@@ -115,10 +118,31 @@ public struct HakoMacSourceImportPage: View {
         return result
     }
 
-     
+    private var title: HakoDisplayText {
+        purpose == .nodes ? .copy("Add Source") : .copy("Add Rule Scheme")
+    }
+
+    private var subtitle: HakoDisplayText {
+        switch tab {
+        case .link: .copy("Profile URL or Share Link")
+        case .file: .copy("Read a profile from the clipboard.")
+        case .nodes: .copy("Custom Nodes")
+        case .manual: .copy("Add Rule")
+        }
+    }
+
+    private var assembledRule: String {
+        var parts = [ruleAction.rawValue]
+        if ruleAction.needsContent { parts.append(ruleContent.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        parts.append(ruleTarget)
+        return parts.joined(separator: ",")
+    }
+
      
     private var canAdd: Bool {
-        if tab == .manual { return !assembledRule.isEmpty && (!ruleAction.needsContent || !ruleContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy }
+        if tab == .manual {
+            return (!ruleAction.needsContent || !ruleContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy
+        }
         return preview != nil && !busy
     }
 
@@ -131,13 +155,6 @@ public struct HakoMacSourceImportPage: View {
         }
     }
 
-    private var assembledRule: String {
-        var parts = [ruleAction.rawValue]
-        if ruleAction.needsContent { parts.append(ruleContent.trimmingCharacters(in: .whitespacesAndNewlines)) }
-        parts.append(ruleTarget)
-        return parts.joined(separator: ",")
-    }
-
      
      
     private var offersOriginalImport: Bool {
@@ -145,60 +162,57 @@ public struct HakoMacSourceImportPage: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            Picker(selection: $tab) {
-                ForEach(tabs) { item in
-                    Text(hako: .copy(item.title)).tag(item)
-                }
-            } label: {
-                Text(hako: .copy("Add Source"))
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .padding(HakoTheme.Spacing.row)
-            .accessibilityIdentifier("configuration-center.import.tabs")
-            List {
-                switch tab {
-                case .link: linkSection
-                case .file: fileSection
-                case .nodes: nodesSection
-                case .manual: manualSection
-                }
-                if let preview, tab != .manual { previewSection(preview) }
-                if let error {
-                    Section {
-                        Text(verbatim: error).foregroundStyle(.red)
-                            .accessibilityIdentifier("configuration-center.import.error")
+        HakoMacSheetFrame(title: title, subtitle: subtitle, width: 560, height: 540) {
+            VStack(spacing: 0) {
+                Picker(selection: $tab) {
+                    ForEach(tabs) { item in
+                        Text(hako: .copy(item.title)).tag(item)
                     }
-                }
-            }
-            .listStyle(.inset)
-            .accessibilityIdentifier("configuration-center.import")
-            HStack {
-                Button(action: close) { Text(hako: .copy("Cancel")) }
-                    .keyboardShortcut(.cancelAction)
-                    .accessibilityIdentifier("configuration-center.import.cancel")
-                Spacer()
-                if offersOriginalImport {
-                    Button {
-                        run { payload in try await actions.importOriginal?(payload) }
-                    } label: {
-                        Text(hako: .copy("Import Original Configuration"))
-                    }
-                    .disabled(busy)
-                    .accessibilityIdentifier("configuration-center.import.original")
-                }
-                Button {
-                    if tab == .manual { createRule() } else { run(accept) }
                 } label: {
-                    HakoActionProgressLabel(.copy("Add"), isBusy: busy)
+                    Text(hako: title)
                 }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canAdd)
-                .accessibilityIdentifier("configuration-center.import.add")
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .padding(.top, 16)
+                .accessibilityIdentifier("configuration-center.import.tabs")
+                HakoMacSheetForm {
+                    switch tab {
+                    case .link: linkSection
+                    case .file: fileSection
+                    case .nodes: nodesSection
+                    case .manual: manualSection
+                    }
+                    if let preview, tab != .manual { previewSection(preview) }
+                    if let error {
+                        Section {
+                            Text(verbatim: error).foregroundStyle(.red)
+                                .accessibilityIdentifier("configuration-center.import.error")
+                        }
+                    }
+                }
+                .accessibilityIdentifier("configuration-center.import")
             }
-            .padding(HakoTheme.Spacing.row)
-            .background(.bar)
+        } leading: {
+            if offersOriginalImport {
+                Button {
+                    run { payload in try await actions.importOriginal?(payload) }
+                } label: {
+                    Text(hako: .copy("Import Original Configuration"))
+                }
+                .disabled(busy)
+                .accessibilityIdentifier("configuration-center.import.original")
+            }
+        } trailing: {
+            HakoMacSheetButtons(
+                closeIdentifier: "configuration-center.import.cancel",
+                primaryTitle: .copy("Add"),
+                primaryIdentifier: "configuration-center.import.add",
+                primaryDisabled: !canAdd,
+                isBusy: busy,
+                onClose: close,
+                onPrimary: { if tab == .manual { createRule() } else { run(accept) } }
+            )
         }
         .onChange(of: tab) { _ in preview = nil; error = nil }
         .fileImporter(isPresented: $choosingFile, allowedContentTypes: Self.fileTypes) { result in
@@ -216,50 +230,55 @@ public struct HakoMacSourceImportPage: View {
 
      
 
+    private var readRow: some View {
+        LabeledContent {
+            Button(action: read) { HakoActionProgressLabel(.copy("Read"), isBusy: busy) }
+                .disabled(!canRead)
+                .accessibilityIdentifier("configuration-center.import.read")
+        } label: {
+            Text(hako: .copy("Read from Source"))
+        }
+    }
+
     private var linkSection: some View {
         Section {
-            HakoMacFieldRow(.copy("Link"), prompt: "https://", text: $url,
-                            identifier: "configuration-center.import.url")
+            TextField(text: $url, prompt: Text(verbatim: "https://")) { Text(hako: .copy("URL")) }
                 .disabled(busy)
-            HakoMacFieldRow(.copy("Name"), prompt: HakoCopy.string("Name", locale: locale), text: $label,
-                            identifier: "configuration-center.import.name")
+                .accessibilityIdentifier("configuration-center.import.url")
+            TextField(text: $label, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
                 .disabled(busy)
-            HakoMacActionRow(.copy("Read from Source"), actionTitle: .copy("Read"), action: read) {
-                if busy { ProgressView().controlSize(.small) }
-            }
-            .disabled(!canRead)
-            .accessibilityIdentifier("configuration-center.import.read")
-        } header: {
-            Text(hako: .copy("Subscription URL or Share Link"))
-        } footer: {
-            Text(hako: .copy("Subscription links and install links both work."))
+                .accessibilityIdentifier("configuration-center.import.name")
+            readRow
         }
     }
 
     private var fileSection: some View {
         Section {
-            HakoMacActionRow(.copy(fileName.isEmpty ? "Choose File" : "File"), actionTitle: .copy("Choose File"),
-                             action: { choosingFile = true }) {
-                if !fileName.isEmpty { Text(verbatim: fileName).foregroundStyle(.secondary) }
+            LabeledContent {
+                Button { choosingFile = true } label: { Text(hako: .copy("Choose File")) }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.import.choose-file")
+            } label: {
+                Text(hako: fileName.isEmpty ? .copy("File") : .verbatim(fileName))
             }
-            .disabled(busy)
-            .accessibilityIdentifier("configuration-center.import.choose-file")
             TextEditor(text: $text)
                 .font(.body.monospaced())
-                .frame(minHeight: 140)
+                .frame(minHeight: 120)
                 .disabled(busy)
-                .accessibilityLabel(Text(hako: .copy("Paste config text")))
+                .accessibilityLabel(Text(hako: .copy("Paste YAML text")))
                 .accessibilityIdentifier("configuration-center.import.text")
-            HakoMacFieldRow(.copy("Name"), prompt: HakoCopy.string("Name", locale: locale), text: $label,
-                            identifier: "configuration-center.import.file-name")
+            TextField(text: $label, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
                 .disabled(busy)
-            HakoMacActionRow(.copy("Read from Source"), actionTitle: .copy("Read"), action: read) {
-                if busy { ProgressView().controlSize(.small) }
+                .accessibilityIdentifier("configuration-center.import.file-name")
+            LabeledContent {
+                Button(action: read) { HakoActionProgressLabel(.copy("Read"), isBusy: busy) }
+                    .disabled(!canRead)
+                    .accessibilityIdentifier("configuration-center.import.read-file")
+            } label: {
+                Text(hako: .copy("Read from Source"))
             }
-            .disabled(!canRead)
-            .accessibilityIdentifier("configuration-center.import.read-file")
         } header: {
-            Text(hako: .copy("Paste config text"))
+            Text(hako: .copy("Paste YAML text"))
         }
     }
 
@@ -267,15 +286,17 @@ public struct HakoMacSourceImportPage: View {
         Section {
             TextEditor(text: $nodesText)
                 .font(.body.monospaced())
-                .frame(minHeight: 160)
+                .frame(minHeight: 140)
                 .disabled(busy)
                 .accessibilityLabel(Text(hako: .copy("Custom Nodes")))
                 .accessibilityIdentifier("configuration-center.import.nodes-text")
-            HakoMacActionRow(.copy("Read from Source"), actionTitle: .copy("Read"), action: read) {
-                if busy { ProgressView().controlSize(.small) }
+            LabeledContent {
+                Button(action: read) { HakoActionProgressLabel(.copy("Read"), isBusy: busy) }
+                    .disabled(!canRead)
+                    .accessibilityIdentifier("configuration-center.import.read-nodes")
+            } label: {
+                Text(hako: .copy("Read from Source"))
             }
-            .disabled(!canRead)
-            .accessibilityIdentifier("configuration-center.import.read-nodes")
         } header: {
             Text(hako: .copy("Custom Nodes"))
         }
@@ -293,9 +314,12 @@ public struct HakoMacSourceImportPage: View {
             .disabled(busy)
             .accessibilityIdentifier("configuration-center.import.manual.action")
             if ruleAction.needsContent {
-                HakoMacFieldRow(.verbatim(ruleAction.contentLabel), prompt: ruleAction.contentPlaceholder, text: $ruleContent,
-                                monospaced: true, identifier: "configuration-center.import.manual.content")
-                    .disabled(busy)
+                TextField(text: $ruleContent, prompt: Text(verbatim: ruleAction.contentPlaceholder)) {
+                    Text(verbatim: ruleAction.contentLabel)
+                }
+                .font(.body.monospaced())
+                .disabled(busy)
+                .accessibilityIdentifier("configuration-center.import.manual.content")
             }
             Picker(selection: $ruleTarget) {
                 ForEach(["DIRECT", "REJECT", "PROXY"], id: \.self) { name in Text(verbatim: name).tag(name) }
@@ -304,7 +328,7 @@ public struct HakoMacSourceImportPage: View {
             }
             .disabled(busy)
             .accessibilityIdentifier("configuration-center.import.manual.target")
-            HakoMacNavigationRowLabel(.copy("Rule"), value: .verbatim(assembledRule))
+            LabeledContent { Text(verbatim: assembledRule).font(.body.monospaced()) } label: { Text(hako: .copy("Rule")) }
         } header: {
             Text(hako: .copy("Add Rule"))
         }
@@ -312,23 +336,23 @@ public struct HakoMacSourceImportPage: View {
 
     private func previewSection(_ payload: ConfigurationSourcePayload) -> some View {
         Section {
-            HakoMacNavigationRowLabel(.copy("Name"), value: .verbatim(payload.record.label))
+            LabeledContent { Text(verbatim: payload.record.label) } label: { Text(hako: .copy("Name")) }
             if purpose == .nodes || payload.record.suppliesNodes {
-                HakoMacNavigationRowLabel(
-                    .copy("Nodes"),
-                    value: .verbatim(HakoConfigurationSourceCopy.summary(payload.record, locale: locale))
-                )
+                LabeledContent {
+                    Text(verbatim: HakoConfigurationSourceCopy.summary(payload.record, locale: locale))
+                } label: {
+                    Text(hako: .copy("Nodes"))
+                }
             }
             if payload.record.hasRules {
-                HakoMacNavigationRowLabel(.copy("Rules"), value: HakoConfigurationSourceCopy.ruleSummary(payload.record))
-            }
-            if offersOriginalImport {
-                Text(hako: .copy("Keep the document's nodes, rules and settings."))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                LabeledContent { Text(hako: HakoConfigurationSourceCopy.ruleSummary(payload.record)) } label: { Text(hako: .copy("Rules")) }
             }
         } header: {
             Text(hako: .copy("Read from Source"))
+        } footer: {
+            if offersOriginalImport {
+                Text(hako: .copy("Keep the document's nodes, rules and settings."))
+            }
         }
         .accessibilityIdentifier("configuration-center.import.preview")
     }
