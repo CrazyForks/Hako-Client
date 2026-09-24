@@ -501,22 +501,22 @@ struct ScriptLibraryView: View {
             }
         .hakoToolbarUnlessInPanel {
             ToolbarItemGroup(placement: .hakoNavigationTrailing) {
-                if !updatable.isEmpty {
-                     
-                     
-                    Button { Task { await update(updatable) } } label: {
-                        Label("Update All", systemImage: HakoSymbol.arrowClockwise.name)
-                    }
-                    .disabled(updating)
-                    .accessibilityIdentifier("scripts.update.all")
+                 
+                 
+                 
+                 
+                Button { Task { await update(updatable) } } label: {
+                    Label("Update All", systemImage: HakoSymbol.arrowClockwise.name)
                 }
+                .disabled(updating)
+                .accessibilityIdentifier("scripts.update.all")
                 HakoEditButton()
                 Button { adding = ScriptLibrary.fresh() } label: {
                     Label("Add Script", systemImage: HakoSymbol.plus.name)
                 }
             }
         }
-        .alert(Text(hako: .copy("Scripts Updated")), isPresented: $showsUpdateResult) {
+        .alert(Text(hako: .copy("Update Scripts")), isPresented: $showsUpdateResult) {
             Button("OK") {}
         } message: {
             Text(verbatim: updateMessage)
@@ -547,6 +547,13 @@ struct ScriptLibraryView: View {
         guard !updating else { return }
         updating = true
         defer { updating = false }
+        if targets.isEmpty {
+            updateMessage = HakoCopy.string(
+                "None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it.",
+                locale: .current)
+            showsUpdateResult = true
+            return
+        }
         var changed = 0
         var failed: [String] = []
         for script in targets {

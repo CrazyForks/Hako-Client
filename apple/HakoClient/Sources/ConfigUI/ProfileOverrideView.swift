@@ -48,6 +48,9 @@ struct ProfileOverrideView: View {
     private let globalRules: [String]
     @State private var scripts: [ConfigScript]
     private let scriptLibrary: UserDefaults
+    @State private var updatingScripts = false
+    @State private var scriptsUpdateMessage = ""
+    @State private var showsScriptsUpdate = false
      
      
      
@@ -294,6 +297,11 @@ struct ProfileOverrideView: View {
                  
             }
             .hakoPageTitle(.copy(configurationCenter ? "Overrides and Scripts" : "Profile Override"))
+            .alert(Text(hako: .copy("Update Scripts")), isPresented: $showsScriptsUpdate) {
+                Button("OK") {}
+            } message: {
+                Text(verbatim: scriptsUpdateMessage)
+            }
              
              
              
@@ -332,6 +340,17 @@ struct ProfileOverrideView: View {
                     if !insideProductModal {
                         Button("Cancel") { dismissPresentation() }
                     }
+                }
+                 
+                 
+                 
+                 
+                ToolbarItem(placement: .hakoNavigationTrailing) {
+                    Button { Task { await updateScripts() } } label: {
+                        Label("Update Scripts", systemImage: HakoSymbol.arrowClockwise.name)
+                    }
+                    .disabled(updatingScripts)
+                    .accessibilityIdentifier("profile.override.scripts.update")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if !insideProductModal {
@@ -745,6 +764,41 @@ struct ProfileOverrideView: View {
             ? nil
             : legacyRelayMigrations
         return settingsFacade.applying(settings, to: profile)
+    }
+
+     
+     
+     
+    @MainActor
+    private func updateScripts() async {
+        guard !updatingScripts else { return }
+        updatingScripts = true
+        defer { updatingScripts = false }
+        let targets = scripts.filter { !($0.sourceURL ?? "").isEmpty }
+        if targets.isEmpty {
+            scriptsUpdateMessage = HakoCopy.string(
+                "None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it.",
+                locale: .current)
+            showsScriptsUpdate = true
+            return
+        }
+        var changed = 0
+        var failed: [String] = []
+        for script in targets {
+            do {
+                let refreshed = try await ScriptImport.refreshed(script)
+                if refreshed.body != script.body {
+                    ScriptLibrary.upsert(refreshed, in: scriptLibrary)
+                    changed += 1
+                }
+            } catch {
+                failed.append(script.label)
+            }
+        }
+        scriptsUpdateMessage = failed.isEmpty
+            ? HakoCopy.format("%lld scripts updated.", locale: .current, changed)
+            : HakoCopy.format("%lld scripts updated; these failed: %@", locale: .current, changed, failed.joined(separator: ", "))
+        showsScriptsUpdate = true
     }
 
     private var proxyChainSubtitle: HakoDisplayText {

@@ -1938,6 +1938,7 @@
 "None in this profile" = "None in this profile";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this.";
 "None of these resolvers answered on the current network. Saving is allowed — another network may reach them — but names may not resolve until then." = "None of these resolvers answered on the current network. Saving is allowed — another network may reach them — but names may not resolve until then.";
+"None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it." = "None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it.";
 "None recorded" = "None recorded";
 "Not Applied Yet" = "Not Applied Yet";
 "Not Connected" = "Not Connected";
@@ -2620,7 +2621,6 @@
 "Script URL" = "Script URL";
 "Script name" = "Script name";
 "Scripts" = "Scripts";
-"Scripts Updated" = "Scripts Updated";
 "Scripts are imported over http or https. This address uses %@." = "Scripts are imported over http or https. This address uses %@.";
 "Scripts, custom overrides, and long-tail core fields" = "Scripts, custom overrides, and long-tail core fields";
 "Search" = "Search";
@@ -3431,6 +3431,7 @@
 "Update All Sources" = "Update All Sources";
 "Update Conflict" = "Update Conflict";
 "Update Interval" = "Update Interval";
+"Update Scripts" = "Update Scripts";
 "Update Source" = "Update Source";
 "Update applies at the next activation" = "Update applies at the next activation";
 "Update cancelled" = "Update cancelled";

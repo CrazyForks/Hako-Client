@@ -1938,6 +1938,7 @@
 "None in this profile" = "本配置中没有";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "出口能承载 UDP 时这几档都不生效。Hysteria2、TUIC 以及任何开启了 udp 的线路——包括 UDP over TCP——都会正常命中规则，走不到这里。";
 "None of these resolvers answered on the current network. Saving is allowed — another network may reach them — but names may not resolve until then." = "这些解析器在当前网络都未应答。仍可保存——其他网络可能可达——但在那之前域名可能无法解析。";
+"None of these scripts came from a link, so there is nothing to fetch. Add a script from its link to be able to update it." = "这些脚本都不是从链接导入的，没有可拉取的来源。用链接添加脚本后才能更新。";
 "None recorded" = "未记录到压力";
 "Not Applied Yet" = "尚未应用";
 "Not Connected" = "未连接";
@@ -2620,7 +2621,6 @@
 "Script URL" = "脚本 URL";
 "Script name" = "脚本名称";
 "Scripts" = "脚本";
-"Scripts Updated" = "脚本已更新";
 "Scripts are imported over http or https. This address uses %@." = "脚本只能通过 http 或 https 导入，而这个地址用的是 %@。";
 "Scripts, custom overrides, and long-tail core fields" = "脚本、自定义覆写与内核长尾字段";
 "Search" = "搜索";
@@ -3431,6 +3431,7 @@
 "Update All Sources" = "更新全部外部资源";
 "Update Conflict" = "更新冲突";
 "Update Interval" = "更新间隔";
+"Update Scripts" = "更新脚本";
 "Update Source" = "更新来源";
 "Update applies at the next activation" = "更新将于下次激活时生效";
 "Update cancelled" = "更新已取消";

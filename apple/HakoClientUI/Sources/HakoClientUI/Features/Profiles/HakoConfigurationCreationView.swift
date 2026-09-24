@@ -4,6 +4,7 @@ import SwiftUI
 
  
 public struct HakoConfigurationCenterSections<Profiles: View, Nodes: View, Rules: View>: View {
+    @Environment(\.hakoShellDrawsRootHeading) private var railOwnsHeading
     @State private var section = 0
     @Environment(\.locale) private var locale
     @Environment(\.hakoRootDepartureGuard) private var departureGuard
@@ -45,9 +46,16 @@ public struct HakoConfigurationCenterSections<Profiles: View, Nodes: View, Rules
             .frame(maxWidth: .infinity)
             .padding(.horizontal, HakoTheme.Spacing.standard)
         }
-        .hakoPageTitle("Profile Center")
+         
+         
+         
+         
+         
+        .hakoRootHeading("Profile Center")
         .hakoToolbarUnlessInPanel {
-            ToolbarItem(placement: .principal) { Text("Profile Center").font(.headline) }
+            ToolbarItem(placement: .principal) {
+                if !railOwnsHeading { Text("Profile Center").font(.headline) }
+            }
         }
     }
 }
