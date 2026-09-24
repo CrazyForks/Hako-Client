@@ -580,7 +580,11 @@ struct GoldenFlowHomeAdapter: View {
                          
                          
                          
-                        initiallyExpandedGroup: pendingProxiesGroup
+                        initiallyExpandedGroup: HomeProxiesEntryPolicy.groupToOpen(
+                            pending: pendingProxiesGroup,
+                            lastOpened: nodes.currentGroupName,
+                            groups: preparedProxiesPresentation.sourceModel.groups.map(\.name)
+                        )
                     )
                 } else {
                     HomePreparationPlaceholder(

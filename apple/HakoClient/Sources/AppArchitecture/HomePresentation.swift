@@ -680,3 +680,15 @@ typealias HomeConnectionPresentation =
     HakoClientUI.HakoHomeConnectionPresentation
 typealias HomeConnectionPresenter =
     HakoClientUI.HakoHomeConnectionPresenter
+
+ 
+ 
+ 
+ 
+enum HomeProxiesEntryPolicy {
+    static func groupToOpen(pending: String?, lastOpened: String?, groups: [String]) -> String? {
+        if let pending { return pending }
+        if let lastOpened, groups.contains(lastOpened) { return lastOpened }
+        return groups.first
+    }
+}
