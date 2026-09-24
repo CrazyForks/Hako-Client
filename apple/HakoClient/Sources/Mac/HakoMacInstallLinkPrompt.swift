@@ -35,8 +35,8 @@ struct HakoMacInstallLinkPrompt {
      
     var lead: String {
         isLocalConfiguration
-            ? "A link wants to add a configuration to Clash.\n\n"
-            : "A link wants to add a config URL to Clash.\n\n"
+            ? "An install link wants to add a configuration to Clash.\n\n"
+            : "An install link wants to add a config URL to Clash.\n\n"
     }
 
      

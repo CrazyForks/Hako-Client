@@ -23,7 +23,7 @@ enum ScriptImportError: LocalizedError, Equatable {
         case .notAnAddress:
              
              
-            return "That is not a web address. Paste the link to the script file, not the script."
+            return "That is not a web address. Paste the script file's URL, not the script."
         case let .unsupportedScheme(scheme):
             return HakoCopy.format(
                 "Scripts are imported over http or https. This address uses %@.",
@@ -675,7 +675,7 @@ struct ScriptEditorView: View {
                  
                  
                  
-                .alert("Import from Link…", isPresented: $importingFromLink) {
+                .alert("Import from URL…", isPresented: $importingFromLink) {
                     TextField("Script URL", text: $importAddress)
 #if !os(macOS)
                         .keyboardType(.URL)
@@ -779,7 +779,7 @@ struct ScriptEditorView: View {
                 importResult = ""
                 importingFromLink = true
             } label: {
-                Label("Import from Link…", systemImage: HakoSymbol.link.name)
+                Label("Import from URL…", systemImage: HakoSymbol.link.name)
             }
             .accessibilityIdentifier("scripts.editor.import.link")
             Button {
@@ -999,7 +999,7 @@ struct ScriptAddSheet: View {
 
     private var tabs: some View {
         Picker("Add Script", selection: $tab) {
-            Text(HakoCopy.key("Link")).tag(1)
+            Text(HakoCopy.key("URL")).tag(1)
             Text(HakoCopy.key("File")).tag(2)
             Text(HakoCopy.key("Manual")).tag(3)
         }

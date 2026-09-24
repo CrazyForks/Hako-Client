@@ -1229,7 +1229,7 @@ final class ProfilesViewModel: ObservableObject {
             return
         }
         try profileStore.upsert(stripped)
-        statusMessage = "Stored link credentials removed"
+        statusMessage = "Stored URL credentials removed"
         load()
     }
 

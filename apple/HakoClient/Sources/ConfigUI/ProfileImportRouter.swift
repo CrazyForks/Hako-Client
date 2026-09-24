@@ -12,11 +12,11 @@ enum ProfileInstallLinkError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .unsupportedLink:
-            return "This configuration link is not supported."
+            return "This install link is not supported."
         case .missingSubscription:
-            return "The link does not contain a config URL."
+            return "The install link does not contain a config URL."
         case .unusableSubscription:
-            return "The link does not contain a usable config URL."
+            return "The install link does not contain a usable config URL."
         case .unsupportedFile:
             return "That file is not a configuration Clash can read."
         case .fileTooLarge:

@@ -1587,8 +1587,8 @@ public struct HakoConfigurationSubscriptionImportView: View {
         Form {
             Section {
                 TextField("Config URL or Share Link", text: $request.url).accessibilityIdentifier("configuration.subscription.import.url").hakoConfigurationResolverInput()
-            } header: { Text("Link") } footer: {
-                Text("HTTP links are sent without encryption.")
+            } header: { Text("URL") } footer: {
+                Text("HTTP is not encrypted. Credentials in the address travel in the clear.")
             }
             if loading { Section { ProgressView() } }
             if let preview, previewRequest == request {
@@ -1763,11 +1763,11 @@ public enum HakoConfigurationAddition {
     public var entryTitle: String { title }
     var creationHint: String {
         switch self {
-        case .configuration: "Import from a configuration link or Clash configuration file, or use custom nodes"
-        case .nodes: "Import from a configuration link or Clash configuration file, or create nodes manually"
-        case .rules: "Import from a configuration link or Clash configuration file, or edit rules manually"
-        case .scripts: "Import from a link or file, or write one by hand"
-        case .certificates: "Import from a link or file, or paste the PEM"
+        case .configuration: "Import from a config URL or Clash configuration file, or use custom nodes"
+        case .nodes: "Import from a config URL or Clash configuration file, or create nodes manually"
+        case .rules: "Import from a config URL or Clash configuration file, or edit rules manually"
+        case .scripts: "Import from a URL or file, or write one by hand"
+        case .certificates: "Import from a URL or file, or paste the PEM"
         }
     }
 }

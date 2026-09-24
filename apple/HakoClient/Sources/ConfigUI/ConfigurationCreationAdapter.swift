@@ -682,7 +682,7 @@ struct ConfigurationSourceImportAdapter: View {
                 confirmsTabDiscard = true
             } else { chosenKind = next }
         })) {
-            Text(HakoCopy.key("Link")).tag(HakoConfigurationSourceKind.subscription)
+            Text(HakoCopy.key("URL")).tag(HakoConfigurationSourceKind.subscription)
             Text(HakoCopy.key("File")).tag(HakoConfigurationSourceKind.file)
             Text(HakoCopy.key("Manual")).tag(HakoConfigurationSourceKind.customNodes)
         }
@@ -947,7 +947,7 @@ struct ConfigurationRuleLibraryAdapter: View {
             guard next != addMode else { return }
             if dirty { pendingAddMode = next; confirmsAddTabDiscard = true } else { addMode = next }
         })) {
-            Text(HakoCopy.key("Link")).tag(1)
+            Text(HakoCopy.key("URL")).tag(1)
             Text(HakoCopy.key("File")).tag(2)
             Text(HakoCopy.key("Manual")).tag(3)
         }.pickerStyle(.segmented).padding(.horizontal, 20).padding(.bottom, 8)

@@ -164,15 +164,13 @@
 "A different local script already uses an imported script identity. Rename it before restoring." = "A different local script already uses an imported script identity. Rename it before restoring.";
 "A domain listed here resolves to the address you give it, before any resolver is asked." = "A domain listed here resolves to the address you give it, before any resolver is asked.";
 "A frequent app-wide runtime decision." = "A frequent app-wide runtime decision.";
-"A link wants to add a config URL to Clash.\n\n" = "A link wants to add a config URL to Clash.\n\n";
-"A link wants to add a configuration to Clash.\n\n" = "A link wants to add a configuration to Clash.\n\n";
 "A load-balance group spreads connections across its members, so it has no single route to pin." = "A load-balance group spreads connections across its members, so it has no single route to pin.";
 "A local file copied into the protected store" = "A local file copied into the protected store";
 "A mapping points a domain at an address: an IPv4 or IPv6 address, or another domain name." = "A mapping points a domain at an address: an IPv4 or IPv6 address, or another domain name.";
 "A match is required." = "A match is required.";
 "A multi-platform proxy client" = "A multi-platform proxy client";
 "A node in this chain is missing or ambiguous. Edit the chain before updating this source." = "A node in this chain is missing or ambiguous. Edit the chain before updating this source.";
-"A node share link is added to Custom Nodes. HTTP links are sent without encryption." = "A node share link is added to Custom Nodes. HTTP links are sent without encryption.";
+"A node share link is added to Custom Nodes. HTTP is not encrypted. Credentials in the address travel in the clear." = "A node share link is added to Custom Nodes. HTTP is not encrypted. Credentials in the address travel in the clear.";
 "A packet tunnel cannot attribute traffic to ordinary app processes. Process matching is disabled." = "A packet tunnel cannot attribute traffic to ordinary app processes. Process matching is disabled.";
 "A partial settings upgrade was detected. Restore the previous profile data, then retry." = "A partial settings upgrade was detected. Restore the previous profile data, then retry.";
 "A passphrase needs the private key it unlocks." = "A passphrase needs the private key it unlocks.";
@@ -272,7 +270,7 @@
 "Add at least one resolver IP address for secure bootstrap." = "Add at least one resolver IP address for secure bootstrap.";
 "Add at least two conditions." = "Add at least two conditions.";
 "Add chains in Node Library." = "Add chains in Node Library.";
-"Add from a link" = "Add from a link";
+"Add from a share link" = "Add from a share link";
 "Add from this profile" = "Add from this profile";
 "Add match domains" = "Add match domains";
 "Add nodes to Node Library first." = "Add nodes to Node Library first.";
@@ -348,6 +346,8 @@
 "An IP address, or another domain. Separate several with |." = "An IP address, or another domain. Separate several with |.";
 "An answer whose address belongs to this country is treated as the local answer." = "An answer whose address belongs to this country is treated as the local answer.";
 "An include-all group can select internal hops dynamically, so isolation cannot be proven." = "An include-all group can select internal hops dynamically, so isolation cannot be proven.";
+"An install link wants to add a config URL to Clash.\n\n" = "An install link wants to add a config URL to Clash.\n\n";
+"An install link wants to add a configuration to Clash.\n\n" = "An install link wants to add a configuration to Clash.\n\n";
 "An internal hop is referenced outside this relay, so an in-place migration would change other routes." = "An internal hop is referenced outside this relay, so an in-place migration would change other routes.";
 "An older settings writer restored app-wide overrides after the upgrade. Review the backup or settings source, then retry." = "An older settings writer restored app-wide overrides after the upgrade. Review the backup or settings source, then retry.";
 "An older settings writer restored the app-wide script after the upgrade. Review the restored settings, then retry." = "An older settings writer restored the app-wide script after the upgrade. Review the restored settings, then retry.";
@@ -650,7 +650,6 @@
 "Config URL updates replace local node edits." = "Config URL updates replace local node edits.";
 "Config URL · config file · from scratch" = "Config URL · config file · from scratch";
 "Config URLs" = "Config URLs";
-"Config URLs and install links both work." = "Config URLs and install links both work.";
 "Config URLs and resources update on their own schedule over any connection. Turn one off to hold updates back on that kind of network." = "Config URLs and resources update on their own schedule over any connection. Turn one off to hold updates back on that kind of network.";
 "Configuration" = "Configuration";
 "Configuration Center" = "Configuration Center";
@@ -1302,7 +1301,7 @@
 "HTTP Port" = "HTTP Port";
 "HTTP and HTTPS proxies have no UDP transport. Without this, matched traffic the outbound cannot carry falls through every rule and leaves over DIRECT with your own address." = "HTTP and HTTPS proxies have no UDP transport. Without this, matched traffic the outbound cannot carry falls through every rule and leaves over DIRECT with your own address.";
 "HTTP headers must use non-empty names and string values." = "HTTP headers must use non-empty names and string values.";
-"HTTP links are sent without encryption." = "HTTP links are sent without encryption.";
+"HTTP is not encrypted. Credentials in the address travel in the clear." = "HTTP is not encrypted. Credentials in the address travel in the clear.";
 "HTTP/3 MASQUE tunnel with key-based authentication and tunnel addressing." = "HTTP/3 MASQUE tunnel with key-based authentication and tunnel addressing.";
 "HTTP/3 is unavailable in this SDK build. HTTP/1.1 and HTTP/2 remain available." = "HTTP/3 is unavailable in this SDK build. HTTP/1.1 and HTTP/2 remain available.";
 "HTTP/3 needs UDP, and nothing came back. The most likely reason is that the line in use does not carry UDP — HTTP and HTTPS proxies never do. Turn HTTP/3 off to measure over HTTP/1.1 and HTTP/2, or switch to a UDP-capable line." = "HTTP/3 needs UDP, and nothing came back. The most likely reason is that the line in use does not carry UDP — HTTP and HTTPS proxies never do. Turn HTTP/3 off to measure over HTTP/1.1 and HTTP/2, or switch to a UDP-capable line.";
@@ -1412,13 +1411,13 @@
 "Import a rule scheme from a link" = "Import a rule scheme from a link";
 "Import backup file" = "Import backup file";
 "Import configuration files" = "Import configuration files";
-"Import from Link…" = "Import from Link…";
-"Import from a configuration link or Clash configuration file, or create nodes manually" = "Import from a configuration link or Clash configuration file, or create nodes manually";
-"Import from a configuration link or Clash configuration file, or edit rules manually" = "Import from a configuration link or Clash configuration file, or edit rules manually";
-"Import from a configuration link or Clash configuration file, or use custom nodes" = "Import from a configuration link or Clash configuration file, or use custom nodes";
+"Import from URL…" = "Import from URL…";
+"Import from a URL or file, or paste the PEM" = "Import from a URL or file, or paste the PEM";
+"Import from a URL or file, or write one by hand" = "Import from a URL or file, or write one by hand";
+"Import from a config URL or Clash configuration file, or create nodes manually" = "Import from a config URL or Clash configuration file, or create nodes manually";
+"Import from a config URL or Clash configuration file, or edit rules manually" = "Import from a config URL or Clash configuration file, or edit rules manually";
+"Import from a config URL or Clash configuration file, or use custom nodes" = "Import from a config URL or Clash configuration file, or use custom nodes";
 "Import from a link or file" = "Import from a link or file";
-"Import from a link or file, or paste the PEM" = "Import from a link or file, or paste the PEM";
-"Import from a link or file, or write one by hand" = "Import from a link or file, or write one by hand";
 "Import one or more YAML configurations into Clash." = "Import one or more YAML configurations into Clash.";
 "Import public PEM certificates only. Private keys are never accepted here." = "Import public PEM certificates only. Private keys are never accepted here.";
 "Imported" = "Imported";
@@ -1549,7 +1548,6 @@
 "Light" = "Light";
 "Limits" = "Limits";
 "Line Numbers" = "Line Numbers";
-"Link" = "Link";
 "Link · file · QR · clipboard" = "Link · file · QR · clipboard";
 "Link · file · clipboard" = "Link · file · clipboard";
 "List" = "List";
@@ -2042,7 +2040,7 @@
 "Params" = "Params";
 "Password" = "Password";
 "Paste" = "Paste";
-"Paste Configuration Link" = "Paste Configuration Link";
+"Paste Config URL" = "Paste Config URL";
 "Paste a config URL or configuration text to continue." = "Paste a config URL or configuration text to continue.";
 "Paste a share link such as ss:// or vmess://. Its fields open in the editor for you to check before saving." = "Paste a share link such as ss:// or vmess://. Its fields open in the editor for you to check before saving.";
 "Paste config text" = "Paste config text";
@@ -2316,7 +2314,7 @@
 "Remove DNS & Return to VPN" = "Remove DNS & Return to VPN";
 "Remove DNS Server" = "Remove DNS Server";
 "Remove Migration" = "Remove Migration";
-"Remove Stored Link Credentials" = "Remove Stored Link Credentials";
+"Remove Stored URL Credentials" = "Remove Stored URL Credentials";
 "Remove TCP-only migration?" = "Remove TCP-only migration?";
 "Remove from Current Rules" = "Remove from Current Rules";
 "Remove this collection from its source. Configurations that reference it must choose another collection first." = "Remove this collection from its source. Configurations that reference it must choose another collection first.";
@@ -2705,8 +2703,8 @@
 "Stop the active Clash by Hako VPN profile." = "Stop the active Clash by Hako VPN profile.";
 "Stopped" = "Stopped";
 "Stopping Clash VPN." = "Stopping Clash VPN.";
+"Stored URL credentials removed" = "Stored URL credentials removed";
 "Stored in iCloud" = "Stored in iCloud";
-"Stored link credentials removed" = "Stored link credentials removed";
 "Strategy" = "Strategy";
 "Strict Route Enforcement" = "Strict Route Enforcement";
 "Strict routing prevents traffic from escaping the selected tunnel routes. Endpoint-independent NAT changes UDP endpoint mapping behavior." = "Strict routing prevents traffic from escaping the selected tunnel routes. Endpoint-independent NAT changes UDP endpoint mapping behavior.";
@@ -2808,10 +2806,10 @@
 "That file is not a configuration Clash can read." = "That file is not a configuration Clash can read.";
 "That file is not a text configuration. Choose a different one." = "That file is not a text configuration. Choose a different one.";
 "That iCloud backup is no longer available. Refresh the list and try again." = "That iCloud backup is no longer available. Refresh the list and try again.";
-"That is a configuration, not a link." = "That is a configuration, not a link.";
-"That is a node link. Use Add Custom Node in the source library." = "That is a node link. Use Add Custom Node in the source library.";
+"That is a configuration, not a config URL." = "That is a configuration, not a config URL.";
+"That is a node share link. Use Add Custom Node in the source library." = "That is a node share link. Use Add Custom Node in the source library.";
 "That is a node, not a config URL. Add it under a profile's Custom Nodes." = "That is a node, not a config URL. Add it under a profile's Custom Nodes.";
-"That is not a web address. Paste the link to the script file, not the script." = "That is not a web address. Paste the link to the script file, not the script.";
+"That is not a web address. Paste the script file's URL, not the script." = "That is not a web address. Paste the script file's URL, not the script.";
 "That password is too long. Choose a shorter one." = "That password is too long. Choose a shorter one.";
 "That password is too short." = "That password is too short.";
 "That port is already in use. Choose another port and try again." = "That port is already in use. Choose another port and try again.";
@@ -2960,6 +2958,8 @@
 "The handshake timeout cannot be negative." = "The handshake timeout cannot be negative.";
 "The implicit GLOBAL group can select an internal hop, so changing that proxy would affect routes outside this relay." = "The implicit GLOBAL group can select an internal hop, so changing that proxy would affect routes outside this relay.";
 "The inline provider content does not match its provider type." = "The inline provider content does not match its provider type.";
+"The install link does not contain a config URL." = "The install link does not contain a config URL.";
+"The install link does not contain a usable config URL." = "The install link does not contain a usable config URL.";
 "The installed VPN Extension does not support STUN diagnostics. Reinstall or update Clash." = "The installed VPN Extension does not support STUN diagnostics. Reinstall or update Clash.";
 "The installed VPN Extension does not support memory release. Reinstall or update Clash." = "The installed VPN Extension does not support memory release. Reinstall or update Clash.";
 "The language changes when Clash reopens. System Default follows the language selected in System Settings." = "The language changes when Clash reopens. System Default follows the language selected in System Settings.";
@@ -2968,8 +2968,6 @@
 "The last known good configuration remains published." = "The last known good configuration remains published.";
 "The last update changed %@ setting(s) that your app-wide settings override. Each is shown with the new value; adopt it or keep yours." = "The last update changed %@ setting(s) that your app-wide settings override. Each is shown with the new value; adopt it or keep yours.";
 "The line this traffic took does not carry UDP. HTTP and HTTPS proxies have no UDP transport at all, and Shadowsocks or Trojan lines can have it switched off. Pick a UDP-capable outbound and test again." = "The line this traffic took does not carry UDP. HTTP and HTTPS proxies have no UDP transport at all, and Shadowsocks or Trojan lines can have it switched off. Pick a UDP-capable outbound and test again.";
-"The link does not contain a config URL." = "The link does not contain a config URL.";
-"The link does not contain a usable config URL." = "The link does not contain a usable config URL.";
 "The local Direct profile could not be prepared" = "The local Direct profile could not be prepared";
 "The local diagnostics container is unavailable." = "The local diagnostics container is unavailable.";
 "The local profile source is unavailable" = "The local profile source is unavailable";
@@ -3023,9 +3021,9 @@
 "The running proxy group did not confirm the selected route." = "The running proxy group did not confirm the selected route.";
 "The running tunnel did not take the change, so nothing was changed." = "The running tunnel did not take the change, so nothing was changed.";
 "The saved IP Stack settings are invalid or require a newer app version. They have not been changed." = "The saved IP Stack settings are invalid or require a newer app version. They have not been changed.";
+"The saved config URL carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them." = "The saved config URL carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them.";
 "The saved configuration is damaged. Import it again." = "The saved configuration is damaged. Import it again.";
 "The saved configuration is unavailable." = "The saved configuration is unavailable.";
-"The saved link carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them." = "The saved link carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them.";
 "The saved runtime has no matching source profile." = "The saved runtime has no matching source profile.";
 "The script carry-over could not be saved; the previous settings are back in place." = "The script carry-over could not be saved; the previous settings are back in place.";
 "The script carry-over was interrupted and could not be undone automatically. Restore a backup before changing profiles." = "The script carry-over was interrupted and could not be undone automatically. Restore a backup before changing profiles.";
@@ -3130,7 +3128,6 @@
 "This condition only matches metadata created inside Clash's single TUN inbound. It does not identify another app or process." = "This condition only matches metadata created inside Clash's single TUN inbound. It does not identify another app or process.";
 "This configuration already rejects the traffic this setting covers." = "This configuration already rejects the traffic this setting covers.";
 "This configuration has changes that have not been saved." = "This configuration has changes that have not been saved.";
-"This configuration link is not supported." = "This configuration link is not supported.";
 "This configuration will be deleted. Sources and rule schemes in the library will remain." = "This configuration will be deleted. Sources and rule schemes in the library will remain.";
 "This core does not recognise that record type." = "This core does not recognise that record type.";
 "This device" = "This device";
@@ -3143,6 +3140,7 @@
 "This group is no longer in the profile's rules." = "This group is no longer in the profile's rules.";
 "This group is no longer in the running configuration." = "This group is no longer in the running configuration.";
 "This group picks its own member." = "This group picks its own member.";
+"This install link is not supported." = "This install link is not supported.";
 "This inventory follows the exact core revision pinned by this client." = "This inventory follows the exact core revision pinned by this client.";
 "This is an app-wide setting rather than one this configuration carries, so what the app holds is what runs." = "This is an app-wide setting rather than one this configuration carries, so what the app holds is what runs.";
 "This is not a rule head Clash recognizes." = "This is not a rule head Clash recognizes.";
@@ -3151,7 +3149,6 @@
 "This is not valid configuration YAML: %@" = "This is not valid configuration YAML: %@";
 "This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts." = "This is the profile's allow-lan. Written in the profile, it is read as written; not written, turning this on writes an override. Takes effect the next time the tunnel starts.";
 "This item is still required, or is missing." = "This item is still required, or is missing.";
-"This link is not encrypted. Credentials in the address travel in the clear." = "This link is not encrypted. Credentials in the address travel in the clear.";
 "This local rule set will be deleted. Rule schemes in the library will also remove rules added from it." = "This local rule set will be deleted. Rule schemes in the library will also remove rules added from it.";
 "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed." = "This mode sends all traffic without a proxy, so proxy groups and nodes are not listed.";
 "This name could not be resolved just now." = "This name could not be resolved just now.";

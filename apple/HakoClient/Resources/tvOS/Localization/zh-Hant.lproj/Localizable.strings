@@ -368,4 +368,4 @@
 "Which copy of the GeoIP and GeoSite databases the tunnel loaded." = "通道載入了哪一份 GeoIP 與 GeoSite 資料庫。";
 "Your iPhone or Mac keeps profiles in iCloud: restore them here, or add one by its address." = "你的 iPhone 或 Mac 在 iCloud 裡存著設定檔：在這裡回復，或按網址新增一份。";
 "download failed: %@" = "下載失敗：%@";
-"tvOS guarantees 500 KB of storage and may discard the rest. A link survives that; a file does not." = "tvOS 只保證 500 KB 的儲存空間，其餘隨時可能被清掉。連結能挺過去；檔案不能。";
+"tvOS guarantees 500 KB of storage and may discard the rest. A config URL survives that; a file does not." = "tvOS 只保證 500 KB 的儲存空間，其餘隨時可能被清掉。連結能挺過去；檔案不能。";

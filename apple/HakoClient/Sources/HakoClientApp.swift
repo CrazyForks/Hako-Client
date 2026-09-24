@@ -393,8 +393,8 @@ struct AppShellView: View {
             (profileImports.pendingConfirmation.map(
                 ProfileImportRouter.confirmationIsLocalConfiguration
             ) == true
-                ? Text("A link wants to add a configuration to Clash.\n\n")
-                : Text("A link wants to add a config URL to Clash.\n\n"))
+                ? Text("An install link wants to add a configuration to Clash.\n\n")
+                : Text("An install link wants to add a config URL to Clash.\n\n"))
                 + Text(verbatim: profileImports.pendingConfirmation.map {
                     ProfileImportRouter.confirmationText(for: $0)
                 } ?? "")

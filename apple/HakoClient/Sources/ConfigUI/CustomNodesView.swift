@@ -442,7 +442,7 @@ struct CustomNodesView: View {
     private var shareLinkSection: some View {
         Section {
             HStack {
-                Text(HakoCopy.key("Add from a link"))
+                Text(HakoCopy.key("Add from a share link"))
                 Spacer()
                 HakoPasteControl { importShareLinks($0) }
             }

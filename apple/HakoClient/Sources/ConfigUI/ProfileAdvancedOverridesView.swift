@@ -901,7 +901,7 @@ struct CertificateAddSheet: View {
 
     private var tabs: some View {
         Picker("Add Certificate", selection: $tab) {
-            Text(HakoCopy.key("Link")).tag(1)
+            Text(HakoCopy.key("URL")).tag(1)
             Text(HakoCopy.key("File")).tag(2)
             Text(HakoCopy.key("Manual")).tag(3)
         }

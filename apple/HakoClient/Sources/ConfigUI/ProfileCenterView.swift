@@ -1063,7 +1063,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                         Button(role: .destructive) {
                             confirmsCredentialRemoval = true
                         } label: {
-                            Text("Remove Stored Link Credentials")
+                            Text("Remove Stored URL Credentials")
                         }
                         .accessibilityIdentifier("profile-metadata.strip-credentials")
                     } footer: {
@@ -1081,12 +1081,12 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                 }
             }
             .hakoPageTitle("Config URL Settings")
-            .alert("Remove Stored Link Credentials", isPresented: $confirmsCredentialRemoval) {
-                Button("Remove Stored Link Credentials", role: .destructive) { stripStoredCredentials() }
+            .alert("Remove Stored URL Credentials", isPresented: $confirmsCredentialRemoval) {
+                Button("Remove Stored URL Credentials", role: .destructive) { stripStoredCredentials() }
                     .accessibilityIdentifier("profile-metadata.strip-credentials.confirm")
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("The saved link carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them.")
+                Text("The saved config URL carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them.")
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -333,7 +333,7 @@ struct AddProfileView: View {
          
 #if os(macOS)
         HStack(spacing: 2) {
-            if availableTabs.contains(.link) { addTabSegment(.link, "Link", identifier: "profile.add.tab.link") }
+            if availableTabs.contains(.link) { addTabSegment(.link, "URL", identifier: "profile.add.tab.link") }
             if availableTabs.contains(.file) { addTabSegment(.file, "File", identifier: "profile.add.tab.file") }
             if availableTabs.contains(.blank) { addTabSegment(.blank, "Blank", identifier: "profile.add.blank") }
         }
@@ -356,7 +356,7 @@ struct AddProfileView: View {
          
          
         Picker(HakoCopy.key("Type"), selection: $draft.tab) {
-            if availableTabs.contains(.link) { Text(HakoCopy.key("Link")).tag(AddProfileDraft.Tab.link) }
+            if availableTabs.contains(.link) { Text(HakoCopy.key("URL")).tag(AddProfileDraft.Tab.link) }
             if availableTabs.contains(.file) { Text(HakoCopy.key(availableTabs.contains(.link) ? "File" : "Import File")).tag(AddProfileDraft.Tab.file) }
             if availableTabs.contains(.blank) { Text(HakoCopy.key(availableTabs.contains(.link) ? "Blank" : "New Blank File")).tag(AddProfileDraft.Tab.blank) }
         }
@@ -457,7 +457,7 @@ struct AddProfileView: View {
                  
                 HStack(alignment: .firstTextBaseline) {
                     HakoStatusMessage(
-                        text: .copy("That is a configuration, not a link."),
+                        text: .copy("That is a configuration, not a config URL."),
                         kind: .warning
                     )
                     Spacer(minLength: HakoTheme.Spacing.compact)
@@ -472,7 +472,7 @@ struct AddProfileView: View {
                  
                  
                 HakoStatusMessage(
-                    text: .copy(isSourceImport ? "That is a node link. Use Add Custom Node in the source library."
+                    text: .copy(isSourceImport ? "That is a node share link. Use Add Custom Node in the source library."
                         : "That is a node, not a config URL. Add it under a profile's Custom Nodes."),
                     kind: .warning
                 )
@@ -506,10 +506,12 @@ struct AddProfileView: View {
                     .accessibilityIdentifier("profile.add.skipped")
             }
         } header: {
-            Text(HakoCopy.key("Paste Configuration Link"))
+            Text(HakoCopy.key("Paste Config URL"))
         } footer: {
-            Text(hako: linkFooterText)
-                .addPanelMacLeadingFooter()
+            if let linkFooterText {
+                Text(hako: linkFooterText)
+                    .addPanelMacLeadingFooter()
+            }
         }
     }
 
@@ -747,10 +749,13 @@ struct AddProfileView: View {
 
      
 
-    private var linkFooterText: HakoDisplayText {
+     
+     
+     
+    private var linkFooterText: HakoDisplayText? {
         switch draft.linkFooter {
         case .accepts:
-            return .copy("Config URLs and install links both work.")
+            return nil
         case .downloadsOverHTTPS:
             return .copy(
                 isSourceImport ? "The source is downloaded before it is saved."
@@ -758,7 +763,7 @@ struct AddProfileView: View {
             )
         case .cleartextWarning:
             return .copy(
-                "This link is not encrypted. Credentials in the address travel in the clear."
+                "HTTP is not encrypted. Credentials in the address travel in the clear."
             )
         case .unwrappedInstallLink(let host):
             return .format("Install link. The config URL inside is %@.", [host])
