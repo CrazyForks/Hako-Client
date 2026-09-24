@@ -1061,20 +1061,25 @@ private struct ConfigurationChainEditor: View {
     private var canSave: Bool { !busy && loadedGeneration != nil && entry != nil && exit != nil && entry != exit && dirty }
     var body: some View {
         HakoFeatureNavigationContainer {
-            VStack(spacing: 0) {
+            Form {
+            Section { TextField("Name", text: $draft.name, prompt: Text("Entry → Exit")).accessibilityIdentifier("configuration.chain.name") }
+            Section {
+                Text("This Device")
+                hopRow("Entry Node", hop: entry) { pickingEntry = true; search = "" }
+                hopRow("Exit Node", hop: exit) { pickingEntry = false; search = "" }
+                Text("Destination Website")
+            } header: { Text("Connection Order") }
+            if loadedGeneration == nil { ProgressView("Loading Nodes") }
+            else if choices.isEmpty { Text("Add nodes to Node Library first.").foregroundStyle(.secondary) }
+            if let errorMessage { Section { Text(verbatim: errorMessage).foregroundStyle(.orange) } }
+            }
+             
+             
+             
+             
+             
+            .hakoPinnedTopBar {
                 if let tabHeader { tabHeader().disabled(busy) }
-                Form {
-                Section { TextField("Name", text: $draft.name, prompt: Text("Entry → Exit")).accessibilityIdentifier("configuration.chain.name") }
-                Section {
-                    Text("This Device")
-                    hopRow("Entry Node", hop: entry) { pickingEntry = true; search = "" }
-                    hopRow("Exit Node", hop: exit) { pickingEntry = false; search = "" }
-                    Text("Destination Website")
-                } header: { Text("Connection Order") }
-                if loadedGeneration == nil { ProgressView("Loading Nodes") }
-                else if choices.isEmpty { Text("Add nodes to Node Library first.").foregroundStyle(.secondary) }
-                if let errorMessage { Section { Text(verbatim: errorMessage).foregroundStyle(.orange) } }
-                }
             }
             .disabled(busy)
             .hakoPageTitle(.copy(isFirstConfigurationStep ? "Create Nodes 1/2" : (tabHeader != nil ? HakoConfigurationAddition.nodes.title : (existing == nil ? "Add Proxy Chain" : "Edit Proxy Chain"))))

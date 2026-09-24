@@ -3202,83 +3202,81 @@ private struct HakoRuleTypeSelectionView<Icon: View>: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(spacing: 0) {
-            Form {
-                ForEach(visibleCategories) { category in
-                    Section {
-                        ForEach(
-                            HakoStructuredRule.availableActions(
-                                for: runtimeProfile
-                            )
-                                .filter {
-                                    $0.category == category
-                                        && (!excludesLogic
-                                            || (
-                                                $0.category != .logic
-                                                    && $0 != .match
-                                            ))
-                                }
-                        ) { value in
-                            Button {
-                                selection = value
-                                dismissRoute()
-                            } label: {
-                                HStack {
-                                    VStack(
-                                        alignment: .leading,
-                                        spacing: 3
-                                    ) {
-                                        Text(value.rawValue)
-                                            .font(.body.monospaced())
-                                            .foregroundStyle(.primary)
-                                        Text(hako: .copy(value.summary))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .fixedSize(
-                                                horizontal: false,
-                                                vertical: true
-                                            )
-                                         
-                                         
-                                         
-                                         
-                                        if let note = HakoStructuredRule.platformNote(
-                                            for: value.rawValue,
-                                            runtimeProfile: runtimeProfile
-                                        ) {
-                                            Text(hako: note)
-                                                .font(.caption2)
-                                                .foregroundStyle(.orange)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-                                    }
-                                    Spacer(
-                                        minLength:
-                                            HakoTheme.Spacing.compact
-                                    )
-                                    HakoSelectionMark(
-                                        isSelected:
-                                            selection == value
-                                    )
-                                }
-                                .frame(
-                                    maxWidth: .infinity,
-                                    minHeight: HakoTheme.Control.fullWidthRowMinHeightOnItsOwnPlatform,
-                                    alignment: .leading
-                                )
-                                .contentShape(Rectangle())
+        Form {
+            ForEach(visibleCategories) { category in
+                Section {
+                    ForEach(
+                        HakoStructuredRule.availableActions(
+                            for: runtimeProfile
+                        )
+                            .filter {
+                                $0.category == category
+                                    && (!excludesLogic
+                                        || (
+                                            $0.category != .logic
+                                                && $0 != .match
+                                        ))
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier(
-                                "rule-type.\(value.rawValue)"
+                    ) { value in
+                        Button {
+                            selection = value
+                            dismissRoute()
+                        } label: {
+                            HStack {
+                                VStack(
+                                    alignment: .leading,
+                                    spacing: 3
+                                ) {
+                                    Text(value.rawValue)
+                                        .font(.body.monospaced())
+                                        .foregroundStyle(.primary)
+                                    Text(hako: .copy(value.summary))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(
+                                            horizontal: false,
+                                            vertical: true
+                                        )
+                                     
+                                     
+                                     
+                                     
+                                    if let note = HakoStructuredRule.platformNote(
+                                        for: value.rawValue,
+                                        runtimeProfile: runtimeProfile
+                                    ) {
+                                        Text(hako: note)
+                                            .font(.caption2)
+                                            .foregroundStyle(.orange)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                                Spacer(
+                                    minLength:
+                                        HakoTheme.Spacing.compact
+                                )
+                                HakoSelectionMark(
+                                    isSelected:
+                                        selection == value
+                                )
+                            }
+                            .frame(
+                                maxWidth: .infinity,
+                                minHeight: HakoTheme.Control.fullWidthRowMinHeightOnItsOwnPlatform,
+                                alignment: .leading
                             )
+                            .contentShape(Rectangle())
                         }
-                    } header: {
-                        Text(hako: .copy(category.title))
-                    } footer: {
-                        if let note = categoryNote(category) {
-                            Text(note)
-                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier(
+                            "rule-type.\(value.rawValue)"
+                        )
+                    }
+                } header: {
+                    Text(hako: .copy(category.title))
+                } footer: {
+                    if let note = categoryNote(category) {
+                        Text(note)
                     }
                 }
             }

@@ -95,15 +95,6 @@ struct AddProfileView: View {
 
     var body: some View {
         HakoFeatureNavigationContainer {
-            VStack(spacing: 0) {
-             
-             
-             
-             
-             
-             
-            if let tabHeader { tabHeader(hasInput) }
-            else if availableTabs.count > 1 { tabPickerBar }
             Form {
                 if tabHeader != nil && purpose == .rules && sourceKind == nil {
                     Section {
@@ -162,6 +153,20 @@ struct AddProfileView: View {
                     }
                 }
             }
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+            .hakoPinnedTopBar {
+                if let tabHeader { tabHeader(hasInput) }
+                else if availableTabs.count > 1 { tabPickerBar }
             }
             .hakoPageTitle(.copy(additionTitle))
              

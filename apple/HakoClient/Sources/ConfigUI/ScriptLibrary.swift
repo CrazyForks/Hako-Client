@@ -1085,10 +1085,13 @@ struct ScriptAddSheet: View {
 
     var body: some View {
         HakoFeatureNavigationContainer {
-            VStack(spacing: 0) {
-                tabs
-                Form { fields }
-            }
+             
+             
+             
+             
+             
+            Form { fields }
+            .hakoPinnedTopBar { tabs }
             .hakoPageTitle("Add Script")
             .hakoToolbarUnlessInPanel {
                 ToolbarItem(placement: .cancellationAction) {
