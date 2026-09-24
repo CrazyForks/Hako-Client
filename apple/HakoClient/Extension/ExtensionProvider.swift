@@ -161,7 +161,7 @@ final class ExtensionProvider: NSObject {
 
     static func makeDefaultPhysicalPathMonitor() -> any PhysicalPathMonitoring {
 
-        ApplePhysicalPathMonitor()
+        ApplePhysicalPathMonitor(logHandler: { HakoLogStore.shared.append($0, stream: .app) })
 
     }
 
