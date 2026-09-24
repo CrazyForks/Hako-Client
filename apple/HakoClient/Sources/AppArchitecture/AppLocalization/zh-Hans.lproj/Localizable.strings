@@ -904,6 +904,7 @@
 "Default (consistent hashing)" = "默认（一致性哈希）";
 "Default Configuration" = "默认配置";
 "Default Route" = "Default Route";
+"Default Rules" = "默认规则";
 "Default nameserver" = "默认 nameserver";
 "Default nameserver: %@." = "默认解析器：%@。";
 "Default route" = "默认路由";
@@ -1012,6 +1013,7 @@
 "Download speed" = "下载速度";
 "Downloaded %@" = "已下载 %@";
 "Downloaded by the app over HTTP or HTTPS" = "由 App 通过 HTTP 或 HTTPS 下载";
+"Downloading %@…" = "正在下载 %@…";
 "Drag to choose the order used on Home." = "拖动即可调整首页显示顺序。";
 "Drag to reorder" = "拖动排序";
 "Drag to reorder. Rules match from top to bottom; the final rule stays last." = "拖动调整顺序。规则自上而下匹配，最后一条固定在末尾。";
@@ -1575,6 +1577,7 @@
 "Layout" = "布局";
 "Lazy" = "lazy";
 "Lazy Configuration" = "懒人配置";
+"Lazy Rules" = "懒人规则";
 "Lazy Testing" = "惰性测试 (lazy)";
 "Leave Password empty to keep the credential saved in this device's Keychain." = "密码留空即沿用保存在本机钥匙串中的凭据。";
 "Leave blank to use the file name" = "留空则使用文件名";
@@ -2069,6 +2072,7 @@
 "Order" = "顺序";
 "Ordered Fallback" = "顺序回退";
 "Ordered Rules" = "有序规则";
+"Original" = "原始配置";
 "Original Configuration" = "原配置";
 "Other" = "其他";
 "Other Providers" = "其他外部资源";
@@ -2626,6 +2630,7 @@
 "Saving rebuilds the current profile automatically. If VPN is off, it stays off until the next connection." = "保存会自动重建当前配置。若 VPN 处于关闭状态，将保持关闭直到下次连接。";
 "Saving switches this profile to Standard overrides." = "保存会把本配置切换为标准覆写。";
 "Saving…" = "保存中…";
+"Scan" = "扫码";
 "Scan QR Code" = "扫描二维码";
 "Scheme Name" = "方案名称";
 "Script" = "脚本";

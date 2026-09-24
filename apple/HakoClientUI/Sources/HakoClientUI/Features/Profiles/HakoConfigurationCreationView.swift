@@ -3,6 +3,25 @@ import SwiftUI
 
 
  
+ 
+ 
+ 
+struct HakoLibraryTabTitle: ViewModifier {
+    let isCenterSection: Bool
+    let standalone: HakoDisplayText
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if !isCenterSection {
+            content
+                .hakoPageTitle(standalone)
+                .hakoProductModalRoot(title: standalone.rawValue)
+        } else {
+            content
+        }
+    }
+}
+
 public struct HakoConfigurationCenterSections<Profiles: View, Nodes: View, Rules: View>: View {
     @Environment(\.hakoShellDrawsRootHeading) private var railOwnsHeading
     @State private var section = 0
@@ -91,7 +110,6 @@ public struct HakoConfigurationCreationView: View {
     private let error: String?
     private let addSource: (HakoConfigurationSourceKind) -> Void
     private let selectLegacy: (String) -> Void
-    private let importWholeConfiguration: () -> Void
     private let finish: (@escaping (Bool) -> Void) -> Void
     private let cancel: () -> Void
     private let editingStep: ConfigurationCreationDraft.Step?
@@ -115,7 +133,6 @@ public struct HakoConfigurationCreationView: View {
                 reload: @escaping () -> Void,
                 addSource: @escaping (HakoConfigurationSourceKind) -> Void,
                 selectLegacy: @escaping (String) -> Void,
-                importWholeConfiguration: @escaping () -> Void,
                 finish: @escaping (@escaping (Bool) -> Void) -> Void,
                 cancel: @escaping () -> Void,
                 isEditing: Bool = false, baseline: ConfigurationCreationDraft = .init(),
@@ -130,7 +147,7 @@ public struct HakoConfigurationCreationView: View {
         self.isEditing = isEditing; self.baseline = baseline; self.sourceDetails = sourceDetails; self.manageSources = manageSources; self.manageRules = manageRules
         _draft = draft; self.library = library; self.legacy = legacy
         self.isBusy = isBusy; self.isReady = isReady; self.reload = reload; self.error = error; self.addSource = addSource
-        self.selectLegacy = selectLegacy; self.importWholeConfiguration = importWholeConfiguration
+        self.selectLegacy = selectLegacy
         self.finish = finish; self.cancel = cancel
     }
 
@@ -309,6 +326,11 @@ public struct HakoConfigurationCreationView: View {
                     }
                 } header: { Text("Existing Profiles") }
             }
+             
+             
+             
+             
+             
             HakoConfigurationLibraryAddCard(kind: .nodes, palette: palette, nativeList: true,
                 showsHeader: false, disabled: isBusy, action: { addSource(.subscription) })
                 .accessibilityIdentifier("configuration.create.add.subscription")
@@ -316,17 +338,6 @@ public struct HakoConfigurationCreationView: View {
              
              
              
-            HakoConfigurationLibraryCard(title: nil, palette: palette, nativeList: true) {
-                Button(action: importWholeConfiguration) {
-                    HakoProfileActionRow(title: "Use Original Configuration",
-                        subtitle: .copy("Runs the configuration as received, with its own proxy groups, rules and DNS."),
-                        symbol: .docText, tint: .primary, showsDisclosure: false,
-                        icon: { Image(systemName: $0.rawValue) })
-                }
-                .buttonStyle(.plain)
-                .disabled(isBusy)
-            }
-            .accessibilityIdentifier("configuration.create.original")
         }.disabled(isBusy || !isReady)
     }
 
@@ -753,11 +764,19 @@ public struct HakoConfigurationSourceLibraryView: View {
     public let collections: [ConfigurationCollectionEntry]
     public let openCollection: (ConfigurationCollectionEntry) -> Void
     public let updateAll: (() -> Void)?
+     
+     
+    public let quickAdd: (() -> AnyView)?
+     
+     
+    public let addMenu: (() -> AnyView)?
     public init(library: ConfigurationLibrarySnapshot, palette: HakoProductPalette, isReady: Bool, isBusy: Bool, error: String?,
                 add: @escaping (HakoConfigurationSourceKind) -> Void, open: @escaping (String) -> Void,
                 reload: @escaping () -> Void, close: @escaping () -> Void, updateAll: (() -> Void)? = nil, status: String? = nil, updateProgress: String? = nil, isCenterSection: Bool = false, showsClose: Bool = true,
-                collections: [ConfigurationCollectionEntry] = [], openCollection: @escaping (ConfigurationCollectionEntry) -> Void = { _ in }) {
-        self.collections = collections; self.openCollection = openCollection
+                collections: [ConfigurationCollectionEntry] = [], openCollection: @escaping (ConfigurationCollectionEntry) -> Void = { _ in },
+                quickAdd: (() -> AnyView)? = nil, addMenu: (() -> AnyView)? = nil) {
+        self.collections = collections; self.openCollection = openCollection; self.quickAdd = quickAdd
+        self.addMenu = addMenu
         self.palette = palette
         self.updateAll = updateAll; self.status = status; self.updateProgress = updateProgress
         self.isCenterSection = isCenterSection; self.showsClose = showsClose
@@ -779,7 +798,13 @@ public struct HakoConfigurationSourceLibraryView: View {
                 }
             }
             let sources = library.availableSources.filter { $0.suppliesNodes }
-            if isReady && sources.isEmpty && !collections.contains(where: { $0.source.isRetainedSnapshot != true }) {
+             
+             
+             
+             
+             
+            if isReady && quickAdd == nil && sources.isEmpty
+                && !collections.contains(where: { $0.source.isRetainedSnapshot != true }) {
                 HakoConfigurationLibraryCard(palette: palette, nativeList: true) { Text("No Sources Yet").foregroundStyle(.secondary) }
             }
             sourceSection("From Profile URLs", sources: sources.filter {
@@ -799,20 +824,31 @@ public struct HakoConfigurationSourceLibraryView: View {
                         HakoConfigurationUpdateButton(title: "Update All Sources", isUpdating: isBusy, disabled: false, action: updateAll)
                             .accessibilityIdentifier("configuration.library.update-all")
                     } footer: {
-                        HakoConfigurationUpdateStatus(progress: updateProgress, status: status, error: error)
-                            .accessibilityIdentifier("configuration.library.update-status")
+                         
+                         
+                        if updateProgress != nil || status != nil || error != nil {
+                            HakoConfigurationUpdateStatus(progress: updateProgress, status: status, error: error)
+                                .accessibilityIdentifier("configuration.library.update-status")
+                        }
                     }
                 }
-                HakoConfigurationLibraryAddCard(kind: .nodes, palette: palette, nativeList: true,
-                    disabled: isBusy || !isReady, action: { add(.subscription) })
-                    .accessibilityIdentifier("configuration.library.sources.add-card")
+                if let quickAdd { quickAdd() } else {
+                    HakoConfigurationLibraryAddCard(kind: .nodes, palette: palette, nativeList: true,
+                        disabled: isBusy || !isReady, action: { add(.subscription) })
+                        .accessibilityIdentifier("configuration.library.sources.add-card")
+                }
             }
         }
-        .hakoPageTitle(.copy(isCenterSection ? "Profile Center" : "Manage Sources"))
-        .hakoProductModalRoot(title: isCenterSection ? "Profile Center" : "Manage Sources")
+        .modifier(HakoLibraryTabTitle(isCenterSection: isCenterSection, standalone: .copy("Manage Sources")))
         .accessibilityIdentifier("configuration.library.sources")
         .hakoToolbarUnlessInPanel {
-            ToolbarItem(placement: .primaryAction) { addButton.disabled(isBusy || !isReady) }
+            ToolbarItem(placement: .primaryAction) {
+                 
+                 
+                 
+                if let addMenu { addMenu() }
+                else { addButton.disabled(isBusy || !isReady) }
+            }
             ToolbarItem(placement: .cancellationAction) {
                 if showsClose { HakoSheetCloseButton(dismiss: close).disabled(isBusy) }
             }
@@ -919,8 +955,7 @@ public struct HakoConfigurationRuleLibraryView: View {
             }
         }
         .disabled(isBusy)
-        .hakoPageTitle(.copy(isCenterSection ? "Profile Center" : "Manage Rule Schemes"))
-        .hakoProductModalRoot(title: isCenterSection ? "Profile Center" : "Manage Rule Schemes")
+        .modifier(HakoLibraryTabTitle(isCenterSection: isCenterSection, standalone: .copy("Manage Rule Schemes")))
         .accessibilityIdentifier("configuration.rules.library")
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .primaryAction) { addMenu.disabled(isBusy || !isReady) }
@@ -1728,11 +1763,19 @@ struct HakoConfigurationLibraryRow: View {
 }
 
  
-struct HakoConfigurationLibraryHeader: View {
+ 
+ 
+ 
+public struct HakoConfigurationLibraryHeader: View {
     let title: HakoDisplayText
     var count: Int? = nil
 
-    var body: some View {
+    public init(title: HakoDisplayText, count: Int? = nil) {
+        self.title = title
+        self.count = count
+    }
+
+    public var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(hako: title)
             Spacer(minLength: 8)

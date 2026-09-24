@@ -43,6 +43,11 @@ struct ProfileOverrideView: View {
     @State private var editingRule: RuleEditTarget?
     @State private var editingScript: ConfigScript?
     @State private var addingScriptSheet = false
+    @State private var scriptAddress = ""
+    @State private var importingScript = false
+    @State private var showsScriptFileImporter = false
+    @State private var scriptFailure = ""
+    @State private var showsScriptFailure = false
     @State private var deletingScript: ConfigScript?
 
     private let globalRules: [String]
@@ -414,14 +419,24 @@ struct ProfileOverrideView: View {
                 }
                 .hakoModalPresentation(.page)
             }
-            .hakoProductModal(isPresented: $addingScriptSheet, role: .form) {
-                ScriptAddSheet(library: scriptLibrary, close: { addingScriptSheet = false }) { added in
+            .hakoProductModal(isPresented: $addingScriptSheet, role: .page) {
+                ScriptManualPage(library: scriptLibrary, close: { addingScriptSheet = false }) { added in
                      
                      
-                    selectedScriptID = added.id
-                    addingScriptSheet = false
+                    acceptAddedScript(added)
                 }
-                .hakoModalPresentation(.form)
+                .hakoModalPresentation(.page)
+            }
+            .fileImporter(isPresented: $showsScriptFileImporter,
+                          allowedContentTypes: [.javaScript, .plainText, .text],
+                          allowsMultipleSelection: false) { outcome in
+                do { acceptAddedScript(try ScriptAddOutcome.fromFile(outcome, in: scriptLibrary)) }
+                catch { failScriptAdd((error as NSError).localizedDescription) }
+            }
+            .alert("Import Failed", isPresented: $showsScriptFailure) {
+                Button("OK") {}
+            } message: {
+                Text(verbatim: scriptFailure)
             }
             .hakoDeleteConfirmation(deletingScript?.label ?? "",
                 isPresented: Binding(get: { deletingScript != nil }, set: { if !$0 { deletingScript = nil } }),
@@ -614,6 +629,30 @@ struct ProfileOverrideView: View {
 
      
      
+
+    private func importScriptLink() {
+        let address = scriptAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !address.isEmpty, !importingScript else { return }
+        importingScript = true
+        Task { @MainActor in
+            defer { importingScript = false }
+            do { acceptAddedScript(try await ScriptAddOutcome.fromLink(address, in: scriptLibrary)) }
+            catch { failScriptAdd((error as NSError).localizedDescription) }
+        }
+    }
+
+    private func acceptAddedScript(_ script: ConfigScript) {
+        scripts = ScriptLibrary.load(from: scriptLibrary)
+        selectedScriptID = script.id
+        scriptAddress = ""
+        addingScriptSheet = false
+    }
+
+    private func failScriptAdd(_ message: String) {
+        scriptFailure = message
+        showsScriptFailure = true
+    }
+
     @ViewBuilder
     private var scriptSections: some View {
          
@@ -644,11 +683,57 @@ struct ProfileOverrideView: View {
                 }
             }
         }
-        HakoConfigurationLibraryAddCard(kind: .scripts, palette: HakoClientUI.HakoProductPalette.hakoProduct,
-            nativeList: true, showsHeader: false) {
-            addingScriptSheet = true
+         
+         
+         
+        Section {
+            HStack(spacing: HakoTheme.Spacing.compact) {
+                TextField("", text: $scriptAddress, prompt: Text(verbatim: "https://example.com/script.js"))
+#if !os(macOS)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+#endif
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .onSubmit { importScriptLink() }
+                    .disabled(importingScript)
+                    .accessibilityIdentifier("scripts.add.link.address")
+                HakoPasteControl(style: .square) { pasted in
+                    scriptAddress = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                    importScriptLink()
+                }
+                .disabled(importingScript)
+            }
+            if importingScript {
+                HStack(spacing: HakoTheme.Spacing.compact) {
+                    ProgressView().controlSize(.small)
+                    Text(hako: .copy("Importing…")).font(.subheadline).foregroundStyle(.secondary)
+                }
+                .accessibilityIdentifier("scripts.add.status")
+            }
+            HStack(spacing: 0) {
+                Button {
+                    showsScriptFileImporter = true
+                } label: {
+                    Label(HakoCopy.key("Import"), systemImage: HakoSymbol.arrowUpDocument.name)
+                        .lineLimit(1).frame(maxWidth: .infinity)
+                }
+                .accessibilityIdentifier("profile.override.script.add.file")
+                Divider()
+                Button {
+                    addingScriptSheet = true
+                } label: {
+                    Label(HakoCopy.key("Manual"), systemImage: HakoSymbol.pencilLine.name)
+                        .lineLimit(1).frame(maxWidth: .infinity)
+                }
+                .accessibilityIdentifier("profile.override.script.add")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
+            .disabled(importingScript)
+        } header: {
+            HakoConfigurationLibraryHeader(title: .copy("Add Script"))
         }
-        .accessibilityIdentifier("profile.override.script.add")
         if configurationCenter, mode != .custom, !rules.isEmpty {
             Section {
                 HakoRoutedViewLink {

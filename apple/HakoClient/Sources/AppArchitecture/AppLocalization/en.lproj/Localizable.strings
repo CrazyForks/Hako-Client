@@ -904,6 +904,7 @@
 "Default (consistent hashing)" = "Default (consistent hashing)";
 "Default Configuration" = "Default Rules";
 "Default Route" = "Default Route";
+"Default Rules" = "Default Rules";
 "Default nameserver" = "Default nameserver";
 "Default nameserver: %@." = "Default nameserver: %@.";
 "Default route" = "Default route";
@@ -1012,6 +1013,7 @@
 "Download speed" = "Download speed";
 "Downloaded %@" = "Downloaded %@";
 "Downloaded by the app over HTTP or HTTPS" = "Downloaded by the app over HTTP or HTTPS";
+"Downloading %@…" = "Downloading %@…";
 "Drag to choose the order used on Home." = "Drag to choose the order used on Home.";
 "Drag to reorder" = "Drag to reorder";
 "Drag to reorder. Rules match from top to bottom; the final rule stays last." = "Drag to reorder. Rules match from top to bottom; the final rule stays last.";
@@ -1575,6 +1577,7 @@
 "Layout" = "Layout";
 "Lazy" = "Lazy";
 "Lazy Configuration" = "Lazy Rules";
+"Lazy Rules" = "Lazy Rules";
 "Lazy Testing" = "Lazy Testing";
 "Leave Password empty to keep the credential saved in this device's Keychain." = "Leave Password empty to keep the credential saved in this device's Keychain.";
 "Leave blank to use the file name" = "Leave blank to use the file name";
@@ -2069,6 +2072,7 @@
 "Order" = "Order";
 "Ordered Fallback" = "Ordered Fallback";
 "Ordered Rules" = "Ordered Rules";
+"Original" = "Original";
 "Original Configuration" = "Original Configuration";
 "Other" = "Other";
 "Other Providers" = "Other Providers";
@@ -2626,6 +2630,7 @@
 "Saving rebuilds the current profile automatically. If VPN is off, it stays off until the next connection." = "Saving rebuilds the current profile automatically. If VPN is off, it stays off until the next connection.";
 "Saving switches this profile to Standard overrides." = "Saving switches this profile to Standard overrides.";
 "Saving…" = "Saving…";
+"Scan" = "Scan";
 "Scan QR Code" = "Scan QR Code";
 "Scheme Name" = "Scheme Name";
 "Script" = "Script";

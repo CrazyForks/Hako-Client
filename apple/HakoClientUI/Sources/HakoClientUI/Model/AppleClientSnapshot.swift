@@ -386,6 +386,12 @@ public struct AppleClientHomeSnapshot: Codable, Equatable, Sendable {
     public let egress: HakoHomeEgressSnapshot
     public let lanAddress: String?
     public let isProfileActionInFlight: Bool
+     
+     
+     
+     
+     
+    public let selectedProfileIsSystemFallback: Bool
 
     public init(
         routing: AppleClientRoutingSnapshot = AppleClientRoutingSnapshot(mode: .rule),
@@ -401,7 +407,8 @@ public struct AppleClientHomeSnapshot: Codable, Equatable, Sendable {
         rules: HakoHomeDomainSnapshot = .empty,
         egress: HakoHomeEgressSnapshot = .unavailable,
         lanAddress: String? = nil,
-        isProfileActionInFlight: Bool = false
+        isProfileActionInFlight: Bool = false,
+        selectedProfileIsSystemFallback: Bool = false
     ) {
         self.routing = routing
         self.traffic = traffic
@@ -417,6 +424,7 @@ public struct AppleClientHomeSnapshot: Codable, Equatable, Sendable {
         self.egress = egress
         self.lanAddress = lanAddress.map { String($0.prefix(128)) }
         self.isProfileActionInFlight = isProfileActionInFlight
+        self.selectedProfileIsSystemFallback = selectedProfileIsSystemFallback
     }
 }
 

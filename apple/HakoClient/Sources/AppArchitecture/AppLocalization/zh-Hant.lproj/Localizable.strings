@@ -904,6 +904,7 @@
 "Default (consistent hashing)" = "預設（一致性雜湊）";
 "Default Configuration" = "預設設定檔";
 "Default Route" = "Default Route";
+"Default Rules" = "預設規則";
 "Default nameserver" = "預設 nameserver";
 "Default nameserver: %@." = "預設解析器：%@。";
 "Default route" = "預設路由";
@@ -1012,6 +1013,7 @@
 "Download speed" = "下載速度";
 "Downloaded %@" = "已下載 %@";
 "Downloaded by the app over HTTP or HTTPS" = "由 App 透過 HTTP 或 HTTPS 下載";
+"Downloading %@…" = "正在下載 %@…";
 "Drag to choose the order used on Home." = "拖移即可調整首頁顯示順序。";
 "Drag to reorder" = "拖移排序";
 "Drag to reorder. Rules match from top to bottom; the final rule stays last." = "拖曳調整順序。規則由上而下比對，最後一條固定在末尾。";
@@ -1575,6 +1577,7 @@
 "Layout" = "佈局";
 "Lazy" = "lazy";
 "Lazy Configuration" = "懶人設定檔";
+"Lazy Rules" = "懶人規則";
 "Lazy Testing" = "惰性測試 (lazy)";
 "Leave Password empty to keep the credential saved in this device's Keychain." = "密碼留空即沿用儲存在本機鑰匙圈中的認證資訊。";
 "Leave blank to use the file name" = "留空則使用檔案名稱";
@@ -2069,6 +2072,7 @@
 "Order" = "順序";
 "Ordered Fallback" = "順序回退";
 "Ordered Rules" = "有序規則";
+"Original" = "原始設定";
 "Original Configuration" = "原設定檔";
 "Other" = "其他";
 "Other Providers" = "其他外部資源";
@@ -2626,6 +2630,7 @@
 "Saving rebuilds the current profile automatically. If VPN is off, it stays off until the next connection." = "儲存會自動重建目前設定檔。若 VPN 處於關閉狀態，將保持關閉直到下次連線。";
 "Saving switches this profile to Standard overrides." = "儲存會把本設定檔切換為標準覆寫。";
 "Saving…" = "儲存中…";
+"Scan" = "掃碼";
 "Scan QR Code" = "掃描 QR Code";
 "Scheme Name" = "方案名稱";
 "Script" = "指令碼";

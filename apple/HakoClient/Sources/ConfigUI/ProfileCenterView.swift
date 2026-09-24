@@ -45,6 +45,9 @@ struct ProfileCenterAdapter: View {
     @State private var exportDocument: ConfigTextDocument?
     @State private var exportName = ""
     @State private var centerDismiss = HakoDismissHandle()
+     
+     
+    @StateObject private var quickAdd: ProfileQuickAddController
     @State private var adaptationNoticeCounts: [String: Int] = [:]
     @State private var composedProfileIDs: Set<String> = []
     @State private var configurationLibrary = ConfigurationLibrarySnapshot()
@@ -90,6 +93,7 @@ struct ProfileCenterAdapter: View {
         self.listPresentation = listPresentation
         self.capabilityInterceptor = capabilityInterceptor
         _model = ObservedObject(wrappedValue: profiles)
+        _quickAdd = StateObject(wrappedValue: ProfileQuickAddController(model: profiles, target: .profile))
     }
 
     var body: some View {
@@ -112,6 +116,7 @@ struct ProfileCenterAdapter: View {
 #endif
         }
         .hakoCapturesDismiss(centerDismiss)
+        .profileQuickAddPresenters(quickAdd)
         .alert(
             isPresented: Binding(
                 get: { activeFailure != nil },
@@ -242,6 +247,19 @@ struct ProfileCenterAdapter: View {
                     )
                 },
                 listPresentation: listPresentation,
+                 
+                 
+                quickAdd: usesConfigurationSections
+                    ? { AnyView(ProfileQuickAddCard(
+                        controller: quickAdd,
+                        identifiers: .init(linkIdentifier: "profile-center.quick-add.link",
+                                           scanIdentifier: "profile-center.quick-add.scan",
+                                           fileIdentifier: "profile-center.quick-add.file",
+                                           manualIdentifier: "profile-center.quick-add.manual",
+                                           statusIdentifier: "profile-center.quick-add.status"),
+                        onFirstProfileCreated: ownsNavigationContainer ? { centerDismiss() } : nil)) }
+                    : nil,
+                quickAddLeads: !ProfileCenterPolicy.hasUserProfile(model.profiles),
                 capabilityInterceptor: capabilityInterceptor,
                 icon: { symbol in
                     HakoSymbolImage(symbol: symbol)
@@ -268,9 +286,7 @@ struct ProfileCenterAdapter: View {
     }
 
     private var catalogProfiles: [Profile] {
-        model.profiles.filter { profile in
-            profile.id != LocalDefaultProfileProvisioner.profileID || initialProfileID?.rawValue == profile.id
-        }
+        ProfileCenterPolicy.catalog(model.profiles)
     }
 
     private var sharedSnapshot: AppleClientSnapshot {
@@ -288,7 +304,6 @@ struct ProfileCenterAdapter: View {
                 phase: .unavailable
             ),
             profiles: HakoProfilesSnapshot(
-                 
                  
                  
                 profiles: catalogProfiles.compactMap { profileSnapshot($0, scripts: scripts) },
@@ -367,7 +382,7 @@ struct ProfileCenterAdapter: View {
 
         return HakoProfileSnapshot(
             id: id,
-            label: profile.label,
+            label: ProfileRowPresentation.label(for: profile, locale: .current),
             source: sourceKind(profile.source),
             sourceSummary: sourceSummary(profile),
             subscription: libraryFacts != nil
@@ -415,7 +430,9 @@ struct ProfileCenterAdapter: View {
             followsConfigurationSourceUpdates: configurationLibrary.recipes.first(where: { $0.id == profile.id })?.followsUpdates,
             overrideScriptName: profile.overwriteMode == .script
                 ? scripts.first { $0.id == profile.selectedScriptID }?.label : nil,
-            customRulesCount: profile.override.appendRules.count
+            customRulesCount: profile.override.appendRules.count,
+            badges: ProfileRowPresentation.badges(for: profile, in: configurationLibrary),
+            note: ProfileRowPresentation.note(for: profile, in: configurationLibrary)
         )
     }
 

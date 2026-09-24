@@ -5,15 +5,47 @@ import HakoClientKit
  
  
 enum ProfileCenterPolicy {
+     
+     
+     
+     
     static func automaticSelectionID(
         profiles: [Profile],
         activeProfileID: String?
     ) -> String? {
         guard activeProfileID == nil else { return nil }
+        let userProfiles = profiles.filter { $0.id != LocalDefaultProfileProvisioner.profileID }
+        if userProfiles.count == 1 { return userProfiles[0].id }
         if profiles.contains(where: { $0.id == LocalDefaultProfileProvisioner.profileID }) {
             return LocalDefaultProfileProvisioner.profileID
         }
         return profiles.count == 1 ? profiles[0].id : nil
+    }
+
+     
+     
+     
+    static func selectedProfileIsSystemFallback(
+        selectedID: String?,
+        profiles: [Profile]
+    ) -> Bool {
+        selectedID == LocalDefaultProfileProvisioner.profileID && !hasUserProfile(profiles)
+    }
+
+     
+     
+     
+    static func hasUserProfile(_ profiles: [Profile]) -> Bool {
+        profiles.contains { $0.id != LocalDefaultProfileProvisioner.profileID }
+    }
+
+     
+     
+     
+     
+     
+    static func catalog(_ profiles: [Profile]) -> [Profile] {
+        profiles
     }
 
     static func canDelete(profileID: String, activeProfileID: String?) -> Bool {

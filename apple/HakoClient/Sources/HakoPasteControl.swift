@@ -37,24 +37,61 @@ public enum HakoPasteControlPolicy {
  
  
 public struct HakoPasteControl: View {
-    private let onPaste: (String) -> Void
+    public enum Style {
+         
+         
+        case row
+         
+         
+         
+        case square
+    }
 
-    public init(onPaste: @escaping (String) -> Void) {
+    private let onPaste: (String) -> Void
+    private let style: Style
+
+    public init(style: Style = .row, onPaste: @escaping (String) -> Void) {
+        self.style = style
         self.onPaste = onPaste
     }
+
+     
+     
+    private static let squareSide: CGFloat = 34
 
     public var body: some View {
 #if os(iOS)
         if #available(iOS 16.0, *) {
-             
-             
-            SystemPasteControl(onPaste: onPaste)
-                .accessibilityIdentifier("hako.paste")
+            switch style {
+            case .row:
+                 
+                 
+                 
+                SystemPasteControl(onPaste: onPaste, square: false)
+                    .accessibilityIdentifier("hako.paste")
+            case .square:
+                 
+                 
+                 
+                SystemPasteControl(onPaste: onPaste, square: true)
+                    .frame(width: Self.squareSide, height: Self.squareSide)
+                    .accessibilityIdentifier("hako.paste")
+            }
         } else {
             Button {
                 onPaste(UIPasteboard.general.string ?? "")
             } label: {
-                Image(systemName: HakoSymbol.docOnClipboard.name)
+                if style == .square {
+                    Image(systemName: HakoSymbol.docOnClipboard.name)
+                        .foregroundStyle(.white)
+                        .frame(width: Self.squareSide, height: Self.squareSide)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(.tint)
+                        )
+                } else {
+                    Image(systemName: HakoSymbol.docOnClipboard.name)
+                }
             }
             .accessibilityLabel("Paste")
             .accessibilityIdentifier("hako.paste")
@@ -81,6 +118,8 @@ public struct HakoPasteControl: View {
 @available(iOS 16.0, *)
 private struct SystemPasteControl: UIViewRepresentable {
     let onPaste: (String) -> Void
+     
+    let square: Bool
 
     func makeUIView(context: Context) -> UIPasteControl {
         let configuration = UIPasteControl.Configuration()
@@ -100,7 +139,9 @@ private struct SystemPasteControl: UIViewRepresentable {
         uiView: UIPasteControl,
         context: Context
     ) -> CGSize? {
-        uiView.intrinsicContentSize
+         
+         
+        square ? CGSize(width: proposal.width ?? 34, height: proposal.height ?? 34) : uiView.intrinsicContentSize
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(onPaste: onPaste) }

@@ -1447,7 +1447,7 @@ public struct HakoRegularClientShell<
     private var regularRootTitle: String {
         navigationState.selectedRoot == .home
             ? ""
-            : navigationState.selectedRoot.title
+            : navigationState.selectedRoot.pageTitle
     }
 
     private var regularNavigationTitle: String {

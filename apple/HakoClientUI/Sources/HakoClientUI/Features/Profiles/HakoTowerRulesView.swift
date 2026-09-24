@@ -26,9 +26,17 @@ public struct HakoTowerRulesLibraryView: View {
     public let add: () -> Void
     public let close: () -> Void
     public let showsClose: Bool
+     
+     
+    public let isCenterSection: Bool
     public var collections: [ConfigurationCollectionEntry] = []
     public var openCollection: (ConfigurationCollectionEntry) -> Void = { _ in }
     public let updateAll: (() -> Void)?
+     
+     
+    public let quickAdd: (() -> AnyView)?
+     
+    public let addMenu: (() -> AnyView)?
     public let updateProgress: String?
     public let updateStatus: String?
     @State private var deleting: ConfigurationRuleScheme?
@@ -37,14 +45,18 @@ public struct HakoTowerRulesLibraryView: View {
     public init(library: ConfigurationLibrarySnapshot, palette: HakoProductPalette, busy: Bool, error: String?,
         open: @escaping (String) -> Void, refresh: @escaping (String) -> Void,
         delete: @escaping (String) -> Void, add: @escaping () -> Void, close: @escaping () -> Void, showsClose: Bool,
+        isCenterSection: Bool = false,
         collections: [ConfigurationCollectionEntry] = [], openCollection: @escaping (ConfigurationCollectionEntry) -> Void = { _ in },
-        updateAll: (() -> Void)? = nil, updateProgress: String? = nil, updateStatus: String? = nil) {
+        updateAll: (() -> Void)? = nil, updateProgress: String? = nil, updateStatus: String? = nil,
+        quickAdd: (() -> AnyView)? = nil, addMenu: (() -> AnyView)? = nil) {
         self.updateAll = updateAll; self.updateProgress = updateProgress; self.updateStatus = updateStatus
+        self.quickAdd = quickAdd
         self.collections = collections; self.openCollection = openCollection
         self.palette = palette
         self.library = library; self.busy = busy; self.error = error
         self.open = open; self.refresh = refresh; self.delete = delete; self.add = add
-        self.close = close; self.showsClose = showsClose
+        self.close = close; self.showsClose = showsClose; self.isCenterSection = isCenterSection
+        self.addMenu = addMenu
     }
     private var schemes: [ConfigurationRuleScheme] {
         library.visibleRuleSchemes
@@ -92,29 +104,39 @@ public struct HakoTowerRulesLibraryView: View {
                     HakoConfigurationUpdateButton(title: "Update All Rule Sets", isUpdating: busy, disabled: false, action: updateAll)
                         .accessibilityIdentifier("configuration.library.rules.update-all")
                 } footer: {
-                    HakoConfigurationUpdateStatus(progress: updateProgress, status: updateStatus, error: error)
+                     
+                     
+                    if updateProgress != nil || updateStatus != nil || error != nil {
+                        HakoConfigurationUpdateStatus(progress: updateProgress, status: updateStatus, error: error)
+                    }
                 }
             }
-            HakoConfigurationLibraryAddCard(kind: .rules, palette: palette, nativeList: true,
-                disabled: busy, action: add)
-                .accessibilityIdentifier("configuration.library.rules.add-card")
+            if let quickAdd { quickAdd() } else {
+                HakoConfigurationLibraryAddCard(kind: .rules, palette: palette, nativeList: true,
+                    disabled: busy, action: add)
+                    .accessibilityIdentifier("configuration.library.rules.add-card")
+            }
         }
         .allowsHitTesting(!busy)
         .overlay {
             if busy && schemes.isEmpty { ProgressView().allowsHitTesting(false) }
         }
-        .hakoPageTitle("Profile Center")
+        .modifier(HakoLibraryTabTitle(isCenterSection: isCenterSection, standalone: .copy("Manage Rule Schemes")))
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .cancellationAction) { if showsClose { HakoSheetCloseButton(dismiss: close) } }
             ToolbarItem(placement: .primaryAction) {
-                ControlGroup {
-                    Button(action: add) {
-                        Image(systemName: HakoSymbol.plusCircle.rawValue).hakoToolbarGlyph()
-                    }
-                    .disabled(busy)
-                    .accessibilityLabel(HakoCopy.key(HakoConfigurationAddition.rules.entryTitle))
-                    .accessibilityIdentifier("configuration.library.rules.add")
-                }.hakoReaderControlGroupStyle()
+                 
+                if let addMenu { addMenu() }
+                else {
+                    ControlGroup {
+                        Button(action: add) {
+                            Image(systemName: HakoSymbol.plusCircle.rawValue).hakoToolbarGlyph()
+                        }
+                        .disabled(busy)
+                        .accessibilityLabel(HakoCopy.key(HakoConfigurationAddition.rules.entryTitle))
+                        .accessibilityIdentifier("configuration.library.rules.add")
+                    }.hakoReaderControlGroupStyle()
+                }
             }
         }
         .hakoRegistersDeparture(isDirty: false, isBusy: busy, save: { $0(false) }, discard: {})

@@ -48,6 +48,24 @@ enum ConfigurationCenterSourceBridge {
      
      
      
+     
+     
+     
+     
+     
+    static func adopting(_ existing: ConfigurationSourceRecord, fetched: ConfigurationSourcePayload) -> ConfigurationSourcePayload {
+        var record = ConfigurationSourceRecord(id: existing.id, label: existing.label, origin: existing.origin,
+            version: fetched.record.version, nodeCount: fetched.record.nodeCount,
+            providerCount: fetched.record.providerCount, groupCount: fetched.record.groupCount,
+            ruleCount: fetched.record.ruleCount, suppliesNodes: existing.suppliesNodes,
+            updatedAt: fetched.record.updatedAt, updateIntervalHours: existing.updateIntervalHours,
+            userAgent: existing.userAgent, dnsOverHTTPS: existing.dnsOverHTTPS,
+            registersSuppliedRules: existing.registersSuppliedRules)
+        record.subscriptionUsage = fetched.record.subscriptionUsage
+        return ConfigurationSourcePayload(record: record, original: fetched.original,
+            documentJSON: fetched.documentJSON, resourceFiles: fetched.resourceFiles)
+    }
+
     static func refreshBroughtNothingNew(previous: ConfigurationSourcePayload, fetched: ConfigurationSourcePayload) -> Bool {
         previous.original == fetched.original && previous.documentJSON == fetched.documentJSON
     }

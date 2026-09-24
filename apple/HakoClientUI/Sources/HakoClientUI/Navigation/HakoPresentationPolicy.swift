@@ -153,6 +153,17 @@ public enum HakoRootDestination: String, CaseIterable, Hashable, Identifiable, S
         }
     }
 
+     
+     
+     
+     
+    public var pageTitle: String {
+        switch self {
+        case .profiles: "Profile Center"
+        default: title
+        }
+    }
+
     public var symbol: HakoSymbol {
         switch self {
         case .home: .catCircleFill

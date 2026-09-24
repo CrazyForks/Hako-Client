@@ -542,19 +542,6 @@ struct ProxyNodeDetailsView: View {
          
          
          
-        .safeAreaInset(edge: .bottom) {
-            if !insideProductModal, let sentence = missingFieldSentence {
-                Text(hako: .copy(sentence))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(.bar)
-                     
-                     
-                    .accessibilityHidden(true)
-            }
-        }
         .hakoPageProbe("node-editor")
         .accessibilityIdentifier("proxies.nodeEditor.\(draft.typeID)")
         .toolbar {
@@ -918,6 +905,21 @@ struct ProxyNodeDetailsView: View {
         }
 
         dialerProxySection
+
+         
+         
+         
+         
+        if !insideProductModal, let sentence = missingFieldSentence {
+            Text(hako: .copy(sentence))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .listRowBackground(Color.clear)
+                 
+                 
+                .accessibilityHidden(true)
+        }
 
         if showsTesting {
             HakoSection("Testing") {

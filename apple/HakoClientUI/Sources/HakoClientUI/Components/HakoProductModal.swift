@@ -537,12 +537,16 @@ public extension View {
     }
 
      
+     
+     
+     
     @ViewBuilder
     func hakoProductModal<C: View>(
         isPresented: Binding<Bool>,
         role: HakoModalPresentationRole,
         macOSPanelRole: HakoModalPresentationRole? = nil,
         refreshID: AnyHashable = AnyHashable(false),
+        onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> C
     ) -> some View {
 #if os(macOS)
@@ -553,7 +557,7 @@ public extension View {
             builder: { AnyView(content()) }
         ))
 #else
-        sheet(isPresented: isPresented) {
+        sheet(isPresented: isPresented, onDismiss: onDismiss) {
             content()
                  
                 .environment(\.hakoProductModalDismiss) { isPresented.wrappedValue = false }

@@ -453,10 +453,7 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
                  
                  
                  
-                (
-                    snapshot.selectedProfile.map { Text(verbatim: $0.label) }
-                        ?? Text(hako: "Not Set Up")
-                )
+                Text(hako: profileChip.title)
                 .font(
                     dynamicTypeSize.isAccessibilitySize
                         ? .headline.weight(.bold)
@@ -464,23 +461,43 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
                 )
                 .foregroundStyle(.primary)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                 
+                 
+                 
+                .minimumScaleFactor(0.85)
+                .allowsTightening(true)
                 .fixedSize(
                     horizontal: false,
                     vertical: dynamicTypeSize.isAccessibilitySize
                 )
-                icon(.chevronDown)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.secondary)
+                switch profileChip.accessory {
+                case .picker:
+                    icon(.chevronDown)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.secondary)
+                case .add:
+                     
+                     
+                     
+                    icon(.plusCircle)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.tint)
+                }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityLabel(
-            snapshot.selectedProfile?.label ?? "Not Set Up"
-        )
+        .accessibilityLabel(Text(hako: profileChip.title))
         .accessibilityHint("Opens Profiles")
         .accessibilityIdentifier("home.profile.open")
+    }
+
+    private var profileChip: HakoHomeProfileChipPresentation {
+        HakoHomeProfileChipPresenter.presentation(
+            selectedProfile: snapshot.selectedProfile,
+            isSystemFallback: snapshot.home.selectedProfileIsSystemFallback
+        )
     }
 
      

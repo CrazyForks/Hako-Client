@@ -143,6 +143,7 @@ final class ProfilesViewModel: ObservableObject {
      
     @Published private(set) var libraryHasFetchableSource = false
     private var hasNotedLibraryFetchability = false
+    private var notedProfileIDs: Set<String> = []
     @Published private(set) var batchReport: BatchUpdateReport?
     @Published private(set) var isBatchSyncing = false
 
@@ -357,14 +358,6 @@ final class ProfilesViewModel: ObservableObject {
                 return
             }
         }
-         
-         
-         
-         
-        if !hasNotedLibraryFetchability {
-            hasNotedLibraryFetchability = true
-            noteLibraryFetchability((try? configurationLibraryStore?.snapshot()) ?? nil)
-        }
         if !hasAttemptedConfigurationRecovery {
             hasAttemptedConfigurationRecovery = true
             Task { [weak self] in
@@ -492,6 +485,18 @@ final class ProfilesViewModel: ObservableObject {
          
          
         if profiles != sanitized { profiles = sanitized }
+         
+         
+         
+         
+         
+         
+        let listed = Set(sanitized.map(\.id))
+        if !hasNotedLibraryFetchability || listed != notedProfileIDs {
+            hasNotedLibraryFetchability = true
+            notedProfileIDs = listed
+            noteLibraryFetchability((try? configurationLibraryStore?.snapshot()) ?? nil)
+        }
     }
 
      
@@ -627,9 +632,94 @@ final class ProfilesViewModel: ObservableObject {
         }.value
     }
 
+     
+     
+     
+     
+     
     func fetchConfigurationSource(url: String, label: String) async throws -> ConfigurationSourcePayload {
-        try await ConfigurationCenterSourceBridge.fetch(url: url, label: label, credentials: credentials,
-                                                        downloader: downloader)
+        let fetched = try await ConfigurationCenterSourceBridge.fetch(url: url, label: label, credentials: credentials,
+                                                                      downloader: downloader)
+        guard let library = configurationLibraryStore,
+              let existing = try await Task.detached(priority: .userInitiated, operation: {
+                  try library.snapshot().availableSources.first { $0.origin == .subscription(url) }
+              }).value else { return fetched }
+        return ConfigurationCenterSourceBridge.adopting(existing, fetched: fetched)
+    }
+
+     
+     
+     
+     
+    func quickAddSource(_ input: ProfileQuickAddInput) async throws -> ConfigurationLibrarySnapshot {
+        guard let library = configurationLibraryStore else {
+            throw PipelineError.sourceUnavailable("The configuration store is unavailable.")
+        }
+        let payload: ConfigurationSourcePayload
+        switch input {
+        case .link(let url):
+            payload = try await fetchConfigurationSource(url: url, label: "")
+        case let .document(fileName, data):
+            payload = try await Task.detached {
+                try ConfigurationCenterSourceBridge.payload(label: fileName, origin: .file(fileName), original: data)
+            }.value
+        case .nodeShareLink, .nothing:
+            throw ProfileInstallLinkError.unusableSubscription
+        }
+        let generation = try await Task.detached { try library.snapshot().generation }.value
+        return try await addConfigurationSource(payload, generation: generation)
+    }
+
+     
+     
+     
+     
+     
+    func quickAddRules(_ input: ProfileQuickAddInput) async throws -> ConfigurationLibrarySnapshot {
+        guard let library = configurationLibraryStore else {
+            throw PipelineError.sourceUnavailable("The configuration store is unavailable.")
+        }
+        let payload: ConfigurationSourcePayload
+        switch input {
+        case .link(let url):
+            payload = try await fetchConfigurationSource(url: url, label: "")
+        case let .document(fileName, data):
+            payload = try await Task.detached {
+                try ConfigurationCenterSourceBridge.payload(label: fileName, origin: .file(fileName), original: data)
+            }.value
+        case .nodeShareLink, .nothing:
+            throw ProfileInstallLinkError.unusableSubscription
+        }
+        let current = try await Task.detached { try library.snapshot() }.value
+        if let existing = current.availableSources.first(where: { $0.id == payload.record.id }) {
+            try await refreshLibrarySource(payload, replacing: existing)
+            return try await Task.detached { try library.snapshot() }.value
+        }
+        if payload.record.ruleCount > 0 {
+            return try await addConfigurationRuleScheme(payload, generation: current.generation)
+        }
+        var value = payload
+        value.record.suppliesNodes = false
+        value.record.registersSuppliedRules = false
+        let document = try OrderedJSON.parse(value.documentJSON)
+        guard !ConfigurationCollection.read(sourceID: value.record.id, document: document, kind: .rules).isEmpty else {
+            throw ConfigurationLibraryError.missingRules
+        }
+        return try await addConfigurationSource(value, generation: current.generation)
+    }
+
+     
+     
+     
+    private func refreshLibrarySource(_ fetched: ConfigurationSourcePayload,
+                                      replacing existing: ConfigurationSourceRecord) async throws {
+        await settleLibraryHousekeeping()
+        guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
+        guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+        changingConfigurationLibrary = true
+        defer { changingConfigurationLibrary = false }
+        let current = try await Task.detached { try library.snapshot() }.value
+        _ = try await applyFetchedSource(fetched, replacing: existing, in: current, library: library, replaceEditedRules: false)
     }
 
     private var hasAttemptedConfigurationRecovery = false
@@ -660,6 +750,77 @@ final class ProfilesViewModel: ObservableObject {
             try ConfigurationCenterPublicationBridge.reconcileDeletedProfiles(library: library, profileStore: profileStore)
         }.value
         if !pending.isEmpty { load() }
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    @discardableResult
+    func quickCreate(_ input: ProfileQuickAddInput) async throws -> ProfileQuickAddOutcome {
+        guard let library = configurationLibraryStore else {
+            throw PipelineError.sourceUnavailable("The configuration store is unavailable.")
+        }
+        let payload: ConfigurationSourcePayload
+        var runsAsItself = false
+        var buildsOn: String?
+        switch input {
+        case .link(let url):
+            payload = try await fetchConfigurationSource(url: url, label: "")
+             
+             
+            if let existing = try await Task.detached(priority: .userInitiated, operation: {
+                try library.snapshot().availableSources.first { $0.id == payload.record.id }
+            }).value {
+                try await refreshLibrarySource(payload, replacing: existing)
+                buildsOn = existing.id
+            }
+        case let .document(fileName, data):
+            payload = try await Task.detached {
+                try ConfigurationCenterSourceBridge.payload(label: fileName, origin: .file(fileName), original: data)
+            }.value
+            runsAsItself = payload.record.hasRules
+        case .nodeShareLink, .nothing:
+            throw ProfileInstallLinkError.unusableSubscription
+        }
+        var draft = ConfigurationCreationDraft()
+        if let buildsOn {
+             
+             
+            draft.selectedSourceIDs = [buildsOn]
+            draft.selectedRuleID = ConfigurationBuiltins.basicRuleID
+            draft.connectAfterCreation = false
+            draft.step = .rules
+        } else if runsAsItself {
+            draft.useOriginal(payload)
+        } else {
+            try draft.acceptInitialNodeImport(payload)
+        }
+         
+         
+        let hadUserProfile = profiles.contains { $0.id != LocalDefaultProfileProvisioner.profileID }
+        let generation = try await Task.detached { try library.snapshot().generation }.value
+        let id = UUID().uuidString.lowercased()
+        _ = try await createConfiguration(draft, generation: generation, id: id)
+         
+         
+         
+         
+         
+         
+         
+        if !hadUserProfile, let created = profiles.first(where: { $0.id == id }) {
+            _ = await selectAndWait(created)
+        }
+        return ProfileQuickAddOutcome(id: id, isFirstUserProfile: !hadUserProfile)
     }
 
     func createConfiguration(_ draft: ConfigurationCreationDraft, generation: UInt64,
@@ -847,8 +1008,14 @@ final class ProfilesViewModel: ObservableObject {
          
          
          
+         
+         
+         
         guard let snapshot else { libraryHasFetchableSource = false; return }
-        libraryHasFetchableSource = snapshot.recipes.contains { !Self.fetchableSources(of: $0, in: snapshot).isEmpty }
+        let listed = Set(profiles.map(\.id))
+        libraryHasFetchableSource = snapshot.recipes.contains {
+            listed.contains($0.id) && !Self.fetchableSources(of: $0, in: snapshot).isEmpty
+        }
     }
 
      
@@ -1011,9 +1178,19 @@ final class ProfilesViewModel: ObservableObject {
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
-        let result = try await Task.detached(priority: .userInitiated) {
-            try library.addSource(source, expectedGeneration: generation)
-        }.value
+        let current = try await Task.detached { try library.snapshot() }.value
+        let result: ConfigurationLibrarySnapshot
+        if let existing = current.availableSources.first(where: { $0.id == source.record.id }) {
+             
+             
+            guard current.generation == generation else { throw ConfigurationLibraryError.staleGeneration }
+            _ = try await applyFetchedSource(source, replacing: existing, in: current, library: library, replaceEditedRules: false)
+            result = try await Task.detached { try library.snapshot() }.value
+        } else {
+            result = try await Task.detached(priority: .userInitiated) {
+                try library.addSource(source, expectedGeneration: generation)
+            }.value
+        }
          
          
         noteLibraryFetchability(result)
@@ -1230,15 +1407,17 @@ final class ProfilesViewModel: ObservableObject {
         if let expectedVersion, source.version != expectedVersion { throw ConfigurationLibraryError.staleGeneration }
         let fetched = try await ConfigurationCenterSourceBridge.fetch(url: url, label: source.label,
             credentials: credentials, downloader: downloader)
-        var record = ConfigurationSourceRecord(id: id, label: source.label, origin: source.origin,
-            version: fetched.record.version, nodeCount: fetched.record.nodeCount,
-            providerCount: fetched.record.providerCount, groupCount: fetched.record.groupCount,
-            ruleCount: fetched.record.ruleCount, suppliesNodes: source.suppliesNodes,
-            updatedAt: fetched.record.updatedAt, updateIntervalHours: source.updateIntervalHours,
-            userAgent: source.userAgent, dnsOverHTTPS: source.dnsOverHTTPS,
-            registersSuppliedRules: source.registersSuppliedRules)
-        record.subscriptionUsage = fetched.record.subscriptionUsage
-        let refreshedRecord = record
+        return try await applyFetchedSource(ConfigurationCenterSourceBridge.adopting(source, fetched: fetched),
+            replacing: source, in: current, library: library, replaceEditedRules: replaceEditedRules)
+    }
+
+     
+     
+     
+    private func applyFetchedSource(_ fetched: ConfigurationSourcePayload, replacing source: ConfigurationSourceRecord,
+                                    in current: ConfigurationLibrarySnapshot, library: ConfigurationLibraryStore,
+                                    replaceEditedRules: Bool) async throws -> ConfigurationSourceRefreshResult {
+        let refreshedRecord = fetched.record
         let previous = try await Task.detached(priority: .userInitiated) { try library.payload(.init(source)) }.value
         if ConfigurationCenterSourceBridge.refreshBroughtNothingNew(previous: previous, fetched: fetched) {
              

@@ -255,12 +255,16 @@ struct CustomNodesView: View {
          
          
          
-        .hakoProductModal(item: $editorSelection, role: .form) { route in
+         
+         
+         
+        .hakoProductModal(item: $editorSelection, role: .page) { route in
             HakoFeatureNavigationContainer {
                 nodeDestination(for: route)
             }
             .hakoPageSizedSheet()
         }
+
          
          
          

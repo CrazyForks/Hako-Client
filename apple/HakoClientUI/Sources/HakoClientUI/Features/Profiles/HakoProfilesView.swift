@@ -133,6 +133,15 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
      
     private let listPresentation:
         ((HakoProfilesListPresentation) -> AnyView)?
+     
+     
+     
+     
+    private let quickAdd: (() -> AnyView)?
+     
+     
+     
+    private let quickAddLeads: Bool
 
      
      
@@ -166,6 +175,8 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
         detailPresentation: @escaping (AnyView) -> AnyView = { $0 },
         listPresentation:
             ((HakoProfilesListPresentation) -> AnyView)? = nil,
+        quickAdd: (() -> AnyView)? = nil,
+        quickAddLeads: Bool = false,
         capabilityInterceptor:
             ((HakoProfilesCapabilityDestination) -> Bool)? = nil,
         @ViewBuilder icon: @escaping (HakoSymbol) -> Icon,
@@ -183,6 +194,8 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
         self.pagePresentation = pagePresentation
         self.detailPresentation = detailPresentation
         self.listPresentation = listPresentation
+        self.quickAdd = quickAdd
+        self.quickAddLeads = quickAddLeads
         self.capabilityInterceptor = capabilityInterceptor
         self.icon = icon
         self.capabilityContent = capabilityContent
@@ -373,40 +386,66 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
         }
     }
 
+     
+     
+     
+     
+    private var hidesEmptyProfilesSection: Bool {
+        displayedProfiles.isEmpty && quickAdd != nil && isCenterSection
+    }
+
     @ViewBuilder
     private var ownRootPage: some View {
         if isCenterSection {
             HakoConfigurationLibraryList(palette: palette, accessibilityIdentifier: "profile-center.root") {
-                profilesSection
+                if let quickAdd, isCenterSection, quickAddLeads { quickAdd() }
+                if !hidesEmptyProfilesSection { profilesSection }
                 if hasRemoteProfile, snapshot.profiles.canSyncAll {
                     Section {
                         HakoConfigurationUpdateButton(title: "Update All", isUpdating: snapshot.profiles.batchReport?.isRunning == true,
                             disabled: false, action: { send(.syncAll) })
                             .accessibilityIdentifier("profile-center.sync-all")
                     } footer: {
+                         
+                         
+                         
+                         
                         if let report = snapshot.profiles.batchReport {
-                            VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: HakoTheme.Spacing.compact) {
                                 if report.isRunning {
                                     Text("\(report.items.count) / \(report.expectedCount)").monospacedDigit()
                                 } else {
-                                    ForEach(Array(report.summaryParts.enumerated()), id: \.offset) { _, part in Text(hako: part) }
+                                    batchSummaryLine(report)
                                 }
-                                Button("Details") { showsBatchDetails = true }
-                                    .foregroundStyle(.tint)
-                                    .accessibilityIdentifier("profile-center.update-details")
-                            }.font(.footnote).foregroundStyle(.secondary)
-                                .accessibilityIdentifier("profile-center.update-status")
+                                if report.needsAttention {
+                                    Button("Details") { showsBatchDetails = true }
+                                        .foregroundStyle(.tint)
+                                        .accessibilityIdentifier("profile-center.update-details")
+                                }
+                            }
+                            .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                            .accessibilityIdentifier("profile-center.update-status")
+                            .task(id: report.settledKey) {
+                                guard !report.isRunning, !report.needsAttention else { return }
+                                try? await Task.sleep(nanoseconds: Self.cleanBatchReportLingersNanoseconds)
+                                send(.dismissBatch)
+                            }
                         }
                     }
                 }
-                if snapshot.profiles.canCreateEmpty || snapshot.profiles.canImport { addSection }
+                if let quickAdd, isCenterSection {
+                    if !quickAddLeads { quickAdd() }
+                } else if snapshot.profiles.canCreateEmpty || snapshot.profiles.canImport { addSection }
                 if snapshot.profiles.canBackup { dataSection }
                 failureSection
             }
         } else {
             HakoProductRootPage(palette: palette, accessibilityIdentifier: "profile-center.root") {
-                profilesSection
-                if snapshot.profiles.canCreateEmpty || snapshot.profiles.canImport { addSection }
+                if let quickAdd, isCenterSection, quickAddLeads { quickAdd() }
+                if !hidesEmptyProfilesSection { profilesSection }
+                if let quickAdd, isCenterSection {
+                    if !quickAddLeads { quickAdd() }
+                } else if snapshot.profiles.canCreateEmpty || snapshot.profiles.canImport { addSection }
                 if snapshot.profiles.canBackup { dataSection }
                 failureSection
             }
@@ -902,6 +941,19 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
     }
 
      
+    private static var cleanBatchReportLingersNanoseconds: UInt64 { 4_000_000_000 }
+
+     
+     
+    private func batchSummaryLine(_ report: HakoProfileBatchReportSnapshot) -> Text {
+        var line = Text("")
+        for (index, part) in report.summaryParts.enumerated() {
+            line = index == 0 ? Text(hako: part) : line + Text(" · ") + Text(hako: part)
+        }
+        return line
+    }
+
+     
      
      
      
@@ -1175,6 +1227,28 @@ private struct HakoProfileSelectionFailure: Equatable {
     let message: HakoDisplayText
 }
 
+ 
+ 
+ 
+ 
+ 
+private struct HakoProfileBadge: View {
+    let text: HakoDisplayText
+
+    var body: some View {
+        Text(hako: text)
+            .font(.caption2)
+            .lineLimit(1)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .strokeBorder(.secondary.opacity(0.55), lineWidth: 1)
+            )
+    }
+}
+
 private struct HakoProfileRow<
     Icon: View,
     Destination: View
@@ -1262,9 +1336,13 @@ private struct HakoProfileRow<
      
      
     private var standardProfileRow: some View {
+         
+         
+         
+         
         HStack(
             alignment: .center,
-            spacing: HakoTheme.Spacing.compact
+            spacing: 0
         ) {
             Button(action: select) {
                 HStack(
@@ -1276,8 +1354,11 @@ private struct HakoProfileRow<
                         alignment: .leading,
                         spacing: HakoTheme.Spacing.compact
                     ) {
+                         
+                         
+                         
                         HStack(
-                            alignment: .firstTextBaseline,
+                            alignment: .center,
                             spacing: HakoTheme.Spacing.compact
                         ) {
                             Text(profile.label)
@@ -1290,26 +1371,43 @@ private struct HakoProfileRow<
                                 )
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
-                            if let subscription = profile.subscription,
-                               let used = HakoSubscriptionUsageView
-                                   .usedText(subscription) {
-                                Spacer(minLength: HakoTheme.Spacing.compact)
-                                used
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .monospacedDigit()
-                                    .lineLimit(1)
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                            Spacer(minLength: HakoTheme.Spacing.compact)
+                            ForEach(Array(profile.badges.enumerated()), id: \.offset) { _, badge in
+                                HakoProfileBadge(text: badge)
+                                    .fixedSize()
                             }
                         }
-
+                         
+                         
+                         
                         if let subscription = profile.subscription {
                             HakoSubscriptionUsageView(
                                 subscription: subscription,
-                                style: .row
+                                style: .row,
+                                note: profile.note
                             )
+                        } else if let note = profile.note {
+                            Text(hako: note)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
 
-                        if profile.source == .remote {
+                         
+                         
+                         
+                         
+                        if profile.source == .remote, profile.badges.isEmpty {
                             Text(hako: profile.sourceSummary)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -1317,8 +1415,8 @@ private struct HakoProfileRow<
                                 .truncationMode(.middle)
                         }
                     }
-                    Spacer(minLength: HakoTheme.Spacing.compact)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, HakoTheme.Spacing.standard)
                 .padding(
             .vertical,
@@ -3056,6 +3154,9 @@ private struct HakoSubscriptionUsageView: View {
 
     let subscription: HakoProfileSubscriptionSnapshot
     var style: Style = .detail
+     
+     
+    var note: HakoDisplayText? = nil
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -3124,20 +3225,41 @@ private struct HakoSubscriptionUsageView: View {
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                } else if let expiration = subscription.expiration {
-                    Text(hako: .format(
-                        "until %@", [dateString(expiration)]
-                    ))
+                } else if let line = rowMetaLine {
+                     
+                     
+                     
+                     
+                     
+                     
+                    line
                         .font(.caption)
-                        .foregroundColor(expiryTint(expiration))
                         .monospacedDigit()
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
             }
         }
         .accessibilityElement(children: .combine)
     }
 
+
+     
+     
+     
+    private var rowMetaLine: Text? {
+        var pieces: [Text] = []
+        if let used = Self.usedText(subscription) { pieces.append(used.foregroundColor(.secondary)) }
+        if let note { pieces.append(Text(hako: note).foregroundColor(.secondary)) }
+        if let expiration = subscription.expiration {
+            pieces.append(
+                Text(hako: .format("until %@", [dateString(expiration)]))
+                    .foregroundColor(expiryTint(expiration))
+            )
+        }
+        guard let first = pieces.first else { return nil }
+        return pieces.dropFirst().reduce(first) { $0 + Text(" · ").foregroundColor(.secondary) + $1 }
+    }
 
      
      

@@ -107,6 +107,8 @@ public enum HakoSymbol: String, CaseIterable, Sendable {
     case pause = "pause"
     case pauseCircle = "pause.circle"
     case pencil = "pencil"
+    case arrowUpDocument = "arrow.up.document"
+    case pencilLine = "pencil.line"
     case person2 = "person.2"
     case photo = "photo"
     case play = "play"

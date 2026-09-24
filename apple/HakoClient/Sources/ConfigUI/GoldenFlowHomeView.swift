@@ -1175,7 +1175,7 @@ struct GoldenFlowHomeAdapter: View {
     private var presentation: HomeConnectionPresentation {
         HomeConnectionPresenter.presentation(
             for: HomeConnectionFacts(
-                activeProfileName: currentProfile?.label,
+                activeProfileName: currentProfile.map { ProfileRowPresentation.label(for: $0, locale: .current) },
                 vpnStatus: vpn.status,
                 errorMessage: connectionErrorMessage,
                 vpnAuthorization: vpn.systemVPNAuthorization,
@@ -1234,7 +1234,9 @@ struct GoldenFlowHomeAdapter: View {
                 }
                 return AppleClientProfileSnapshot(
                     id: identifier,
-                    label: $0.label
+                     
+                     
+                    label: ProfileRowPresentation.label(for: $0, locale: .current)
                 )
             },
             connection: AppleClientConnectionSnapshot(
@@ -1291,7 +1293,13 @@ struct GoldenFlowHomeAdapter: View {
                 egress: timedEgress,
                 lanAddress: lanAddress,
                 isProfileActionInFlight:
-                    profiles.isActivationInFlight
+                    profiles.isActivationInFlight,
+                 
+                 
+                selectedProfileIsSystemFallback: ProfileCenterPolicy.selectedProfileIsSystemFallback(
+                    selectedID: timedProfile?.id,
+                    profiles: profiles.profiles
+                )
             ),
             capabilities: AppleClientCapabilities([
                 .home: .available,

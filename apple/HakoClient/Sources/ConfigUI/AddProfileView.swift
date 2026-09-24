@@ -732,7 +732,8 @@ struct AddProfileView: View {
                     showsQRCapture = false
                     acceptQRCode(code)
                 }
-                .frame(height: 240)
+                 
+                .aspectRatio(1, contentMode: .fit)
                 .clipShape(
                     RoundedRectangle(
                         cornerRadius: HakoTheme.Radius.card,

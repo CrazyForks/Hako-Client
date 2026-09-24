@@ -820,7 +820,12 @@ struct AppShellView: View {
             openProfiles: {
                  
                  
-                if shellLayout == .regularSidebar {
+                 
+                 
+                 
+                 
+                 
+                if shellLayout == .regularSidebar, ProfileCenterPolicy.hasUserProfile(profiles.profiles) {
                     isPickingProfile = true
                 } else {
                     navigate(to: .profiles)

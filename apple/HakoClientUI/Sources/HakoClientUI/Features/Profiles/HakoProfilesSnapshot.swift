@@ -131,6 +131,13 @@ public struct HakoProfileSnapshot:
      
      
     public let heldBackUpdates: [HakoProfileHeldBackUpdate]
+     
+     
+     
+    public let badges: [HakoDisplayText]
+     
+     
+    public let note: HakoDisplayText?
 
     public init(
         id: Profile.ID,
@@ -156,9 +163,13 @@ public struct HakoProfileSnapshot:
         configurationSourceNames: [String]? = nil, configurationRuleName: String? = nil,
         followsConfigurationSourceUpdates: Bool? = nil,
         overrideScriptName: String? = nil,
-        customRulesCount: Int = 0
+        customRulesCount: Int = 0,
+        badges: [HakoDisplayText] = [],
+        note: HakoDisplayText? = nil
     ) {
         self.id = id
+        self.badges = badges
+        self.note = note
         self.overrideScriptName = overrideScriptName
         self.customRulesCount = max(0, customRulesCount)
         self.followsConfigurationSourceUpdates = followsConfigurationSourceUpdates
@@ -335,6 +346,18 @@ public struct HakoProfileBatchReportSnapshot:
 
     public var failedCount: Int {
         items.filter { $0.state == .failed }.count
+    }
+
+     
+     
+    public var needsAttention: Bool {
+        failedCount > 0 || wasCancelled
+    }
+
+     
+     
+    public var settledKey: String {
+        "\(id.uuidString):\(isRunning)"
     }
 
      

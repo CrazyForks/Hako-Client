@@ -129,9 +129,6 @@ struct ConfigurationCreationAdapter: View {
                 selectLegacy: { id in
                     if let payload = legacyPayloads[id] { accept(payload) }
                 },
-                importWholeConfiguration: {
-                    firstStepImport = .init(kind: .subscription, isOriginal: true)
-                },
                 finish:finish,
                 cancel:close, isEditing: editingProfileID != nil, baseline: baseline, editingStep: editingStep,
                 sourceDetails: { inspectedSourceID = $0 },
@@ -562,12 +559,31 @@ struct ConfigurationSourceLibraryAdapter: View {
     var embedded = false
     var showsClose = true
     var browseCache: Binding<ConfigurationLibraryBrowseCache?>? = nil
+     
+     
+    @StateObject private var quickAdd: ProfileQuickAddController
+
+    init(model: ProfilesViewModel, library: ConfigurationLibrarySnapshot,
+         changed: @escaping (ConfigurationLibrarySnapshot) -> Void, close: @escaping () -> Void,
+         embedded: Bool = false, showsClose: Bool = true,
+         browseCache: Binding<ConfigurationLibraryBrowseCache?>? = nil) {
+        _model = ObservedObject(wrappedValue: model)
+        _library = State(initialValue: library)
+        self.changed = changed; self.close = close
+        self.embedded = embedded; self.showsClose = showsClose; self.browseCache = browseCache
+        _quickAdd = StateObject(wrappedValue: ProfileQuickAddController(model: model, target: .source))
+    }
     @State private var ready = false
     @State private var busy = false
     @State private var errorMessage: String?
     @State private var statusMessage: String?
     @State private var updateProgress: String?
-    @State private var importKind: HakoConfigurationSourceKind?
+    @State private var importKind: SourceAddRequest?
+     
+     
+     
+    @State private var showsNewNode = false
+    @State private var showsNewChain = false
     @State private var inspectedSourceID: String?
     @State private var showsManagement = false
     @State private var collections: [ConfigurationCollectionEntry] = []
@@ -576,9 +592,37 @@ struct ConfigurationSourceLibraryAdapter: View {
     var body: some View {
         ConfigurationLibraryNavigation(embedded: embedded) {
             HakoConfigurationSourceLibraryView(library: library, palette: .hakoProduct, isReady: ready || library.generation > 0 || browseCache?.wrappedValue != nil, isBusy: busy, error: errorMessage ?? updateIssueMessage(library, locale: locale),
-                add: { importKind = $0 }, open: { showsManagement = false; inspectedSourceID = $0 },
+                add: { importKind = .init(kind: $0, showsDoors: true) }, open: { showsManagement = false; inspectedSourceID = $0 },
                 reload: { Task { await reload() } }, close: close, updateAll: updateAll, status: statusMessage, updateProgress: updateProgress, isCenterSection: embedded, showsClose: showsClose,
-                collections: visibleCollections, openCollection: { inspectedCollection = $0 })
+                collections: visibleCollections, openCollection: { inspectedCollection = $0 },
+                 
+                 
+                 
+                quickAdd: embedded
+                    ? { AnyView(ProfileQuickAddCard(controller: quickAdd,
+                        identifiers: .init(linkIdentifier: "configuration.library.quick-add.link",
+                                           scanIdentifier: "configuration.library.quick-add.scan",
+                                           fileIdentifier: "configuration.library.quick-add.file",
+                                           manualIdentifier: "configuration.library.quick-add.manual",
+                                           statusIdentifier: "configuration.library.quick-add.status"),
+                        manual: { showsNewNode = true })) }
+                    : nil,
+                addMenu: embedded ? { AnyView(sourceAddMenu) } : nil)
+            .profileQuickAddPresenters(quickAdd)
+            .onAppear {
+                quickAdd.onSourceAdded = { updated in library = updated; changed(updated) }
+            }
+            .hakoProductModal(isPresented: $showsNewNode, role: .page) {
+                ConfigurationNewNodeAdapter(model: model, library: library,
+                    changed: { updated in library = updated; changed(updated) },
+                    close: { showsNewNode = false })
+            }
+            .hakoProductModal(isPresented: $showsNewChain, role: .page) {
+                ConfigurationChainEditor(model: model, existing: nil, accept: { payload in
+                    let updated = try await model.addConfigurationSource(payload, generation: library.generation)
+                    library = updated; changed(updated)
+                }, close: { showsNewChain = false })
+            }
             .task(id: library.generation) {
                 if !ready {
                     if browseCache?.wrappedValue != nil || library.generation > 0 { ready = true }
@@ -592,8 +636,10 @@ struct ConfigurationSourceLibraryAdapter: View {
             .hakoProductModal(item: $inspectedCollection, role: .page) { entry in
                 ConfigurationCollectionAdapter(model: model, entry: entry, changed: { library = $0; changed($0) }, close: { inspectedCollection = nil })
             }
-            .hakoProductModal(item: $importKind, role: .page) { kind in
-                ConfigurationSourceImportAdapter(model: model, kind: kind, choosesKind: true) { payload in
+            .hakoProductModal(item: $importKind, role: .page) { request in
+                 
+                 
+                ConfigurationSourceImportAdapter(model: model, kind: request.kind, choosesKind: request.showsDoors) { payload in
                     let updated = try await model.addConfigurationSource(payload, generation: library.generation)
                     library = updated; changed(updated)
                 }
@@ -631,6 +677,34 @@ struct ConfigurationSourceLibraryAdapter: View {
         if let cached = browseCache?.wrappedValue, cached.matches(library) { return cached.entries }
         return collections
     }
+     
+     
+     
+     
+     
+     
+    private var sourceAddMenu: some View {
+        Menu {
+            Section { addDoor("Scan", symbol: .qrcodeViewfinder, identifier: "configuration.library.add.scan") { quickAdd.showsQRCapture = true } }
+            Section { addDoor("Import", symbol: .arrowUpDocument, identifier: "configuration.library.add.file") { quickAdd.showsImporter = true } }
+            Section { addDoor("Node", symbol: .serverRack, identifier: "configuration.library.add.node") { showsNewNode = true } }
+            Section { addDoor("Proxy Chain", symbol: .link, identifier: "configuration.library.add.chain") { showsNewChain = true } }
+        } label: {
+            Image(systemName: HakoSymbol.plusCircle.rawValue).hakoToolbarGlyph()
+        }
+        .disabled(busy || !ready)
+        .accessibilityLabel(HakoCopy.key("Add Nodes"))
+        .accessibilityIdentifier("configuration.library.add")
+    }
+
+    private func addDoor(_ title: String, symbol: HakoSymbol, identifier: String,
+                         action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(HakoCopy.key(title), systemImage: symbol.name)
+        }
+        .accessibilityIdentifier(identifier)
+    }
+
     private func loadCollections(force: Bool = false) async {
         if !force, let cached = browseCache?.wrappedValue, cached.matches(library) {
             collections = cached.entries
@@ -690,6 +764,163 @@ struct ConfigurationSourceLibraryAdapter: View {
     }
 }
 
+ 
+ 
+ 
+private struct RuleAddPage: View {
+    @ObservedObject var model: ProfilesViewModel
+    let library: ConfigurationLibrarySnapshot
+    let initialDoor: RuleAddRequest
+    let apply: (ConfigurationLibrarySnapshot) -> Void
+    let close: () -> Void
+
+    @State private var door: RuleAddRequest
+    @State private var pendingDoor: RuleAddRequest?
+    @State private var confirmsDiscard = false
+    @State private var importingCollection = false
+
+    init(model: ProfilesViewModel, library: ConfigurationLibrarySnapshot, initialDoor: RuleAddRequest,
+         apply: @escaping (ConfigurationLibrarySnapshot) -> Void, close: @escaping () -> Void) {
+        _model = ObservedObject(wrappedValue: model)
+        self.library = library; self.initialDoor = initialDoor; self.apply = apply; self.close = close
+        _door = State(initialValue: initialDoor)
+    }
+
+    var body: some View {
+        Group {
+            switch door {
+            case .url, .file:
+                ConfigurationSourceImportAdapter(model: model, kind: door == .url ? .subscription : .file,
+                    purpose: .rules, externalTabHeader: { AnyView(doors(dirty: $0)) },
+                    importRuleCollection: { importingCollection = true }, finishImport: close) { payload in
+                    if payload.record.ruleCount > 0 {
+                        apply(try await model.addConfigurationRuleScheme(payload, generation: library.generation))
+                    } else {
+                        var value = payload; value.record.suppliesNodes = false; value.record.registersSuppliedRules = false
+                        guard !ConfigurationCollection.read(sourceID: value.record.id,
+                            document: try OrderedJSON.parse(value.documentJSON), kind: .rules).isEmpty else {
+                            throw ConfigurationLibraryError.missingRules
+                        }
+                        apply(try await model.addConfigurationSource(value, generation: library.generation))
+                    }
+                    close()
+                }.id(door)
+            case .manual, .manualAlone:
+                 
+                 
+                ConfigurationNewRuleAdapter(model: model, library: library,
+                    tabHeader: door.showsDoors ? { AnyView(doors(dirty: $0)) } : nil,
+                    changed: apply, close: close)
+            }
+        }
+        .hakoProductModal(isPresented: $importingCollection, role: .page) {
+            ConfigurationCollectionImportAdapter(model: model, library: library, changed: apply,
+                close: { importingCollection = false })
+        }
+        .alert("Discard Changes?", isPresented: $confirmsDiscard) {
+            Button("Keep Editing", role: .cancel) { pendingDoor = nil }
+            Button("Discard Changes", role: .destructive) { if let next = pendingDoor { door = next }; pendingDoor = nil }
+        } message: { Text("Switching tabs discards what you have not saved.") }
+    }
+
+    private func doors(dirty: Bool) -> some View {
+        Picker("Add Rules", selection: Binding(get: { door }, set: { next in
+            guard next != door else { return }
+            if dirty { pendingDoor = next; confirmsDiscard = true } else { door = next }
+        })) {
+            Text(HakoCopy.key("URL")).tag(RuleAddRequest.url)
+            Text(HakoCopy.key("File")).tag(RuleAddRequest.file)
+            Text(HakoCopy.key("Manual")).tag(RuleAddRequest.manual)
+        }
+         
+         
+        .pickerStyle(.segmented)
+        .accessibilityIdentifier("configuration.rules.add.tabs")
+        .labelsHidden()
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 2)
+    }
+}
+
+ 
+ 
+ 
+ 
+private struct ConfigurationNewNodeAdapter: View {
+    @ObservedObject var model: ProfilesViewModel
+    let library: ConfigurationLibrarySnapshot
+    let changed: (ConfigurationLibrarySnapshot) -> Void
+    let close: () -> Void
+
+     
+     
+     
+     
+    @State private var candidates: DialerProxyCandidates = .empty
+
+    var body: some View {
+        HakoFeatureNavigationContainer {
+            ProxyNodeDetailsView(
+                record: CustomNodesView.newNodeTemplate,
+                retest: {},
+                saveNode: { _, edited in try await save(edited) },
+                showsTesting: false,
+                isNew: true,
+                dialerRouting: .payloadField,
+                dialerCandidates: { candidates },
+                onDone: close
+            )
+        }
+        .hakoModalPresentation(.page)
+        .task { await loadCandidates() }
+    }
+
+    private func loadCandidates() async {
+        guard let profile = model.profiles.first(where: { $0.id == model.activeProfileID }),
+              let yaml = model.effectiveYAML(for: profile) else { return }
+         
+         
+         
+         
+        candidates = DialerProxyCandidates.make(sourceYAML: yaml, excluding: "")
+    }
+
+    private func save(_ editedJSON: String) async throws {
+        let payload = try await Task.detached {
+            let nodes = try CustomNodeAppend.appended(payload: [], editedJSON: editedJSON)
+            let document = try JSONSerialization.data(withJSONObject: ["proxies": nodes])
+            let yaml = try ConfigTransforms.jsonToYAML(String(decoding: document, as: UTF8.self))
+            return try ConfigurationCenterSourceBridge.payload(
+                label: nodes.first?["name"] as? String ?? "Custom Nodes",
+                origin: .customNodes, original: Data(yaml.utf8), yaml: yaml)
+        }.value
+        let updated = try await model.addConfigurationSource(payload, generation: library.generation)
+        changed(updated)
+    }
+}
+
+ 
+ 
+private struct SourceAddRequest: Identifiable, Hashable {
+    let kind: HakoConfigurationSourceKind
+    let showsDoors: Bool
+    var id: String { "\(kind)-\(showsDoors)" }
+}
+
+ 
+ 
+private enum RuleAddRequest: Int, Identifiable, Hashable {
+     
+    case url = 1, file = 2, manual = 3
+     
+     
+     
+    case manualAlone = 4
+    var id: Int { rawValue }
+    var showsDoors: Bool { self != .manualAlone }
+}
+
 struct ConfigurationRuleLibraryAdapter: View {
     @Environment(\.locale) private var locale
     let model: ProfilesViewModel
@@ -699,16 +930,31 @@ struct ConfigurationRuleLibraryAdapter: View {
     var embedded = false
     var showsClose = true
     var browseCache: Binding<ConfigurationLibraryBrowseCache?>? = nil
+     
+     
+    @StateObject private var quickAdd: ProfileQuickAddController
+
+    init(model: ProfilesViewModel, library: ConfigurationLibrarySnapshot,
+         changed: @escaping (ConfigurationLibrarySnapshot) -> Void, close: @escaping () -> Void,
+         embedded: Bool = false, showsClose: Bool = true,
+         browseCache: Binding<ConfigurationLibraryBrowseCache?>? = nil) {
+        self.model = model
+        _library = State(initialValue: library)
+        self.changed = changed; self.close = close
+        self.embedded = embedded; self.showsClose = showsClose; self.browseCache = browseCache
+        _quickAdd = StateObject(wrappedValue: ProfileQuickAddController(model: model, target: .rules))
+    }
     @State private var busy = false
     @State private var errorMessage: String?
     @State private var updateProgress: String?
     @State private var updateStatus: String?
     @State private var openedSchemeID: String?
-    @State private var importing = false
-    @State private var importingCollection = false
-    @State private var addMode = 1
-    @State private var pendingAddMode: Int?
-    @State private var confirmsAddTabDiscard = false
+     
+     
+     
+     
+    @State private var addRequest: RuleAddRequest?
+    @State private var showsRuleSetImport = false
     @State private var collections: [ConfigurationCollectionEntry] = []
     @State private var inspectedCollection: ConfigurationCollectionEntry?
     @State private var ready = false
@@ -720,49 +966,46 @@ struct ConfigurationRuleLibraryAdapter: View {
                     guard let scheme = library.effectiveRuleScheme(id) else { throw ConfigurationLibraryError.missingDependency(id) }
                     try await model.refreshConfigurationSource(scheme.sourceID); try await reload()
                 } }, delete: { id in perform { apply(try await model.deleteConfigurationRuleScheme(id, generation: library.generation)) } },
-                add: { addMode = 1; importing = true }, close: close, showsClose: showsClose,
+                add: { addRequest = .url }, close: close, showsClose: showsClose, isCenterSection: embedded,
                 collections: visibleCollections, openCollection: { inspectedCollection = $0 },
                 updateAll: visibleCollections.contains(where: { $0.id.kind == .rules && $0.collection.type == "http" && $0.source.isRetainedSnapshot != true }) ? updateAllRuleSets : nil,
-                updateProgress: updateProgress, updateStatus: updateStatus)
+                updateProgress: updateProgress, updateStatus: updateStatus,
+                 
+                 
+                quickAdd: embedded
+                    ? { AnyView(ProfileQuickAddCard(controller: quickAdd,
+                        identifiers: .init(linkIdentifier: "configuration.library.rules.quick-add.link",
+                                           scanIdentifier: "configuration.library.rules.quick-add.scan",
+                                           fileIdentifier: "configuration.library.rules.quick-add.file",
+                                           manualIdentifier: "configuration.library.rules.quick-add.manual",
+                                           statusIdentifier: "configuration.library.rules.quick-add.status"),
+                        manual: { addRequest = .manualAlone })) }
+                    : nil,
+                addMenu: embedded ? { AnyView(ruleAddMenu) } : nil)
+            .profileQuickAddPresenters(quickAdd)
+            .onAppear { quickAdd.onSourceAdded = apply }
             .task {
                 if !ready {
                     if browseCache?.wrappedValue != nil { ready = true; await loadCollections() }
                     else { perform { try await reload(); ready = true } }
                 }
             }
-            .hakoProductModal(isPresented: $importing, role: .form) {
-                Group {
-                    switch addMode {
-                    case 1, 2:
-                        ConfigurationSourceImportAdapter(model: model, kind: addMode == 1 ? .subscription : .file,
-                            purpose: .rules, externalTabHeader: { AnyView(ruleAddTabs(dirty: $0)) },
-                            importRuleCollection: { importingCollection = true }, finishImport: { importing = false }) { payload in
-                            if payload.record.ruleCount > 0 {
-                                apply(try await model.addConfigurationRuleScheme(payload, generation: library.generation))
-                            } else {
-                                var value = payload; value.record.suppliesNodes = false; value.record.registersSuppliedRules = false
-                                guard !ConfigurationCollection.read(sourceID: value.record.id,
-                                    document: try OrderedJSON.parse(value.documentJSON), kind: .rules).isEmpty else {
-                                    throw ConfigurationLibraryError.missingRules
-                                }
-                                apply(try await model.addConfigurationSource(value, generation: library.generation))
-                            }
-                            importing = false
-                        }.id(addMode)
-                    case 3:
-                        ConfigurationNewRuleAdapter(model: model, library: library, tabHeader: { AnyView(ruleAddTabs(dirty: $0)) }, changed: apply, close: { importing = false })
-                    default: EmptyView()
-                    }
-                }
-                .hakoProductModal(isPresented: $importingCollection, role: .form) {
-                    ConfigurationCollectionImportAdapter(model: model, library: library, changed: apply,
-                        close: { importingCollection = false })
-                }
+             
+             
+             
+             
+            .hakoProductModal(isPresented: Binding(get: { addRequest != nil },
+                                                   set: { if !$0 { addRequest = nil } }), role: .page) {
+                RuleAddPage(model: model, library: library, initialDoor: addRequest ?? .url,
+                            apply: apply, close: { addRequest = nil })
             }
-            .alert("Discard Changes?", isPresented: $confirmsAddTabDiscard) {
-                Button("Keep Editing", role: .cancel) { pendingAddMode = nil }
-                Button("Discard Changes", role: .destructive) { if let next = pendingAddMode { addMode = next }; pendingAddMode = nil }
-            } message: { Text("Switching tabs discards what you have not saved.") }
+             
+             
+             
+            .hakoProductModal(isPresented: $showsRuleSetImport, role: .page) {
+                ConfigurationCollectionImportAdapter(model: model, library: library, changed: apply,
+                    close: { showsRuleSetImport = false })
+            }
             .onChange(of: openedSchemeID == nil) { closed in
                 if closed { Task { await loadCollections() } }
             }
@@ -780,17 +1023,6 @@ struct ConfigurationRuleLibraryAdapter: View {
             }
         }
     }
-    private func ruleAddTabs(dirty: Bool) -> some View {
-        Picker("Add Rules", selection: Binding(get: { addMode }, set: { next in
-            guard next != addMode else { return }
-            if dirty { pendingAddMode = next; confirmsAddTabDiscard = true } else { addMode = next }
-        })) {
-            Text(HakoCopy.key("URL")).tag(1)
-            Text(HakoCopy.key("File")).tag(2)
-            Text(HakoCopy.key("Manual")).tag(3)
-        }.pickerStyle(.segmented).padding(.horizontal, 20).padding(.bottom, 8)
-            .accessibilityIdentifier("configuration.rules.add.tabs")
-    }
     private func apply(_ value: ConfigurationLibrarySnapshot) {
         guard library.generation != value.generation else { return }
         library = value; changed(value)
@@ -807,6 +1039,34 @@ struct ConfigurationRuleLibraryAdapter: View {
         if let cached = browseCache?.wrappedValue, cached.matches(library) { return cached.entries }
         return collections
     }
+     
+     
+     
+    private var ruleAddMenu: some View {
+        Menu {
+            Section { ruleDoor("Scan", symbol: .qrcodeViewfinder, identifier: "configuration.library.rules.add.scan") { quickAdd.showsQRCapture = true } }
+            Section { ruleDoor("Import", symbol: .arrowUpDocument, identifier: "configuration.library.rules.add.file") { quickAdd.showsImporter = true } }
+            Section { ruleDoor("Manual", symbol: .pencilLine, identifier: "configuration.library.rules.add.manual") { addRequest = .manualAlone } }
+             
+             
+             
+            Section { ruleDoor("Import Rule Set", symbol: .listBulletRectangle, identifier: "configuration.library.rules.add.rule-set") { showsRuleSetImport = true } }
+        } label: {
+            Image(systemName: HakoSymbol.plusCircle.rawValue).hakoToolbarGlyph()
+        }
+        .disabled(busy)
+        .accessibilityLabel(HakoCopy.key("Add Rules"))
+        .accessibilityIdentifier("configuration.library.rules.add")
+    }
+
+    private func ruleDoor(_ title: String, symbol: HakoSymbol, identifier: String,
+                          action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(HakoCopy.key(title), systemImage: symbol.name)
+        }
+        .accessibilityIdentifier(identifier)
+    }
+
     private func loadCollections(force: Bool = false) async {
         if !force, let cached = browseCache?.wrappedValue, cached.matches(library) {
             collections = cached.entries
