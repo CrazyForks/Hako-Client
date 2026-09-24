@@ -1,4 +1,5 @@
 import Combine
+import HakoClientKit
 import HakoClientUI
 import SwiftUI
 
@@ -688,6 +689,7 @@ struct ProxiesOverviewAdapter: View {
             ).map { provider in
                 HakoProxyProviderSnapshot(
                     name: provider.name,
+                    displayName: ConfigurationComposer.displayName(forComposedProviderName: provider.name),
                     type: provider.type,
                     nodeCount: provider.nodeCount,
                      

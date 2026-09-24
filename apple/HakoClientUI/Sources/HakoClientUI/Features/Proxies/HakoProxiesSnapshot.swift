@@ -372,7 +372,12 @@ public struct HakoProxyProviderSnapshot:
     Sendable
 {
     public var id: String { name }
+     
     public let name: String
+     
+     
+    public let displayName: String?
+    public var title: String { displayName ?? name }
     public let type: String
     public let nodeCount: Int?
      
@@ -402,6 +407,7 @@ public struct HakoProxyProviderSnapshot:
 
     public init(
         name: String,
+        displayName: String? = nil,
         type: String,
         nodeCount: Int? = nil,
         nodes: [HakoProxyMemberSnapshot]? = nil,
@@ -414,6 +420,7 @@ public struct HakoProxyProviderSnapshot:
          
          
         self.name = name
+        self.displayName = displayName
         self.type = String(type.prefix(256))
         self.nodeCount = nodeCount.map { max(0, $0) }
         self.nodes = nodes

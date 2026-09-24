@@ -1829,7 +1829,7 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
         let canOpen = !(provider.nodes ?? []).isEmpty
         let isOpen = expandedProvider == provider.name
         return HStack(spacing: HakoTheme.Spacing.row) {
-            HakoRegionalFlag.label(provider.name, pointSize: 17, relativeTo: .body)
+            HakoRegionalFlag.label(provider.title, pointSize: 17, relativeTo: .body)
                 .font(.body.weight(.semibold))
             if canOpen {
                 icon(.chevronDown)

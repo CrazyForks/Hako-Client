@@ -321,7 +321,7 @@ struct HakoProxiesSystemList<Icon: View>: View {
             ForEach(snapshot.proxies.providers) { provider in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: HakoTheme.Spacing.row) {
-                        HakoRegionalFlag.label(provider.name, pointSize: 17, relativeTo: .body)
+                        HakoRegionalFlag.label(provider.title, pointSize: 17, relativeTo: .body)
                             .font(.body.weight(.semibold))
                         Spacer(minLength: 8)
                         if let count = provider.nodeCount {

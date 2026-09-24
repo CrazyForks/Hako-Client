@@ -322,6 +322,37 @@ public enum ConfigurationComposer {
         }
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    public static func displayName(forComposedProviderName name: String) -> String {
+        guard name.hasPrefix("["), let close = name.firstIndex(of: "]") else { return name }
+        let id = String(name[name.index(after: name.startIndex)..<close])
+        guard isSourceIdentifier(id) else { return name }
+        let rest = name[name.index(after: close)...]
+        guard rest.hasPrefix(" "), rest.count > 1 else { return name }
+        return String(rest.dropFirst())
+    }
+
+     
+     
+     
+    static func isSourceIdentifier(_ id: String) -> Bool {
+        var body = Substring(id)
+        for prefix in ["legacy-nodes-", "legacy-", "chain-"] where body.hasPrefix(prefix) {
+            body = body.dropFirst(prefix.count); break
+        }
+        let parts = body.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.map(\.count) == [8, 4, 4, 4, 12] else { return false }
+        return parts.allSatisfy { $0.allSatisfy { $0.isHexDigit } }
+    }
+
     private static let builtins: Set<String> = ["DIRECT", "REJECT", "REJECT-DROP", "PASS", "COMPATIBLE", "GLOBAL"]
 
     private static func dependency(
