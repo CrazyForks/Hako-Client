@@ -612,3 +612,60 @@ public extension ConfigurationRuleDraft {
         self = candidate
     }
 }
+
+ 
+ 
+ 
+ 
+ 
+ 
+public extension ConfigurationRuleDraft {
+     
+     
+    private var pinnedFinalIndex: Int { rows.last?.isFinal == true ? rows.count - 1 : rows.count }
+
+     
+    mutating func moveRows(fromOffsets offsets: IndexSet, toOffset destination: Int) {
+        let limit = pinnedFinalIndex
+        guard !offsets.isEmpty, offsets.allSatisfy({ rows.indices.contains($0) && $0 < limit }) else { return }
+        var movable = Array(rows[..<limit])
+        let tail = Array(rows[limit...])
+         
+         
+        let lifted = offsets.sorted().map { movable[$0] }
+        for offset in offsets.sorted(by: >) { movable.remove(at: offset) }
+        let target = min(destination, limit) - offsets.filter { $0 < min(destination, limit) }.count
+        movable.insert(contentsOf: lifted, at: max(0, min(target, movable.count)))
+        rows = movable + tail
+    }
+
+     
+     
+    mutating func moveRow(_ id: UUID, before target: UUID?) {
+        let limit = pinnedFinalIndex
+        guard let source = rows.firstIndex(where: { $0.id == id }), source < limit else { return }
+        var movable = Array(rows[..<limit])
+        let tail = Array(rows[limit...])
+        let row = movable.remove(at: source)
+        let index: Int
+        if let target, let found = movable.firstIndex(where: { $0.id == target }) {
+            index = found
+        } else if target == nil || target == tail.first?.id {
+            index = movable.endIndex
+        } else {
+            return
+        }
+        movable.insert(row, at: index)
+        rows = movable + tail
+    }
+
+     
+     
+    mutating func moveRow(_ id: UUID, offset: Int) {
+        let limit = pinnedFinalIndex
+        guard let source = rows.firstIndex(where: { $0.id == id }), source < limit else { return }
+        let destination = source + offset
+        guard destination >= 0, destination < limit else { return }
+        rows.swapAt(source, destination)
+    }
+}

@@ -1001,6 +1001,7 @@
 "Downloaded by the app over HTTP or HTTPS" = "由 App 透過 HTTP 或 HTTPS 下載";
 "Drag to choose the order used on Home." = "拖移即可調整首頁顯示順序。";
 "Drag to reorder" = "拖移排序";
+"Drag to reorder. Rules match from top to bottom; the final rule stays last." = "拖曳調整順序。規則由上而下比對，最後一條固定在末尾。";
 "Drop silently, without answering." = "靜默丟棄，不回傳拒絕。";
 "Dropped" = "已中斷";
 "Duplicate" = "複製";
@@ -2389,6 +2390,7 @@
 "Reopen Now" = "立即重開";
 "Reorder" = "重新排序";
 "Reorder Profiles" = "設定檔排序";
+"Reorder Rules" = "規則排序";
 "Repair and connect" = "修復並連線";
 "Replace" = "取代";
 "Replace Current Selection" = "取代目前選擇";

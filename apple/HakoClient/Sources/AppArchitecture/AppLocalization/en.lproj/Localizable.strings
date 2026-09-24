@@ -1001,6 +1001,7 @@
 "Downloaded by the app over HTTP or HTTPS" = "Downloaded by the app over HTTP or HTTPS";
 "Drag to choose the order used on Home." = "Drag to choose the order used on Home.";
 "Drag to reorder" = "Drag to reorder";
+"Drag to reorder. Rules match from top to bottom; the final rule stays last." = "Drag to reorder. Rules match from top to bottom; the final rule stays last.";
 "Drop silently, without answering." = "Drop silently, without answering.";
 "Dropped" = "Dropped";
 "Duplicate" = "Duplicate";
@@ -2389,6 +2390,7 @@
 "Reopen Now" = "Reopen Now";
 "Reorder" = "Reorder";
 "Reorder Profiles" = "Reorder Profiles";
+"Reorder Rules" = "Reorder Rules";
 "Repair and connect" = "Repair and connect";
 "Replace" = "Replace";
 "Replace Current Selection" = "Replace Current Selection";

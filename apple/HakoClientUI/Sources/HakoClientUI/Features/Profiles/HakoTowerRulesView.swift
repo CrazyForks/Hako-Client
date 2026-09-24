@@ -214,7 +214,7 @@ public struct HakoTowerRuleCustomizationView: View {
      
     private let nodeCandidates: (() async -> [ConfigurationRuleTargetCandidates.Section])?
     @State private var nodeSections: [ConfigurationRuleTargetCandidates.Section] = []
-    private enum Modal: String, Identifiable { case identity, group, local, copy, manual; var id: String { rawValue } }
+    private enum Modal: String, Identifiable { case identity, group, local, copy, manual, order; var id: String { rawValue } }
     @State private var groupID: UUID?
     @State private var localID: String?
     @State private var ordered = HakoOrderedWork()
@@ -244,18 +244,23 @@ public struct HakoTowerRuleCustomizationView: View {
                  
                  
                 Section {
-                    HStack {
-                        Text("Current Rules")
-                        Spacer()
-                        Text(hako: .format("%@ rules", [String(draft.rows.count)]))
-                            .foregroundStyle(.secondary).monospacedDigit()
+                    Button { modal = .order } label: {
+                        HStack {
+                            Text("Current Rules").foregroundStyle(Color.primary)
+                            Spacer()
+                            Text(hako: .format("%@ rules", [String(draft.rows.count)]))
+                                .foregroundStyle(.secondary).monospacedDigit()
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                        }
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("configuration.rules.current.summary")
                 }
             } else {
                 HakoTowerInlineRules(rows: draft.rows, version: draft.version,
-                    query: search, palette: palette, remove: { draft.remove([$0]) })
+                    query: search, palette: palette, remove: { draft.remove([$0]) }, reorder: { modal = .order })
             }
             Section {
                 ForEach(visibleGroups) { group in
@@ -418,6 +423,8 @@ public struct HakoTowerRuleCustomizationView: View {
                     HakoTowerNameEditor(title: "Save as New Scheme", name: draft.label + " · 自定义", save: { name in try await copy(draft, name); modal = nil; close() }, close: { modal = nil })
                 case .manual:
                     manualEditor(draft) { value in let result = try await save(value); await receiveSaved(result) }
+                case .order:
+                    HakoTowerRulesOrderView(draft: $draft, palette: palette, markChanged: { hasUnsavedChanges = true }, close: { modal = nil })
                 }
             }.environment(\.hakoProductModalDismiss, { modal = nil })
         }
@@ -997,7 +1004,7 @@ private struct HakoTowerSelectionFeedback: ViewModifier {
     }
 }
 
-private struct HakoTowerReorderMode: ViewModifier {
+struct HakoTowerReorderMode: ViewModifier {
     var active = true
     func body(content: Content) -> some View {
 #if os(iOS)
@@ -1021,7 +1028,7 @@ private struct HakoTowerSearchPlacement: ViewModifier {
 }
 
  
-private struct HakoTowerRuleSummary: View {
+struct HakoTowerRuleSummary: View {
     let row: ConfigurationRuleDraft.Row
     let palette: HakoProductPalette
     var body: some View {
@@ -1051,6 +1058,10 @@ private struct HakoTowerInlineRules: View {
      
      
     var remove: ((UUID) -> Void)? = nil
+     
+     
+     
+    var reorder: (() -> Void)? = nil
     @State private var results = HakoTowerRuleSearchSnapshot()
     @State private var completedRequest: SearchRequest?
 
@@ -1079,7 +1090,19 @@ private struct HakoTowerInlineRules: View {
             if searching && results.query != current.query { ProgressView("Searching…") }
             else if !searching && visible.isEmpty { Text("No results").foregroundStyle(.secondary) }
         } header: {
-            HStack { Text("Current Rules"); Spacer(); Text(hako: .format("%@ rules", [String(visible.count)])) }
+            HStack {
+                Text("Current Rules")
+                Spacer()
+                Text(hako: .format("%@ rules", [String(visible.count)]))
+                if let reorder {
+                    Button(action: reorder) { Text("Reorder") }
+                        .font(.footnote.weight(.semibold))
+                        .textCase(nil)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.tint)
+                        .accessibilityIdentifier("configuration.rules.reorder")
+                }
+            }
         } footer: { Text("Matched from top to bottom") }
         .task(id: current) {
             guard !current.query.isEmpty else { results = .init(); completedRequest = current; return }
