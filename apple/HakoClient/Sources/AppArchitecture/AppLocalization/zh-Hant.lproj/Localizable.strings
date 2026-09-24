@@ -3774,6 +3774,7 @@
 "vpn start cancelled before request" = "VPN 啟動在請求前取消";
 "vpn start cancelled during preparation" = "VPN 啟動在準備期間取消";
 "· No nodes" = "· 無節點";
+"· Not supported" = "· 不支援";
 "“%@” has no profile URL yet — this profile is a template, and that line still holds placeholder text. Open it and paste your own profile URL." = "「%@」還沒有設定連結——這份設定是模板，那一行填的還是佔位文字。開啟它，把你自己的設定連結粘進去。";
 "↑%@ · ↓%@" = "↑%1$@ · ↓%2$@";
 "≈ figures are estimates: entry count × a measured slope, or the staged file's size on disk." = "≈ 為估算值：條數 × 實測斜率，或其檔案在磁碟的大小。";

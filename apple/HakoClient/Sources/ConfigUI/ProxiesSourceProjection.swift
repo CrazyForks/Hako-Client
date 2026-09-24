@@ -28,17 +28,22 @@ struct ProxiesOverviewModel: Equatable, Sendable {
          
          
         let chainedThrough: String?
+         
+         
+        let placeholderType: String?
 
         init(
             name: String,
             type: String,
             isGroup: Bool,
-            chainedThrough: String? = nil
+            chainedThrough: String? = nil,
+            placeholderType: String? = nil
         ) {
             self.name = name
             self.type = type
             self.isGroup = isGroup
             self.chainedThrough = chainedThrough
+            self.placeholderType = placeholderType
         }
     }
 

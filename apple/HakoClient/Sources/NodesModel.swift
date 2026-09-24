@@ -12,6 +12,11 @@ struct ProxyGroup: Identifiable, Equatable {
     let memberTypes: [String: String]
     let memberGroupNames: Set<String>
     let memberResolvedNames: [String: String]
+     
+     
+     
+     
+    let memberPlaceholderTypes: [String: String]
     let configurationDetails: ProxyGroupConfigurationDetails?
      
     let hidden: Bool
@@ -48,12 +53,14 @@ struct ProxyGroup: Identifiable, Equatable {
          resolvedNow: String? = nil, memberTypes: [String: String] = [:],
          memberGroupNames: Set<String> = [],
          memberResolvedNames: [String: String] = [:],
+         memberPlaceholderTypes: [String: String] = [:],
          configurationDetails: ProxyGroupConfigurationDetails? = nil,
          hidden: Bool = false,
          testURL: String? = nil,
          iconURL: String? = nil,
          emptyFallback: String? = nil) {
         self.hidden = hidden
+        self.memberPlaceholderTypes = memberPlaceholderTypes
         self.testURL = testURL
         self.iconURL = iconURL
         self.emptyFallback = emptyFallback
@@ -684,6 +691,11 @@ enum NodeInventory {
             )
         ] = [:]
         var proxyTypes: [String: String] = [:]
+         
+         
+         
+         
+        var proxyPlaceholderTypes: [String: String] = [:]
         var delays: [String: Int] = [:]
 
          
@@ -729,6 +741,9 @@ enum NodeInventory {
             guard let proxy = raw as? [String: Any] else { continue }
             let name = native(rawName)
             proxyTypes[name] = (proxy["type"] as? String).map(native) ?? "?"
+            if let placeholder = proxy["placeholderType"] as? String, !placeholder.isEmpty {
+                proxyPlaceholderTypes[name] = native(placeholder)
+            }
             if let history = proxy["history"] as? [[String: Any]], let last = history.last {
                 delays[name] = last["delay"] as? Int ?? -1
             }
@@ -781,6 +796,9 @@ enum NodeInventory {
                 memberGroupNames: Set(value.members.filter { rawGroups[$0] != nil }),
                 memberResolvedNames: Dictionary(uniqueKeysWithValues: value.members.compactMap {
                     rawGroups[$0] == nil ? nil : ($0, resolve($0))
+                }),
+                memberPlaceholderTypes: Dictionary(uniqueKeysWithValues: value.members.compactMap {
+                    member in proxyPlaceholderTypes[member].map { (member, $0) }
                 }),
                 configurationDetails: groupConfigurationDetailsByName[name],
                 hidden: value.hidden,
@@ -854,6 +872,9 @@ enum NodeInventory {
                 memberTypes: group.memberTypes.filter { survivors.contains($0.key) },
                 memberGroupNames: group.memberGroupNames.intersection(survivors),
                 memberResolvedNames: group.memberResolvedNames.filter {
+                    survivors.contains($0.key)
+                },
+                memberPlaceholderTypes: group.memberPlaceholderTypes.filter {
                     survivors.contains($0.key)
                 },
                 configurationDetails: group.configurationDetails,

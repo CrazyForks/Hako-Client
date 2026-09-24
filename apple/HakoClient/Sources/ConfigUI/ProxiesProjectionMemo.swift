@@ -86,7 +86,8 @@ final class ProxiesProjectionMemo {
                 name: $0.name,
                 type: $0.type,
                 isGroup: $0.isGroup,
-                chainedThrough: $0.chainedThrough
+                chainedThrough: $0.chainedThrough,
+                placeholderType: $0.placeholderType
             )
         }
         memberRowsByGroup[group.name] = (group.members, rows)

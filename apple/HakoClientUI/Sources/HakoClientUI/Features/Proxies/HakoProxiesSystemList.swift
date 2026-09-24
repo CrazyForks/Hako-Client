@@ -221,7 +221,8 @@ struct HakoProxiesSystemList<Icon: View>: View {
                     type: member.type,
                     chainedThrough: member.chainedThrough,
                     groupName: group.name,
-                    isEmptyGroup: snapshot.proxies.isEmptyGroup(member)
+                    isEmptyGroup: snapshot.proxies.isEmptyGroup(member),
+                    placeholderType: member.placeholderType
                 ),
                 initialLatency: snapshot.proxies
                     .displayedLatency(for: member).normalized,
@@ -448,6 +449,9 @@ struct HakoProxyFrozenRow: Equatable, Identifiable {
      
      
     var isEmptyGroup: Bool = false
+     
+     
+    var placeholderType: String? = nil
 }
 
  
@@ -622,7 +626,17 @@ struct HakoProxyMemberListRow: View, Equatable {
 
     @ViewBuilder
     private var subtitle: some View {
-        if row.isEmptyGroup {
+        if let placeholder = row.placeholderType {
+             
+             
+            HStack(spacing: 4) {
+                Text(hako: .verbatim(placeholder))
+                Text(hako: .copy("· Not supported"))
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        } else if row.isEmptyGroup {
             HStack(spacing: 4) {
                 Text(hako: .verbatim(row.type.uppercased()))
                 Text(hako: .copy("· No nodes"))

@@ -3774,6 +3774,7 @@
 "vpn start cancelled before request" = "vpn start cancelled before request";
 "vpn start cancelled during preparation" = "vpn start cancelled during preparation";
 "· No nodes" = "· No nodes";
+"· Not supported" = "· Not supported";
 "“%@” has no profile URL yet — this profile is a template, and that line still holds placeholder text. Open it and paste your own profile URL." = "“%@” has no profile URL yet — this profile is a template, and that line still holds placeholder text. Open it and paste your own profile URL.";
 "↑%@ · ↓%@" = "↑%1$@ · ↓%2$@";
 "≈ figures are estimates: entry count × a measured slope, or the staged file's size on disk." = "≈ figures are estimates: entry count × a measured slope, or the staged file's size on disk.";

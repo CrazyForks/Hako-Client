@@ -685,7 +685,8 @@ enum ProxiesRuntimeCatalogComposer {
                         isGroup: isGroup,
                          
                          
-                        chainedThrough: isGroup ? nil : chainedByNode[member]
+                        chainedThrough: isGroup ? nil : chainedByNode[member],
+                        placeholderType: isGroup ? nil : group.memberPlaceholderTypes[member]
                     )
                 },
                  

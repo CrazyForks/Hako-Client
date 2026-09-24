@@ -182,12 +182,18 @@ public struct HakoProxyMemberSnapshot:
      
      
     public let chainedThrough: String?
+     
+     
+     
+     
+    public let placeholderType: String?
 
     public init(
         name: String,
         type: String,
         isGroup: Bool = false,
-        chainedThrough: String? = nil
+        chainedThrough: String? = nil,
+        placeholderType: String? = nil
     ) {
          
          
@@ -199,6 +205,7 @@ public struct HakoProxyMemberSnapshot:
         self.type = String(type.prefix(256))
         self.isGroup = isGroup
         self.chainedThrough = chainedThrough.map { String($0.prefix(256)) }
+        self.placeholderType = placeholderType.map { String($0.prefix(64)) }
     }
 }
 
