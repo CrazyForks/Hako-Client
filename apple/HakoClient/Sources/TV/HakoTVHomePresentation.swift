@@ -35,12 +35,17 @@ struct HakoTVHomePresentation: Equatable {
      
      
     let cancels: Bool
+     
+     
+     
+    let reinstallsVPNProfile: Bool
 
-    init(buttonTitle: String, statusLine: String, tone: Tone, cancels: Bool = false) {
+    init(buttonTitle: String, statusLine: String, tone: Tone, cancels: Bool = false, reinstallsVPNProfile: Bool = false) {
         self.buttonTitle = buttonTitle
         self.statusLine = statusLine
         self.tone = tone
         self.cancels = cancels
+        self.reinstallsVPNProfile = reinstallsVPNProfile
     }
 
      
@@ -70,6 +75,9 @@ struct HakoTVHomePresentation: Equatable {
             vpnStatus: status,
             errorMessage: state.issue ?? "",
             vpnAuthorization: state.vpnAuthorization,
+             
+             
+            errorIsProviderNotLaunched: state.issue == HakoTVTunnelController.providerNotLaunchedMessage,
             mode: state.outboundMode.kernelToken
         )
     }
@@ -127,10 +135,15 @@ struct HakoTVHomePresentation: Equatable {
                 cancels: presentation.primaryAction == .cancel
             )
         case .recoverableError:
+             
+             
+             
+            let reinstalls = presentation.issue?.kind == .providerNotLaunched
             return HakoTVHomePresentation(
-                buttonTitle: word(presentation),
+                buttonTitle: reinstalls ? String(localized: "Reinstall VPN Profile") : word(presentation),
                 statusLine: presentation.issue?.message ?? presentation.subtitle.rawValue.localizedForTelevision,
-                tone: .failed
+                tone: .failed,
+                reinstallsVPNProfile: reinstalls
             )
         default:
             return HakoTVHomePresentation(

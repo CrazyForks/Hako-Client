@@ -231,7 +231,13 @@ final class HakoTVProfileCoordinator {
      
      
      
+     
+     
+     
+     
+     
     func commitStart(
+        replacingInstalled: Bool = false,
         configure: @escaping @MainActor (any HakoTVSystemProfile) throws -> Void,
         shouldAbort: @escaping @MainActor () -> Bool,
         onWaiting: @escaping @MainActor () -> Void = {}
@@ -246,7 +252,12 @@ final class HakoTVProfileCoordinator {
                  
                 let installed = try await HakoTVTunnelController.bounded(self.timeout) { try await self.load() }
                 if shouldAbort() || Task.isCancelled { throw CancellationError() }
-                let found = installed.first(where: self.ownedBy)
+                var found = installed.first(where: self.ownedBy)
+                if replacingInstalled, let stale = found {
+                    try await HakoTVTunnelController.bounded(self.timeout) { try await stale.removeFromPreferences() }
+                    if shouldAbort() || Task.isCancelled { throw CancellationError() }
+                    found = nil
+                }
                 let profile = found ?? self.make()
                 self.profile = found
                 self.profileStamp += 1

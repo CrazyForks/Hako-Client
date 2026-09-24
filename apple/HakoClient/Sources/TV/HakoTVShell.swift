@@ -374,6 +374,12 @@ struct HakoTVShell: View {
             }
              
              
+            if presentation.reinstallsVPNProfile {
+                await tunnel.reinstallVPNProfile()
+                return
+            }
+             
+             
             if let refreshed = await tunnel.refreshRestoredProfilesIfNewer(store: store) { store = refreshed }
             guard let current = store.current else { return }
 

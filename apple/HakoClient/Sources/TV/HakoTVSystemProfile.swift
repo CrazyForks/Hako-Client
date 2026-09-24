@@ -20,8 +20,13 @@ protocol HakoTVSystemProfile: AnyObject {
     var vpnConnection: NEVPNConnection? { get }
     func saveToPreferences() async throws
     func loadFromPreferences() async throws
+     
+     
+    func removeFromPreferences() async throws
     func startVPNTunnel() throws
     func stopVPNTunnel()
+     
+    func lastDisconnectError() async -> Error?
 }
 
 extension NETunnelProviderManager: HakoTVSystemProfile {
@@ -29,4 +34,9 @@ extension NETunnelProviderManager: HakoTVSystemProfile {
     var vpnConnection: NEVPNConnection? { connection }
     func startVPNTunnel() throws { try connection.startVPNTunnel() }
     func stopVPNTunnel() { connection.stopVPNTunnel() }
+    func lastDisconnectError() async -> Error? {
+        await withCheckedContinuation { continuation in
+            connection.fetchLastDisconnectError { continuation.resume(returning: $0) }
+        }
+    }
 }

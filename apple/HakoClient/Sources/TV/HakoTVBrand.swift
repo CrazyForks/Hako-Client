@@ -188,6 +188,11 @@ struct HakoTVLaunchOverrides: Equatable, Sendable {
      
      
      
+     
+    let seedsProviderNotLaunched: Bool
+     
+     
+     
     let opens: String?
 
     init(environment: [String: String]) {
@@ -210,6 +215,7 @@ struct HakoTVLaunchOverrides: Equatable, Sendable {
         switchWatch = environment["HAKO_TV_SWITCH_WATCH"]
         mdnsProbe = environment["HAKO_TV_MDNS_PROBE"]
         dumpsDiagnostics = environment["HAKO_TV_DIAG"] == "1"
+        seedsProviderNotLaunched = environment["HAKO_TV_SEED_PROVIDER_NOT_LAUNCHED"] == "1"
         opens = environment["HAKO_TV_OPEN"]
     }
 }

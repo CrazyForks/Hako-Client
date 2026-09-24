@@ -61,6 +61,7 @@
 "Connected · %@ · %@ this session · %lld connections" = "已连接 · %@ · 本次会话 %@ · %lld 个连接";
 "Connection" = "连接";
 "Connection Not Completed" = "连接未完成";
+"Connection failed. Select Reinstall VPN Profile." = "连接失败，选择“重装 VPN 配置”。";
 "Connections" = "连接";
 "Connections · %@" = "连接 · %@";
 "Copy this rule scheme before editing it." = "先复制这个规则方案再编辑。";
@@ -220,11 +221,13 @@
 "Ready" = "就绪";
 "Ready to restore" = "可恢复";
 "Refused" = "被拒";
+"Reinstall VPN Profile" = "重装 VPN 配置";
 "Rejected" = "已拒绝";
 "Remembered but not in use. Press to use it instead, or to remove it." = "已记住但未在使用。按下可改用它，或将其移除。";
 "Remove" = "移除";
 "Remove this profile?" = "移除这个配置？";
 "Remove “%@”? This Apple TV forgets the address. To bring it back, type it again." = "移除“%@”？这台 Apple TV 会忘记这个地址。要找回它，需要重新输入。";
+"Removes the Clash VPN configuration from this Apple TV and adds it again. Apple TV asks you to allow it, as on first start. Then press START." = "从这台 Apple TV 移除 Clash 的 VPN 配置并重新添加。Apple TV 会像首次启动时一样请求允许。然后按“启动”。";
 "Resolution" = "解析";
 "Resolvers" = "解析器";
 "Resources" = "资源";

@@ -61,6 +61,7 @@
 "Connected · %@ · %@ this session · %lld connections" = "Connected · %@ · %@ this session · %lld connections";
 "Connection" = "Connection";
 "Connection Not Completed" = "Connection Not Completed";
+"Connection failed. Select Reinstall VPN Profile." = "Connection failed. Select Reinstall VPN Profile.";
 "Connections" = "Connections";
 "Connections · %@" = "Connections · %@";
 "Copy this rule scheme before editing it." = "Copy this rule scheme before editing it.";
@@ -220,11 +221,13 @@
 "Ready" = "Ready";
 "Ready to restore" = "Ready to restore";
 "Refused" = "Refused";
+"Reinstall VPN Profile" = "Reinstall VPN Profile";
 "Rejected" = "Rejected";
 "Remembered but not in use. Press to use it instead, or to remove it." = "Remembered but not in use. Press to use it instead, or to remove it.";
 "Remove" = "Remove";
 "Remove this profile?" = "Remove this profile?";
 "Remove “%@”? This Apple TV forgets the address. To bring it back, type it again." = "Remove “%@”? This Apple TV forgets the address. To bring it back, type it again.";
+"Removes the Clash VPN configuration from this Apple TV and adds it again. Apple TV asks you to allow it, as on first start. Then press START." = "Removes the Clash VPN configuration from this Apple TV and adds it again. Apple TV asks you to allow it, as on first start. Then press START.";
 "Resolution" = "Resolution";
 "Resolvers" = "Resolvers";
 "Resources" = "Resources";

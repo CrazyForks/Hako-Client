@@ -39,12 +39,13 @@ struct HakoTVHomeView: View {
     }
 
     enum Explanation: Hashable {
-        case connect, disconnect, outbound, profile, node
+        case connect, disconnect, reinstall, outbound, profile, node
 
         var label: String {
             switch self {
             case .connect: String(localized: "START")
             case .disconnect: String(localized: "STOP")
+            case .reinstall: String(localized: "Reinstall VPN Profile")
             case .outbound: String(localized: "Outbound mode")
             case .profile: String(localized: "Configuration")
             case .node: String(localized: "Node")
@@ -57,6 +58,10 @@ struct HakoTVHomeView: View {
                 String(localized: "Starts the tunnel and applies the rules in the current configuration. Until then nothing is proxied.")
             case .disconnect:
                 String(localized: "Stops the tunnel. The configuration and the selected node stay as they are.")
+            case .reinstall:
+                 
+                 
+                String(localized: "Removes the Clash VPN configuration from this Apple TV and adds it again. Apple TV asks you to allow it, as on first start. Then press START.")
             case .outbound:
                 String(localized: "Rule matches every connection against the configuration. Global sends everything to the selected node. Direct proxies nothing.")
             case .profile:
@@ -71,6 +76,12 @@ struct HakoTVHomeView: View {
 
     private var isConnected: Bool { state.isConnected }
     private var presentation: HakoTVHomePresentation { HakoTVHomePresentation.make(state: state, now: clockNow) }
+     
+     
+     
+    private var primaryExplanation: Explanation {
+        isConnected ? .disconnect : presentation.reinstallsVPNProfile ? .reinstall : .connect
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 56) {
@@ -88,7 +99,15 @@ struct HakoTVHomeView: View {
              
              
              
-            explained = isConnected ? .disconnect : .connect
+            explained = primaryExplanation
+        }
+        .onChange(of: primaryExplanation) { _, next in
+             
+             
+             
+             
+             
+            if [.connect, .disconnect, .reinstall].contains(explained) { explained = next }
         }
     }
 
@@ -120,7 +139,7 @@ struct HakoTVHomeView: View {
         } label: {
             primaryWord
         }
-        .onHakoTVFocus { explained = isConnected ? .disconnect : .connect }
+        .onHakoTVFocus { explained = primaryExplanation }
          
          
          
