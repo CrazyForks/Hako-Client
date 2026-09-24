@@ -10,6 +10,17 @@ struct ProxiesOverviewModel: Equatable, Sendable {
         proxies: [], groups: [], providers: [], ungrouped: []
     )
 
+     
+     
+     
+     
+    var catalogRefusal: String? = nil
+     
+     
+     
+     
+    var catalogUnavailable = false
+
     struct Proxy: Identifiable, Hashable, Sendable {
         var id: String { name }
         let name: String
@@ -590,7 +601,7 @@ struct ProxiesOverviewModel: Equatable, Sendable {
                     storedSelection ?? defaultSelection,
                 defaultSelection: defaultSelection,
                 emptyFallback: emptyFallback,
-                hidden: (dictionary["hidden"] as? Bool) ?? false,
+                hidden: Self.isHiddenFlag(dictionary["hidden"]),
                 icon: (dictionary["icon"] as? String)
                     .flatMap { $0.isEmpty ? nil : $0 }
             )
@@ -670,7 +681,7 @@ struct ProxiesOverviewModel: Equatable, Sendable {
      
      
     func applying(selectedMap: [String: String]) -> ProxiesOverviewModel {
-        ProxiesOverviewModel(
+        var applied = ProxiesOverviewModel(
             proxies: proxies,
             groups: groups.map { group in
                 guard !group.isSynthesized else { return group }
@@ -700,6 +711,10 @@ struct ProxiesOverviewModel: Equatable, Sendable {
             providers: providers,
             ungrouped: ungrouped
         )
+         
+        applied.catalogRefusal = catalogRefusal
+        applied.catalogUnavailable = catalogUnavailable
+        return applied
     }
 
     private static func synthesizedGlobal(
@@ -863,6 +878,208 @@ struct ProxiesOverviewModel: Equatable, Sendable {
                 name: nodeName,
                 type: (dictionary["type"] as? String) ?? ""
             )
+        }
+    }
+}
+
+extension ProxiesOverviewModel {
+     
+     
+     
+    static func isHiddenFlag(_ value: Any?) -> Bool {
+        switch value {
+        case let flag as Bool: return flag
+        case let text as String: return text.lowercased() == "true"
+        default: return false
+        }
+    }
+
+     
+    var withoutCatalogRefusal: ProxiesOverviewModel {
+        var model = self
+        model.catalogRefusal = nil
+        model.catalogUnavailable = false
+        return model
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+    func applyingKernelCatalog(_ data: Data) -> ProxiesOverviewModel? {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let kernelProxies = root["proxies"] as? [String: Any] else { return nil }
+        let kernelProviders = root["providers"] as? [String: Any] ?? [:]
+        let providerErrors = root["providerErrors"] as? [String: String] ?? [:]
+
+         
+         
+         
+         
+        var nodeTypes: [String: String] = [:]
+        for (name, value) in kernelProxies {
+            guard let type = (value as? [String: Any])?["type"] as? String else { continue }
+            nodeTypes[name] = Self.configSpelling(ofKernelType: type)
+        }
+        var providerNodes: [String: [Proxy]] = [:]
+        for (name, value) in kernelProviders {
+            guard let provider = value as? [String: Any],
+                  (provider["vehicleType"] as? String) != "Compatible" else { continue }
+            let nodes = (provider["proxies"] as? [[String: Any]] ?? []).compactMap { node -> Proxy? in
+                guard let nodeName = node["name"] as? String else { return nil }
+                return Proxy(name: nodeName, type: nodeTypes[nodeName]
+                    ?? Self.configSpelling(ofKernelType: node["type"] as? String ?? ""))
+            }
+            providerNodes[name] = nodes
+            for node in nodes where nodeTypes[node.name] == nil { nodeTypes[node.name] = node.type }
+        }
+        for proxy in proxies { nodeTypes[proxy.name] = proxy.type }
+        let groupNames = Set(groups.map(\.name))
+
+        let rebuilt = groups.map { group -> Group in
+            guard let kernel = kernelProxies[group.name] as? [String: Any],
+                  let all = kernel["all"] as? [String] else { return group }
+            let known = Dictionary(group.members.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+            let members = all.map { name in
+                known[name] ?? Member(
+                    name: name,
+                    type: groupNames.contains(name)
+                        ? (self.group(named: name)?.type ?? "")
+                        : (nodeTypes[name] ?? ""),
+                    isGroup: groupNames.contains(name)
+                )
+            }
+             
+             
+             
+             
+             
+             
+             
+            let isAutomatic = group.canBeUnpinned
+            let isManual = ["select", "selector"].contains(group.type.lowercased())
+            let kernelNow = (kernel["now"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            let projected = group.configuredSelection.flatMap { all.contains($0) ? $0 : nil }
+            let selection: String? = group.isSynthesized
+                ? nil
+                : isManual ? (kernelNow ?? projected)
+                : isAutomatic ? projected
+                : nil
+            let icon = (kernel["icon"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? group.icon
+            let fallback = (kernel["emptyFallback"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? group.emptyFallback
+             
+             
+             
+             
+             
+            let defaultSelection: String? = isManual
+                ? (kernelNow ?? group.defaultSelection.flatMap { all.contains($0) ? $0 : nil } ?? all.first)
+                : nil
+            return Group(
+                name: group.name,
+                type: group.type,
+                members: members,
+                configuredSelection: selection,
+                defaultSelection: defaultSelection,
+                emptyFallback: fallback,
+                hidden: (kernel["hidden"] as? Bool) ?? group.hidden,
+                isSynthesized: group.isSynthesized,
+                icon: icon
+            )
+        }
+
+         
+         
+         
+         
+         
+        let builtIns: Set<String> = ["direct", "reject", "reject-drop", "pass", "compatible", "dns"]
+        let groupish = Set(kernelProxies.compactMap { name, value in
+            ((value as? [String: Any])?["all"] != nil) ? name : nil
+        })
+        let kernelInline = Set(kernelProxies.keys.filter { name in
+            !groupish.contains(name) && !builtIns.contains(nodeTypes[name] ?? "")
+        })
+        var seen = Set<String>()
+        var inline: [Proxy] = []
+        for proxy in proxies where kernelInline.contains(proxy.name) && seen.insert(proxy.name).inserted {
+            inline.append(proxy)
+        }
+        for name in kernelInline.sorted() where seen.insert(name).inserted {
+            inline.append(Proxy(name: name, type: nodeTypes[name] ?? ""))
+        }
+        var searchable = inline
+        for provider in providers {
+            for node in providerNodes[provider.name] ?? [] where seen.insert(node.name).inserted {
+                searchable.append(node)
+            }
+        }
+        let referenced = Set(rebuilt.filter { !$0.isSynthesized }.flatMap { $0.members.map(\.name) })
+        return ProxiesOverviewModel(
+            proxies: searchable,
+            groups: rebuilt,
+            providers: providers.map { provider in
+                var provider = provider
+                if let nodes = providerNodes[provider.name] {
+                    provider.nodeCount = nodes.count
+                     
+                    provider.loadFailure = nil
+                }
+                if let failure = providerErrors[provider.name] { provider.loadFailure = failure }
+                return provider
+            },
+            ungrouped: inline.filter { !referenced.contains($0.name) }
+        )
+    }
+
+     
+     
+     
+    static func configSpelling(ofKernelType type: String) -> String {
+        kernelTypeSpellings[type] ?? type.lowercased()
+    }
+
+    private static let kernelTypeSpellings: [String: String] = [
+            "Shadowsocks": "ss", "ShadowsocksR": "ssr", "Socks5": "socks5", "Http": "http",
+            "Vmess": "vmess", "Vless": "vless", "Trojan": "trojan", "Snell": "snell",
+            "Hysteria": "hysteria", "Hysteria2": "hysteria2", "Tuic": "tuic", "WireGuard": "wireguard",
+            "Ssh": "ssh", "AnyTLS": "anytls", "Mieru": "mieru", "Direct": "direct", "Reject": "reject",
+            "RejectDrop": "reject-drop", "Dns": "dns", "Pass": "pass", "Compatible": "compatible",
+            "Selector": "select", "URLTest": "url-test", "Fallback": "fallback",
+            "LoadBalance": "load-balance", "Relay": "relay",
+    ]
+}
+
+extension ProxiesOverviewModel {
+     
+     
+     
+     
+     
+     
+     
+    func resolvedWithKernelCatalog(profileID: String?) -> ProxiesOverviewModel {
+        resolvedWithKernelCatalog(input: OfflineProxyCatalogLoader.input(preferredProfileID: profileID))
+    }
+
+     
+     
+    func resolvedWithKernelCatalog(input: OfflineProxyCatalogInput?) -> ProxiesOverviewModel {
+        guard let input else { return self }
+        do {
+            return applyingKernelCatalog(try OfflineProxyCatalogLoader.catalog(input)) ?? self
+        } catch OfflineProxyCatalogError.refused(let reason) {
+            var model = self
+            model.catalogRefusal = reason
+            return model
+        } catch {
+            var model = self
+            model.catalogUnavailable = true
+            return model
         }
     }
 }

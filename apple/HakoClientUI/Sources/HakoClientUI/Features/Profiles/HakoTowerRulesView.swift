@@ -337,7 +337,7 @@ public struct HakoTowerRuleCustomizationView: View {
         var subRules: [String]?
         if case .object(let fields) = document.topLevelValue("sub-rules") { subRules = fields.map(\.key).sorted() }
         return HakoRulePolicyOptions(
-            groups: draft.groups.map { HakoRulePolicySnapshot(name: $0.name, type: $0.type) },
+            groups: draft.groups.map { HakoRulePolicySnapshot(name: $0.name, type: $0.type, isHidden: $0.isHidden) },
             proxies: nodes, ruleSets: ruleSets, subRuleNames: subRules)
     }
      
@@ -541,7 +541,8 @@ public struct HakoTowerRuleCustomizationView: View {
                 case .local:
                     HakoTowerLocalRuleEditor(
                         value: localSets.first { $0.id == localID },
-                        policy: localID.flatMap { draft.ruleSetPolicy("local-" + $0) } ?? draft.groups.first?.name ?? "DIRECT",
+                        policy: localID.flatMap { draft.ruleSetPolicy("local-" + $0) }
+                            ?? draft.groups.first { !$0.isHidden }?.name ?? "DIRECT",
                         options: policyOptions,
                         palette: palette,
                         buildRule: { accept in ruleEditor(.init(editing: nil, draft: draft, options: policyOptions, showsTarget: false, createGroup: nil)) { raw, _, _ in accept(raw) } },

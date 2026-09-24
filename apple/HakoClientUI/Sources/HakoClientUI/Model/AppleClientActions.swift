@@ -56,7 +56,11 @@ public enum HakoProxiesCommand: Codable, Equatable, Sendable {
     case unpin(group: String)
      
      
-    case testMember(name: String)
+     
+     
+     
+     
+    case testMember(name: String, group: String? = nil)
      
      
      

@@ -182,9 +182,23 @@ public struct HakoConfigurationCreationView: View {
     public var body: some View {
         Group {
             if usesWizard && draft.step == .finish {
+                 
+                 
+                 
+                 
+                 
                 HakoProductRootPage(palette: palette, accessibilityIdentifier: "configuration.create.completion") {
-                    if let error { Text(error).foregroundStyle(.red) }
-                    finishSections
+                    if let error {
+                        Text(error).foregroundStyle(.red)
+                        Button("Try Again") { finish { _ in } }
+                            .disabled(isBusy || !canAdvance)
+                            .accessibilityIdentifier("configuration.create.retry")
+                    } else {
+                        ProgressView().frame(maxWidth: .infinity)
+                    }
+                }
+                .task(id: draft.originalSourceID) {
+                    if error == nil, !isBusy, canAdvance { nameIfUnnamed(); finish { _ in } }
                 }
             } else if draft.step == .sources {
                 sourceList
@@ -485,10 +499,27 @@ public struct HakoConfigurationCreationView: View {
         }
         return "Save"
     }
+     
+     
+     
+     
+    private func nameIfUnnamed() {
+        guard draft.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let fromSource = (draft.newSources.first?.record.label
+            ?? draft.selectedSourceIDs.first.flatMap { id in sources.first { $0.id == id }?.label }
+            ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        draft.label = fromSource.isEmpty ? HakoCopy.string("Profile", locale: locale) : fromSource
+    }
+
     private func advance() {
         guard canAdvance, !isBusy else { return }
-        if usesWizard && draft.step != .finish {
-            draft.step = draft.step == .sources ? .rules : .finish
+        if usesWizard && draft.step == .sources {
+            draft.step = .rules
+        } else if usesWizard && draft.step == .rules {
+             
+             
+            nameIfUnnamed()
+            finish { _ in }
         } else if !usesWizard, !dirty {
              
              

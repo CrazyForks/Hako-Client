@@ -2722,7 +2722,10 @@ private final class HakoMacSceneModel: ObservableObject {
                     var groups: [String] = []
                     if let root = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any],
                        let declared = root["proxy-groups"] as? [[String: Any]] {
-                        groups = declared.compactMap { $0["name"] as? String }
+                         
+                         
+                         
+                        groups = declared.compactMap { $0["hidden"] as? Bool == true ? nil : $0["name"] as? String }
                     }
                     return ConfigurationRuleTargetCandidates.make(
                         groups: groups, sources: [.init(id: "configuration-" + id, label: label, documentJSON: json)]
@@ -4174,6 +4177,7 @@ private final class HakoMacSceneModel: ObservableObject {
             groups: nodes.groups,
             mode: ProxyBrowsingVisibility.Mode(coreValue: outboundMode.rawValue),
             delays: nodes.delays,
+            endpointDelays: nodes.endpointDelays,
             testing: nodes.testingNames,
             isConnected: command.isConnected,
             configuredSelections: menuBarConfiguredSelections
@@ -4200,14 +4204,21 @@ private final class HakoMacSceneModel: ObservableObject {
      
      
      
-    fileprivate func menuBarLatency(delays: [String: Int], testing: Set<String>) -> [String: HakoProxyLatencyState] {
+     
+     
+    fileprivate func menuBarLatency(
+        delays: [String: Int],
+        endpointDelays: [String: [String: Int]],
+        testing: Set<String>
+    ) -> [String: [String: HakoProxyLatencyState]] {
         HakoMacMenuProxyCatalog.make(
             groups: nodes.groups,
             mode: ProxyBrowsingVisibility.Mode(coreValue: outboundMode.rawValue),
             delays: delays,
+            endpointDelays: endpointDelays,
             testing: testing
         ).groups.reduce(into: [:]) { all, group in
-            all.merge(group.latency) { _, new in new }
+            all[group.name] = group.latency
         }
     }
 
@@ -4227,7 +4238,11 @@ private final class HakoMacSceneModel: ObservableObject {
         let route =
             group.resolvedNow.isEmpty ? group.now : group.resolvedNow
         guard !route.isEmpty else { return (nil, nil) }
-        return (route, nodes.delays[route])
+         
+         
+         
+         
+        return (route, nodes.routeDelay(from: group.name))
     }
 
     private var connectionPhase: AppleClientConnectionPhase {
@@ -5524,9 +5539,11 @@ extension HakoMacSceneModel {
              
              
             latency: nodes.$delays
-                .combineLatest(nodes.$testingNames)
-                .map { [weak self] delays, testing in
-                    self?.menuBarLatency(delays: delays, testing: testing) ?? [:]
+                .combineLatest(nodes.$endpointDelays, nodes.$testingNames)
+                .map { [weak self] delays, endpointDelays, testing in
+                    self?.menuBarLatency(
+                        delays: delays, endpointDelays: endpointDelays, testing: testing
+                    ) ?? [:]
                 }
                 .eraseToAnyPublisher(),
             testing: nodes.$isTestingLatency.eraseToAnyPublisher(),

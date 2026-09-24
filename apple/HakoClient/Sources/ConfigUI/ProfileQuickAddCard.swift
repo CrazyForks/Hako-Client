@@ -40,7 +40,7 @@ struct ProfileQuickAddState: Equatable {
         case .link(let url):
             text = url
             pending = input
-        case .document:
+        case .document, .nodes:
             pending = input
         }
     }
@@ -53,6 +53,8 @@ struct ProfileQuickAddState: Equatable {
             phase = .busy(host: URL(string: url)?.host ?? url)
         case let .document(fileName, _):
             phase = .busy(host: fileName)
+        case .nodes:
+            phase = .busy(host: "Custom Nodes")
         case .nodeShareLink, .nothing:
             phase = .idle
         }
@@ -148,18 +150,34 @@ final class ProfileQuickAddController: ObservableObject {
 
     func submitTyped() {
         guard state.canSubmit else { return }
-        state.accept(ProfileQuickAddInput.classify(state.text))
+        state.accept(classify(state.text))
         runPending()
     }
 
     func acceptPasted(_ raw: String) {
-        state.accept(ProfileQuickAddInput.classify(raw))
+        state.accept(classify(raw))
         runPending()
     }
 
     func acceptScanned(_ code: String) {
-        state.accept(ProfileQuickAddInput.classify(code))
+        state.accept(classify(code))
         runPending()
+    }
+
+     
+     
+    func classify(_ raw: String) -> ProfileQuickAddInput {
+        Self.classify(raw, for: target)
+    }
+
+    nonisolated static func classify(_ raw: String, for target: Target) -> ProfileQuickAddInput {
+         
+         
+         
+        if target == .source, case .nodeShareLinks(let links) = PastedContentClassifier.classify(raw) {
+            return .nodes(links.joined(separator: "\n"))
+        }
+        return ProfileQuickAddInput.classify(raw)
     }
 
      

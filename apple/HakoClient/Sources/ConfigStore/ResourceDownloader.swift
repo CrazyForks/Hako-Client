@@ -1,4 +1,5 @@
 import Foundation
+import HakoClientKit
 import HakoClientUI
 
 struct DownloadResult {
@@ -428,6 +429,13 @@ enum ConfigurationFailureClassifier {
             case .unsafePath, .unsafeHeader:
                 return make(.providerMaterialization, context, preservesLastKnownGood)
             }
+        }
+        if let library = error as? ConfigurationLibraryError, case .missingNodes = library {
+             
+             
+             
+            return make(.invalidResponse, context, preservesLastKnownGood,
+                        message: (error as NSError).localizedDescription)
         }
         switch context {
         case .provider:

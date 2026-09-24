@@ -744,7 +744,7 @@ public struct HakoRulesOverviewView<
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if HakoRuleRowLayout.showsTypeLine(payload: rule.payload) {
-                    Text(rule.type)
+                    Text(hako: .verbatim(rule.typeLine(locale: locale)))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -817,6 +817,28 @@ struct HakoRuleBucketLazyPage: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
+        edgeFaded(scroll)
+         
+         
+         
+        .environment(\.hakoPageDrawsOwnCards, true)
+        .accessibilityIdentifier("rules.bucket.\(bucket.target)")
+    }
+
+     
+     
+     
+     
+     
+     
+    private func edgeFaded(_ scroll: some View) -> AnyView {
+        if #available(iOS 26.0, macOS 26.0, tvOS 26.0, *) {
+            return AnyView(scroll.scrollEdgeEffectStyle(.soft, for: .top))
+        }
+        return AnyView(scroll)
+    }
+
+    private var scroll: some View {
         let rows = Array(bucket.rules.prefix(Self.renderedRowCap))
         let lastIndex = rows.count - 1
         return ScrollView {
@@ -894,11 +916,6 @@ struct HakoRuleBucketLazyPage: View {
              
             .padding(.horizontal, HakoTheme.Spacing.standard)
         }
-         
-         
-         
-        .environment(\.hakoPageDrawsOwnCards, true)
-        .accessibilityIdentifier("rules.bucket.\(bucket.target)")
     }
 
      
@@ -940,7 +957,7 @@ struct HakoRuleBucketLazyPage: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if HakoRuleRowLayout.showsTypeLine(payload: rule.payload) {
-                    Text(rule.type)
+                    Text(hako: .verbatim(rule.typeLine(locale: locale)))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -2216,7 +2233,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         _target = State(
             initialValue:
                 parsed?.target
-                ?? options.groups.first?.name
+                ?? options.pickableGroups.first?.name
                 ?? "DIRECT"
         )
         _noResolve = State(initialValue: parsed?.noResolve ?? false)
@@ -3785,8 +3802,8 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
 
     private var filteredGroups: [HakoRulePolicySnapshot] {
         query.isEmpty
-            ? options.groups
-            : options.groups.filter {
+            ? options.pickableGroups
+            : options.pickableGroups.filter {
                 $0.name.localizedCaseInsensitiveContains(query)
             }
     }
@@ -4301,6 +4318,18 @@ private struct HakoRuleCatalogUnavailableView: View {
         }
         .padding(HakoTheme.Spacing.section)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+extension HakoRuleLineSnapshot {
+     
+     
+     
+     
+    func typeLine(locale: Locale) -> String {
+        guard let entryCount else { return type }
+        let format = entryCount == 1 ? "%@ entry" : "%@ entries"
+        return type + " · " + HakoCopy.format(format, locale: locale, HakoCopy.count(entryCount, locale: locale))
     }
 }
 

@@ -49,14 +49,22 @@ public enum HakoMacConfigurationWizardRules {
 
      
      
+     
+     
+     
+     
+     
+     
     public static func suggestedLabel(
         _ draft: ConfigurationCreationDraft,
-        in snapshot: ConfigurationLibrarySnapshot
+        in snapshot: ConfigurationLibrarySnapshot,
+        fallback: String = "Profile"
     ) -> String {
         let typed = draft.label.trimmingCharacters(in: .whitespacesAndNewlines)
         if !typed.isEmpty { return typed }
-        if let first = draft.newSources.first { return first.record.label }
-        return chosenSources(draft, in: snapshot).first?.label ?? ""
+        let fromSource = (draft.newSources.first?.record.label ?? chosenSources(draft, in: snapshot).first?.label ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return fromSource.isEmpty ? fallback : fromSource
     }
 
      
@@ -67,6 +75,25 @@ public enum HakoMacConfigurationWizardRules {
         in snapshot: ConfigurationLibrarySnapshot
     ) -> [ConfigurationSourceRecord] {
         draft.selectedSourceIDs.compactMap { id in snapshot.availableSources.first { $0.id == id } }
+    }
+
+     
+     
+     
+     
+     
+     
+    public static func addSource(_ payload: ConfigurationSourcePayload, to draft: inout ConfigurationCreationDraft) {
+        let isFile: Bool
+        if case .file = payload.record.origin { isFile = true } else { isFile = false }
+        if isFile, draft.selectedSourceIDs.isEmpty, draft.newSources.isEmpty,
+           payload.record.suppliesNodes,
+           payload.record.nodeCount > 0 || payload.record.providerCount > 0,
+           payload.suppliesOwnRouting {
+            draft.useOriginal(payload)
+        } else {
+            draft.add(payload, rule: nil)
+        }
     }
 
      
@@ -146,8 +173,15 @@ public struct HakoMacConfigurationWizardSheet: View {
                 actions: actions.sourceImport,
                 closeTitle: .copy("Back"),
                 accept: { payload in
-                    draft.add(payload, rule: nil)
+                    HakoMacConfigurationWizardRules.addSource(payload, to: &draft)
                     addingSource = false
+                     
+                     
+                     
+                    if draft.originalSourceID != nil {
+                        draft.label = suggestedLabel
+                        save()
+                    }
                 },
                 close: { addingSource = false }
             )
@@ -236,7 +270,7 @@ public struct HakoMacConfigurationWizardSheet: View {
                  
                  
                  
-                primaryTitle: draft.step == .finish ? .copy("Save") : .copy("Next"),
+                primaryTitle: draft.step == .sources ? .copy("Next") : .copy("Save"),
                 primaryIdentifier: "configuration-center.wizard.next",
                 primaryDisabled: !canAdvance,
                 isBusy: busy,
@@ -355,6 +389,9 @@ public struct HakoMacConfigurationWizardSheet: View {
             original.step = .finish
             draft = original
         }
+         
+        draft.label = suggestedLabel
+        if !busy { save() }
     }
 
      
@@ -470,6 +507,14 @@ public struct HakoMacConfigurationWizardSheet: View {
         }
     }
 
+     
+     
+    private var suggestedLabel: String {
+        HakoMacConfigurationWizardRules.suggestedLabel(
+            draft, in: model.snapshot, fallback: HakoCopy.string("Profile", locale: locale)
+        )
+    }
+
     private func advance() {
         guard canAdvance else { return }
         error = nil
@@ -478,8 +523,10 @@ public struct HakoMacConfigurationWizardSheet: View {
             if draft.selectedRuleID == nil { draft.selectedRuleID = ConfigurationBuiltins.basicRuleID }
             draft.step = .rules
         case .rules:
-            draft.label = HakoMacConfigurationWizardRules.suggestedLabel(draft, in: model.snapshot)
-            draft.step = .finish
+            draft.label = suggestedLabel
+             
+             
+            save()
         case .finish:
             save()
         }

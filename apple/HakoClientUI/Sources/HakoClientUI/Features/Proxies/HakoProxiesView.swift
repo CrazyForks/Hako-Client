@@ -1093,6 +1093,9 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
 
     @ViewBuilder
     private var browserSections: some View {
+        if !failedProviders.isEmpty {
+            failedProvidersCard
+        }
         if !browsedGroups.isEmpty {
             groupsCard
         } else if snapshot.proxies.browsingSuppressedByDirectMode {
@@ -1185,6 +1188,54 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
      
     private var headerControlHeight: CGFloat { 32 }
 
+    private var failedProviders: [HakoProxyProviderSnapshot] {
+        snapshot.proxies.providers.filter { $0.loadFailure != nil }
+    }
+
+     
+     
+     
+     
+    private var failedProvidersCard: some View {
+        HakoCardSurface(fill: palette.card, separator: palette.separator) {
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: HakoTheme.Spacing.compact) {
+                    ForEach(failedProviders, id: \.name) { provider in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(verbatim: provider.name)
+                                .font(.subheadline.weight(.semibold))
+                            Text(verbatim: provider.loadFailure ?? "")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .padding(.top, HakoTheme.Spacing.compact)
+            } label: {
+                Label {
+                     
+                    Text(hako: .format(
+                        failedProviders.count == 1
+                            ? "%@ source could not be read: %@"
+                            : "%@ sources could not be read: %@",
+                        [String(failedProviders.count), failedProviders.map(\.name).joined(separator: ", ")]
+                    ))
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                } icon: {
+                    icon(.exclamationmarkTriangle)
+                        .foregroundStyle(.orange)
+                }
+            }
+             
+             
+            .hakoRowDisclosure()
+            .padding(HakoTheme.Spacing.standard)
+        }
+        .accessibilityIdentifier("proxies.providers.failedSummary")
+    }
+
     private var providersTitle: HakoDisplayText {
          
          
@@ -1270,7 +1321,7 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
             detail: "group=\(group.name) members=\(group.members.count)"
         ) {
             group.members.contains {
-                snapshot.proxies.latency(for: $0.name) == .testing
+                snapshot.proxies.latency(for: $0.latencyKey) == .testing
             }
         }
         let selection = visibleSelection(in: group)
@@ -1704,8 +1755,8 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
     ) -> HakoProxyLatencyState? {
         guard let pulse = latencyPulseSnapshot?() else { return nil }
         let name = member.isGroup
-            ? pulse.groupTerminals[member.name]
-            : member.name
+            ? pulse.groupTerminalKeys[member.name] ?? pulse.groupTerminals[member.name]
+            : member.latencyKey
         guard let name else { return nil }
         if let result = pulse.results[name] { return result }
         if pulse.isTesting, pulse.testing.contains(name) { return .testing }
@@ -2480,8 +2531,8 @@ struct HakoProxyMemberCard: View, Equatable {
              
              
             let name = member.isGroup
-                ? batch.groupTerminals[member.name]
-                : member.name
+                ? batch.groupTerminalKeys[member.name] ?? batch.groupTerminals[member.name]
+                : member.latencyKey
             if let name {
                 if !batch.isTesting {
                      
@@ -3387,6 +3438,10 @@ public struct HakoLatencyPulse: Equatable, Sendable {
      
      
     public let groupTerminals: [String: String]
+     
+     
+     
+    public let groupTerminalKeys: [String: String]
     public let completed: Int
     public let total: Int
     public let isTesting: Bool
@@ -3395,6 +3450,7 @@ public struct HakoLatencyPulse: Equatable, Sendable {
         results: [String: HakoProxyLatencyState],
         testing: Set<String>,
         groupTerminals: [String: String] = [:],
+        groupTerminalKeys: [String: String] = [:],
         completed: Int,
         total: Int,
         isTesting: Bool
@@ -3402,6 +3458,7 @@ public struct HakoLatencyPulse: Equatable, Sendable {
         self.results = results
         self.testing = testing
         self.groupTerminals = groupTerminals
+        self.groupTerminalKeys = groupTerminalKeys
         self.completed = completed
         self.total = total
         self.isTesting = isTesting
@@ -3447,7 +3504,7 @@ struct ProxyDerivedIndex: Equatable {
     }
 
     private static func key(_ member: HakoProxyMemberSnapshot) -> String {
-        (member.isGroup ? "g:" : "p:") + member.name
+        (member.isGroup ? "g:" : "p:") + member.latencyKey
     }
 
     func latency(for member: HakoProxyMemberSnapshot) -> HakoProxyLatencyState? {
@@ -3518,6 +3575,9 @@ struct ProxyDerivedIndex: Equatable {
             hasher.combine(group.name)
             for member in group.members {
                 hasher.combine(member.name)
+                 
+                 
+                hasher.combine(member.latencyKey)
             }
         }
         return hasher.finalize()

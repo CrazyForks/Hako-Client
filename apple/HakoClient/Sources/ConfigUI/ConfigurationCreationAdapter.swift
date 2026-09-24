@@ -108,7 +108,11 @@ struct ConfigurationCreationAdapter: View {
                     if firstStepImport != nil { firstStepImport = nil }
                     else { close() }
                 }) { payload in
-                    try Self.applyFirstStepImport(payload, into: &draft, request: firstStepImport)
+                     
+                     
+                    let routed = await Task.detached(priority: .userInitiated) { payload.suppliesOwnRouting }.value
+                    try Self.applyFirstStepImport(payload, into: &draft, request: firstStepImport,
+                                                  suppliesOwnRouting: routed)
                     firstStepImport = nil
                 }
         } else {
@@ -218,17 +222,25 @@ struct ConfigurationCreationAdapter: View {
      
      
      
+     
     static func applyFirstStepImport(_ payload: ConfigurationSourcePayload,
                                      into draft: inout ConfigurationCreationDraft,
-                                     request: FirstStepImport?) throws {
+                                     request: FirstStepImport?,
+                                     suppliesOwnRouting: Bool? = nil) throws {
         if request?.isOriginal == true { draft.useOriginal(payload) }
-        else { try acceptImportedSource(payload, into: &draft, isEditing: false) }
+        else {
+            try acceptImportedSource(payload, into: &draft, isEditing: false,
+                                     suppliesOwnRouting: suppliesOwnRouting)
+        }
     }
 
     static func acceptImportedSource(_ payload: ConfigurationSourcePayload,
-                                     into draft: inout ConfigurationCreationDraft, isEditing: Bool) throws {
+                                     into draft: inout ConfigurationCreationDraft, isEditing: Bool,
+                                     suppliesOwnRouting: Bool? = nil) throws {
         if isEditing { draft.add(payload, rule: nil) }
-        else { try draft.acceptInitialNodeImport(payload) }
+         
+         
+        else { try draft.acceptNewImport(payload, suppliesOwnRouting: suppliesOwnRouting) }
     }
 
     private func accept(_ payload: ConfigurationSourcePayload) {
@@ -1940,6 +1952,7 @@ enum ConfigurationGroupEditorBridge {
         let root = (try? draft.document().foundationValue as? [String: Any]) ?? [:]
         return RulePolicyOptions(groups: draft.groups.map { ($0.name, $0.type) }, proxies: [],
             ruleSets: (root["rule-providers"] as? [String: Any] ?? [:]).keys.sorted(),
+            hiddenGroups: Set(draft.groups.filter(\.isHidden).map(\.name)),
             subRuleNames: (root["sub-rules"] as? [String: Any]).map { $0.keys.sorted() })
     }
     @MainActor static func editor(draft: ConfigurationRuleDraft, groupID: UUID?, locale: Locale, accept: @escaping (OrderedJSON) -> Void) -> some View {

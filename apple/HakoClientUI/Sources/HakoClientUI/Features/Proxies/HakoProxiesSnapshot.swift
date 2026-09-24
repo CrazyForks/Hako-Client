@@ -187,13 +187,20 @@ public struct HakoProxyMemberSnapshot:
      
      
     public let placeholderType: String?
+     
+     
+     
+     
+     
+    public let latencyKey: String
 
     public init(
         name: String,
         type: String,
         isGroup: Bool = false,
         chainedThrough: String? = nil,
-        placeholderType: String? = nil
+        placeholderType: String? = nil,
+        latencyKey: String? = nil
     ) {
          
          
@@ -206,6 +213,22 @@ public struct HakoProxyMemberSnapshot:
         self.isGroup = isGroup
         self.chainedThrough = chainedThrough.map { String($0.prefix(256)) }
         self.placeholderType = placeholderType.map { String($0.prefix(64)) }
+        self.latencyKey = latencyKey ?? name
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case name, type, isGroup, chainedThrough, placeholderType, latencyKey
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        type = try container.decode(String.self, forKey: .type)
+        isGroup = try container.decodeIfPresent(Bool.self, forKey: .isGroup) ?? false
+        chainedThrough = try container.decodeIfPresent(String.self, forKey: .chainedThrough)
+        placeholderType = try container.decodeIfPresent(String.self, forKey: .placeholderType)
+         
+        latencyKey = try container.decodeIfPresent(String.self, forKey: .latencyKey) ?? name
     }
 }
 
@@ -673,7 +696,8 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
     }
 
     public func latency(for name: String) -> HakoProxyLatencyState {
-        latencyByName[name] ?? .untested
+         
+        latencyByName[name] ?? latencyByName[String(name.prefix(256))] ?? .untested
     }
 
     public func members(
@@ -779,9 +803,12 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
          
          
         if isEmptyGroup(member) { return .untested }
-        let direct = latency(for: member.name)
+        let direct = latency(for: member.latencyKey)
         guard let route = resolvedDisplayRoute(for: member) else { return direct }
-        let routed = latency(for: route)
+         
+         
+        let routeKey = member.isGroup ? terminalLatencyKey(from: member.name, route: route) : route
+        let routed = latency(for: routeKey)
          
          
          
@@ -791,6 +818,24 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
          
         if member.isGroup, routed != .untested { return routed }
         return direct == .untested ? routed : direct
+    }
+
+     
+     
+     
+     
+    public func terminalLatencyKey(from groupName: String, route: String) -> String {
+         
+         
+         
+         
+        guard var current = group(named: groupName) else { return route }
+        var visited: Set<String> = [current.name]
+        while let next = current.runtimeSelection ?? current.configuredSelection,
+              let inner = group(named: next), visited.insert(inner.name).inserted {
+            current = inner
+        }
+        return current.members.first { $0.name == route && !$0.isGroup }?.latencyKey ?? route
     }
 
      

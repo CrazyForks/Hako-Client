@@ -412,8 +412,17 @@ final class ConnectionsModel: ObservableObject {
 
      
      
-    func syncScene(isConnected: Bool, isActive: Bool, isBackground: Bool) {
-        if !isConnected || isBackground { stop() }
+     
+     
+     
+     
+     
+     
+    func syncScene(isConnected: Bool, tunnelIsUp: Bool, channelFailed: Bool = false,
+                   isActive: Bool, isBackground: Bool) {
+        if self.tunnelIsUp != tunnelIsUp { self.tunnelIsUp = tunnelIsUp }
+        if self.channelFailed != channelFailed { self.channelFailed = channelFailed }
+        if !isConnected || isBackground { tunnelIsUp ? pause() : stop() }
         else if isActive { start(commandConnected: true) }
     }
 
@@ -430,6 +439,21 @@ final class ConnectionsModel: ObservableObject {
         lastObservation = nil
     }
 
+     
+     
+    @Published private(set) var tunnelIsUp = false
+     
+     
+     
+    @Published private(set) var channelFailed = false
+
+     
+     
+     
+    var isStreaming: Bool { usesStaticFixtureFeed || lease != nil }
+
+     
+     
      
      
      

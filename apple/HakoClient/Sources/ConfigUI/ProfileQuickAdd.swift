@@ -20,6 +20,12 @@ enum ProfileQuickAddInput: Equatable {
     case document(fileName: String, data: Data)
      
     case nodeShareLink
+     
+     
+     
+     
+     
+    case nodes(String)
     case nothing
 
     static let pastedDocumentName = "Configuration.yaml"

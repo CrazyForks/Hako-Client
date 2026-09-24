@@ -39,6 +39,7 @@
 "%@ did not pass configuration validation, so nothing was changed: %@" = "%@ 未通过配置校验，因此未做任何改动：%@";
 "%@ downloads through the app rather than through a node, so the node you named is not used." = "%@ 由 App 下载，不走节点，所以你指定的节点不会被使用。";
 "%@ entries" = "%@ 条";
+"%@ entry" = "%@ 条";
 "%@ failed" = "失败 %@";
 "%@ fields" = "%@ 个字段";
 "%@ files, %@ in total" = "%@ 个文件，共 %@";
@@ -92,7 +93,9 @@
 "%@ saved for the next connection" = "%@ 已保存，下次连接时生效";
 "%@ scripts" = "%@ 个脚本";
 "%@ source" = "%@ 个来源";
+"%@ source could not be read: %@" = "%1$@ 个代理集合读不出：%2$@";
 "%@ sources" = "%@ 个来源";
+"%@ sources could not be read: %@" = "%1$@ 个代理集合读不出：%2$@";
 "%@ staged; applying to tunnel…" = "%@ 已暂存，正在应用到隧道…";
 "%@ synced" = "%@ 已同步";
 "%@ synced · %@ change(s) held back by your settings" = "%@ 已同步 · %@ 项更新被你的设置压住";
@@ -1131,6 +1134,7 @@
 "Enter the proxy server address." = "请输入代理服务器地址。";
 "Enter what this rule matches." = "填写这条规则匹配什么。";
 "Enters through" = "入口经由";
+"Entries: %@" = "条目：%@";
 "Entry" = "入口";
 "Entry Node" = "前置节点";
 "Entry → Exit" = "前置节点 → 出口节点";
@@ -1380,6 +1384,7 @@
 "Hide VPN Icon" = "隐藏 VPN 图标";
 "Hide from list" = "从列表中隐藏";
 "Hide value" = "隐藏值";
+"Hits: %@" = "命中：%@";
 "Home" = "首页";
 "HomeKit Compatibility" = "HomeKit 兼容";
 "Hop" = "中转";
@@ -3037,6 +3042,7 @@
 "The controller runs what your profile asks for: the API listens where you wrote it, and the bundled web UI is served, fetching itself once if the app has not already placed it. Two spellings are not carried over — the Windows named pipe, and the routing mark, which is a Linux socket option Darwin does not define." = "控制器按你的配置运行：API 在你写的地址上监听，内置面板也会提供；若 App 尚未预置面板，它会自行取回一次。两种写法不予沿用——Windows 命名管道，以及 routing mark（那是 Linux 的 socket 选项，Darwin 不定义）。";
 "The copy was not created." = "副本没有创建。";
 "The core accepts this configuration" = "内核接受这份配置";
+"The core cannot read this configuration: %@. Connecting will get the same answer." = "内核无法解析这份配置：%@。连接时会得到同样的结果。";
 "The core clears this cache each time it starts." = "内核每次启动时自行清理这份缓存。";
 "The core did not release this group's pin." = "内核没有释放这个分组的固定。";
 "The core did not return an address." = "内核未返回地址。";
@@ -3079,6 +3085,7 @@
 "The generated runtime was rejected before it could become active." = "生成的运行时在生效前被拒绝。";
 "The generated runtime was rejected: %@" = "生成的运行配置被拒绝：%@";
 "The geo resource could not be downloaded or staged. The existing file was kept." = "Geo 资源无法下载或暂存，已保留现有文件。";
+"The groups cannot be read right now; they appear once you connect." = "分组暂时读不到，连接后会显示。";
 "The handshake timeout cannot be negative." = "握手超时不能是负数。";
 "The implicit GLOBAL group can select an internal hop, so changing that proxy would affect routes outside this relay." = "隐式 GLOBAL 组可能选中链内的中间跳，修改该代理会影响此中继之外的路由。";
 "The inline provider content does not match its provider type." = "inline 集合内容与其类型不匹配。";
@@ -3454,6 +3461,7 @@
 "Unprobed" = "未打点段";
 "Unreadable configuration" = "配置不可读";
 "Unreliable on iOS — the packet tunnel never sets DSCP, so every flow reads as 0: DSCP,0 matches all traffic and any other value never matches." = "在 iOS 上不可靠——隧道从不设置 DSCP，所有流量读到的都是 0：DSCP,0 匹配全部流量，其他取值永不匹配。";
+"Unsaved edits from last time were restored." = "已恢复上次未保存的编辑。";
 "Unsupported" = "不支持的取值";
 "Unsupported by server" = "服务器不支持";
 "Unsupported configuration" = "不支持的配置";

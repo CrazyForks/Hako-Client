@@ -51,6 +51,12 @@ struct ProfileConfigTally: Equatable {
         }
 
         let groups = (root["proxy-groups"] as? [[String: Any]]) ?? []
+         
+         
+         
+         
+         
+        let listedGroupCount = groups.filter { !ProxiesOverviewModel.isHiddenFlag($0["hidden"]) }.count
         let ruleProviders =
             (root["rule-providers"] as? [String: Any]) ?? [:]
         return ProfileConfigTally(
@@ -61,7 +67,7 @@ struct ProfileConfigTally: Equatable {
              
              
              
-            proxyGroups: groups.count
+            proxyGroups: listedGroupCount
                 + (tunnelRunning && !groups.contains { $0["name"] as? String == "GLOBAL" }
                     ? 1 : 0),
             rules: (root["rules"] as? [Any])?.count ?? 0,

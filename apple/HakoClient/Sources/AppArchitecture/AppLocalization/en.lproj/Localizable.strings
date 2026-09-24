@@ -39,6 +39,7 @@
 "%@ did not pass configuration validation, so nothing was changed: %@" = "%@ did not pass configuration validation, so nothing was changed: %@";
 "%@ downloads through the app rather than through a node, so the node you named is not used." = "%@ downloads through the app rather than through a node, so the node you named is not used.";
 "%@ entries" = "%@ entries";
+"%@ entry" = "%@ entry";
 "%@ failed" = "%@ failed";
 "%@ fields" = "%@ fields";
 "%@ files, %@ in total" = "%@ files, %@ in total";
@@ -92,7 +93,9 @@
 "%@ saved for the next connection" = "%@ saved for the next connection";
 "%@ scripts" = "%@ scripts";
 "%@ source" = "%@ source";
+"%@ source could not be read: %@" = "%1$@ source could not be read: %2$@";
 "%@ sources" = "%@ sources";
+"%@ sources could not be read: %@" = "%1$@ sources could not be read: %2$@";
 "%@ staged; applying to tunnel…" = "%@ staged; applying to tunnel…";
 "%@ synced" = "%@ synced";
 "%@ synced · %@ change(s) held back by your settings" = "%@ synced · %@ change(s) held back by your settings";
@@ -1131,6 +1134,7 @@
 "Enter the proxy server address." = "Enter the proxy server address.";
 "Enter what this rule matches." = "Enter what this rule matches.";
 "Enters through" = "Enters through";
+"Entries: %@" = "Entries: %@";
 "Entry" = "Entry";
 "Entry Node" = "Entry Node";
 "Entry → Exit" = "Entry → Exit";
@@ -1380,6 +1384,7 @@
 "Hide VPN Icon" = "Hide VPN Icon";
 "Hide from list" = "Hide from list";
 "Hide value" = "Hide value";
+"Hits: %@" = "Hits: %@";
 "Home" = "Home";
 "HomeKit Compatibility" = "HomeKit Compatibility";
 "Hop" = "Hop";
@@ -3037,6 +3042,7 @@
 "The controller runs what your profile asks for: the API listens where you wrote it, and the bundled web UI is served, fetching itself once if the app has not already placed it. Two spellings are not carried over — the Windows named pipe, and the routing mark, which is a Linux socket option Darwin does not define." = "The controller runs what your profile asks for: the API listens where you wrote it, and the bundled web UI is served, fetching itself once if the app has not already placed it. Two spellings are not carried over — the Windows named pipe, and the routing mark, which is a Linux socket option Darwin does not define.";
 "The copy was not created." = "The copy was not created.";
 "The core accepts this configuration" = "The core accepts this configuration";
+"The core cannot read this configuration: %@. Connecting will get the same answer." = "The core cannot read this configuration: %@. Connecting will get the same answer.";
 "The core clears this cache each time it starts." = "The core clears this cache each time it starts.";
 "The core did not release this group's pin." = "The core did not release this group's pin.";
 "The core did not return an address." = "The core did not return an address.";
@@ -3079,6 +3085,7 @@
 "The generated runtime was rejected before it could become active." = "The generated runtime was rejected before it could become active.";
 "The generated runtime was rejected: %@" = "The generated runtime was rejected: %@";
 "The geo resource could not be downloaded or staged. The existing file was kept." = "The geo resource could not be downloaded or staged. The existing file was kept.";
+"The groups cannot be read right now; they appear once you connect." = "The groups cannot be read right now; they appear once you connect.";
 "The handshake timeout cannot be negative." = "The handshake timeout cannot be negative.";
 "The implicit GLOBAL group can select an internal hop, so changing that proxy would affect routes outside this relay." = "The implicit GLOBAL group can select an internal hop, so changing that proxy would affect routes outside this relay.";
 "The inline provider content does not match its provider type." = "The inline provider content does not match its provider type.";
@@ -3454,6 +3461,7 @@
 "Unprobed" = "Unprobed";
 "Unreadable configuration" = "Unreadable configuration";
 "Unreliable on iOS — the packet tunnel never sets DSCP, so every flow reads as 0: DSCP,0 matches all traffic and any other value never matches." = "Unreliable on iOS — the packet tunnel never sets DSCP, so every flow reads as 0: DSCP,0 matches all traffic and any other value never matches.";
+"Unsaved edits from last time were restored." = "Unsaved edits from last time were restored.";
 "Unsupported" = "Unsupported";
 "Unsupported by server" = "Unsupported by server";
 "Unsupported configuration" = "Unsupported configuration";

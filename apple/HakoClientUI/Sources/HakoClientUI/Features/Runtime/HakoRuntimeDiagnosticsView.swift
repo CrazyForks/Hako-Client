@@ -1,6 +1,41 @@
 import Foundation
 import SwiftUI
 
+ 
+ 
+ 
+ 
+ 
+public struct HakoRuleEntryCounter: Sendable {
+    public enum Kind: Sendable, Hashable {
+        case geoIP
+        case asn
+         
+         
+         
+        case ruleSet
+    }
+
+    public struct Key: Sendable, Hashable {
+        public let kind: Kind
+        public let value: String
+
+        public init(kind: Kind, value: String) {
+            self.kind = kind
+            self.value = value
+        }
+    }
+
+     
+     
+     
+    public let count: @Sendable (Key) async -> Int?
+
+    public init(count: @escaping @Sendable (Key) async -> Int?) {
+        self.count = count
+    }
+}
+
 public struct HakoRuntimeRule:
     Codable,
     Equatable,
@@ -12,18 +47,56 @@ public struct HakoRuntimeRule:
     public let payload: String
     public let target: String
     public let size: Int?
+     
+     
+     
+    public let hitCount: UInt64?
 
     public init(
         type: String,
         payload: String,
         target: String,
-        size: Int? = nil
+        size: Int? = nil,
+        hitCount: UInt64? = nil
     ) {
         self.type = type
         self.payload = payload
         self.target = target
         self.size = size
+        self.hitCount = hitCount
     }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        type = try container.decode(String.self, forKey: .type)
+        payload = try container.decode(String.self, forKey: .payload)
+        target = try container.decode(String.self, forKey: .target)
+        size = try container.decodeIfPresent(Int.self, forKey: .size)
+        hitCount = try container.decodeIfPresent(Extra.self, forKey: .extra)?.hitCount
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type, forKey: .type)
+        try container.encode(payload, forKey: .payload)
+        try container.encode(target, forKey: .target)
+        try container.encodeIfPresent(size, forKey: .size)
+        try container.encodeIfPresent(hitCount.map { Extra(hitCount: $0) }, forKey: .extra)
+    }
+
+    private struct Extra: Codable {
+        let hitCount: UInt64?
+    }
+
+     
+     
+     
+     
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.type == rhs.type && lhs.payload == rhs.payload && lhs.target == rhs.target
+            && lhs.size == rhs.size && lhs.hitCount == rhs.hitCount
+    }
+    public func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
     public var id: String {
         "\(type)|\(payload)|\(target)|\(size.map(String.init) ?? "")"
@@ -31,7 +104,46 @@ public struct HakoRuntimeRule:
 
     public var sizeText: String? {
         guard let size, size >= 0 else { return nil }
+         
+         
+         
+         
+         
+        if size == 0, ["geoip", "srcgeoip"].contains(type.lowercased()) { return nil }
         return "\(size)"
+    }
+
+     
+     
+     
+     
+     
+    public var countedEntryKey: HakoRuleEntryCounter.Key? {
+        let value = payload.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !value.isEmpty else { return nil }
+        switch type.lowercased() {
+        case "geoip", "srcgeoip":
+            guard (size ?? 0) <= 0 else { return nil }
+            return .init(kind: .geoIP, value: value)
+        case "ipasn", "srcipasn":
+            return .init(kind: .asn, value: value)
+        case "ruleset":
+            guard (size ?? 0) <= 0 else { return nil }
+            return .init(kind: .ruleSet, value: payload.trimmingCharacters(in: .whitespacesAndNewlines))
+        default:
+            return nil
+        }
+    }
+
+     
+    public func entryText(counted: [HakoRuleEntryCounter.Key: Int]) -> String? {
+        if let sizeText { return sizeText }
+        guard let key = countedEntryKey, let count = counted[key] else { return nil }
+        return "\(count)"
+    }
+
+    public var hitText: String? {
+        hitCount.map { "\($0)" }
     }
 
     public func matches(_ query: String) -> Bool {
@@ -49,6 +161,7 @@ public struct HakoRuntimeRule:
         case payload
         case target = "proxy"
         case size
+        case extra
     }
 }
 
@@ -80,13 +193,19 @@ public struct HakoActiveRulesView: View {
     private let isConnected: Bool
     private let isRefreshing: Bool
     private let refresh: @MainActor () async -> Void
+    private let entryCounter: HakoRuleEntryCounter?
 
     @State private var query = ""
+     
+    @State private var counted: [HakoRuleEntryCounter.Key: Int] = [:]
+     
+    @State private var asked: Set<HakoRuleEntryCounter.Key> = []
 
     public init(
         rules: [HakoRuntimeRule],
         isConnected: Bool,
         isRefreshing: Bool = false,
+        entryCounter: HakoRuleEntryCounter? = nil,
         refresh: @escaping @MainActor () async -> Void
     ) {
         self.rules = Array(
@@ -94,7 +213,28 @@ public struct HakoActiveRulesView: View {
         )
         self.isConnected = isConnected
         self.isRefreshing = isRefreshing
+        self.entryCounter = entryCounter
         self.refresh = refresh
+    }
+
+     
+     
+     
+     
+    private func countEntries() async {
+        guard let entryCounter else { return }
+        var pending: [HakoRuleEntryCounter.Key] = []
+        var seen = asked
+        for key in rules.lazy.compactMap(\.countedEntryKey) where seen.insert(key).inserted {
+            pending.append(key)
+        }
+        for key in pending {
+            guard !Task.isCancelled else { return }
+            asked.insert(key)
+            if let count = await entryCounter.count(key) {
+                counted[key] = count
+            }
+        }
     }
 
     public var body: some View {
@@ -148,10 +288,21 @@ public struct HakoActiveRulesView: View {
                                 .font(.callout)
                                 .hakoTextSelectionEnabled()
 
-                            if let sizeText = rule.sizeText {
-                                Text("Matched entries: \(sizeText)")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                             
+                             
+                             
+                            let entryText = rule.entryText(counted: counted)
+                            if entryText != nil || rule.hitText != nil {
+                                HStack(spacing: HakoTheme.Spacing.compact) {
+                                    if let entryText {
+                                        Text("Entries: \(entryText)")
+                                    }
+                                    if let hitText = rule.hitText {
+                                        Text("Hits: \(hitText)")
+                                    }
+                                }
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.tertiary)
                             }
                         }
                     }
@@ -163,8 +314,20 @@ public struct HakoActiveRulesView: View {
         .task {
             await refresh()
         }
+         
+         
+         
+         
+         
+        .task(id: rules) {
+            await countEntries()
+        }
         .refreshable {
             await refresh()
+             
+             
+            asked = Set(counted.keys)
+            await countEntries()
         }
         .accessibilityIdentifier("runtime.active-rules.list")
     }

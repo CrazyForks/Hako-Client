@@ -22,7 +22,14 @@ struct RequestsView: View {
         HakoClientUI.HakoRequestsView(
             snapshot: HakoActivityIOSAdapter.snapshot(
                 model: model,
-                isConnected: model.connected
+                 
+                 
+                isConnected: model.connected && model.isStreaming,
+                 
+                 
+                 
+                tunnelIsUp: model.tunnelIsUp,
+                channelFailed: model.channelFailed
             ),
             actions: AppleClientActions(capability: .activity) {
                 action in

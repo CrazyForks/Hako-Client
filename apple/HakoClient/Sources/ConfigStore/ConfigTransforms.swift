@@ -360,6 +360,38 @@ enum ConfigTransforms {
         return names
     }
 
+     
+     
+     
+     
+    static func proxyCatalog(
+        configContent: String,
+        resourceMapJSON: String,
+        selectionsJSON: String
+    ) throws -> String {
+        var error: NSError?
+        guard let box = HakoProxyCatalogForIOS(configContent, resourceMapJSON, selectionsJSON, &error) else {
+            throw error ?? ConfigTransformsError.bridgeReturnedNil("ProxyCatalogForIOS")
+        }
+        return box.value
+    }
+
+     
+     
+     
+     
+    static func ruleProviderCatalog(
+        configContent: String,
+        resourceMapJSON: String,
+        compileRuleSets: Bool
+    ) throws -> String {
+        var error: NSError?
+        guard let box = HakoRuleProviderCatalogForIOS(configContent, resourceMapJSON, compileRuleSets, &error) else {
+            throw error ?? ConfigTransformsError.bridgeReturnedNil("RuleProviderCatalogForIOS")
+        }
+        return box.value
+    }
+
     static func finalize(
         mergedYAML: String,
         providerPaths: [String: String],

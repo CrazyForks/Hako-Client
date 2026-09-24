@@ -8,6 +8,11 @@ struct ProxiesRuntimeFacts {
      
      
      
+    var endpointDelays: [String: [String: Int]] = [:]
+    var defaultDelayTestURL: String = DelayTestSettings.url()
+     
+     
+     
      
     var failureReasons: [String: String] = [:]
     var nowByGroup: [String: String] = [:]
@@ -131,7 +136,7 @@ struct ProxiesOverviewAdapter: View {
      
     private let actionRefusals: [String: String]
      
-    private let testMember: ((String) -> Void)?
+    private let testMember: ((String, String?) -> Void)?
      
     private let editMember: ((String) -> Void)?
     private let inspectMember: ((String) -> Void)?
@@ -166,6 +171,8 @@ struct ProxiesOverviewAdapter: View {
      
      
     @Environment(\.hakoLatencyPulseGate) private var latencyPulseGate
+     
+    @Environment(\.locale) private var locale
 
      
      
@@ -268,6 +275,10 @@ struct ProxiesOverviewAdapter: View {
                 results: accumulatedResults,
                 testing: pulse.testing,
                 groupTerminals: accumulatedGroupTerminals,
+                 
+                 
+                 
+                groupTerminalKeys: pulse.groupTerminalKeys,
                 completed: pulse.completed,
                 total: pulse.total,
                 isTesting: pulse.isTesting
@@ -311,7 +322,7 @@ struct ProxiesOverviewAdapter: View {
         refreshCatalog: (() -> Void)? = nil,
         unpinGroup: ((String) -> Void)? = nil,
         actionRefusals: [String: String] = [:],
-        testMember: ((String) -> Void)? = nil,
+        testMember: ((String, String?) -> Void)? = nil,
         editMember: ((String) -> Void)? = nil,
         inspectMember: ((String) -> Void)? = nil,
         initiallyExpandedGroup: String? = nil,
@@ -516,13 +527,17 @@ struct ProxiesOverviewAdapter: View {
                  
                 pulseHub.send(HakoLatencyPulse(
                     results: batch.results.reduce(into: [:]) { states, entry in
+                         
+                         
+                        let name = entry.key.split(separator: "\u{1F}", maxSplits: 1).last.map(String.init) ?? entry.key
                         states[entry.key] = ProxiesLatencyMapping.state(
                             delay: entry.value,
-                            category: effectiveRuntime.failureReasons[entry.key] ?? ""
+                            category: effectiveRuntime.failureReasons[name] ?? ""
                         )
                     },
                     testing: batch.testing,
                     groupTerminals: batch.groupTerminals,
+                    groupTerminalKeys: batch.groupTerminalKeys,
                     completed: batch.completed,
                     total: batch.total,
                     isTesting: !batch.finished
@@ -580,6 +595,13 @@ struct ProxiesOverviewAdapter: View {
              
             groupTerminals: (connected ?? isConnected)
                 ? (groupTerminals ?? effectiveRuntime.resolvedNowByGroup)
+                : [:],
+             
+             
+             
+            groupTerminalKeys: (connected ?? isConnected)
+                ? NodeInventory.groupTerminalKeys(
+                    groups: effectiveRuntime.catalog, defaultURL: effectiveRuntime.defaultDelayTestURL)
                 : [:],
             completed: latencyCompletedCount,
             total: latencyTotalCount,
@@ -714,12 +736,16 @@ struct ProxiesOverviewAdapter: View {
                         isConnected: isConnected
                     )
                 }
+                let urlByGroup = Dictionary(
+                    effectiveRuntime.catalog.map { ($0.name, $0.testURL) }, uniquingKeysWith: { first, _ in first })
+                let defaultURL = effectiveRuntime.defaultDelayTestURL
                 func snapshot(_ group: ProxiesOverviewModel.Group) -> HakoProxyGroupSnapshot {
                     HakoProxyGroupSnapshot(
                         name: group.name,
                         type: group.type,
                         members: ProxyBrowsingVisibility.members(
-                            projections.members(of: group),
+                            projections.members(of: group, latencyEndpoint: urlByGroup[group.name] ?? nil,
+                                                defaultURL: defaultURL),
                             of: group.name,
                             mode: outboundMode,
                             name: \.name
@@ -842,6 +868,21 @@ struct ProxiesOverviewAdapter: View {
                     initiallyExpandedGroup,
                 rememberedExpandedGroups: rememberedExpandedGroups,
                 displayPreferences: preferences,
+                 
+                 
+                 
+                catalogState: isConnected
+                    ? nil
+                    : sourceModel.catalogRefusal.map {
+                        .failed(message: HakoCopy.format(
+                            "The core cannot read this configuration: %@. Connecting will get the same answer.",
+                            locale: locale, $0))
+                    }
+                    ?? (sourceModel.catalogUnavailable
+                        ? .failed(message: HakoCopy.string(
+                            "The groups cannot be read right now; they appear once you connect.",
+                            locale: locale))
+                        : nil),
                 canRefreshCatalog: refreshCatalog != nil,
                  
                  
@@ -869,8 +910,22 @@ struct ProxiesOverviewAdapter: View {
                 category: effectiveRuntime.failureReasons[name] ?? ""
             )
         }
+         
+         
+         
+        values.merge(projections.endpointLatencyStates(
+            effectiveRuntime.endpointDelays,
+            namedURLs: Set(effectiveRuntime.catalog.compactMap(\.testURL)),
+            failureReasons: effectiveRuntime.failureReasons,
+            defaultURL: effectiveRuntime.defaultDelayTestURL
+        )) { _, keyed in keyed }
+        let namedURLs = Set(effectiveRuntime.catalog.compactMap(\.testURL))
         for name in testingNames {
             values[name] = .testing
+             
+            for url in namedURLs {
+                values[NodeInventory.latencyKey(name, endpoint: url, defaultURL: effectiveRuntime.defaultDelayTestURL)] = .testing
+            }
         }
         return values
     }
@@ -893,8 +948,8 @@ struct ProxiesOverviewAdapter: View {
                 requestTestAll()
             case .testGroup(let name):
                 testGroup?(name)
-            case .testMember(let name):
-                testMember?(name)
+            case .testMember(let name, let group):
+                testMember?(name, group)
             case .editMember(let name):
                 editMember?(name)
             case .inspectMember(let name):

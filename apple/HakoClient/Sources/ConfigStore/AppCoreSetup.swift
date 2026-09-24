@@ -53,6 +53,16 @@ enum AppCoreSetup {
 
      
      
+     
+     
+    static func ensureForReaders() -> Bool {
+        if serialized({ containerForApplication != nil }) { return true }
+        guard let container = HakoAppIdentifiers.appGroupContainer else { return false }
+        return (try? ensure(container: container)) != nil
+    }
+
+     
+     
     static func ensure(container: URL, settings: IPStackSettings? = nil, memoryLimit: Int64 = 0) throws {
         try withConfiguration(container: container, settings: settings, memoryLimit: memoryLimit) {
             containerForApplication = container

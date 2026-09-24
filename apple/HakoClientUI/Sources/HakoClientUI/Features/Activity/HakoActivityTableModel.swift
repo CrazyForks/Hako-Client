@@ -108,15 +108,7 @@ extension HakoActivityTableRow {
     public var ruleKind: String { Self.configSpelling(connection.rule) }
 
     static func configSpelling(_ kernel: String) -> String {
-        let known: [String: String] = [
-            "GeoIP": "GEOIP", "GeoSite": "GEOSITE", "SrcGeoIP": "SRC-GEOIP",
-            "IPCIDR": "IP-CIDR", "IPCIDR6": "IP-CIDR6", "SrcIPCIDR": "SRC-IP-CIDR",
-            "IPASN": "IP-ASN", "SrcIPASN": "SRC-IP-ASN",
-            "IPSuffix": "IP-SUFFIX", "SrcIPSuffix": "SRC-IP-SUFFIX",
-            "Process": "PROCESS-NAME", "ProcessPath": "PROCESS-PATH",
-            "RuleSet": "RULE-SET", "Match": "MATCH", "DSCP": "DSCP",
-        ]
-        if let spelled = known[kernel] { return spelled }
+        if let spelled = knownSpellings[kernel] { return spelled }
          
          
         if kernel.contains("-") || kernel.contains(",") || kernel == kernel.uppercased() {
@@ -129,6 +121,16 @@ extension HakoActivityTableRow {
         }
         return out.uppercased()
     }
+
+     
+    private static let knownSpellings: [String: String] = [
+        "GeoIP": "GEOIP", "GeoSite": "GEOSITE", "SrcGeoIP": "SRC-GEOIP",
+        "IPCIDR": "IP-CIDR", "IPCIDR6": "IP-CIDR6", "SrcIPCIDR": "SRC-IP-CIDR",
+        "IPASN": "IP-ASN", "SrcIPASN": "SRC-IP-ASN",
+        "IPSuffix": "IP-SUFFIX", "SrcIPSuffix": "SRC-IP-SUFFIX",
+        "Process": "PROCESS-NAME", "ProcessPath": "PROCESS-PATH",
+        "RuleSet": "RULE-SET", "Match": "MATCH", "DSCP": "DSCP",
+    ]
 }
 
 public enum HakoActivityTrafficProtocol: Equatable, Sendable {

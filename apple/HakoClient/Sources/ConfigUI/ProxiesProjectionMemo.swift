@@ -70,14 +70,46 @@ final class ProxiesProjectionMemo {
      
      
     private var memberRowsByGroup:
-        [String: (members: [ProxiesOverviewModel.Member], rows: [HakoProxyMemberSnapshot])] = [:]
+        [String: (members: [ProxiesOverviewModel.Member], endpoint: String?, rows: [HakoProxyMemberSnapshot])] = [:]
     private(set) var memberBuilds = 0
 
+    private var endpointStates: (input: [String: [String: Int]], namedURLs: Set<String>,
+                                 reasons: [String: String], defaultURL: String,
+                                 output: [String: HakoProxyLatencyState])?
+
+     
+     
+     
+    func endpointLatencyStates(
+        _ endpointDelays: [String: [String: Int]],
+        namedURLs: Set<String>,
+        failureReasons: [String: String],
+        defaultURL: String
+    ) -> [String: HakoProxyLatencyState] {
+        if let kept = endpointStates, kept.defaultURL == defaultURL, kept.namedURLs == namedURLs,
+           kept.reasons == failureReasons, kept.input == endpointDelays {
+            return kept.output
+        }
+        var output: [String: HakoProxyLatencyState] = [:]
+        for (url, readings) in endpointDelays where namedURLs.contains(url) {
+            let prefix = NodeInventory.latencyKey("", endpoint: url, defaultURL: defaultURL)
+            for (name, value) in readings {
+                output[prefix + name] = ProxiesLatencyMapping.state(
+                    delay: value, category: failureReasons[name] ?? "")
+            }
+        }
+        endpointStates = (endpointDelays, namedURLs, failureReasons, defaultURL, output)
+        return output
+    }
+
     func members(
-        of group: ProxiesOverviewModel.Group
+        of group: ProxiesOverviewModel.Group,
+        latencyEndpoint: String? = nil,
+        defaultURL: String = ""
     ) -> [HakoProxyMemberSnapshot] {
+        let endpoint = latencyEndpoint
         if let kept = memberRowsByGroup[group.name],
-           kept.members == group.members {
+           kept.members == group.members, kept.endpoint == endpoint {
             return kept.rows
         }
         memberBuilds += 1
@@ -87,10 +119,12 @@ final class ProxiesProjectionMemo {
                 type: $0.type,
                 isGroup: $0.isGroup,
                 chainedThrough: $0.chainedThrough,
-                placeholderType: $0.placeholderType
+                placeholderType: $0.placeholderType,
+                latencyKey: $0.isGroup ? nil
+                    : NodeInventory.latencyKey($0.name, endpoint: endpoint, defaultURL: defaultURL)
             )
         }
-        memberRowsByGroup[group.name] = (group.members, rows)
+        memberRowsByGroup[group.name] = (group.members, endpoint, rows)
         return rows
     }
 

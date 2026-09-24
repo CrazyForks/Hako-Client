@@ -63,6 +63,14 @@ public struct ConfigurationRuleDraft: Equatable, Sendable {
         public init(id: UUID = UUID(), document: OrderedJSON) { self.id = id; self.document = document }
         public var name: String { if case .string(let value) = document.topLevelValue("name") { return value }; return "" }
         public var type: String { if case .string(let value) = document.topLevelValue("type") { return value }; return "" }
+         
+        public var isHidden: Bool {
+            switch document.topLevelValue("hidden") {
+            case .scalar(let value): return value == "true"
+            case .string(let value): return value.lowercased() == "true"
+            default: return false
+            }
+        }
     }
     public private(set) var groups: [Group]
     private var additionalDocument: OrderedJSON

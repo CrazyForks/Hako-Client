@@ -34,10 +34,17 @@ enum PastedContentClassifier {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return .empty }
 
+         
+         
+         
+         
+        if let inner = shadowrocketAddTarget(trimmed) {
+            return classify(inner)
+        }
         if let inner = installLinkTarget(trimmed) {
             return .link(url: inner, unwrapped: .installLink)
         }
-        if let inner = subSchemeTarget(trimmed) {
+        if !trimmed.contains(where: \.isNewline), let inner = subSchemeTarget(trimmed) {
              
              
              
@@ -98,9 +105,26 @@ enum PastedContentClassifier {
         return target
     }
 
+    private static func shadowrocketAddTarget(_ text: String) -> String? {
+        let prefix = "shadowrocket://add/"
+        guard text.lowercased().hasPrefix(prefix) else { return nil }
+        let rest = String(text.dropFirst(prefix.count))
+         
+        let inner = rest.contains("://") ? rest : (rest.removingPercentEncoding ?? rest)
+        return inner.isEmpty || shadowrocketAddTarget(inner) != nil ? nil : inner
+    }
+
     private static func subSchemeTarget(_ text: String) -> String? {
         guard scheme(of: text) == "sub" else { return nil }
-        let payload = String(text.dropFirst("sub://".count))
+         
+         
+         
+         
+         
+         
+        var payload = String(text.dropFirst("sub://".count)
+            .prefix { $0 != "#" && $0 != "?" && !$0.isWhitespace })
+        if payload.contains("%") { payload = payload.removingPercentEncoding ?? payload }
          
         var padded = payload
             .replacingOccurrences(of: "-", with: "+")
@@ -112,6 +136,41 @@ enum PastedContentClassifier {
         return inner.isEmpty ? nil : inner
     }
 
+     
+     
+     
+     
+    static func isShadowrocketProxyLink(_ line: String) -> Bool {
+        guard let scheme = scheme(of: line), scheme == "http" || scheme == "https" else { return false }
+         
+         
+         
+        let rest = String(line.dropFirst(scheme.count + 3).prefix { $0 != "?" && $0 != "#" })
+        guard rest.count >= 8, !rest.contains("."), let decoded = base64Body(rest) else { return false }
+         
+         
+         
+         
+         
+         
+        let endpoint = #"^(\[[0-9A-Fa-f:.]+\]|[^\s@:/?#\[\]]+):[0-9]{1,5}([-,][0-9]{1,5})*($|[/?#])"#
+        func isEndpoint(_ text: Substring) -> Bool {
+            guard let range = text.range(of: endpoint, options: .regularExpression) else { return false }
+            var match = text[range]
+            if let last = match.last, "/?#".contains(last) { match = match.dropLast() }
+            guard let colon = match.lastIndex(of: ":"),
+                  let port = Int(match[match.index(after: colon)...].prefix(while: \.isNumber)) else { return false }
+            return (1...65535).contains(port)
+        }
+        var index = decoded.startIndex
+        while let at = decoded[index...].firstIndex(of: "@") {
+            if at > decoded.startIndex, isEndpoint(decoded[decoded.index(after: at)...]) { return true }
+            index = decoded.index(after: at)
+        }
+        let title = decoded.firstIndex(of: "#") ?? decoded.endIndex
+        return !decoded[..<title].contains("@") && isEndpoint(decoded[...])
+    }
+
     private static func nodeShareLinks(_ text: String) -> [String]? {
         let lines = text
             .split(whereSeparator: \.isNewline)
@@ -120,7 +179,7 @@ enum PastedContentClassifier {
         guard !lines.isEmpty else { return nil }
         guard lines.allSatisfy({ line in
             guard let scheme = scheme(of: line) else { return false }
-            return nodeSchemes.contains(scheme)
+            return nodeSchemes.contains(scheme) || isShadowrocketProxyLink(line)
         }) else { return nil }
         return lines
     }

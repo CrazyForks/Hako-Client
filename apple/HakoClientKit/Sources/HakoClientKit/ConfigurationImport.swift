@@ -1,6 +1,50 @@
 import Foundation
 
+public extension ConfigurationSourcePayload {
+     
+     
+     
+     
+    var suppliesOwnRouting: Bool {
+        guard let document = try? OrderedJSON.parse(documentJSON),
+              case .array(let rules) = document.topLevelValue("rules") else { return false }
+        return rules.contains { rule in
+            guard case .string(let line) = rule else { return false }
+            let type = line.split(separator: ",", maxSplits: 1).first
+                .map { $0.trimmingCharacters(in: .whitespaces).uppercased() } ?? ""
+            return !type.isEmpty && type != "MATCH"
+        }
+    }
+}
+
 public extension ConfigurationCreationDraft {
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    mutating func acceptNewImport(_ payload: ConfigurationSourcePayload,
+                                  suppliesOwnRouting: Bool? = nil) throws {
+        guard payload.record.suppliesNodes,
+              payload.record.nodeCount > 0 || payload.record.providerCount > 0 else {
+            throw ConfigurationLibraryError.missingNodes
+        }
+        let isEmpty = selectedSourceIDs.isEmpty && newSources.isEmpty
+        let isFile: Bool = { if case .file = payload.record.origin { return true }; return false }()
+        if isEmpty, isFile, suppliesOwnRouting ?? payload.suppliesOwnRouting { useOriginal(payload) }
+        else { try acceptInitialNodeImport(payload) }
+    }
+
      
      
     mutating func useOriginal(_ payload: ConfigurationSourcePayload) {

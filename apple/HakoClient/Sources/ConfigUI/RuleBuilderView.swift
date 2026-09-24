@@ -9,6 +9,9 @@ struct RulePolicyOptions {
     let ruleSets: [String]
      
      
+    var hiddenGroups: Set<String> = []
+     
+     
      
      
     var domainRuleSets: [String] = []
@@ -36,6 +39,7 @@ struct RulePolicyOptions {
                 ($0.name, $0.type)
             },
             ruleSets: rulesModel.ruleSets.map(\.name),
+            hiddenGroups: Set(proxiesModel.groups.filter(\.hidden).map(\.name)),
             domainRuleSets: rulesModel.ruleSets
                 .filter { $0.behavior != "ipcidr" }
                 .map(\.name),
@@ -59,6 +63,7 @@ struct RulePolicyOptions {
             groups: groups + fresh,
             proxies: proxies,
             ruleSets: ruleSets,
+            hiddenGroups: hiddenGroups,
             domainRuleSets: domainRuleSets,
             subRuleNames: subRuleNames
         )
@@ -84,7 +89,8 @@ struct RulePolicyOptions {
             groups: groups.map {
                 HakoRulePolicySnapshot(
                     name: $0.name,
-                    type: $0.type
+                    type: $0.type,
+                    isHidden: hiddenGroups.contains($0.name)
                 )
             },
             proxies: proxies.map {
@@ -110,6 +116,7 @@ extension RulePolicyOptions {
             groups: shared.groups.map { ($0.name, $0.type) },
             proxies: shared.proxies.map { ($0.name, $0.type) },
             ruleSets: shared.ruleSets,
+            hiddenGroups: Set(shared.groups.filter(\.isHidden).map(\.name)),
             subRuleNames: shared.subRuleNames
         )
     }

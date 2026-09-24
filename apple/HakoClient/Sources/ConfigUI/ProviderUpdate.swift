@@ -27,6 +27,10 @@ struct ProxyProviderRuntime: Equatable {
          
          
         var measuredAt: Date?
+         
+         
+         
+        var delaysByURL: [String: Int] = [:]
 
         var id: String { name }
     }
@@ -115,6 +119,13 @@ enum ProviderRuntimeCatalogParser {
         let type: String?
         let alive: Bool?
         let history: [DelayPayload]?
+        let extra: [String: ProxyStatePayload]?
+    }
+
+     
+    private struct ProxyStatePayload: Decodable {
+        let alive: Bool?
+        let history: [DelayPayload]?
     }
 
     private struct DelayPayload: Decodable {
@@ -200,7 +211,13 @@ enum ProviderRuntimeCatalogParser {
                 type: proxy.type,
                 alive: proxy.alive,
                 latestDelayMilliseconds: delay,
-                measuredAt: proxy.history?.last.flatMap { parseDate($0.time) }
+                measuredAt: proxy.history?.last.flatMap { parseDate($0.time) },
+                delaysByURL: (proxy.extra ?? [:]).reduce(into: [:]) { table, entry in
+                    if let reading = NodeInventory.reading(
+                        delays: entry.value.history?.compactMap(\.delay) ?? [], alive: entry.value.alive) {
+                        table[entry.key] = reading
+                    }
+                }
             )
         }
         return ProxyProviderRuntime(

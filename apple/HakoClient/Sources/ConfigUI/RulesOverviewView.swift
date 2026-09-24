@@ -1,4 +1,5 @@
 import Foundation
+import Hako
 import HakoClientUI
 import SwiftUI
 
@@ -182,7 +183,8 @@ struct RulesOverviewAdapter<ActiveRules: View>: View {
                     sourceYAML: yaml,
                     canInspectActiveRules: canInspect,
                     wantsJumpableTargets: wantsJumpableTargets,
-                    compileVerdicts: verdicts
+                    compileVerdicts: verdicts,
+                    countEntries: RuleEntryCounts.app(sourceYAML: yaml)
                 )
             }.value
             HakoPerf.span(
@@ -265,9 +267,18 @@ enum RulesOverviewSnapshotBuilder {
          
          
          
-        compileVerdicts: ProviderCompileVerdicts = ProviderCompileVerdicts()
+        compileVerdicts: ProviderCompileVerdicts = ProviderCompileVerdicts(),
+         
+         
+         
+        countEntries: ((RuleEntryCounts.Key) -> Int?)? = nil
     ) -> AppleClientSnapshot {
         let model = RulesOverviewModel.make(sourceYAML: sourceYAML)
+        var counts = RuleEntryCounts(count: countEntries)
+        let ruleSetCounts = compileVerdicts.entryCounts
+        let sharedRule = { (rule: ParsedRule) in
+            Self.sharedRule(rule, counts: &counts, ruleSetCounts: ruleSetCounts)
+        }
         let jumpable: Set<String>
         if wantsJumpableTargets {
             let knownGroups = Set(
@@ -340,14 +351,102 @@ enum RulesOverviewSnapshotBuilder {
     }
 
     private static func sharedRule(
-        _ rule: ParsedRule
+        _ rule: ParsedRule,
+        counts: inout RuleEntryCounts,
+        ruleSetCounts: [String: Int]
     ) -> HakoRuleLineSnapshot {
-        HakoRuleLineSnapshot(
+         
+         
+        let entryCount = rule.typeUppercased == "RULE-SET"
+            ? ruleSetCounts[rule.payload]
+            : counts.entries(of: rule)
+        return HakoRuleLineSnapshot(
             raw: rule.raw,
             type: rule.type,
             payload: rule.payload,
-            target: rule.target
+            target: rule.target,
+            entryCount: entryCount
         )
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+struct RuleEntryCounts {
+    enum Kind: Hashable {
+        case geoIP
+        case geoSite
+        case asn
+    }
+
+    struct Key: Hashable {
+        let kind: Kind
+        let value: String
+    }
+
+    private let count: ((Key) -> Int?)?
+    private var answered: [Key: Int?] = [:]
+
+    init(count: ((Key) -> Int?)?) {
+        self.count = count
+    }
+
+    static func key(of rule: ParsedRule) -> Key? {
+        let kind: Kind
+        switch rule.typeUppercased {
+        case "GEOIP", "SRC-GEOIP": kind = .geoIP
+        case "GEOSITE": kind = .geoSite
+        case "IP-ASN", "SRC-IP-ASN": kind = .asn
+        default: return nil
+        }
+        let value = rule.payload.lowercased()
+        return value.isEmpty ? nil : Key(kind: kind, value: value)
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static func app(sourceYAML: String?) -> (Key) -> Int? {
+         
+         
+        let geodataMode = sourceYAML
+            .flatMap { ConfigTransforms.parsedRoot(forYAML: $0)?.root["geodata-mode"] as? Bool } == true
+        return { key in
+             
+             
+             
+             
+            guard AppCoreSetup.ensureForReaders() else { return nil }
+            switch key.kind {
+            case .geoIP:
+                return geodataMode ? HakoGeoIPDatEntryCount(key.value) : HakoGeoIPNetworkCount(key.value)
+            case .geoSite:
+                return HakoGeoSiteDomainCount(key.value)
+            case .asn:
+                return HakoASNNetworkCount(key.value)
+            }
+        }
+    }
+
+    mutating func entries(of rule: ParsedRule) -> Int? {
+        guard let count, let key = Self.key(of: rule) else { return nil }
+        if let known = answered[key] { return known }
+        let answer = count(key).flatMap { $0 >= 0 ? $0 : nil }
+        answered[key] = answer
+        return answer
     }
 }
 

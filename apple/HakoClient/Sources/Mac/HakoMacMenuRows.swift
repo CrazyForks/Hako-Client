@@ -314,6 +314,9 @@ final class HakoMacProxySubmenuController: NSObject, NSMenuDelegate {
     private(set) var rows: [String: HakoMacMenuRowModel] = [:]
     private(set) var testRow: HakoMacMenuRowModel?
 
+     
+    var groupName: String? { group()?.name }
+
     init(
         group: @escaping () -> HakoMacMenuProxyCatalog.Group?,
         actions: HakoMacStatusMenuActions,

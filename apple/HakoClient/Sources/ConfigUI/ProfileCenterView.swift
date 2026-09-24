@@ -1026,23 +1026,7 @@ struct ProfileCenterAdapter: View {
     }
 
     private func consume(_ request: ProfileImportRequest) {
-        switch request {
-        case .subscription(let subscription):
-            model.installSubscription(subscription)
-        case let .configuration(fileName, yaml):
-            let label = URL(fileURLWithPath: fileName)
-                .deletingPathExtension()
-                .lastPathComponent
-            model.add(
-                label:
-                    label.isEmpty
-                        ? "Imported Profile"
-                        : label,
-                source: .file(fileName),
-                rawYAML: yaml
-            )
-        }
-        model.selectSoleProfileIfNeeded()
+        model.consume(request)
     }
 
     private var activeRevisionKey: String {

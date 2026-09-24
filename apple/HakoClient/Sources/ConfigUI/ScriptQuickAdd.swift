@@ -60,7 +60,7 @@ enum ScriptQuickAdd {
                 : (fileName as NSString).deletingPathExtension
             return try ScriptAddOutcome.save(label: name, body: text, in: library)
 
-        case .nodeShareLink, .nothing:
+        case .nodeShareLink, .nodes, .nothing:
             throw ScriptImportError.notAnAddress
         }
     }

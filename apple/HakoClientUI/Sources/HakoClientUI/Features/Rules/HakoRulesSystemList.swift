@@ -21,6 +21,11 @@ struct HakoRuleFrozenRow: Equatable, Hashable, Identifiable {
     let type: String
     let payload: String
     let target: String
+     
+     
+     
+     
+    let entryCount: Int?
     var id: String { raw }
 
     init(_ rule: HakoRuleLineSnapshot) {
@@ -28,6 +33,12 @@ struct HakoRuleFrozenRow: Equatable, Hashable, Identifiable {
         type = rule.type
         payload = rule.payload
         target = rule.target
+        entryCount = rule.entryCount
+    }
+
+    func typeLine(locale: Locale) -> String {
+        HakoRuleLineSnapshot(raw: raw, type: type, payload: payload, target: target, entryCount: entryCount)
+            .typeLine(locale: locale)
     }
 }
 
@@ -204,6 +215,7 @@ struct HakoRuleListRow: View, Equatable {
 
     let row: HakoRuleFrozenRow
     let palette: HakoProductPalette
+    @Environment(\.locale) private var locale
 
     var body: some View {
         let _ = HakoPerf.count("rules.list.row")
@@ -214,7 +226,8 @@ struct HakoRuleListRow: View, Equatable {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if HakoRuleRowLayout.showsTypeLine(payload: row.payload) {
-                    Text(row.type)
+                     
+                    Text(hako: .verbatim(row.typeLine(locale: locale)))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

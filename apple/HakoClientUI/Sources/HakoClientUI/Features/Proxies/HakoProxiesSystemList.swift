@@ -245,7 +245,7 @@ struct HakoProxiesSystemList<Icon: View>: View {
                     : nil,
                 testNode: member.isGroup
                     ? nil
-                    : { send(.testMember(name: member.name)) },
+                    : { send(.testMember(name: member.name, group: group.name)) },
                 inspectNode: HakoProxyBrowsing.inspects(member)
                     ? { send(.inspectMember(name: member.name)) }
                     : nil,
@@ -446,6 +446,11 @@ struct HakoProxyFrozenRow: Equatable, Identifiable {
      
      
     var placeholderType: String? = nil
+     
+     
+     
+     
+    var readingKey: String? = nil
 }
 
 extension HakoProxyFrozenRow {
@@ -481,7 +486,8 @@ extension HakoProxyFrozenRow {
             chainedThrough: member.chainedThrough,
             groupName: group.name,
             isEmptyGroup: proxies.isEmptyGroup(member),
-            placeholderType: member.placeholderType
+            placeholderType: member.placeholderType,
+            readingKey: member.isGroup ? nil : member.latencyKey
         )
     }
 }
@@ -676,15 +682,22 @@ struct HakoProxyMemberListRow: View, Equatable {
          
          
         let latencyKey = shownRoute ?? row.name
+         
+         
+        let lookupKey = shownRoute == nil
+            ? row.readingKey ?? latencyKey
+            : shownRoute == batch.groupTerminals[row.name]
+                ? batch.groupTerminalKeys[row.name] ?? latencyKey
+                : latencyKey
         if !batch.isTesting {
-            if let landed = batch.results[latencyKey] {
+            if let landed = batch.results[lookupKey] {
                 liveLatency = landed
             } else if liveLatency == .testing {
                 liveLatency = .untested
             }
-        } else if let landed = batch.results[latencyKey] {
+        } else if let landed = batch.results[lookupKey] {
             liveLatency = landed
-        } else if batch.testing.contains(latencyKey) {
+        } else if batch.testing.contains(lookupKey) {
             liveLatency = .testing
         }
     }

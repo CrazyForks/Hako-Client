@@ -236,6 +236,41 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
     let fixedItems: [ProfileFinalConfigurationDisclosure]
     let unsupportedItems: [ProfileFinalConfigurationDisclosure]
     let adaptedItems: [ProfileFinalConfigurationDisclosure]
+     
+     
+     
+     
+     
+    let sourceFingerprint: Int
+    let effectiveFingerprint: Int
+
+    init(
+        sourceText: String?,
+        effectiveText: String?,
+        fixedItems: [ProfileFinalConfigurationDisclosure],
+        unsupportedItems: [ProfileFinalConfigurationDisclosure],
+        adaptedItems: [ProfileFinalConfigurationDisclosure]
+    ) {
+        self.sourceText = sourceText
+        self.effectiveText = effectiveText
+        self.fixedItems = fixedItems
+        self.unsupportedItems = unsupportedItems
+        self.adaptedItems = adaptedItems
+        sourceFingerprint = sourceText?.hashValue ?? 0
+        effectiveFingerprint = effectiveText?.hashValue ?? 0
+    }
+
+     
+     
+    static func textOnly(sourceYAML: String?, effectiveYAML: String?) -> ProfileFinalConfigurationSnapshot {
+        ProfileFinalConfigurationSnapshot(
+            sourceText: presentedText(sourceYAML),
+            effectiveText: presentedText(effectiveYAML),
+            fixedItems: [],
+            unsupportedItems: [],
+            adaptedItems: []
+        )
+    }
 
      
      

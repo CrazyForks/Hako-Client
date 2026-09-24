@@ -11,6 +11,10 @@ public struct HakoRuleLineSnapshot:
     public let type: String
     public let payload: String
     public let target: String
+     
+     
+     
+    public let entryCount: Int?
 
     public var id: String { raw }
 
@@ -18,12 +22,14 @@ public struct HakoRuleLineSnapshot:
         raw: String,
         type: String,
         payload: String,
-        target: String
+        target: String,
+        entryCount: Int? = nil
     ) {
         self.raw = String(raw.prefix(8_192))
         self.type = String(type.prefix(128))
         self.payload = String(payload.prefix(4_096))
         self.target = String(target.prefix(256))
+        self.entryCount = entryCount
     }
 }
 
@@ -159,15 +165,26 @@ public struct HakoRulePolicySnapshot:
 {
     public let name: String
     public let type: String
+     
+     
+     
+     
+    public var isHidden: Bool = false
 
     public var id: String { name }
 
-    public init(name: String, type: String) {
+    public init(name: String, type: String, isHidden: Bool = false) {
          
          
          
         self.name = name
         self.type = String(type.prefix(128))
+        self.isHidden = isHidden
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case type
     }
 }
 
@@ -183,6 +200,11 @@ public struct HakoRulePolicyOptions:
      
      
     public let subRuleNames: [String]?
+
+     
+    public var pickableGroups: [HakoRulePolicySnapshot] {
+        groups.filter { !$0.isHidden }
+    }
 
     public init(
         groups: [HakoRulePolicySnapshot] = [],

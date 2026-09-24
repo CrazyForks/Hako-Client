@@ -440,6 +440,17 @@ enum NativeProviderSideUpdateDispatcher {
 @MainActor
 final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
     @Published private(set) var isConnected = false
+     
+     
+     
+     
+     
+    @Published private(set) var tunnelIsUp = false
+     
+     
+     
+     
+    @Published private(set) var channelAttachFailed = false
     @Published private(set) var lastError = ""
     @Published private(set) var traffic = ClashTrafficSnapshot() {
         didSet { HakoPerf.count("pub.cmd.traffic") }
@@ -664,6 +675,8 @@ return
     func sync(vpnStatus: String) {
         let normalized = vpnStatus.lowercased()
         let shouldConnect = normalized == "connected" || normalized == "reasserting"
+         
+        if tunnelIsUp != shouldConnect { tunnelIsUp = shouldConnect }
         if shouldConnect {
             wantsConnection = true
             connectIfNeeded()
@@ -734,6 +747,7 @@ return
     }
 
     func disconnect(preserveIntent: Bool = false) {
+        if !preserveIntent, channelAttachFailed { channelAttachFailed = false }
         if isConnected {
             recordRouteControl(
                 kind: .runtimeControlDisconnected,
@@ -2275,6 +2289,7 @@ return
 
     private func connectFailed(_ error: Error, token: UInt64) {
         guard token == generation else { return }
+        if !channelAttachFailed { channelAttachFailed = true }
         isConnecting = false
         connectTask = nil
         closeNativeControlAttempt()
@@ -2289,6 +2304,7 @@ return
 
     private func handleConnected(token: UInt64) {
         guard token == generation else { return }
+        if channelAttachFailed { channelAttachFailed = false }
         isConnecting = false
         connectTask = nil
         isConnected = true

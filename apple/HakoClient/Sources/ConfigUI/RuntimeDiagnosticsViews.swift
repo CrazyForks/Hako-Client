@@ -1,3 +1,4 @@
+import Hako
 import HakoClientUI
 import SwiftUI
 
@@ -23,6 +24,70 @@ struct DNSQueryResponse: Decodable {
     let Answer: [DNSQueryAnswer]?
 }
 
+extension HakoRuleEntryCounter {
+     
+     
+     
+     
+     
+     
+    static func app(
+        ruleSetCounts: @escaping @Sendable () async -> [String: Int]
+    ) -> HakoRuleEntryCounter {
+         
+         
+        let ruleSets = RuleSetCountsOnce(read: ruleSetCounts)
+        return HakoRuleEntryCounter { key in
+            if key.kind == .ruleSet {
+                return await ruleSets.value()[key.value]
+            }
+            return await databaseCount(key)
+        }
+    }
+
+    private static func databaseCount(_ key: Key) async -> Int? {
+         
+         
+         
+         
+        await withCheckedContinuation { continuation in
+            countingQueue.async {
+                guard AppCoreSetup.ensureForReaders() else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                let count: Int
+                switch key.kind {
+                case .geoIP: count = HakoGeoIPNetworkCount(key.value)
+                case .asn: count = HakoASNNetworkCount(key.value)
+                case .ruleSet: count = -1
+                }
+                continuation.resume(returning: count >= 0 ? count : nil)
+            }
+        }
+    }
+
+    private static let countingQueue = DispatchQueue(label: "hako.rule-entry-count", qos: .utility)
+}
+
+ 
+ 
+private actor RuleSetCountsOnce {
+    private let read: @Sendable () async -> [String: Int]
+    private var counts: [String: Int]?
+
+    init(read: @escaping @Sendable () async -> [String: Int]) {
+        self.read = read
+    }
+
+    func value() async -> [String: Int] {
+        if let counts { return counts }
+        let fresh = await read()
+        counts = fresh
+        return fresh
+    }
+}
+
  
 struct ActiveRulesView: View {
     @ObservedObject var command: ClashCommandClient
@@ -31,6 +96,12 @@ struct ActiveRulesView: View {
         HakoActiveRulesView(
             rules: command.rules,
             isConnected: command.isConnected,
+            entryCounter: .app(ruleSetCounts: { [command] in
+                 
+                 
+                let catalog = (try? await command.providerRuntimeCatalog()) ?? .empty
+                return catalog.ruleProviders.mapValues(\.ruleCount)
+            }),
             refresh: {
                 await command.fetchRules()
             }

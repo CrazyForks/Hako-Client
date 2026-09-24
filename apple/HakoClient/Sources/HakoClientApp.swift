@@ -320,6 +320,15 @@ struct AppShellView: View {
             guard command.isConnected else { return }
             Task { await nodes.refresh() }
         }
+         
+         
+         
+        .onChange(of: command.tunnelIsUp) { up in
+            syncConnectionsForSelectedTab(tunnelIsUp: up)
+        }
+        .onChange(of: command.channelAttachFailed) { failed in
+            syncConnectionsForSelectedTab(channelFailed: failed)
+        }
         .onChange(of: command.isConnected) { connected in
             syncConnectionsForSelectedTab(isConnected: connected)
             proxyShare.updateAPIAvailability(connected)
@@ -500,7 +509,11 @@ struct AppShellView: View {
                     Task { await BackgroundRefresh.scanOnForegroundIfDue() }
 
             } else if phase == .background, !false {
-                connections.stop()
+                 
+                 
+                 
+                 
+                syncConnectionsForSelectedTab(isForeground: false)
                 Task { await nodes.cancelLatencyTests(reason: .backgrounded) }
                  
                  
@@ -1098,12 +1111,17 @@ struct AppShellView: View {
      
      
      
+     
     private func syncConnectionsForSelectedTab(
         isForeground: Bool? = nil,
-        isConnected: Bool? = nil
+        isConnected: Bool? = nil,
+        tunnelIsUp: Bool? = nil,
+        channelFailed: Bool? = nil
     ) {
         connections.syncScene(
             isConnected: isConnected ?? command.isConnected,
+            tunnelIsUp: tunnelIsUp ?? command.tunnelIsUp,
+            channelFailed: channelFailed ?? command.channelAttachFailed,
             isActive: isForeground ?? (scenePhase == .active),
             isBackground: isForeground == nil ? scenePhase == .background : isForeground == false
         )

@@ -26,7 +26,9 @@ struct ConnectionsView: View {
         HakoClientUI.HakoConnectionsView(
             snapshot: HakoActivityIOSAdapter.snapshot(
                 model: model,
-                isConnected: command.isConnected
+                isConnected: command.isConnected,
+                tunnelIsUp: command.tunnelIsUp,
+                channelFailed: command.channelAttachFailed
             ),
             actions: AppleClientActions(capability: .activity) {
                 action in
@@ -35,7 +37,11 @@ struct ConnectionsView: View {
                 }
                 switch activity {
                 case .refresh:
-                    await model.refresh()
+                     
+                     
+                     
+                    if command.isConnected { await model.refresh() }
+                    else { command.reconnectIfNeeded() }
                 case .closeConnection(let id):
                     await model.close(id)
                 case .closeAllConnections:
@@ -94,6 +100,11 @@ enum HakoActivityIOSAdapter {
     static func snapshot(
         model: ConnectionsModel? = nil,
         isConnected: Bool,
+        tunnelIsUp: Bool = false,
+         
+         
+         
+        channelFailed: Bool = false,
         logLines: [String] = [],
         exposesLogActions: Bool = false,
         isRecordingLogs: Bool? = nil,
@@ -117,7 +128,9 @@ enum HakoActivityIOSAdapter {
         } ?? []
         let phase = phase(
             model: model,
-            isConnected: isConnected
+            isConnected: isConnected,
+            tunnelIsUp: tunnelIsUp,
+            channelFailed: channelFailed
         )
 
         return AppleClientSnapshot(
@@ -139,6 +152,7 @@ enum HakoActivityIOSAdapter {
                 detailAvailability: .full,
                 errorDescription:
                     model?.error.isEmpty == false
+                        || (channelFailed && !isConnected && (tunnelIsUp || Self.tunnelIsUp))
                         ? "The connections stream is unavailable."
                         : nil,
                 connections: connections,
@@ -157,7 +171,7 @@ enum HakoActivityIOSAdapter {
                     model?.closing ?? [],
                 isClosingAll: model?.closingAll ?? false,
                 canManageConnections:
-                    model != nil
+                    model?.isStreaming == true
                         && (
                             isConnected
                                 || model?.connected == true
@@ -180,7 +194,9 @@ enum HakoActivityIOSAdapter {
 
     private static func phase(
         model: ConnectionsModel?,
-        isConnected: Bool
+        isConnected: Bool,
+        tunnelIsUp: Bool,
+        channelFailed: Bool
     ) -> HakoActivityPhase {
         if model?.loading == true {
             return .loading
@@ -194,8 +210,13 @@ enum HakoActivityIOSAdapter {
         if isConnected || model?.connected == true {
             return .ready
         }
-        if tunnelIsUp {
-            return model?.activityConnections.isEmpty == false ? .ready : .loading
+         
+         
+         
+         
+        if tunnelIsUp || Self.tunnelIsUp {
+            if model?.activityConnections.isEmpty == false { return .ready }
+            return channelFailed ? .failed : .loading
         }
         return .disconnected
     }

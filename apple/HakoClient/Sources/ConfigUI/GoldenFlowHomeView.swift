@@ -353,7 +353,7 @@ struct GoldenFlowHomeAdapter: View {
             if let presentation = runtimeConfigurationPresentation,
                presentation.profileID == profile.id {
                 ProfileFinalConfigurationView(
-                    title: "Final Configuration",
+                    title: "Runtime Configuration",
                     snapshot: presentation.snapshot,
                     sourceYAML: presentation.sourceYAML,
                     comparisonYAML: presentation.comparisonYAML,
@@ -375,12 +375,15 @@ struct GoldenFlowHomeAdapter: View {
                                 .load(coreHome: coreHome)
                                 .blockedRuleProviders
                         }
-                        : nil
+                        : nil,
+                     
+                     
+                    textFirst: true
                 )
                 .hakoModalPresentation(.page)
             } else {
                 HomePreparationPlaceholder(
-                    title: "Final Configuration",
+                    title: "Runtime Configuration",
                     accessibilityIdentifier: "final.preparing"
                 )
                 .task(id: runtimeConfigurationPreparationGeneration) {
@@ -638,7 +641,9 @@ struct GoldenFlowHomeAdapter: View {
                 : group.resolvedNow
         return (
             route.isEmpty ? nil : route,
-            nodes.delays[route]
+             
+             
+            nodes.routeDelay(from: group.name)
         )
     }
 
@@ -1448,36 +1453,15 @@ struct GoldenFlowHomeAdapter: View {
               requestedGeneration == runtimeConfigurationPreparationGeneration
         else { return }
         let profileID = profile.id
-        let includesBlockedRuleSets = profiles.activeProfileID == profileID
+         
+         
+         
+         
         let sourceYAML = profiles.capturedSourceText(for: profile)
-        let comparisonYAML = profiles.sourceYAML(for: profile)
-        let baseYAML = comparisonYAML.flatMap {
-            RunningCoreDeviations.handedToCore(
-                profile: profile,
-                sidecarYAML: $0
-            )
-        }
         let effectiveYAML = profiles.previewText(for: profile)
-         
-         
-         
-         
-         
-         
-         
-        let omittedRules = ((try? profiles.configurationLibraryStore?.snapshot()) ?? nil)?
-            .recipes.first(where: { $0.id == profile.id })?.droppedRules ?? []
         let began = DispatchTime.now().uptimeNanoseconds
         let snapshot = await Task.detached(priority: .userInitiated) {
-             
-             
-            let omittedPersonalRules = effectiveYAML.map { ProfileRuntimeConfigBuilder.personalRulesLeftOut(of: $0, profile: profile) } ?? []
-            return ProfileFinalConfigurationSnapshot.make(
-                sourceYAML: sourceYAML,
-                effectiveYAML: effectiveYAML,
-                omittedRules: omittedRules,
-                omittedPersonalRules: omittedPersonalRules
-            )
+            ProfileFinalConfigurationSnapshot.textOnly(sourceYAML: sourceYAML, effectiveYAML: effectiveYAML)
         }.value
         guard !Task.isCancelled,
               requestedGeneration == runtimeConfigurationPreparationGeneration,
@@ -1487,9 +1471,9 @@ struct GoldenFlowHomeAdapter: View {
             profileID: profileID,
             snapshot: snapshot,
             sourceYAML: sourceYAML,
-            comparisonYAML: comparisonYAML,
-            baseYAML: baseYAML,
-            includesBlockedRuleSets: includesBlockedRuleSets
+            comparisonYAML: nil,
+            baseYAML: nil,
+            includesBlockedRuleSets: false
         )
         HakoPerf.span(
             "final.prepare",
@@ -1929,12 +1913,22 @@ struct GoldenFlowHomeAdapter: View {
     ) async {
         let sourceYAML = await profiles.loadPresentedProxiesYAML(for: profile)
         let selectedMap = profile.selectedMap
+        let profileID = profile.id
+         
+         
+         
+        let isActive = profiles.activeProfileID == profileID
+         
+         
+         
+        let asksKernel = !command.isConnected && !command.tunnelIsUp
         let preparedModel = await Task.detached(
             priority: .userInitiated
         ) {
             var providerNodes:
                 [String: [ProxiesOverviewModel.Proxy]] = [:]
-            if let container = HakoAppIdentifiers.appGroupContainer,
+            if isActive,
+               let container = HakoAppIdentifiers.appGroupContainer,
                let store = try? ConfigResourceStore(
                    containerURL: container
                ),
@@ -1945,11 +1939,15 @@ struct GoldenFlowHomeAdapter: View {
                     providersDir: directory
                 )
             }
-            return ProxiesOverviewModel.make(
+             
+             
+             
+            let projected = ProxiesOverviewModel.make(
                 sourceYAML: sourceYAML,
                 selectedMap: selectedMap,
                 providerNodes: providerNodes
             )
+            return asksKernel ? projected.resolvedWithKernelCatalog(profileID: profileID) : projected
         }.value
         guard !Task.isCancelled,
               requestedGeneration == proxiesPreparationGeneration,

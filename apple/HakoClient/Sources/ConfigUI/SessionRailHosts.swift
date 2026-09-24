@@ -73,7 +73,10 @@ struct ProxiesOverviewHost: View {
     @ViewBuilder
     private var hosted: some View {
         ProxiesOverviewAdapter(
-            sourceModel: sourceModel,
+             
+             
+             
+            sourceModel: command.tunnelIsUp ? sourceModel.withoutCatalogRefusal : sourceModel,
              
              
              
@@ -97,6 +100,8 @@ struct ProxiesOverviewHost: View {
             ),
             runtime: ProxiesRuntimeFacts(
                 delays: nodes.delays,
+                endpointDelays: nodes.endpointDelays,
+                defaultDelayTestURL: nodes.defaultDelayTestURL,
                 failureReasons: nodes.failureReasons,
                  
                  
@@ -236,7 +241,7 @@ struct ProxiesOverviewHost: View {
             },
              
             actionRefusals: nodes.actionRefusals,
-            testMember: { name in Task { await nodes.test(name) } },
+            testMember: { name, group in Task { await nodes.test(name, inGroup: group) } },
              
              
              
@@ -338,25 +343,21 @@ struct RulesOverviewHost: View {
              
              
              
-            guard profiles.activeProfileID == profile.id,
-                  let container = HakoAppIdentifiers.appGroupContainer else {
-                compileVerdicts = ProviderCompileVerdicts()
-                return
-            }
-            let coreHome = container.appendingPathComponent("working")
-            var verdicts = await Task.detached(priority: .utility) {
-                ProviderCompileVerdicts.load(coreHome: coreHome)
+             
+             
+             
+             
+            let isActive = profiles.activeProfileID == profile.id
+            let profileID = profile.id
+            let coreHome = HakoAppIdentifiers.appGroupContainer?.appendingPathComponent("working")
+            compileVerdicts = await Task.detached(priority: .utility) {
+                var verdicts = isActive
+                    ? coreHome.map { ProviderCompileVerdicts.load(coreHome: $0) } ?? ProviderCompileVerdicts()
+                    : ProviderCompileVerdicts()
+                verdicts.entryCounts = OfflineProxyCatalogLoader.input(preferredProfileID: profileID)
+                    .map(OfflineProxyCatalogLoader.ruleSetCounts) ?? [:]
+                return verdicts
             }.value
-             
-             
-             
-            if command.isConnected,
-               let catalog = try? await command.providerRuntimeCatalog() {
-                for (name, provider) in catalog.ruleProviders {
-                    verdicts.entryCounts[name] = provider.ruleCount
-                }
-            }
-            compileVerdicts = verdicts
         }
     }
 }
@@ -621,6 +622,11 @@ struct SessionProxiesRailRoot: View {
          
          
          
+        let asksKernel = !avoidsStore && !command.isConnected && !command.tunnelIsUp
+        let drawnProfileID = profile.id
+         
+         
+         
          
         let comparison = cached.map {
             (
@@ -655,10 +661,15 @@ struct SessionProxiesRailRoot: View {
             let catalog = providersDir.flatMap {
                 ProviderCatalog.load(providersDir: $0)
             }
+             
+             
+            let catalogInput = asksKernel
+                ? OfflineProxyCatalogLoader.input(preferredProfileID: drawnProfileID)
+                : nil
             let fingerprint = ProxiesProviderFingerprint.of(
                 directory: providersDir,
                 catalog: catalog
-            )
+            ) + "|" + (catalogInput?.fingerprint ?? "-")
             if let comparison,
                comparison.sourceYAML == sourceYAML,
                comparison.fingerprint == fingerprint {
@@ -689,7 +700,8 @@ struct SessionProxiesRailRoot: View {
                                 map[entry.name] = failure
                             }
                         }
-                ),
+                 
+                ).resolvedWithKernelCatalog(input: catalogInput),
                 fingerprint: fingerprint
             ), sourceYAML)
         }

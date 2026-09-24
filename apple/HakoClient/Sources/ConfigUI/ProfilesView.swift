@@ -720,6 +720,19 @@ final class ProfilesViewModel: ObservableObject {
             payload = try await Task.detached {
                 try ConfigurationCenterSourceBridge.payload(label: fileName, origin: .file(fileName), original: data)
             }.value
+        case .nodes(let links):
+             
+             
+             
+            payload = try await Task.detached {
+                let yaml = try ProxyImportBridge.derivedSubscription(from: Data(links.utf8)).yaml
+                let names = ((ConfigTransforms.parsedRoot(forYAML: yaml)?.root["proxies"] as? [[String: Any]]) ?? [])
+                    .compactMap { $0["name"] as? String }
+                return try ConfigurationCenterSourceBridge.payload(
+                    label: names.count == 1 ? names[0] : "Custom Nodes",
+                    origin: .customNodes, original: Data(yaml.utf8), yaml: yaml
+                )
+            }.value
         case .nodeShareLink, .nothing:
             throw ProfileInstallLinkError.unusableSubscription
         }
@@ -753,7 +766,7 @@ final class ProfilesViewModel: ObservableObject {
             payload = try await Task.detached {
                 try ConfigurationCenterSourceBridge.payload(label: fileName, origin: .file(fileName), original: data)
             }.value
-        case .nodeShareLink, .nothing:
+        case .nodeShareLink, .nodes, .nothing:
             throw ProfileInstallLinkError.unusableSubscription
         }
         let current = try await Task.detached { try library.snapshot() }.value
@@ -852,15 +865,12 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
-     
-     
     @discardableResult
     func quickCreate(_ input: ProfileQuickAddInput) async throws -> ProfileQuickAddOutcome {
         guard let library = configurationLibraryStore else {
             throw PipelineError.sourceUnavailable("The configuration store is unavailable.")
         }
         let payload: ConfigurationSourcePayload
-        var runsAsItself = false
         var buildsOn: String?
         switch input {
         case .link(let url):
@@ -877,22 +887,28 @@ final class ProfilesViewModel: ObservableObject {
             payload = try await Task.detached {
                 try ConfigurationCenterSourceBridge.payload(label: fileName, origin: .file(fileName), original: data)
             }.value
-            runsAsItself = payload.record.hasRules
-        case .nodeShareLink, .nothing:
+        case .nodeShareLink, .nodes, .nothing:
             throw ProfileInstallLinkError.unusableSubscription
         }
+         
+         
+         
+        let isDocument: Bool = { if case .document = input { return true }; return false }()
+        let routed = isDocument
+            ? await Task.detached(priority: .userInitiated) { payload.suppliesOwnRouting }.value
+            : false
         var draft = ConfigurationCreationDraft()
-        if let buildsOn {
+        if !routed, let buildsOn {
              
              
             draft.selectedSourceIDs = [buildsOn]
             draft.selectedRuleID = ConfigurationBuiltins.basicRuleID
             draft.connectAfterCreation = false
             draft.step = .rules
-        } else if runsAsItself {
-            draft.useOriginal(payload)
         } else {
-            try draft.acceptInitialNodeImport(payload)
+             
+             
+            try draft.acceptNewImport(payload, suppliesOwnRouting: routed)
         }
          
          
@@ -2005,6 +2021,26 @@ final class ProfilesViewModel: ObservableObject {
         }
     }
 
+     
+     
+     
+     
+    func consume(_ request: ProfileImportRequest) {
+        switch request {
+        case .subscription(let subscription):
+            installSubscription(subscription)
+        case let .configuration(fileName, yaml):
+            importSharedDocument(fileName: fileName, yaml: yaml)
+        }
+#if os(tvOS)
+        selectSoleProfileIfNeeded()
+#endif
+         
+         
+         
+         
+    }
+
     func installSubscription(_ rawURL: String) {
         if let existing = profiles.first(where: {
             if case let .url(url) = $0.source { return url == rawURL }
@@ -2019,8 +2055,63 @@ final class ProfilesViewModel: ObservableObject {
          
          
          
+#if os(tvOS)
         add(label: "", source: .url(rawURL), rawYAML: nil)
+#else
+         
+         
+         
+         
+         
+        enqueueImport { [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await self.quickCreate(.link(rawURL))
+            } catch {
+                self.recordFailure(error, context: .subscription, operation: nil)
+            }
+        }
+#endif
     }
+
+     
+     
+     
+     
+     
+     
+    func importSharedDocument(fileName: String, yaml: String) {
+#if os(tvOS)
+        let label = URL(fileURLWithPath: fileName).deletingPathExtension().lastPathComponent
+        add(label: label.isEmpty ? "Imported Profile" : label, source: .file(fileName), rawYAML: yaml)
+#else
+        enqueueImport { [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await self.quickCreate(.document(fileName: fileName, data: Data(yaml.utf8)))
+            } catch {
+                self.recordFailure(error, context: .localImport, operation: nil)
+            }
+        }
+#endif
+    }
+
+#if !os(tvOS)
+     
+     
+     
+     
+     
+    private var importTail: Task<Void, Never>?
+
+    private func enqueueImport(_ work: @escaping @MainActor () async -> Void) {
+        let previous = importTail
+        importTail = Task { @MainActor in
+            await previous?.value
+            await work()
+        }
+    }
+#endif
 
     func delete(at offsets: IndexSet) {
         let doomed = offsets.map { profiles[$0] }

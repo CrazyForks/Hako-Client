@@ -214,10 +214,12 @@ struct ProfileFinalConfigurationView: View {
      
      
     private let textFirst: Bool
+     
+     
+    @State private var sourceOpened = false
 #if os(macOS)
      
     @State private var showsPreviewText = false
-    @State private var sourceOpened = false
     @Environment(\.hakoDoorMayPush) private var mayPush
 #endif
 
@@ -286,15 +288,11 @@ struct ProfileFinalConfigurationView: View {
     }
 
     var body: some View {
-#if os(macOS)
         if textFirst {
             textFirstBody
         } else {
             fullBody
         }
-#else
-        fullBody
-#endif
     }
 
 #if os(macOS)
@@ -340,6 +338,64 @@ struct ProfileFinalConfigurationView: View {
             }
         }
     }
+#else
+     
+     
+     
+     
+     
+     
+    private var textFirstBody: some View {
+        HakoFeatureNavigationContainer(
+            ownsNavigationContainer: ownsNavigationContainer
+        ) {
+            VStack(spacing: HakoTheme.Spacing.compact) {
+                Picker(selection: $previewKind) {
+                    ForEach(FinalConfigurationPreviewKind.allCases.reversed()) { kind in
+                        Text(hako: .copy(kind.rawValue)).tag(kind)
+                    }
+                } label: {
+                    Text(hako: .copy("Configuration"))
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityIdentifier("final-configuration.preview-kind")
+
+                HakoDeferredPageContent {
+                    ZStack {
+                        residentPanel(.effective)
+                        if sourceOpened || previewKind == .source {
+                            residentPanel(.source)
+                        }
+                    }
+                    .onChange(of: previewKind) { kind in
+                        if kind == .source { sourceOpened = true }
+                    }
+                } placeholder: {
+                    HakoPageLoadingPlaceholder(title: .copy("Opening Configuration"))
+                }
+            }
+            .padding(.horizontal, HakoTheme.Spacing.standard)
+            .padding(.top, HakoTheme.Spacing.compact)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(HakoTheme.canvas.ignoresSafeArea())
+            .hakoPageTitle(.copy(title))
+            .hakoFeaturePresentation(
+                ownsNavigationContainer: ownsNavigationContainer
+            )
+            .hakoToolbarUnlessInPanel {
+                ToolbarItem(placement: .cancellationAction) {
+                    if ownsNavigationContainer {
+                        HakoSheetCloseButton { dismiss() }
+                            .accessibilityIdentifier("final-configuration.done")
+                    }
+                }
+            }
+        }
+        .hakoCapturesDismiss(dismiss)
+    }
+#endif
+
      
      
      
@@ -348,6 +404,7 @@ struct ProfileFinalConfigurationView: View {
     private func residentPanel(_ kind: FinalConfigurationPreviewKind) -> some View {
         let shown = previewKind == kind
         let text: String? = kind == .source ? snapshot.sourceText : snapshot.effectiveText
+        let fingerprint = kind == .source ? snapshot.sourceFingerprint : snapshot.effectiveFingerprint
         Group {
             if let text {
                 CodeEditorPanel(
@@ -357,7 +414,11 @@ struct ProfileFinalConfigurationView: View {
                     isEditable: false,
                     expandsVertically: true
                 )
-                .id("\(kind.rawValue)#\(text.count)#\(text.hashValue)")
+                 
+                 
+                 
+                 
+                .id("\(kind.rawValue)#\(fingerprint)")
             } else {
                 HakoEmptyState(
                     title: "Configuration Unavailable",
@@ -370,7 +431,6 @@ struct ProfileFinalConfigurationView: View {
         .allowsHitTesting(shown)
         .accessibilityHidden(!shown)
     }
-#endif
 
     private var fullBody: some View {
         HakoFeatureNavigationContainer(

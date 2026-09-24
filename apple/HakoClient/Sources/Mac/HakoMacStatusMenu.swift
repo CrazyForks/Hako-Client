@@ -342,7 +342,7 @@ final class HakoMacStatusMenuController: NSObject, NSMenuDelegate {
     private let locale: Locale
     private let optionIsHeld: () -> Bool
     private let tunnelIsUp: () -> Bool
-    private let latency: AnyPublisher<[String: HakoProxyLatencyState], Never>?
+    private let latency: AnyPublisher<[String: [String: HakoProxyLatencyState]], Never>?
     private let testing: AnyPublisher<Bool, Never>?
     private let listenerUpdates: AnyPublisher<Void, Never>?
     private var listening: Set<AnyCancellable> = []
@@ -357,7 +357,7 @@ final class HakoMacStatusMenuController: NSObject, NSMenuDelegate {
         locale: Locale = .current,
         optionIsHeld: @escaping () -> Bool = { NSEvent.modifierFlags.contains(.option) },
         tunnelIsUp: @escaping () -> Bool = { false },
-        latency: AnyPublisher<[String: HakoProxyLatencyState], Never>? = nil,
+        latency: AnyPublisher<[String: [String: HakoProxyLatencyState]], Never>? = nil,
         testing: AnyPublisher<Bool, Never>? = nil,
         listenerUpdates: AnyPublisher<Void, Never>? = nil
     ) {
@@ -432,9 +432,13 @@ final class HakoMacStatusMenuController: NSObject, NSMenuDelegate {
 
      
      
-    func apply(latency: [String: HakoProxyLatencyState]) {
+     
+     
+    func apply(latency: [String: [String: HakoProxyLatencyState]]) {
         for item in menu.items {
-            (item.representedObject as? HakoMacProxySubmenuController)?.apply(latency: latency)
+            guard let submenu = item.representedObject as? HakoMacProxySubmenuController,
+                  let name = submenu.groupName else { continue }
+            submenu.apply(latency: latency[name] ?? [:])
         }
     }
 
