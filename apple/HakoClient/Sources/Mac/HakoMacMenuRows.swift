@@ -118,13 +118,23 @@ struct HakoMacMenuRow: View {
     private var badge: some View {
         switch model.latency {
         case .measured:
+             
+             
+             
+             
+             
+             
+             
             Text(verbatim: model.badgeText)
-                .font(.system(size: pointSize - 3, weight: .medium, design: .monospaced))
+                .font(.system(size: pointSize - 3, weight: .semibold, design: .monospaced))
                 .monospacedDigit()
-                .foregroundStyle(.white)
+                .foregroundStyle(model.isHighlighted ? Color.white : tierInk)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 1)
-                .background(tierColor, in: Capsule())
+                .background(
+                    tierColor.opacity(model.isHighlighted ? 0.45 : 0.22),
+                    in: Capsule()
+                )
         case .failed, .timedOut:
             Text(verbatim: model.badgeText)
                 .font(.system(size: pointSize - 3, weight: .medium, design: .monospaced))
@@ -147,6 +157,19 @@ struct HakoMacMenuRow: View {
         case .slower: .orange
         case nil: .secondary
         }
+    }
+
+     
+     
+     
+     
+    private var tierInk: Color {
+        let tier = tierColor
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            let base = NSColor(tier)
+            if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua { return base }
+            return base.blended(withFraction: 0.4, of: .black) ?? base
+        })
     }
 
     private var accessibilityDescription: String {
