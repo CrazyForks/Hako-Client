@@ -1549,6 +1549,8 @@ private struct HakoProfileDetailView<
         HakoProfilesCapabilityDestination?
     @State private var showsDeleteConfirmation = false
     @State private var showsPlaintextExportConfirmation = false
+     
+    @State private var isPastFirstFrame = false
     @State private var draftName = ""
     @FocusState private var editingName: Bool
 
@@ -1598,32 +1600,41 @@ private struct HakoProfileDetailView<
             accessibilityIdentifier: "profile-detail.root"
         ) {
             identitySection(profile)
-            if profile.isComposed == true || (profile.isComposed == false && profile.canEditSource) { compositionSection(profile) }
-            if profile.source == .remote,
-               profile.subscription != nil
-                || profile.canSync
-                || profile.canConfigureSubscription
-                || profile.canCopySubscriptionLink
-            {
-                subscriptionSection(profile)
+             
+             
+             
+            if isPastFirstFrame {
+                if profile.isComposed == true || (profile.isComposed == false && profile.canEditSource) { compositionSection(profile) }
+                if profile.source == .remote,
+                   profile.subscription != nil
+                    || profile.canSync
+                    || profile.canConfigureSubscription
+                    || profile.canCopySubscriptionLink
+                {
+                    subscriptionSection(profile)
+                }
+                if !profile.heldBackUpdates.isEmpty {
+                    heldBackSection(profile)
+                }
+                if profile.canEditSource
+                    || profile.canDuplicate
+                    || profile.canExport
+                {
+                    manageSection(profile)
+                }
+                networkSection(profile)
+                if profile.canOpenRuntimePreview
+                    || profile.canRestoreLastKnownGood
+                {
+                    runtimeSection(profile)
+                }
+                deleteSection(profile)
             }
-            if !profile.heldBackUpdates.isEmpty {
-                heldBackSection(profile)
-            }
-            if profile.canEditSource
-                || profile.canDuplicate
-                || profile.canExport
-            {
-                manageSection(profile)
-            }
-            networkSection(profile)
-            if profile.canOpenRuntimePreview
-                || profile.canRestoreLastKnownGood
-            {
-                runtimeSection(profile)
-            }
-            deleteSection(profile)
             statusSection
+        }
+        .onAppear {
+            isPastFirstFrame = false
+            DispatchQueue.main.async { isPastFirstFrame = true }
         }
          
          

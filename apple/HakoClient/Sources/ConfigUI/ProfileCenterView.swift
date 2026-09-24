@@ -239,6 +239,10 @@ struct ProfileCenterAdapter: View {
          
          
          
+        HakoPerf.measure("profiles.snapshot") { buildSharedSnapshot() }
+    }
+
+    private func buildSharedSnapshot() -> AppleClientSnapshot {
         let scripts = catalogProfiles.contains { $0.overwriteMode == .script } ? ScriptLibrary.load() : []
         return AppleClientSnapshot(
             revision: 0,
