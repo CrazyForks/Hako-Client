@@ -408,6 +408,41 @@ extension View {
             self
         }
     }
+
+     
+     
+     
+     
+     
+     
+     
+     
+    @ViewBuilder
+    public func hakoMacFormDestructiveActionChrome() -> some View {
+        if HakoPlatformLayout.pageUsesSystemSettingsIdiom {
+            buttonStyle(.bordered).tint(.primary)
+        } else {
+            self
+        }
+    }
+}
+
+ 
+ 
+ 
+public struct HakoMacFormDestructiveLabel: View {
+    private let text: HakoDisplayText
+    @Environment(\.isEnabled) private var isEnabled
+
+    public init(_ text: HakoDisplayText) { self.text = text }
+
+    public var body: some View {
+        if HakoPlatformLayout.pageUsesSystemSettingsIdiom {
+            Text(hako: text).foregroundStyle(isEnabled ? AnyShapeStyle(Color.red) : AnyShapeStyle(.secondary))
+        } else {
+            Text(hako: text)
+        }
+    }
 }
 
 extension View {

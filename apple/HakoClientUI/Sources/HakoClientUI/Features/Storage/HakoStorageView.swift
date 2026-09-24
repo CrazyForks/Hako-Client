@@ -114,7 +114,11 @@ public struct HakoStorageView: View {
     }
 
     public var body: some View {
-        List {
+         
+         
+         
+         
+        HakoMacSettingsContainer {
             HakoSection("On This Device") {
                 HStack {
                     Text(hako: .copy("Total"))
@@ -139,18 +143,38 @@ public struct HakoStorageView: View {
             }
 
             HakoSection("Clean Up") {
-                Button {
-                    Task { await reclaim() }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(hako: .copy("Clean Up Unused Data"))
+                 
+                 
+                 
+                if HakoPlatformLayout.pageUsesSystemSettingsIdiom {
+                    HStack(spacing: HakoTheme.Spacing.compact) {
+                        Button {
+                            Task { await reclaim() }
+                        } label: {
+                            Text(hako: .copy("Clean Up Unused Data"))
+                        }
+                        .hakoMacFormActionChrome()
+                        .disabled(isWorking || (snapshot?.reclaimableBytes ?? 0) == 0)
+                        .accessibilityIdentifier("storage.reclaim")
                         Text(hako: reclaimableLine)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                        Spacer()
                     }
+                } else {
+                    Button {
+                        Task { await reclaim() }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(hako: .copy("Clean Up Unused Data"))
+                            Text(hako: reclaimableLine)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .disabled(isWorking || (snapshot?.reclaimableBytes ?? 0) == 0)
+                    .accessibilityIdentifier("storage.reclaim")
                 }
-                .disabled(isWorking || (snapshot?.reclaimableBytes ?? 0) == 0)
-                .accessibilityIdentifier("storage.reclaim")
                 if let freed {
                     Text(hako: .format("Freed %@", [Self.formatted(freed)]))
                         .foregroundStyle(.secondary)
@@ -172,13 +196,16 @@ public struct HakoStorageView: View {
                  
                  
                  
+                 
+                 
+                 
                 HakoSection("Reset Local Data") {
                     Button(role: .destructive) {
                         confirmingReset = true
                     } label: {
-                        Text(hako: .copy("Reset Local Data…"))
-                            .foregroundStyle(.red)
+                        HakoMacFormDestructiveLabel(.copy("Reset Local Data…"))
                     }
+                    .hakoMacFormDestructiveActionChrome()
                     .disabled(isWorking || tunnelIsRunning)
                     .accessibilityIdentifier("storage.reset")
                     if didReset {
