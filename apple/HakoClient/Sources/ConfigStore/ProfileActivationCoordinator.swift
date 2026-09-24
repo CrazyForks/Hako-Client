@@ -212,7 +212,7 @@ enum ProfileRuntimeConfigBuilder {
         applyLegacyRelayMigration: Bool = true
     ) throws -> RuntimeBuildStages {
         let profileWorking: String
-        var droppedPersonal: [String] = []
+        var droppedPersonal: [String] = []  
         switch profile.overwriteMode ?? .standard {
         case .standard, .script:
             var spec = profile.override
@@ -276,13 +276,6 @@ enum ProfileRuntimeConfigBuilder {
         let global = droppingUnknownTargets(effectiveGlobal.appendRules, mergedInto: profileWorking)
         effectiveGlobal.appendRules = global.kept
         droppedPersonal += global.dropped
-        recordDroppedPersonalRules(droppedPersonal, for: profile.id)
-        for rule in droppedPersonal {
-             
-            HakoLogStore.shared.append(
-                "personal rule left out of the runtime: \(rule) names a policy this configuration does not define",
-                stream: .app, level: .warning)
-        }
         let merged = try ConfigTransforms.mergeOverride(
             raw: profileWorking,
             overrideJSON: overrideJSON(from: effectiveGlobal)
@@ -479,11 +472,7 @@ enum ProfileRuntimeConfigBuilder {
 
      
      
-     
-     
-    static let builtinPolicies: Set<String> = [
-        "DIRECT", "REJECT", "REJECT-DROP", "PASS", "PASS-RULE", "COMPATIBLE", "GLOBAL", "MATCH",
-    ]
+    static let builtinPolicies: Set<String> = ConfigurationComposer.builtins.union(["MATCH"])
 
      
      
@@ -530,15 +519,33 @@ enum ProfileRuntimeConfigBuilder {
      
      
      
-    private static let droppedLock = NSLock()
-    nonisolated(unsafe) private static var droppedByProfile: [String: [String]] = [:]
-    static func droppedPersonalRules(for profileID: String) -> [String] {
-        droppedLock.lock(); defer { droppedLock.unlock() }
-        return droppedByProfile[profileID] ?? []
-    }
-    private static func recordDroppedPersonalRules(_ rules: [String], for profileID: String) {
-        droppedLock.lock(); defer { droppedLock.unlock() }
-        if rules.isEmpty { droppedByProfile.removeValue(forKey: profileID) } else { droppedByProfile[profileID] = rules }
+     
+     
+     
+     
+     
+     
+     
+    static func personalRulesLeftOut(
+        of yaml: String, profile: Profile, globalOverride: OverrideSpec = GlobalConfig.load()
+    ) -> [String] {
+        guard let known = knownPolicies(in: yaml) else { return [] }
+        var candidates: [String] = []
+        switch profile.overwriteMode ?? .standard {
+        case .standard, .script:
+            let muted = Set(profile.override.disabledAppendRules ?? [])
+            candidates += profile.override.appendRules.filter { !muted.contains($0) }
+        case .custom:
+            break
+        }
+        if (profile.overwriteMode ?? .standard) == .standard {
+            let disabled = Set(profile.override.disabledGlobalRules ?? [])
+            candidates += (profile.migratedGlobalOverride ?? globalOverride).appendRules.filter { !disabled.contains($0) }
+        }
+        return candidates.filter { rule in
+            guard let target = StructuredRule.parse(rule)?.target, !target.isEmpty else { return false }
+            return !known.contains(target)
+        }
     }
 
      
@@ -559,9 +566,10 @@ enum ProfileRuntimeConfigBuilder {
         }
         guard needsResolution else { return rules }
         let json = try ConfigTransforms.yamlToJSON(yaml)
-        guard let root = try JSONSerialization.jsonObject(with: Data(json.utf8))
-                as? [String: Any],
-              let sourceRules = root["rules"] as? [Any] else { return rules }
+        let root = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+         
+         
+        let sourceRules = (root?["rules"] as? [Any]) ?? []
         let fallback = sourceRules.lazy
             .compactMap { entry -> String? in
                 guard let line = entry as? String,
@@ -1016,6 +1024,14 @@ final class ProfileActivationCoordinator {
          
         var updated = profile
         updated.activeRevision = pointer.revision
+         
+         
+        for rule in Self.personalRulesLeftOut(of: prepared, profile: profile, globalOverride: globalOverride()) {
+             
+            HakoLogStore.shared.append(
+                "personal rule left out of the runtime: \(rule) names a policy this configuration does not define",
+                stream: .app, level: .warning)
+        }
          
          
          

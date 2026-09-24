@@ -836,6 +836,7 @@
 "Custom Nodes" = "自建節點";
 "Custom Overrides" = "自訂覆寫";
 "Custom Rules" = "自訂規則";
+"Custom Rules Not in Effect" = "未生效的自訂規則";
 "Custom Trust" = "自訂信任";
 "Custom address" = "自訂網址";
 "Custom mode replaces proxy-groups and rules in the runtime copy; the source remains unchanged." = "自訂模式會取代執行階段副本中的 proxy-groups 與 rules，原始碼保持不變。";
@@ -1020,6 +1021,7 @@
 "Each connection may use a different route" = "每個連線可能使用不同線路";
 "Each inline node uses the same field-complete editor as the Proxies tab." = "每個內聯節點使用與代理頁相同的完整欄位編輯器。";
 "Each of these rules names a node that none of this configuration's node sources includes. A rule is left out and its traffic follows the rules below it; a final MATCH rule sends traffic directly instead. Add that node's source to this configuration, or route the rule to a policy group." = "這些規則指向的節點不在這份設定所選的節點來源中。一般規則會被略去，其流量依後面的規則比對；作為備援的 MATCH 規則則改為直連。把該節點的來源加入這份設定，或把規則的出口改為策略群組。";
+"Each of these rules names a policy this configuration does not define, so it is left out and its traffic follows the rules below it. Route the rule to one of this configuration's policy groups, or switch to a rule scheme that has that one." = "這些規則各自指向了本設定沒有的策略，因此被略去，其流量按後面的規則處理。請把規則指向本設定的某個策略組，或改用包含該策略的規則方案。";
 "Each personal rule must be unique." = "每條個人規則必須唯一。";
 "Each row is one chain: the proxy that dials, then the hop it dials through. Tap a chain to change or clear its hop." = "每一行就是一條鏈：撥出的節點，和它撥經的下一跳。點任意一條可以改或清除下一跳。";
 "Each row reads the way the traffic goes: entry first, exit last. The site you open sees the exit. Tap a chain to change or remove it." = "每一行都按流量真正走的方向讀：先入口，後出口。你開啟的網站看到的是出口。點一條可以修改或刪除。";

@@ -836,6 +836,7 @@
 "Custom Nodes" = "Custom Nodes";
 "Custom Overrides" = "Custom Overrides";
 "Custom Rules" = "Custom Rules";
+"Custom Rules Not in Effect" = "Custom Rules Not in Effect";
 "Custom Trust" = "Custom Trust";
 "Custom address" = "Custom address";
 "Custom mode replaces proxy-groups and rules in the runtime copy; the source remains unchanged." = "Custom mode replaces proxy-groups and rules in the runtime copy; the source remains unchanged.";
@@ -1020,6 +1021,7 @@
 "Each connection may use a different route" = "Each connection may use a different route";
 "Each inline node uses the same field-complete editor as the Proxies tab." = "Each inline node uses the same field-complete editor as the Proxies tab.";
 "Each of these rules names a node that none of this configuration's node sources includes. A rule is left out and its traffic follows the rules below it; a final MATCH rule sends traffic directly instead. Add that node's source to this configuration, or route the rule to a policy group." = "Each of these rules names a node that none of this configuration's node sources includes. A rule is left out and its traffic follows the rules below it; a final MATCH rule sends traffic directly instead. Add that node's source to this configuration, or route the rule to a policy group.";
+"Each of these rules names a policy this configuration does not define, so it is left out and its traffic follows the rules below it. Route the rule to one of this configuration's policy groups, or switch to a rule scheme that has that one." = "Each of these rules names a policy this configuration does not define, so it is left out and its traffic follows the rules below it. Route the rule to one of this configuration's policy groups, or switch to a rule scheme that has that one.";
 "Each personal rule must be unique." = "Each personal rule must be unique.";
 "Each row is one chain: the proxy that dials, then the hop it dials through. Tap a chain to change or clear its hop." = "Each row is one chain: the proxy that dials, then the hop it dials through. Tap a chain to change or clear its hop.";
 "Each row reads the way the traffic goes: entry first, exit last. The site you open sees the exit. Tap a chain to change or remove it." = "Each row reads the way the traffic goes: entry first, exit last. The site you open sees the exit. Tap a chain to change or remove it.";

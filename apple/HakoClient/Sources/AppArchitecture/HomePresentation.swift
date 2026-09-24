@@ -242,10 +242,16 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
      
      
      
+     
+     
+     
+     
+     
     static func make(
         sourceYAML: String?,
         effectiveYAML: String?,
-        omittedRules: [String] = []
+        omittedRules: [String] = [],
+        omittedPersonalRules: [String] = []
     ) -> ProfileFinalConfigurationSnapshot {
         let sourceText = presentedText(sourceYAML)
         let effectiveText = presentedText(effectiveYAML)
@@ -259,6 +265,14 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
                 title: "Rules Not in Effect as Written",
                 detail: "Each of these rules names a node that none of this configuration's node sources includes. A rule is left out and its traffic follows the rules below it; a final MATCH rule sends traffic directly instead. Add that node's source to this configuration, or route the rule to a policy group.",
                 lines: omittedRules
+            ))
+        }
+        if !omittedPersonalRules.isEmpty {
+            adapted.append(.init(
+                id: "omitted-personal-rules",
+                title: "Custom Rules Not in Effect",
+                detail: "Each of these rules names a policy this configuration does not define, so it is left out and its traffic follows the rules below it. Route the rule to one of this configuration's policy groups, or switch to a rule scheme that has that one.",
+                lines: omittedPersonalRules
             ))
         }
         return ProfileFinalConfigurationSnapshot(

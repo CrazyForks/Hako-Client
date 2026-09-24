@@ -456,7 +456,10 @@ public enum ConfigurationComposer {
      
      
      
-    private static let builtins: Set<String> = ["DIRECT", "REJECT", "REJECT-DROP", "PASS", "PASS-RULE", "COMPATIBLE", "GLOBAL"]
+     
+     
+     
+    public static let builtins: Set<String> = ["DIRECT", "REJECT", "REJECT-DROP", "PASS", "PASS-RULE", "COMPATIBLE", "GLOBAL"]
 
     private static func dependency(
         _ name: String, source: String, nodes: [String: [String: String]], groups: Set<String>

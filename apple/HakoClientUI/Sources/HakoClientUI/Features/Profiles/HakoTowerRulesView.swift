@@ -238,6 +238,7 @@ public struct HakoTowerRuleCustomizationView: View {
     @State private var error: String?
     @State private var modal: Modal?
     @State private var confirmsReset = false
+    @Environment(\.locale) private var locale
     @State private var deletingLocal: ConfigurationLocalRuleSet?
     @State private var deletingGroup: UUID?
     @State private var confirmsLeave = false
@@ -744,12 +745,19 @@ public struct HakoTowerRuleCustomizationView: View {
              
              
              
-            let value = try await Task.detached { var value = snapshot; try change(&value); return value.rebased(onto: stored).draft }.value
+            let rebased = try await Task.detached { var value = snapshot; try change(&value); return value.rebased(onto: stored) }.value
+            let value = rebased.draft
             let keys = await Task.detached { value.referencedRuleSets }.value
             let storedKeys = await Task.detached { stored.referencedRuleSets }.value
             var transaction = Transaction(); transaction.disablesAnimations = true
             withTransaction(transaction) {
                 draft = value; installedRuleSets = keys; baseline = stored; baselineRuleSets = storedKeys; hasUnsavedChanges = true
+                if !rebased.droppedRuleSets.isEmpty {
+                     
+                     
+                    let names = rebased.droppedRuleSets.map { key in localSets.first { "local-" + $0.id == key }?.name ?? key }
+                    error = HakoCopy.format("Rules on removed rule sets were left out: %@", locale: locale, names.joined(separator: ", "))
+                }
             }
         }
     }
