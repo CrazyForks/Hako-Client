@@ -1,3 +1,4 @@
+import Foundation
  
  
  
@@ -36,7 +37,18 @@ enum HakoAppIdentifiers {
     static let tvPacketTunnelExtensionBundleID = "org.example.hako.tvextension"
 
      
-    static let appGroup = "group.org.example.hako"
+     
+     
+     
+     
+     
+     
+     
+    static var appGroup: String {
+
+
+        return "group.org.example.hako"
+    }
 
      
     static let iCloudContainer = "iCloud.org.example.hako"
