@@ -1435,6 +1435,7 @@
 "Importing…" = "正在导入…";
 "In / Out / Connections" = "上行 / 下行 / 连接数";
 "In Control Center, tap Add a Control and choose Clash VPN to connect or disconnect after authentication." = "在控制中心点「添加控件」并选择 Clash VPN，认证后即可连接或断开。";
+"In Use" = "使用中";
 "In effect" = "已生效";
 "Inbound kind" = "入站种类";
 "Inbound name" = "入站名称";
@@ -3405,6 +3406,7 @@
 "Use System DNS" = "使用系统 DNS";
 "Use TLS, HTTP or QUIC. Any other name stops the whole profile from starting." = "只能填 TLS、HTTP 或 QUIC。填别的名字会让整份配置无法启动。";
 "Use This Network?" = "使用该网络？";
+"Use This Profile" = "使用此配置";
 "Use a Complete Configuration Unchanged" = "原样使用完整配置";
 "Use a SHA-256 certificate fingerprint to pin the server certificate." = "用 SHA-256 证书指纹固定服务端证书。";
 "Use a local script to adjust this profile." = "使用本地脚本调整本配置。";

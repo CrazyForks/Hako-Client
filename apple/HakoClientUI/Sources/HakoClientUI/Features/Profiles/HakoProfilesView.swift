@@ -1810,7 +1810,7 @@ private struct HakoProfileDetailView<
 
     private var activeProfileLabel: some View {
         Label {
-            Text("Active")
+            Text("In Use")
         } icon: {
             icon(.checkmarkCircleFill)
         }
@@ -2530,7 +2530,7 @@ private struct HakoProfileReorderView: View {
                             .lineLimit(1)
                         Spacer(minLength: HakoTheme.Spacing.compact)
                         if profile.isCurrent {
-                            Text("Active")
+                            Text("In Use")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

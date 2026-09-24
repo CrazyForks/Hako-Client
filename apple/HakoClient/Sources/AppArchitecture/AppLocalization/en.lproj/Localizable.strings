@@ -1435,6 +1435,7 @@
 "Importing…" = "Importing…";
 "In / Out / Connections" = "In / Out / Connections";
 "In Control Center, tap Add a Control and choose Clash VPN to connect or disconnect after authentication." = "In Control Center, tap Add a Control and choose Clash VPN to connect or disconnect after authentication.";
+"In Use" = "In Use";
 "In effect" = "In effect";
 "Inbound kind" = "Inbound kind";
 "Inbound name" = "Inbound name";
@@ -3405,6 +3406,7 @@
 "Use System DNS" = "Use System DNS";
 "Use TLS, HTTP or QUIC. Any other name stops the whole profile from starting." = "Use TLS, HTTP or QUIC. Any other name stops the whole profile from starting.";
 "Use This Network?" = "Use This Network?";
+"Use This Profile" = "Use This Profile";
 "Use a Complete Configuration Unchanged" = "Use a Complete Configuration Unchanged";
 "Use a SHA-256 certificate fingerprint to pin the server certificate." = "Use a SHA-256 certificate fingerprint to pin the server certificate.";
 "Use a local script to adjust this profile." = "Use a local script to adjust this profile.";
