@@ -18,10 +18,21 @@ import NetworkExtension
  
  
  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 struct VPNTunnelSettings: Equatable {
     var enforceRoutes = false
     var includeAllNetworks = false
-    var includeLocalNetworks = true
+     
+    var includeLocalNetworks = false
     var includeAPNs = false
      
      
@@ -48,8 +59,9 @@ struct VPNTunnelSettings: Equatable {
              
              
              
+             
             includeLocalNetworks: defaults.object(forKey: Key.includeLocalNetworks)
-                as? Bool ?? true,
+                as? Bool ?? VPNTunnelSettings().includeLocalNetworks,
             includeAPNs: defaults.bool(forKey: Key.includeAPNs),
             hideVPNIcon: defaults.bool(forKey: Key.hideVPNIcon),
             homeKitCompatibility: defaults.bool(forKey: Key.homeKitCompatibility)
