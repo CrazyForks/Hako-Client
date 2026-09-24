@@ -538,10 +538,7 @@ struct GoldenFlowHomeAdapter: View {
                 profile: profile,
                  
                  
-                sourceYAML: profiles.baseYAML(for: profile),
-                udpFallbackGuardInput: { [profiles] in
-                    await profiles.udpFallbackGuardInput(for: profile)
-                }
+                sourceYAML: profiles.baseYAML(for: profile)
             ) { draft in
                 try profiles.updateNetwork(draft)
             }

@@ -35,10 +35,6 @@ struct ProfileNetworkSettingsView: View {
     private let ownsNavigationContainer: Bool
      
      
-     
-    private let udpFallbackGuardInput: () async -> ConfigTransforms.UDPFallbackGuardInput?
-     
-     
     private let profileForDeviations: Profile
     @State private var deviations: ConfigDeviationReport?
 
@@ -46,7 +42,6 @@ struct ProfileNetworkSettingsView: View {
         profile: Profile,
         sourceYAML: String? = nil,
         ownsNavigationContainer: Bool = true,
-        udpFallbackGuardInput: @escaping () async -> ConfigTransforms.UDPFallbackGuardInput? = { nil },
         save: @escaping (ProfileNetworkDraft) throws -> Void
     ) {
         let draft = ProfileNetworkDraft(profile: profile, sourceYAML: sourceYAML)
@@ -54,34 +49,12 @@ struct ProfileNetworkSettingsView: View {
         profileForDeviations = profile
         profileName = profile.label
         self.ownsNavigationContainer = ownsNavigationContainer
-        self.udpFallbackGuardInput = udpFallbackGuardInput
         _draft = State(initialValue: draft)
         _openedWith = State(initialValue: draft)
         _timePortText = State(initialValue: draft.timePort.map(String.init) ?? "")
         _timeIntervalText = State(
             initialValue: draft.timeIntervalMinutes.map(String.init) ?? ""
         )
-    }
-
-    @ViewBuilder
-    private var udpFallbackDestination: some View {
-#if os(macOS)
-        HakoDeferredDraftHost(source: $draft.udpFallbackPolicy) { policy in
-            UDPFallbackSettingsView(
-                policy: policy,
-                offersInherit: true,
-                overallPolicy: UDPFallbackSettings.policy(),
-                guardInput: udpFallbackGuardInput
-            )
-        }
-#else
-        UDPFallbackSettingsView(
-            policy: $draft.udpFallbackPolicy,
-            offersInherit: true,
-            overallPolicy: UDPFallbackSettings.policy(),
-            guardInput: udpFallbackGuardInput
-        )
-#endif
     }
 
      
@@ -123,7 +96,6 @@ struct ProfileNetworkSettingsView: View {
     private func modalTitle(for route: ProfileNetworkRoute) -> String {
         switch route {
         case .sniffer: "Sniffer"
-        case .udpFallback: "UDP Fallback"
         case .ntp: "NTP"
         }
     }
@@ -133,8 +105,6 @@ struct ProfileNetworkSettingsView: View {
         switch route {
         case .sniffer:
             ProfileSnifferSettingsView(draft: $draft)
-        case .udpFallback:
-            udpFallbackDestination
         case .ntp:
             ProfileNTPSettingsView(
                 draft: $draft,
@@ -169,23 +139,6 @@ struct ProfileNetworkSettingsView: View {
                 } footer: {
                     Text(
                         "Sniffer discovers domains before this profile's rules are evaluated."
-                    )
-                }
-
-                Section {
-                    sectionRow(.udpFallback) {
-                         
-                         
-                        DNSHubRow(
-                            title: "UDP Fallback",
-                            detail: "",
-                            value: udpFallbackSummary
-                        )
-                    }
-                    .accessibilityIdentifier("profile-network.udp-fallback")
-                } footer: {
-                    Text(
-                        "Overrides the client setting for this profile only. Useful when every line in one subscription carries UDP."
                     )
                 }
 
@@ -323,35 +276,6 @@ struct ProfileNetworkSettingsView: View {
 
      
      
-    private var udpFallbackSummary: String {
-        let key: String
-        switch draft.udpFallbackPolicy {
-         
-         
-        case .none:
-            return HakoCopy.string(
-                for: .formatCopy("Same as overall (%@)", [udpFallbackTitle(UDPFallbackSettings.policy())]),
-                locale: locale
-            )
-        case .quic: key = "Reject QUIC"
-        case .quicAllPorts: key = "Reject QUIC on 443 and 80"
-        case .allUDP: key = "Reject all fallthrough UDP"
-        case .off: key = "Off"
-        }
-        return HakoCopy.string(key, locale: locale)
-    }
-
-     
-     
-    private func udpFallbackTitle(_ policy: UDPFallbackPolicy) -> String {
-        switch policy {
-        case .quic: "Reject QUIC"
-        case .quicAllPorts: "Reject QUIC on 443 and 80"
-        case .allUDP: "Reject all fallthrough UDP"
-        case .off: "Off"
-        }
-    }
-
     private var snifferSummary: String {
          
          
@@ -1572,7 +1496,6 @@ private func optionalTextRow(
  
 enum ProfileNetworkRoute: Hashable, Identifiable {
     case sniffer
-    case udpFallback
     case ntp
 
     var id: Self { self }

@@ -1978,10 +1978,7 @@ private final class HakoMacSceneModel: ObservableObject {
                 ProfileNetworkSettingsView(
                     profile: profile,
                     sourceYAML: self.profiles.uiProjectedYAML(for: profile),
-                    ownsNavigationContainer: false,
-                    udpFallbackGuardInput: { [profiles = self.profiles] in
-                        await profiles.udpFallbackGuardInput(for: profile)
-                    }
+                    ownsNavigationContainer: false
                 ) {
                     try self.profiles.updateNetwork($0)
                 }

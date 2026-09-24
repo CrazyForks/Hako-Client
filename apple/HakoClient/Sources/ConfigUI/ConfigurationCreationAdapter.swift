@@ -154,13 +154,9 @@ struct ConfigurationCreationAdapter: View {
             }
             if let id = editingProfileID {
                 if let recipe = library.recipes.first(where: { $0.id == id }) {
-                    draft.selectedSourceIDs = recipe.sources.map(\.id)
-                    draft.nodeScopes = recipe.nodeScopes
-                    draft.selectedRuleID = library.rules.contains { $0.id == recipe.ruleSchemeID } || ConfigurationBuiltins.schemes.contains { $0.id == recipe.ruleSchemeID } ? recipe.ruleSchemeID : ConfigurationBuiltins.basicRuleID
-                    draft.label = model.profiles.first(where: { $0.id == id })?.label ?? recipe.label
-                    draft.dnsMode = recipe.dnsMode ?? .source
-                    draft.nodeNameservers = recipe.nodeNameservers
-                    draft.customDNSJSON = recipe.customDNSJSON
+                    let fallbackRule = library.rules.contains { $0.id == recipe.ruleSchemeID } || ConfigurationBuiltins.schemes.contains { $0.id == recipe.ruleSchemeID }
+                    draft = Self.editingDraft(recipe: recipe, label: model.profiles.first(where: { $0.id == id })?.label ?? recipe.label,
+                        selectedRuleID: fallbackRule ? recipe.ruleSchemeID : ConfigurationBuiltins.basicRuleID)
                 } else {
                      
                      
@@ -1556,43 +1552,96 @@ private struct ConfigurationNewRuleAdapter: View {
     let close: () -> Void
     @State private var busy = false
     @State private var errorMessage: String?
-    @State private var created: Created?
+    @State private var options: RulePolicyOptions = .empty
     @Environment(\.locale) private var locale
-    private struct Created {
-        let scheme: ConfigurationRuleScheme
-        let library: ConfigurationLibrarySnapshot
-    }
-    private var templates: [ConfigurationRuleScheme] {
-        let available = library.rules.filter { $0.kind == .builtin || $0.kind == .community }
-        return available + ConfigurationBuiltins.schemes.filter { item in !available.contains { $0.id == item.id } }
-    }
+
+     
+     
+     
+     
+     
     var body: some View {
-        Group {
-            if let created {
-                ConfigurationTowerRuleCustomizationAdapter(model: model, scheme: created.scheme, library: created.library,
-                    changed: changed, close: close)
-            } else {
-                HakoFeatureNavigationContainer {
-                    HakoConfigurationNewRuleView(defaultName: HakoCopy.string("My Rules", locale: locale),
-                        templates: templates, isBusy: busy, error: errorMessage, tabHeader: tabHeader, create: { draft, completion in
-                            guard !busy else { completion(false); return }
-                            busy = true; errorMessage = nil
-                            Task {
-                                defer { busy = false }
-                                do {
-                                    let previousIDs = Set(library.rules.map(\.id))
-                                    let updated = try await model.createConfigurationRuleScheme(draft, generation: library.generation)
-                                    guard let scheme = updated.rules.first(where: { !previousIDs.contains($0.id) }) else {
-                                        throw ConfigurationLibraryError.invalidIdentifier
-                                    }
-                                    changed(updated); completion(true)
-                                    created = .init(scheme: scheme, library: updated)
-                                } catch { errorMessage = error.localizedDescription; completion(false) }
-                            }
-                        }, close: close)
-                }
+        HakoFeatureNavigationContainer {
+            RuleBuilderAdapter(raw: "", options: options, showsPersonalMetadata: true,
+                saveDetails: { raw, enabled, note in submit(raw, enabled: enabled, note: note) },
+                save: { raw in submit(raw, enabled: true, note: "") })
+            .disabled(busy)
+            .safeAreaInset(edge: .top, spacing: 0) { if let tabHeader { tabHeader(false).disabled(busy) } }
+            .alert("Cannot Save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+                Button("OK") {}
+            } message: {
+                Text(verbatim: errorMessage ?? "")
             }
+            .task { await loadOptions() }
         }
+    }
+
+    private var activeRecipe: ConfigurationRecipe? {
+        guard let id = model.activeProfileID else { return nil }
+        return library.recipes.first { $0.id == id }
+    }
+
+    private var plan: QuickRulePlan {
+        QuickRulePlan.make(activeSchemeID: activeRecipe?.ruleSchemeID, schemes: library.rules,
+            myRulesLabel: HakoCopy.string("My Rules", locale: locale))
+    }
+
+     
+     
+    private func loadOptions() async {
+        guard let store = model.configurationLibraryStore else { return }
+        let schemeID: String
+        switch plan { case .reuse(let id): schemeID = id; case .copy(let base): schemeID = base }
+        guard let scheme = library.effectiveRuleScheme(schemeID) else { return }
+        let loaded: RulePolicyOptions? = await Task.detached(priority: .userInitiated) {
+            guard let payload = try? store.ruleSchemePayload(schemeID),
+                  let draft = try? ConfigurationRuleDraft(scheme: scheme, payload: payload) else { return nil }
+            return ConfigurationGroupEditorBridge.ruleOptions(draft)
+        }.value
+        if let loaded { options = loaded }
+    }
+
+    private func submit(_ raw: String, enabled: Bool, note: String) {
+        guard !busy else { return }
+        busy = true; errorMessage = nil
+        Task { @MainActor in
+            defer { busy = false }
+            do { try await create(raw, enabled: enabled, note: note); close() }
+            catch { errorMessage = error.localizedDescription }
+        }
+    }
+
+    private func create(_ raw: String, enabled: Bool, note: String) async throws {
+        guard let store = model.configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+        var snapshot = library
+        let myRules = HakoCopy.string("My Rules", locale: locale)
+        let schemeID: String
+        switch plan {
+        case .reuse(let id):
+            schemeID = id
+        case .copy(let base):
+            let before = Set(snapshot.rules.map(\.id))
+            snapshot = try await model.copyConfigurationRuleScheme(base, label: myRules, generation: snapshot.generation)
+            guard let made = snapshot.rules.first(where: { !before.contains($0.id) }) else { throw ConfigurationLibraryError.invalidIdentifier }
+            schemeID = made.id
+        }
+        guard let scheme = snapshot.rules.first(where: { $0.id == schemeID }) else { throw ConfigurationLibraryError.missingDependency(schemeID) }
+        var draft = try await Task.detached(priority: .userInitiated) {
+            try ConfigurationRuleDraft(scheme: scheme, payload: try store.ruleSchemePayload(schemeID))
+        }.value
+        draft.insertRuleFirst(raw)
+        if let first = draft.rows.first { draft.setRule(raw, enabled: enabled, note: note, rowID: first.id) }
+        snapshot = try await model.saveConfigurationRuleDraft(draft, generation: snapshot.generation)
+        if let active = model.activeProfileID,
+           let recipe = snapshot.recipes.first(where: { $0.id == active }),
+           recipe.ruleSchemeID != schemeID {
+            var edit = ConfigurationCreationAdapter.editingDraft(recipe: recipe,
+                label: model.profiles.first(where: { $0.id == active })?.label ?? recipe.label)
+            edit.selectedRuleID = schemeID
+            try await model.editConfiguration(edit, id: active, generation: snapshot.generation)
+            snapshot = try await Task.detached { try store.snapshot() }.value
+        }
+        changed(snapshot)
     }
 }
 
@@ -2225,5 +2274,41 @@ struct ConfigurationCompletionContentsAdapter: View {
             guard !Task.isCancelled else { return }
             sections = result
         } catch { failure = error.localizedDescription }
+    }
+}
+
+extension ConfigurationCreationAdapter {
+     
+     
+    static func editingDraft(recipe: ConfigurationRecipe, label: String, selectedRuleID: String? = nil) -> ConfigurationCreationDraft {
+        var draft = ConfigurationCreationDraft()
+        draft.selectedSourceIDs = recipe.sources.map(\.id)
+        draft.nodeScopes = recipe.nodeScopes
+        draft.selectedRuleID = selectedRuleID ?? recipe.ruleSchemeID
+        draft.label = label
+        draft.dnsMode = recipe.dnsMode ?? .source
+        draft.nodeNameservers = recipe.nodeNameservers
+        draft.customDNSJSON = recipe.customDNSJSON
+        return draft
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+enum QuickRulePlan: Equatable {
+    case reuse(String)
+    case copy(base: String)
+
+    static func make(activeSchemeID: String?, schemes: [ConfigurationRuleScheme], myRulesLabel: String) -> QuickRulePlan {
+        if let activeSchemeID, schemes.contains(where: { $0.id == activeSchemeID && $0.kind == .custom }) {
+            return .reuse(activeSchemeID)
+        }
+        if let mine = schemes.first(where: { $0.kind == .custom && $0.label == myRulesLabel }) {
+            return .reuse(mine.id)
+        }
+        return .copy(base: activeSchemeID ?? ConfigurationBuiltins.basicRuleID)
     }
 }

@@ -125,6 +125,11 @@ public struct ConfigurationRuleDraft: Equatable, Sendable {
         disabledRules = disabledRules.filter { kept.contains($0) }
         notes = notes.filter { kept.contains($0.key) }
     }
+     
+     
+    public mutating func insertRuleFirst(_ raw: String) {
+        rows.insert(.init(raw: raw), at: 0)
+    }
     public func isEnabled(_ raw: String) -> Bool { !disabledRules.contains(raw) }
     public func note(for raw: String) -> String { notes[raw] ?? "" }
      
