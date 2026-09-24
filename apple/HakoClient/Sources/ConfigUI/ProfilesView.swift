@@ -132,6 +132,8 @@ final class ProfilesViewModel: ObservableObject {
      
      
     @Published private(set) var statusMessage: HakoDisplayText = .copy("")
+
+
     @Published private(set) var notices: [String] = []
     @Published private(set) var planErrors: [String] = []
     @Published private(set) var lastFailure: ConfigurationFailure?
