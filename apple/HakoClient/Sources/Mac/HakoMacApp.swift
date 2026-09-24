@@ -4397,7 +4397,9 @@ private struct HakoMacProductCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
-        SidebarCommands()
+         
+         
+         
 
         CommandGroup(replacing: .appInfo) {
             Button {

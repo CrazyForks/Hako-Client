@@ -56,7 +56,7 @@ public struct HakoMacRootView: View {
          
         HakoClientUI.HakoRegularClientShell(
             navigationState: $navigationState,
-            sidebarBehavior: .systemMenuOnly,
+            sidebarBehavior: .fixed,
             background: HakoMacPlatformPresentation.palette.canvas,
             sidebarBackground: HakoMacPlatformPresentation.palette.surface
         ) { destination in
