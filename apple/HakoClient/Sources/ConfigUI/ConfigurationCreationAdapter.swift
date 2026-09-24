@@ -833,6 +833,9 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
         HakoFeatureNavigationContainer(ownsNavigationContainer: !pushed) {
             Group {
                 if let initial {
+                     
+                     
+                     
                     HakoTowerRuleCustomizationView(draft: initial.draft, localSets: library.localRuleSets ?? [],
                         resetDocument: initial.resetDocument, palette: .hakoProduct, pushed: pushed, ruleSetKeys: initial.ruleSetKeys,
                         save: save, download: { try await ConfigurationTowerRuleReader.rules($0) },
@@ -844,6 +847,7 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
                         }, close: close,
                         manualEditor: { draft, accept in AnyView(ConfigurationTowerManualRuleEditor(draft: draft, accept: accept)) },
                         nodeCandidates: { await loadNodeCandidates() })
+                        .environment(\.hakoGroupIconImages, HakoProxiesDisplayPreferences.load().groupIconImages)
                 } else if let errorMessage {
                     Form { Text(verbatim: errorMessage); Button("Retry") { Task { await load() } }; Button("Close", action: close) }
                 } else { ProgressView() }

@@ -262,11 +262,12 @@ public struct HakoTowerRuleCustomizationView: View {
                     Button { groupID = group.id; modal = .group } label: {
                         HStack(spacing: 10) {
                             if emojis {
-                                Group {
+                                HakoTowerGroupIconView(icon: HakoTowerGroupIcon.read(group.document), size: HakoTheme.Layout.proxyGroupIconSize) {
                                     if let symbol = emoji(group.name) { Text(verbatim: symbol).font(.title3) }
                                     else { Image(systemName: "rectangle.3.group").font(.body).foregroundStyle(.secondary) }
                                 }.frame(width: 28, height: 28)
                                     .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
+                                    .accessibilityIdentifier("configuration.rules.group.row.icon")
                             }
                             Text(verbatim: displayName(group.name)).foregroundStyle(Color.primary)
                                 .lineLimit(1).truncationMode(.tail).layoutPriority(1)
@@ -753,6 +754,77 @@ public enum HakoTowerGroupIconEcho: Equatable {
         case .emoji, .symbol: return "Shows as"
         case .image: return "Image on"
         case .nothingDraws: return "Saved with the group, but nothing draws it."
+        }
+    }
+}
+
+ 
+ 
+ 
+ 
+public struct HakoGroupIconImagesKey: EnvironmentKey {
+    public static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    public var hakoGroupIconImages: Bool {
+        get { self[HakoGroupIconImagesKey.self] }
+        set { self[HakoGroupIconImagesKey.self] = newValue }
+    }
+}
+
+ 
+ 
+ 
+public enum HakoTowerGroupIconPresentation: Equatable {
+    case emoji(String)
+    case symbol(HakoSymbol)
+    case image(String)
+
+    public static func of(_ icon: String, showsImages: Bool) -> HakoTowerGroupIconPresentation? {
+        switch HakoProxyGroupIconKind.of(icon) {
+        case .emoji(let value)?: return .emoji(value)
+        case .symbol(let symbol)?: return .symbol(symbol)
+        case .remote?: return showsImages ? .image(icon.trimmingCharacters(in: .whitespacesAndNewlines)) : nil
+        case .unrecognized?, .none: return nil
+        }
+    }
+}
+
+ 
+ 
+ 
+ 
+public struct HakoTowerGroupIconView<Fallback: View>: View {
+    let icon: String
+    let size: CGFloat
+    @ViewBuilder let fallback: () -> Fallback
+    @Environment(\.hakoGroupIconImages) private var showsImages
+
+     
+     
+    public init(icon: String, size: CGFloat, @ViewBuilder fallback: @escaping () -> Fallback) {
+        self.icon = icon
+        self.size = size
+        self.fallback = fallback
+    }
+
+    public var body: some View {
+        switch HakoTowerGroupIconPresentation.of(icon, showsImages: showsImages) {
+        case .emoji(let value)?:
+            Text(verbatim: value).font(.title3)
+        case .symbol(let symbol)?:
+            Image(systemName: symbol.rawValue).font(.body).foregroundStyle(.secondary)
+        case .image(let address)?:
+            ProxyGroupIconView(address: address, size: size, connected: true) {
+                RoundedRectangle(cornerRadius: HakoTheme.Layout.proxyGroupIconCornerRadius, style: .continuous)
+                    .fill(.quaternary)
+                    .frame(width: size, height: size)
+                    .accessibilityHidden(true)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: HakoTheme.Layout.proxyGroupIconCornerRadius, style: .continuous))
+        case nil:
+            fallback()
         }
     }
 }
