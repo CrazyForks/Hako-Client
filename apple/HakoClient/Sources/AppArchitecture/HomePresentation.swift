@@ -696,6 +696,7 @@ enum HomeProxiesEntryPolicy {
  
  
  
+ 
 enum HomeProxiesCardPolicy {
     static func domainSnapshot(
         mode: Profile.OutboundMode,
@@ -704,8 +705,8 @@ enum HomeProxiesCardPolicy {
     ) -> HakoHomeDomainSnapshot {
         guard mode == .global else { return standard }
         return HakoHomeDomainSnapshot(
-            count: nil,
-            countUnit: nil,
+            count: standard.count,
+            countUnit: standard.countUnit,
             breakdown: ProxyBrowsingVisibility.kernelGlobalGroupName,
             names: globalNode.map { [$0] } ?? []
         )
