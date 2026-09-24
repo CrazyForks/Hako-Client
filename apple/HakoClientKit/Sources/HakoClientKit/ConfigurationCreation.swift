@@ -706,11 +706,9 @@ extension ConfigurationLibraryStore {
              
              
              
-            var systemDNS = ConfigurationDNSSettings.automatic
-            if nodeNameservers == nil, let servers = Self.sourceNodeNameservers(in: inputs) {
-                systemDNS = systemDNS.settingTopLevel("proxy-server-nameserver", to: .array(servers.map(OrderedJSON.string)))
-            }
-            composition = composition.replacingDocument(composition.document.settingTopLevel("dns", to: systemDNS))
+             
+             
+            composition = composition.replacingDocument(composition.document.settingTopLevel("dns", to: ConfigurationDNSSettings.automatic))
         }
         if dnsMode == .custom {
             return composition.replacingDocument(composition.document.settingTopLevel("dns", to: try ConfigurationDNSSettings.custom(customDNSJSON)))
@@ -725,65 +723,6 @@ extension ConfigurationLibraryStore {
         guard case .object = dns else { throw ConfigurationCompositionError.invalidDocument(ruleInput.id) }
         let updated = dns.settingTopLevel("proxy-server-nameserver", to: .array(servers.map(OrderedJSON.string)))
         return composition.replacingDocument(composition.document.settingTopLevel("dns", to: updated))
-    }
-
-     
-     
-     
-    static func sourceNodeNameservers(in inputs: [ConfigurationInput]) -> [String]? {
-        for input in inputs {
-            guard let dns = input.document.topLevelValue("dns"), case .object = dns else { continue }
-             
-             
-             
-            if case .scalar("false")? = dns.topLevelValue("enable") { continue }
-            for key in ["proxy-server-nameserver", "nameserver"] {
-                guard case .array(let values)? = dns.topLevelValue(key) else { continue }
-                let servers = values.compactMap { value -> String? in
-                    guard case .string(let server) = value else { return nil }
-                    return dialableNameserver(server)
-                }
-                if !servers.isEmpty { return servers }
-            }
-        }
-        return nil
-    }
-
-     
-     
-     
-     
-    private static let dialableNameserverSchemes: Set<String> = [
-        "udp", "tcp", "tls", "http", "https", "quic", "system", "dhcp", "ts", "tailscale",
-    ]
-
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-    static func dialableNameserver(_ raw: String) -> String? {
-        var server = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let hash = server.firstIndex(of: "#") {
-            let parameters = server[server.index(after: hash)...]
-                .split(separator: "&", omittingEmptySubsequences: true)
-                .filter { $0.contains("=") }
-            server = String(server[..<hash])
-            if !parameters.isEmpty { server += "#" + parameters.joined(separator: "&") }
-        }
-        guard !server.isEmpty, server.first != "#" else { return nil }
-        if let range = server.range(of: "://") {
-            let scheme = server[..<range.lowerBound].lowercased()
-            guard dialableNameserverSchemes.contains(scheme) else { return nil }
-        }
-        return server
     }
 
     public func exportArchive() throws -> ConfigurationLibraryArchive {
@@ -1121,25 +1060,18 @@ public extension ConfigurationLibraryStore {
             document = try Self.settingsExpanded(baseline: originalSettingsBaseline(of: recipe, resolveInput: resolveInput),
                                                  delta: OrderedJSON.parse(recipe.originalSettingsJSON ?? "{}"))
         } else {
-            let derived = includingDNS && recipe.dnsMode == .system && recipe.nodeNameservers == nil
-                ? Self.sourceNodeNameservers(in: try recipe.sources.map { try resolveInput(payload($0)) }) : nil
-            document = try includingDNS ? advancedSourceDocument(recipe, sourceNodeNameservers: derived) : OrderedJSON.parse(recipe.settingsJSON ?? "{}")
+            document = try includingDNS ? advancedSourceDocument(recipe) : OrderedJSON.parse(recipe.settingsJSON ?? "{}")
         }
         return (ConfigurationAdvancedSettingsDocument.project(document, includingDNS: includingDNS).serialized(), current.generation)
     }
 }
 
-private func advancedSourceDocument(_ recipe: ConfigurationRecipe, sourceNodeNameservers: [String]? = nil) throws -> OrderedJSON {
+private func advancedSourceDocument(_ recipe: ConfigurationRecipe) throws -> OrderedJSON {
     let settings = try OrderedJSON.parse(recipe.settingsJSON ?? "{}")
     if recipe.dnsMode == .system {
          
          
-         
-        var dns = ConfigurationDNSSettings.automatic
-        if recipe.nodeNameservers == nil, let servers = sourceNodeNameservers {
-            dns = dns.settingTopLevel("proxy-server-nameserver", to: .array(servers.map(OrderedJSON.string)))
-        }
-        return settings.settingTopLevel("dns", to: dns)
+        return settings.settingTopLevel("dns", to: ConfigurationDNSSettings.automatic)
     }
     if recipe.dnsMode == .custom { return settings.settingTopLevel("dns", to: try ConfigurationDNSSettings.custom(recipe.customDNSJSON)) }
     return settings
