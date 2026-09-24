@@ -3740,6 +3740,17 @@ private final class HakoMacSceneModel: ObservableObject {
             label: profile.label,
             source: source,
             sourceSummary: sourceSummary,
+             
+             
+             
+             
+             
+            subscription: profile.subscriptionInfo.map {
+                HakoProfileSubscriptionSnapshot(
+                    uploadBytes: $0.upload, downloadBytes: $0.download, totalBytes: $0.total,
+                    expiration: $0.expire > 0 ? Date(timeIntervalSince1970: TimeInterval($0.expire)) : nil
+                )
+            },
             lastUpdatedAt: profile.lastUpdatedAt,
             autoUpdate: profile.autoUpdate,
             updateIntervalHours: profile.updateIntervalHours,

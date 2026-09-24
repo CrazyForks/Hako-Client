@@ -479,6 +479,37 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
 }
 
  
+ 
+ 
+ 
+ 
+ 
+public enum HakoMacConfigurationUsageFacts {
+    public static func singleLinkUsage(configurationID: String, in snapshot: ConfigurationLibrarySnapshot) -> ConfigurationSubscriptionUsage? {
+        guard let recipe = snapshot.recipes.first(where: { $0.id == configurationID }),
+              recipe.sources.count == 1, let reference = recipe.sources.first,
+              let record = snapshot.sources.first(where: { $0.id == reference.id }),
+              case .subscription = record.origin else { return nil }
+        return record.subscriptionUsage
+    }
+
+     
+     
+     
+     
+    public static func usage(configurationID: String, fetched: HakoProfileSubscriptionSnapshot?,
+                             in snapshot: ConfigurationLibrarySnapshot) -> ConfigurationSubscriptionUsage? {
+        if snapshot.recipes.contains(where: { $0.id == configurationID }) {
+            return singleLinkUsage(configurationID: configurationID, in: snapshot)
+        }
+        return fetched.map {
+            ConfigurationSubscriptionUsage(upload: $0.uploadBytes, download: $0.downloadBytes, total: $0.totalBytes,
+                                           expire: $0.expiration.map { Int64($0.timeIntervalSince1970) } ?? 0)
+        }
+    }
+}
+
+ 
 public enum HakoMacSubscriptionUsageCopy {
      
      

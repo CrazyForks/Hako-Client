@@ -246,12 +246,14 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                          
                          
                          
+                         
                         HakoMacSettingsRow(
                             title: .verbatim(profile.label),
                             status: nil,
                             statusTint: nil,
                             trailing: nil,
-                            busy: profile.isBusy
+                            busy: profile.isBusy,
+                            usage: HakoMacConfigurationUsageFacts.usage(configurationID: profile.id.rawValue, fetched: profile.subscription, in: model.snapshot)
                         )
                     }
                     .accessibilityIdentifier("configuration-center.configurations.row.\(profile.id.rawValue)")
@@ -604,6 +606,10 @@ struct HakoMacSettingsRow: View {
                 .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 3)
+         
+         
+         
+        .accessibilityValue(usage.map { Text(hako: HakoMacSubscriptionUsageCopy.traffic($0)) } ?? Text(verbatim: ""))
     }
 }
 
