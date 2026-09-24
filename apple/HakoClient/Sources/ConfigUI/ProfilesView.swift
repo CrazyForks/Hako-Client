@@ -1814,8 +1814,15 @@ final class ProfilesViewModel: ObservableObject {
      
     func updateRestagingIfActive(_ profile: Profile) {
         update(profile)
-        guard profile.id == activeProfileID,
-              let latest = profiles.first(where: { $0.id == profile.id }) else { return }
+        restageIfActive(profile.id)
+    }
+
+     
+     
+     
+    private func restageIfActive(_ profileID: String) {
+        guard profileID == activeProfileID,
+              let latest = profiles.first(where: { $0.id == profileID }) else { return }
         startActivation(
             latest,
             applyToTunnel: ProfileSelectionRuntimePolicy.shouldApplyToTunnel(vpnStatus: vpn.status),
@@ -3062,6 +3069,13 @@ final class ProfilesViewModel: ObservableObject {
             )
             throw error
         }
+         
+         
+         
+         
+         
+         
+        restageIfActive(profile.id)
     }
 
      
