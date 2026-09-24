@@ -177,6 +177,13 @@ public struct ConfigurationRecipe: Codable, Equatable, Identifiable, Sendable {
     public var originalSettingsJSON: String? = nil
      
     public var settingsSource: ConfigurationSourceVersion?
+     
+     
+     
+     
+     
+     
+    public var droppedRules: [String]? = nil
     public var dependencies: [ConfigurationSourceVersion] {
         sources + [ruleSource] + (settingsSource.map { [$0] } ?? []) + Array((settingsRuleDependencies ?? [:]).values)
     }

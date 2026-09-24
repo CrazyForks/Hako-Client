@@ -684,6 +684,7 @@ struct ProfileFinalConfigurationView: View {
                     title: item.title,
                     detail: item.detail,
                     strippedKeys: item.strippedKeys,
+                    lines: item.lines,
                     symbol: symbol,
                     tint: tint
                 )
@@ -961,6 +962,7 @@ struct ProfileFinalConfigurationView: View {
         title: String,
         detail: String,
         strippedKeys: [String] = [],
+        lines: [String] = [],
         symbol: HakoSymbol,
         tint: Color
     ) -> some View {
@@ -985,6 +987,14 @@ struct ProfileFinalConfigurationView: View {
                         .accessibilityLabel(
                             "Stripped keys: \(strippedKeys.joined(separator: ", "))"
                         )
+                }
+                 
+                 
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                    Text(verbatim: line)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }

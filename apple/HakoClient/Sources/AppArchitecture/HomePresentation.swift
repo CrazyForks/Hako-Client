@@ -220,6 +220,10 @@ struct ProfileFinalConfigurationDisclosure: Equatable, Identifiable, Sendable {
      
      
     var strippedKeys: [String] = []
+     
+     
+     
+    var lines: [String] = []
 }
 
  
@@ -233,21 +237,36 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
     let unsupportedItems: [ProfileFinalConfigurationDisclosure]
     let adaptedItems: [ProfileFinalConfigurationDisclosure]
 
+     
+     
+     
+     
+     
     static func make(
         sourceYAML: String?,
-        effectiveYAML: String?
+        effectiveYAML: String?,
+        omittedRules: [String] = []
     ) -> ProfileFinalConfigurationSnapshot {
         let sourceText = presentedText(sourceYAML)
         let effectiveText = presentedText(effectiveYAML)
         let source = object(sourceText)
         let effective = object(effectiveText)
 
+        var adapted = adaptedDisclosures(source: source, effective: effective)
+        if !omittedRules.isEmpty {
+            adapted.append(.init(
+                id: "omitted-rules",
+                title: "Rules Not in Effect as Written",
+                detail: "Each of these rules names a node that none of this configuration's node sources includes. A rule is left out and its traffic follows the rules below it; a final MATCH rule sends traffic directly instead. Add that node's source to this configuration, or route the rule to a policy group.",
+                lines: omittedRules
+            ))
+        }
         return ProfileFinalConfigurationSnapshot(
             sourceText: sourceText,
             effectiveText: effectiveText,
             fixedItems: fixedDisclosures,
             unsupportedItems: unsupportedDisclosures(in: source),
-            adaptedItems: adaptedDisclosures(source: source, effective: effective)
+            adaptedItems: adapted
         )
     }
 

@@ -1437,11 +1437,17 @@ struct GoldenFlowHomeAdapter: View {
             )
         }
         let effectiveYAML = profiles.previewText(for: profile)
+         
+         
+         
+        let omittedRules = ((try? profiles.configurationLibraryStore?.snapshot()) ?? nil)?
+            .recipes.first(where: { $0.id == profile.id })?.droppedRules ?? []
         let began = DispatchTime.now().uptimeNanoseconds
         let snapshot = await Task.detached(priority: .userInitiated) {
             ProfileFinalConfigurationSnapshot.make(
                 sourceYAML: sourceYAML,
-                effectiveYAML: effectiveYAML
+                effectiveYAML: effectiveYAML,
+                omittedRules: omittedRules
             )
         }.value
         guard !Task.isCancelled,

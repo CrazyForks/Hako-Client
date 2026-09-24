@@ -19,6 +19,24 @@ public struct ConfigurationInput: Equatable, Sendable {
 public struct ConfigurationComposition: Equatable, Sendable {
     public let document: OrderedJSON
     public let sourceIDs: [String]
+     
+     
+     
+     
+     
+    public let droppedRules: [String]
+
+    public init(document: OrderedJSON, sourceIDs: [String], droppedRules: [String] = []) {
+        self.document = document; self.sourceIDs = sourceIDs; self.droppedRules = droppedRules
+    }
+
+     
+     
+     
+     
+    public func replacingDocument(_ document: OrderedJSON) -> ConfigurationComposition {
+        ConfigurationComposition(document: document, sourceIDs: sourceIDs, droppedRules: droppedRules)
+    }
 }
 
 public enum ConfigurationCompositionError: LocalizedError, Equatable {
@@ -226,6 +244,7 @@ public enum ConfigurationComposer {
         }
          
          
+        var droppedRules: [String] = []
         func rewriteRules(_ value: OrderedJSON) throws -> OrderedJSON {
             guard let rows = value.compositionArray else { return value }
             return .array(try rows.compactMap { rule -> OrderedJSON? in
@@ -257,7 +276,23 @@ public enum ConfigurationComposer {
                      
                      
                      
-                    guard let mapped = sources.lazy.compactMap({ nodeNames[$0.id]?[target] }).first else { return nil }
+                     
+                     
+                     
+                     
+                    guard let mapped = sources.lazy.compactMap({ nodeNames[$0.id]?[target] }).first else {
+                        droppedRules.append(text)
+                         
+                         
+                         
+                         
+                         
+                        if type == "MATCH" {
+                            fields[index] = "DIRECT"
+                            return .string(fields.joined(separator: ","))
+                        }
+                        return nil
+                    }
                     fields[index] = mapped
                 }
                 return .string(fields.joined(separator: ","))
@@ -271,7 +306,7 @@ public enum ConfigurationComposer {
                 ($0.key, try rewriteRules($0.value))
             }))
         }
-        return ConfigurationComposition(document: result, sourceIDs: sources.map(\.id))
+        return ConfigurationComposition(document: result, sourceIDs: sources.map(\.id), droppedRules: droppedRules)
     }
 
     private static func validateShape(_ input: ConfigurationInput) throws {
@@ -386,7 +421,11 @@ public enum ConfigurationComposer {
         return parts.allSatisfy { $0.allSatisfy { $0.isHexDigit } }
     }
 
-    private static let builtins: Set<String> = ["DIRECT", "REJECT", "REJECT-DROP", "PASS", "COMPATIBLE", "GLOBAL"]
+     
+     
+     
+     
+    private static let builtins: Set<String> = ["DIRECT", "REJECT", "REJECT-DROP", "PASS", "PASS-RULE", "COMPATIBLE", "GLOBAL"]
 
     private static func dependency(
         _ name: String, source: String, nodes: [String: [String: String]], groups: Set<String>

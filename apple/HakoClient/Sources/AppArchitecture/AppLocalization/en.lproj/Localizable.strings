@@ -1014,6 +1014,7 @@
 "Each ClientHello fingerprint must be a short, printable value." = "Each ClientHello fingerprint must be a short, printable value.";
 "Each connection may use a different route" = "Each connection may use a different route";
 "Each inline node uses the same field-complete editor as the Proxies tab." = "Each inline node uses the same field-complete editor as the Proxies tab.";
+"Each of these rules names a node that none of this configuration's node sources includes. A rule is left out and its traffic follows the rules below it; a final MATCH rule sends traffic directly instead. Add that node's source to this configuration, or route the rule to a policy group." = "Each of these rules names a node that none of this configuration's node sources includes. A rule is left out and its traffic follows the rules below it; a final MATCH rule sends traffic directly instead. Add that node's source to this configuration, or route the rule to a policy group.";
 "Each personal rule must be unique." = "Each personal rule must be unique.";
 "Each row is one chain: the proxy that dials, then the hop it dials through. Tap a chain to change or clear its hop." = "Each row is one chain: the proxy that dials, then the hop it dials through. Tap a chain to change or clear its hop.";
 "Each row reads the way the traffic goes: entry first, exit last. The site you open sees the exit. Tap a chain to change or remove it." = "Each row reads the way the traffic goes: entry first, exit last. The site you open sees the exit. Tap a chain to change or remove it.";
@@ -2549,6 +2550,7 @@
 "Rules" = "Rules";
 "Rules Changed" = "Rules Changed";
 "Rules From" = "Rules From";
+"Rules Not in Effect as Written" = "Rules Not in Effect as Written";
 "Rules and proxy chains for this profile" = "Rules and proxy chains for this profile";
 "Rules could not be saved. The previous configuration is still available." = "Rules could not be saved. The previous configuration is still available.";
 "Rules from Sources" = "Rules from Sources";
