@@ -2128,6 +2128,16 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
+     
+     
+    func restageActiveRuntime() {
+        guard let activeProfileID else { return }
+        restageIfActive(activeProfileID)
+    }
+
+     
+     
+     
     private func restageIfActive(_ profileID: String) {
         guard profileID == activeProfileID,
               let latest = profiles.first(where: { $0.id == profileID }) else { return }

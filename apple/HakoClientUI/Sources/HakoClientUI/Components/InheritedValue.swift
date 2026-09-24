@@ -618,7 +618,6 @@ public struct InheritedNumber: Equatable {
  
 public enum UpstreamTextDefault {
     public static let table: [String: PinnedDefault<String>] = [
-        "log-level": PinnedDefault("info"),                  
         "geosite-matcher": PinnedDefault("succinct", sentinelMeansDefault: true),  
         "ntp.server": PinnedDefault("time.apple.com"),       
         "ntp.dialer-proxy": PinnedDefault(nil, sentinelMeansDefault: true),  

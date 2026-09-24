@@ -357,6 +357,15 @@ struct AppShellView: View {
         .onReceive(NotificationCenter.default.publisher(for: .hakoSystemActionQueued)) { _ in
             handlePendingSystemAction()
         }
+         
+         
+         
+         
+         
+        .onReceive(NotificationCenter.default.publisher(for: HakoLogSettings.levelDirectiveDidChange)) { _ in
+            command.refreshLogDisplayLevel()
+            profiles.restageActiveRuntime()
+        }
         .onChange(of: navigationState.selectedRoot) { _ in
             syncConnectionsForSelectedTab()
         }

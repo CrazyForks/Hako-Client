@@ -191,7 +191,6 @@ struct ProfileAdvancedOverridesDraft: Equatable {
 
 enum ProfileRuntimeTrustError: LocalizedError, Equatable {
     case profileChanged
-    case invalidLogLevel
     case invalidUserAgent
     case invalidGeositeMatcher
     case invalidFingerprint
@@ -202,8 +201,6 @@ enum ProfileRuntimeTrustError: LocalizedError, Equatable {
         switch self {
         case .profileChanged:
             return "This profile changed while its runtime settings were being edited. Reopen the editor and try again."
-        case .invalidLogLevel:
-            return "Choose a supported log level, or use the profile default."
         case .invalidUserAgent:
             return "Enter a short, printable User-Agent, or use the profile default."
         case .invalidGeositeMatcher:
@@ -226,7 +223,6 @@ enum ProfileRuntimeTrustError: LocalizedError, Equatable {
  
  
 struct ProfileRuntimeTrustDraft: Equatable {
-    static let supportedLogLevels = ["silent", "error", "warning", "info", "debug"]
     static let supportedGeositeMatchers = ["succinct", "mph", "hybrid"]
     static let serverTLSFields: Set<String> = [
         "certificate", "private-key", "client-auth-type", "client-auth-cert", "ech-key",
@@ -234,7 +230,6 @@ struct ProfileRuntimeTrustDraft: Equatable {
 
     let profileID: String
     let originalOverwriteMode: Profile.OverwriteMode
-    var logLevel: String?
     var userAgent: String?
     var geositeMatcher: String?
     var clientFingerprints: [String]?
@@ -296,18 +291,16 @@ struct ProfileRuntimeTrustDraft: Equatable {
     }
 
     private(set) var inheritedText: [String: InheritedTextBase] = [:]
-    static let inheritedTextKeyPaths: [String] = ["log-level", "geosite-matcher"]
+    static let inheritedTextKeyPaths: [String] = ["geosite-matcher"]
     func inheritedTextBase(_ keyPath: String) -> InheritedTextBase { inheritedText[keyPath] ?? .unknown }
     func textOverride(for keyPath: String) -> String? {
         switch keyPath {
-        case "log-level": return logLevel
         case "geosite-matcher": return geositeMatcher
         default: return nil
         }
     }
     mutating func setTextOverride(_ value: String?, for keyPath: String) {
         switch keyPath {
-        case "log-level": logLevel = value
         case "geosite-matcher": geositeMatcher = value
         default: break
         }
@@ -354,7 +347,6 @@ struct ProfileRuntimeTrustDraft: Equatable {
         profileID = profile.id
         originalOverwriteMode = profile.overwriteMode ?? .standard
         let patch = OverridePatch(patchJSON: profile.override.patchJSON)
-        logLevel = patch.logLevel
         userAgent = patch.globalUA
         geositeMatcher = patch.geositeMatcher
         fakeIPPersistence = ProfileBooleanOverride(
@@ -375,8 +367,7 @@ struct ProfileRuntimeTrustDraft: Equatable {
     }
 
     var customizedFieldCount: Int {
-        (logLevel == nil ? 0 : 1)
-            + (userAgent == nil ? 0 : 1)
+        (userAgent == nil ? 0 : 1)
             + (geositeMatcher == nil ? 0 : 1)
             + (fakeIPPersistence == .profileDefault ? 0 : 1)
             + (clientFingerprints == nil ? 0 : 1)
@@ -397,13 +388,6 @@ struct ProfileRuntimeTrustDraft: Equatable {
             throw ProfileRuntimeTrustError.profileChanged
         }
 
-        let normalizedLogLevel = logLevel?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if let normalizedLogLevel,
-           !Self.supportedLogLevels.contains(normalizedLogLevel)
-        {
-            throw ProfileRuntimeTrustError.invalidLogLevel
-        }
         let normalizedUserAgent = userAgent?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if let normalizedUserAgent,
@@ -425,9 +409,12 @@ struct ProfileRuntimeTrustDraft: Equatable {
 
         var settings = facade.snapshot(for: profile)
         var patch = OverridePatch(patchJSON: settings.override.patchJSON)
-        patch.logLevel =
-            normalizedLogLevel?.isEmpty == false
-                ? normalizedLogLevel : nil
+         
+         
+         
+         
+         
+        patch.logLevel = nil
         patch.globalUA = ClientUserAgent.sanitized(
             normalizedUserAgent
         )
@@ -446,11 +433,6 @@ struct ProfileRuntimeTrustDraft: Equatable {
             throw ProfileRuntimeTrustError.profileChanged
         }
 
-        let normalizedLogLevel = logLevel?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let normalizedLogLevel,
-           !Self.supportedLogLevels.contains(normalizedLogLevel) {
-            throw ProfileRuntimeTrustError.invalidLogLevel
-        }
         let normalizedUserAgent = userAgent?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if let normalizedUserAgent,
@@ -470,7 +452,7 @@ struct ProfileRuntimeTrustDraft: Equatable {
 
         var settings = facade.snapshot(for: profile)
         var patch = OverridePatch(patchJSON: settings.override.patchJSON)
-        patch.logLevel = normalizedLogLevel?.isEmpty == false ? normalizedLogLevel : nil
+        patch.logLevel = nil   
         patch.globalUA = ClientUserAgent.sanitized(normalizedUserAgent)
         patch.geositeMatcher = normalizedGeositeMatcher?.isEmpty == false
             ? normalizedGeositeMatcher : nil

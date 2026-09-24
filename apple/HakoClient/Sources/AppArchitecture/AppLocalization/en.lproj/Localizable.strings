@@ -562,7 +562,6 @@
 "Choose a rule set" = "Choose a rule set";
 "Choose a supported GeoSite matcher, or use the profile default." = "Choose a supported GeoSite matcher, or use the profile default.";
 "Choose a supported group type. Proxy chaining is configured with dialer-proxy on each proxy." = "Choose a supported group type. Proxy chaining is configured with dialer-proxy on each proxy.";
-"Choose a supported log level, or use the profile default." = "Choose a supported log level, or use the profile default.";
 "Choose config file" = "Choose config file";
 "Choose country or region" = "Choose country or region";
 "Choose different entry and exit nodes." = "Choose different entry and exit nodes.";

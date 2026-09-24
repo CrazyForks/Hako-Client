@@ -562,7 +562,6 @@
 "Choose a rule set" = "選擇規則集";
 "Choose a supported GeoSite matcher, or use the profile default." = "選擇受支援的 GeoSite 符合器，或使用設定檔預設值。";
 "Choose a supported group type. Proxy chaining is configured with dialer-proxy on each proxy." = "選擇受支援的群組類型。代理串聯透過每個代理上的 dialer-proxy 設定。";
-"Choose a supported log level, or use the profile default." = "選擇受支援的記錄等級，或使用設定檔預設值。";
 "Choose config file" = "選擇設定檔";
 "Choose country or region" = "選擇國家或地區";
 "Choose different entry and exit nodes." = "前置節點和出口節點要不同。";

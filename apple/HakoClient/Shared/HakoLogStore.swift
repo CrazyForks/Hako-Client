@@ -199,12 +199,27 @@ public enum HakoLogSettings {
         _ directive: LevelDirective,
         in defaults: UserDefaults
     ) {
+        let previous = defaults.string(forKey: levelDirectiveKey)
         if let raw = directive.rawValue {
             defaults.set(raw, forKey: levelDirectiveKey)
         } else {
             defaults.removeObject(forKey: levelDirectiveKey)
         }
+         
+         
+         
+         
+         
+         
+        if previous != defaults.string(forKey: levelDirectiveKey) {
+            NotificationCenter.default.post(name: levelDirectiveDidChange, object: nil)
+        }
     }
+
+     
+    public static let levelDirectiveDidChange = Notification.Name(
+        "network.hako.logs.levelDirectiveDidChange"
+    )
 
      
      
