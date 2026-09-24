@@ -1861,6 +1861,7 @@
 "Node Display" = "節點顯示";
 "Node Library" = "節點庫";
 "Node Overrides" = "節點覆寫";
+"Node Sets (%@)" = "節點集合（%@）";
 "Node Sources" = "節點來源";
 "Node could not be saved" = "節點未能儲存";
 "Nodes" = "節點";

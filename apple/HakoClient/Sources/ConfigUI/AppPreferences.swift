@@ -21,6 +21,17 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         }
     }
 
+     
+     
+     
+     
+     
+     
+     
+    var localeOverride: Locale? {
+        self == .system ? nil : locale
+    }
+
     var locale: Locale {
         switch self {
         case .system:

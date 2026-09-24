@@ -232,7 +232,12 @@ struct AppShellView: View {
          
          
          
-        .environment(\.locale, preferences.language.locale)
+         
+         
+         
+        .transformEnvironment(\.locale) { locale in
+            if let override = preferences.language.localeOverride { locale = override }
+        }
         .preferredColorScheme(preferences.themeMode.colorScheme)
         .tint(preferences.accent.color)
         .background(HakoTheme.canvas(pureBlack: preferences.pureBlack).ignoresSafeArea())

@@ -823,7 +823,8 @@ public struct HakoConfigurationSourceLibraryView: View {
                                     .padding(.vertical, 6)
                                     .accessibilityIdentifier("configuration.collection.\(source.id).proxy-providers.\(entry.collection.name)")
                             }
-                        } label: { Text("节点集合 · \(children.count)").font(.subheadline).foregroundStyle(.secondary) }
+                        } label: { Text(hako: .format("Node Sets (%@)", [String(children.count)])).font(.subheadline) }
+                        .hakoRowDisclosure()
                         .padding(.bottom, 8)
                     }
 

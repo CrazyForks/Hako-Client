@@ -105,7 +105,15 @@ final class ProfilesViewModel: ObservableObject {
         container.flatMap { try? ConfigResourceStore(containerURL: $0) }
     }
 
-    @Published private(set) var profiles: [Profile] = []
+    @Published private(set) var profiles: [Profile] = [] {
+        didSet { editableSourceCache.removeAll() }
+    }
+     
+     
+     
+     
+    private var editableSourceCache: [String: Bool] = [:]
+    private(set) var editableSourceStatsForTesting = 0
     @Published private(set) var savedConfigurationGeneration: UInt64 = 0
     @Published private(set) var activeProfileID: String?
     @Published private(set) var busyProfileID: String?
@@ -3671,9 +3679,13 @@ final class ProfilesViewModel: ObservableObject {
      
      
     func hasEditableSource(for profile: Profile) -> Bool {
+        if let remembered = editableSourceCache[profile.id] { return remembered }
         guard let workingDir else { return false }
         let sidecar = workingDir.appendingPathComponent("store/\(profile.id)/source.yaml")
-        return FileManager.default.fileExists(atPath: sidecar.path)
+        editableSourceStatsForTesting += 1
+        let exists = FileManager.default.fileExists(atPath: sidecar.path)
+        editableSourceCache[profile.id] = exists
+        return exists
     }
 
     func runtimeSourceYAML(for profile: Profile) -> String? {
@@ -3708,6 +3720,7 @@ final class ProfilesViewModel: ObservableObject {
         forgetCachedSource(profile.id)
         guard let workingDir else { throw PipelineError.sourceUnavailable(profile.label) }
         try sourceWriter(yaml, profile, workingDir)
+        editableSourceCache.removeAll()
     }
 
      
@@ -3738,6 +3751,7 @@ final class ProfilesViewModel: ObservableObject {
             try? Self.writeSourceYAML(yaml, profile, workingDir)
         } else {
             try? FileManager.default.removeItem(at: sidecar)
+            editableSourceCache.removeAll()
         }
     }
 
