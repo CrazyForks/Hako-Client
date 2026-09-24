@@ -3311,6 +3311,25 @@ final class ProfilesViewModel: ObservableObject {
         }
     }
 
+     
+     
+     
+     
+    func refreshLegacyProfileAwaiting(_ profile: Profile) async throws -> BatchUpdateState {
+        busyProfileID = profile.id
+        defer { busyProfileID = nil; load() }
+        return try await withThrowingTaskGroup(of: BatchUpdateState.self) { group in
+            group.addTask { try await self.performBatchSync(profile) }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(Self.batchItemLimit * 1_000_000_000))
+                throw URLError(.timedOut)
+            }
+            defer { group.cancelAll() }
+            guard let first = try await group.next() else { throw URLError(.timedOut) }
+            return first
+        }
+    }
+
     func cancelBatchSync() {
         guard let task = batchTask else { return }
          

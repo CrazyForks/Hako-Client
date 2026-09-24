@@ -1238,22 +1238,24 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
+         
+         
+         
+         
+         
         actions.syncLegacyProfiles = { progress in
             let remote = profiles.profiles.filter { if case .url = $0.source { return true }; return false }
             guard !remote.isEmpty else { return HakoMacBatchOutcome() }
-            progress(HakoCopy.string("Updating Sources…", locale: Locale.current) + " 0 / \(remote.count)")
-            profiles.syncAll()
-            var waited = 0
-            while profiles.isBatchSyncing, waited < 600 {
-                try? await Task.sleep(nanoseconds: 250_000_000)
-                waited += 1
-                if let report = profiles.batchReport {
-                    progress(HakoCopy.string("Updating Sources…", locale: Locale.current) + " \(report.completedCount) / \(report.expectedCount)")
+            var outcome = HakoMacBatchOutcome()
+            for (index, profile) in remote.enumerated() {
+                progress(HakoCopy.string("Updating Sources…", locale: Locale.current) + " \(index + 1) / \(remote.count) · " + profile.label)
+                do {
+                    if try await profiles.refreshLegacyProfileAwaiting(profile) == .updated { outcome.updated += 1 }
+                } catch {
+                    outcome.failures.append(profile.label + ": " + error.localizedDescription)
                 }
             }
-            let report = profiles.batchReport
-            let failures = report?.items.filter { $0.state == .failed }.map { $0.label + ": " + ($0.message ?? "") } ?? []
-            return HakoMacBatchOutcome(updated: report?.updatedCount ?? 0, failures: failures)
+            return outcome
         }
         actions.updateSourceReplacingRules = { id, version in
             try await profiles.refreshConfigurationSource(id, replaceEditedRules: true, expectedVersion: version)
@@ -2955,8 +2957,12 @@ private final class HakoMacSceneModel: ObservableObject {
                      
                     ToolbarItemGroup(placement: .primaryAction) {
                         if self.profiles.hasSubscriptionProfile {
+                             
+                             
+                             
+                             
                             Button {
-                                self.profiles.syncAll()
+                                Task { await self.configurationLibrary.updateEverything() }
                             } label: {
                                 Label {
                                     Text(hako: .copy("Update All"))
@@ -2964,7 +2970,7 @@ private final class HakoMacSceneModel: ObservableObject {
                                     Image(systemName: HakoSymbol.arrowTriangle2Circlepath.name)
                                 }
                             }
-                            .disabled(self.profiles.isSyncingAll)
+                            .disabled(self.configurationLibrary.isUpdatingAll || self.configurationLibrary.isBusy)
                             .help(Text(hako: .copy("Update All")))
                             .accessibilityIdentifier("profile-center.sync-all")
                         }

@@ -173,7 +173,15 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
 
     @ViewBuilder
     private var updateStatusLines: some View {
-        if segment == .configurations { listStatusLines }
+         
+         
+         
+         
+         
+        if segment == .configurations,
+           actions.failure != nil || (model.updateProgress == nil && model.updateStatus == nil && model.updateError == nil) {
+            listStatusLines
+        }
         if segment != .configurations, let issues = updateIssuesLine {
             let line = Text(verbatim: issues).font(.subheadline).foregroundStyle(.red)
                 .fixedSize(horizontal: false, vertical: true)
