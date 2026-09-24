@@ -250,7 +250,7 @@ public struct HakoTowerRuleCustomizationView: View {
      
     private let nodeCandidates: (() async -> [ConfigurationRuleTargetCandidates.Section])?
     @State private var nodeSections: [ConfigurationRuleTargetCandidates.Section] = []
-    private enum Modal: String, Identifiable { case identity, group, local, copy, manual, order, rule; var id: String { rawValue } }
+    private enum Modal: String, Identifiable { case identity, group, local, copy, manual, rule; var id: String { rawValue } }
     @State private var groupID: UUID?
     @State private var localID: String?
      
@@ -321,32 +321,18 @@ public struct HakoTowerRuleCustomizationView: View {
     public var body: some View {
         List {
             if let error { Text(verbatim: error).foregroundStyle(.orange) }
-            if reordering {
-                 
-                 
-                 
-                 
-                 
-                Section {
-                    Button { modal = .order } label: {
-                        HStack {
-                            Text("Current Rules").foregroundStyle(Color.primary)
-                            Spacer()
-                            Text(hako: .format("%@ rules", [String(draft.rows.count)]))
-                                .foregroundStyle(.secondary).monospacedDigit()
-                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("configuration.rules.current.summary")
-                }
-            } else {
-                HakoTowerInlineRules(rows: draft.rows, version: draft.version,
-                    query: search, palette: palette, remove: { draft.remove([$0]) }, reorder: { modal = .order },
-                    ruleSetNames: ruleSetNames, addRule: { ruleID = nil; modal = .rule }, edit: { ruleID = $0; modal = .rule })
-            }
+             
+             
+             
+             
+            HakoTowerInlineRules(rows: draft.rows, version: draft.version,
+                query: search, palette: palette, remove: { draft.remove([$0]) },
+                move: { offsets, destination in
+                    var transaction = Transaction(); transaction.disablesAnimations = true
+                    withTransaction(transaction) { draft.moveRows(fromOffsets: offsets, toOffset: destination) }
+                    hasUnsavedChanges = true
+                },
+                ruleSetNames: ruleSetNames, addRule: { ruleID = nil; modal = .rule }, edit: { ruleID = $0; modal = .rule })
             Section {
                 ForEach(visibleGroups) { group in
                     Button { groupID = group.id; modal = .group } label: {
@@ -537,8 +523,6 @@ public struct HakoTowerRuleCustomizationView: View {
                     HakoTowerNameEditor(title: "Save as New Scheme", name: draft.label + " · 自定义", save: { name in try await copy(draft, name); modal = nil; close() }, close: { modal = nil })
                 case .manual:
                     manualEditor(draft) { value in let result = try await save(value); await receiveSaved(result) }
-                case .order:
-                    HakoTowerRulesOrderView(draft: $draft, palette: palette, ruleSetNames: ruleSetNames, markChanged: { hasUnsavedChanges = true }, close: { modal = nil })
                 case .rule:
                     if let id = ruleID, let row = draft.rows.first(where: { $0.id == id }) {
                          
@@ -865,6 +849,14 @@ private struct HakoTowerLocalRuleEditor: View {
                         .hakoRuleSetLinkInput()
                         .accessibilityIdentifier("configuration.rules.set.contents")
                 } else {
+                    if lines.isEmpty {
+                         
+                         
+                        Text("No rules yet. Tap Add Rule and build them one at a time. The policy chosen below applies to all of them.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("configuration.rules.set.empty")
+                    }
                     ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                         HakoTowerRuleSummary(row: .init(raw: line), palette: palette)
                     }
@@ -1339,7 +1331,7 @@ private struct HakoTowerInlineRules: View {
      
      
      
-    var reorder: (() -> Void)? = nil
+    var move: ((IndexSet, Int) -> Void)? = nil
     var ruleSetNames: [String: String] = [:]
      
     var addRule: (() -> Void)? = nil
@@ -1374,14 +1366,22 @@ private struct HakoTowerInlineRules: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("configuration.rules.rule.row")
                     .deleteDisabled(row.isFinal)
+                    .moveDisabled(row.isFinal || !current.query.isEmpty)
                 } else {
                     HakoTowerRuleSummary(row: row, palette: palette, ruleSetNames: ruleSetNames)
                         .deleteDisabled(row.isFinal)
+                        .moveDisabled(row.isFinal || !current.query.isEmpty)
                 }
             }
             .onDelete { offsets in
                 guard let remove else { return }
                 for index in offsets where visible.indices.contains(index) && !visible[index].isFinal { remove(visible[index].id) }
+            }
+            .onMove { offsets, destination in
+                 
+                 
+                guard let move, current.query.isEmpty else { return }
+                move(offsets, destination)
             }
             if searching && results.query != current.query { ProgressView("Searching…") }
             else if !searching && visible.isEmpty { Text("No results").foregroundStyle(.secondary) }
@@ -1394,14 +1394,6 @@ private struct HakoTowerInlineRules: View {
                 Text("Current Rules")
                 Spacer()
                 Text(hako: .format("%@ rules", [String(visible.count)]))
-                if let reorder {
-                    Button(action: reorder) { Text("Reorder") }
-                        .font(.footnote.weight(.semibold))
-                        .textCase(nil)
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.tint)
-                        .accessibilityIdentifier("configuration.rules.reorder")
-                }
             }
         } footer: { Text("Matched from top to bottom") }
         .task(id: current) {

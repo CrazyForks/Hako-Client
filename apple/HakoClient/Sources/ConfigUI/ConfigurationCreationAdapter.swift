@@ -880,9 +880,30 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
     private func loadNodeCandidates() async -> [ConfigurationRuleTargetCandidates.Section] {
         guard let store = model.configurationLibraryStore else { return [] }
         let snapshot = library
+        let inUse = HakoCopy.string("Nodes in use", locale: .current)
         return await Task.detached(priority: .userInitiated) {
             let candidates = try? ConfigurationRuleTargetCandidates.make(groups: [], snapshot: snapshot, payload: { try store.payload($0) })
-            return candidates?.sections.filter { $0.kind == .source } ?? []
+            var sections = candidates?.sections.filter { $0.kind == .source } ?? []
+             
+             
+             
+             
+             
+             
+             
+            if let container = HakoAppIdentifiers.appGroupContainer,
+               let resources = try? ConfigResourceStore(containerURL: container),
+               let directory = try? resources.activeProvidersDirectory() {
+                let known = Set(sections.flatMap(\.names))
+                var seen = Set<String>()
+                let loaded = ProviderNodesLoader.load(providersDir: directory)
+                let names = loaded.keys.sorted().flatMap { loaded[$0] ?? [] }.map(\.name)
+                    .filter { !known.contains($0) && seen.insert($0).inserted }
+                if !names.isEmpty {
+                    sections.append(.init(id: "providers:active", kind: .source, sourceLabel: inUse, names: names))
+                }
+            }
+            return sections
         }.value
     }
     private func load() async {

@@ -1912,6 +1912,7 @@
 "No routing rules were found in this source." = "No routing rules were found in this source.";
 "No rule provider named %@ is declared." = "No rule provider named %@ is declared.";
 "No rule sets yet." = "No rule sets yet.";
+"No rules yet. Tap Add Rule and build them one at a time. The policy chosen below applies to all of them." = "No rules yet. Tap Add Rule and build them one at a time. The policy chosen below applies to all of them.";
 "No traffic in the last 30 seconds" = "No traffic in the last 30 seconds";
 "No usable Wi-Fi or Personal Hotspot address is available." = "No usable Wi-Fi or Personal Hotspot address is available.";
 "No usable network" = "No usable network";
@@ -1930,6 +1931,7 @@
 "Node Sources" = "Node Sources";
 "Node could not be saved" = "Node could not be saved";
 "Nodes" = "Nodes";
+"Nodes in use" = "Nodes in use";
 "None" = "None";
 "None in this profile" = "None in this profile";
 "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this." = "None of these apply while the outbound carries UDP. Hysteria2, TUIC and any line with udp on — including UDP over TCP — take the rule as matched and never reach this.";
