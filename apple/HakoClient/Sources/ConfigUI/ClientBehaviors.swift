@@ -57,7 +57,9 @@ enum UDPFallbackSettings {
 
      
      
-    static let fallbackDefault: UDPFallbackPolicy = .quic
+     
+     
+    static let fallbackDefault: UDPFallbackPolicy = .off
 
     static var appGroupDefaults: UserDefaults {
         UserDefaults(suiteName: HakoAppIdentifiers.appGroup) ?? .standard

@@ -220,7 +220,7 @@ struct UDPFallbackSettingsView: View {
         case .allUDP:
             "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to."
         case .off:
-            "Traffic the outbound cannot carry leaves over DIRECT with your own address, and the connection shows no rule name. UDP applications are never interrupted."
+            "Nothing is added to the configuration; this is what it does on its own. Traffic the outbound cannot carry leaves over DIRECT with your own address, and the connection shows no rule name. UDP applications are never interrupted."
         }
     }
 

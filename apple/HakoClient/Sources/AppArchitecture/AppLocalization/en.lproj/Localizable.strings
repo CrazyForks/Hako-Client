@@ -1207,6 +1207,9 @@
 "FlClash/v0.8.94 clash-verge Platform/android" = "FlClash/v0.8.94 clash-verge Platform/android";
 "Flush DNS Cache" = "Flush DNS Cache";
 "Flush Fake-IP Cache" = "Flush Fake-IP Cache";
+"Follow Configuration" = "Follow Configuration";
+"Follow Configuration handles IPv6 in the tunnel only when the configuration declares a TUN IPv6 address. Every other choice overrides the configuration." = "Follow Configuration handles IPv6 in the tunnel only when the configuration declares a TUN IPv6 address. Every other choice overrides the configuration.";
+"Follow Configuration runs the configuration's own IPv6 settings. Every other choice overrides the configuration." = "Follow Configuration runs the configuration's own IPv6 settings. Every other choice overrides the configuration.";
 "Follow Removal" = "Follow Removal";
 "Follow Rules" = "Follow Rules";
 "Follow Rules uses the active routing mode and rules. Selecting an outbound tests that exact UDP-capable proxy or group. Results describe UDP egress for diagnostics only and never change routing." = "Follow Rules uses the active routing mode and rules. Selecting an outbound tests that exact UDP-capable proxy or group. Results describe UDP egress for diagnostics only and never change routing.";
@@ -1931,6 +1934,7 @@
 "Not used on iOS" = "Not used on iOS";
 "Not used on this platform. What you wrote is left out." = "Not used on this platform. What you wrote is left out.";
 "Nothing in this configuration was removed, replaced or left inert by the core that is running." = "Nothing in this configuration was removed, replaced or left inert by the core that is running.";
+"Nothing is added to the configuration; this is what it does on its own. Traffic the outbound cannot carry leaves over DIRECT with your own address, and the connection shows no rule name. UDP applications are never interrupted." = "Nothing is added to the configuration; this is what it does on its own. Traffic the outbound cannot carry leaves over DIRECT with your own address, and the connection shows no rule name. UDP applications are never interrupted.";
 "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to." = "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to.";
 "Nothing needed an update." = "Nothing needed an update.";
 "Nothing to Show" = "Nothing to Show";
@@ -2816,6 +2820,7 @@
 "TUIC Demo" = "TUIC Demo";
 "TUN IPv6 Configuration" = "TUN IPv6 Configuration";
 "TUN IPv6: Automatic" = "Automatic";
+"TUN IPv6: Follow Configuration" = "Follow Configuration";
 "TUN IPv6: Off" = "Off";
 "TUN IPv6: On" = "On";
 "Tabs" = "Tabs";

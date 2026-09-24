@@ -5,6 +5,8 @@ import Foundation
  
 struct PacketTunnelIPStackSettings: Equatable, Sendable {
     enum QueryMode: String, Sendable {
+         
+        case followConfiguration = "config"
         case ipv4Only = "ipv4-only"
         case dualStack = "dual-stack"
         case preferIPv4 = "prefer-ipv4"
@@ -13,15 +15,23 @@ struct PacketTunnelIPStackSettings: Equatable, Sendable {
     }
 
     enum TunIPv6Mode: String, Sendable {
+         
+         
+         
+         
+        case followConfiguration = "config"
         case disabled
         case automatic
         case enabled
+
+         
+        var followsPath: Bool { self == .automatic || self == .followConfiguration }
 
         func declaresIPv6(coreOffersIPv6: Bool, pathReady: Bool, supportsIPv6: Bool) -> Bool {
             guard coreOffersIPv6 else { return false }
             switch self {
             case .disabled: return false
-            case .automatic: return pathReady && supportsIPv6
+            case .automatic, .followConfiguration: return pathReady && supportsIPv6
             case .enabled: return true
             }
         }
@@ -38,7 +48,9 @@ struct PacketTunnelIPStackSettings: Equatable, Sendable {
     let queryMode: QueryMode
     let tunIPv6Mode: TunIPv6Mode
 
-    static let `default` = Self(queryMode: .dualStack, tunIPv6Mode: .automatic)
+     
+     
+    static let `default` = Self(queryMode: .followConfiguration, tunIPv6Mode: .followConfiguration)
 
     static func decode(providerConfiguration: [String: Any]?) throws -> Self {
         guard let configuration = providerConfiguration,

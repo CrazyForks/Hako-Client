@@ -3,7 +3,14 @@ import CoreFoundation
 
  
  
+ 
+ 
+ 
+ 
+ 
+ 
 enum IPQueryMode: String, CaseIterable, Identifiable, Sendable {
+    case followConfiguration = "config"
     case ipv4Only = "ipv4-only"
     case dualStack = "dual-stack"
     case preferIPv4 = "prefer-ipv4"
@@ -13,6 +20,7 @@ enum IPQueryMode: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
     var title: String {
         switch self {
+        case .followConfiguration: return "Follow Configuration"
         case .ipv4Only: return "IPv4 Only"
         case .dualStack: return "IPv4 & IPv6"
         case .preferIPv4: return "Prefer IPv4"
@@ -23,6 +31,7 @@ enum IPQueryMode: String, CaseIterable, Identifiable, Sendable {
 }
 
 enum TUNIPv6Mode: String, CaseIterable, Identifiable, Sendable {
+    case followConfiguration = "config"
     case disabled
     case automatic
     case enabled
@@ -30,6 +39,7 @@ enum TUNIPv6Mode: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
     var title: String {
         switch self {
+        case .followConfiguration: return "TUN IPv6: Follow Configuration"
         case .disabled: return "TUN IPv6: Off"
         case .automatic: return "TUN IPv6: Automatic"
         case .enabled: return "TUN IPv6: On"
@@ -39,15 +49,17 @@ enum TUNIPv6Mode: String, CaseIterable, Identifiable, Sendable {
 
 struct IPStackSettings: Equatable, Sendable {
     static let defaultsKey = "vpn.ipStack.settings"
-    var queryMode: IPQueryMode = .dualStack
-    var tunIPv6Mode: TUNIPv6Mode = .automatic
+     
+     
+    var queryMode: IPQueryMode = .followConfiguration
+    var tunIPv6Mode: TUNIPv6Mode = .followConfiguration
 
     var dictionary: [String: Any] {
         ["schemaVersion": 1, "queryMode": queryMode.rawValue,
          "tunIPv6Mode": tunIPv6Mode.rawValue]
     }
 
-    init(queryMode: IPQueryMode = .dualStack, tunIPv6Mode: TUNIPv6Mode = .automatic) {
+    init(queryMode: IPQueryMode = .followConfiguration, tunIPv6Mode: TUNIPv6Mode = .followConfiguration) {
         self.queryMode = queryMode
         self.tunIPv6Mode = tunIPv6Mode
     }

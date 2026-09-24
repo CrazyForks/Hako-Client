@@ -105,6 +105,7 @@ struct HakoTVIPStackScreen: View {
 
     static func explanation(_ mode: IPQueryMode) -> String {
         switch mode {
+        case .followConfiguration: String(localized: "Run the configuration's own IPv6 settings. Every other choice overrides the configuration.")
         case .ipv4Only: String(localized: "Query only IPv4 addresses and reject IPv6 connections.")
         case .dualStack: String(localized: "Query IPv4 and IPv6 together and use the first usable response.")
         case .preferIPv4: String(localized: "Wait for both query results. Prefer IPv4 when available; otherwise use IPv6. This can add latency.")
@@ -115,6 +116,7 @@ struct HakoTVIPStackScreen: View {
 
     static func explanation(_ mode: TUNIPv6Mode) -> String {
         switch mode {
+        case .followConfiguration: String(localized: "Handle IPv6 in the tunnel only when the configuration declares a TUN IPv6 address. Every other choice overrides the configuration.")
         case .disabled: String(localized: "Do not handle IPv6 traffic in the tunnel.")
         case .automatic: String(localized: "Handle IPv6 when the current network supports it. Network changes update the tunnel without restarting it.")
         case .enabled: String(localized: "Always handle IPv6 in the tunnel. This may cause problems on networks without IPv6 support.")

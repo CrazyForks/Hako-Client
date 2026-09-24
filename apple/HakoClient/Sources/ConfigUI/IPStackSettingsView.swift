@@ -31,6 +31,7 @@ struct IPStackSettingsView: View {
                 Text("IP Query Mode")
             } footer: {
                 VStack(alignment: .leading, spacing: 12) {
+                    Text("Follow Configuration runs the configuration's own IPv6 settings. Every other choice overrides the configuration.")
                     Text("IPv4 Only: Use IPv4 for requests, do not send AAAA DNS queries, and reject IPv6 connections.\nIPv4 & IPv6: Query A and AAAA concurrently and prefer the faster response.\nPrefer IPv4: Query A and AAAA concurrently. Use IPv4 results when available, otherwise use IPv6.\nPrefer IPv6: Query A and AAAA concurrently. Use IPv6 results when available, otherwise use IPv4.")
                     Text("Prefer IPv4 and Prefer IPv6 wait for both A and AAAA queries to finish, which may add latency. Changing this setting restarts the VPN.")
                 }
@@ -49,6 +50,7 @@ struct IPStackSettingsView: View {
                 Text("TUN IPv6 Configuration")
             } footer: {
                 VStack(alignment: .leading, spacing: 12) {
+                    Text("Follow Configuration handles IPv6 in the tunnel only when the configuration declares a TUN IPv6 address. Every other choice overrides the configuration.")
                     Text("Control IPv6 traffic in the tunnel:\nOff: Do not handle IPv6 traffic in the tunnel.\nAutomatic: Decide based on the current network.\nOn: Always handle IPv6 traffic in the tunnel. This may cause problems on networks without IPv6 support.")
                     Text("Changing this setting restarts the VPN.")
                 }

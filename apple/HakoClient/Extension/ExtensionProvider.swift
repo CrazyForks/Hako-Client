@@ -220,7 +220,7 @@ final class ExtensionProvider: NSObject {
             }
             let listener = interfaceListener
             pathLock.unlock()
-            if ipv6SupportChanged, ipStack.tunIPv6Mode == .automatic {
+            if ipv6SupportChanged, ipStack.tunIPv6Mode.followsPath {
                 self.scheduleIPv6DeclarationFollowingPath(
                     hasIPv6: snapshot.isReady && snapshot.supportsIPv6,
                     generation: settingsGeneration

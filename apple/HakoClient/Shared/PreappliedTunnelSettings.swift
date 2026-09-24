@@ -116,8 +116,9 @@ struct PreappliedTunnelStore {
     private func cacheKey(_ fingerprint: String, queryMode: String, ipv6Mode: String) -> String? {
         guard !fingerprint.isEmpty else { return nil }
         if queryMode.isEmpty && ipv6Mode.isEmpty { return fingerprint }
-        guard ["ipv4-only", "dual-stack", "prefer-ipv4", "prefer-ipv6", "ipv6-only"].contains(queryMode),
-              ["disabled", "automatic", "enabled"].contains(ipv6Mode)
+         
+        guard ["config", "ipv4-only", "dual-stack", "prefer-ipv4", "prefer-ipv6", "ipv6-only"].contains(queryMode),
+              ["config", "disabled", "automatic", "enabled"].contains(ipv6Mode)
         else { return nil }
         return "\(fingerprint)|\(queryMode)|\(ipv6Mode)"
     }

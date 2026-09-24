@@ -86,12 +86,14 @@
 "Enter a name." = "请输入名称。";
 "Every rule in the profile, in the order the tunnel tries them. Read-only here: see what a connection will do, then edit on your phone." = "配置中的全部规则，按隧道尝试它们的顺序排列。这里只读：看清一条连接会怎么走，再到手机上编辑。";
 "Failed" = "失败";
+"Follow Configuration" = "跟随配置";
 "From configuration" = "来自配置文件";
 "From configuration · Update unsuccessful" = "来自配置文件 · 更新未成功";
 "From iCloud · %@ · %@" = "来自 iCloud · %@ · %@";
 "Geo data" = "Geo 数据";
 "Global" = "全局";
 "HTTP and SOCKS5 · username and password required" = "HTTP 与 SOCKS5 · 需要用户名和密码";
+"Handle IPv6 in the tunnel only when the configuration declares a TUN IPv6 address. Every other choice overrides the configuration." = "只在配置声明了 TUN IPv6 地址时才在隧道里处理 IPv6。其它任一档都会覆盖配置。";
 "Handle IPv6 when the current network supports it. Network changes update the tunnel without restarting it." = "当前网络支持 IPv6 时由隧道处理。网络变化时更新隧道，无需重启。";
 "Home" = "首页";
 "How the tunnel answers a name. fake-ip hands out a placeholder address and routes by the name; redir-host resolves for real first." = "隧道如何应答域名查询。fake-ip 先发一个占位地址、按域名分流；redir-host 则先真正解析。";
@@ -231,6 +233,7 @@
 "Rule matches every connection against the configuration. Global sends everything to the selected node. Direct proxies nothing." = "规则：每条连接都按配置匹配。全局：所有流量都发往选中的节点。直连：什么都不代理。";
 "Rules" = "规则";
 "Rules · %@" = "规则 · %@";
+"Run the configuration's own IPv6 settings. Every other choice overrides the configuration." = "按配置自己的 IPv6 设置运行。其它任一档都会覆盖配置。";
 "Running" = "运行中";
 "Runtime" = "运行状态";
 "START" = "启动";
@@ -261,6 +264,7 @@
 "System" = "系统";
 "TUN IPv6 Configuration" = "TUN IPv6 配置";
 "TUN IPv6: Automatic" = "TUN IPv6：自动";
+"TUN IPv6: Follow Configuration" = "TUN IPv6：跟随配置";
 "TUN IPv6: Off" = "TUN IPv6：关闭";
 "TUN IPv6: On" = "TUN IPv6：开启";
 "Test" = "测速";
