@@ -504,8 +504,18 @@ public struct HakoRegularClientShell<
                 HakoRegularDetailNavigationFrame(background: background) {
                     VStack(alignment: .leading, spacing: 0) {
                         if usesInContentRegularRootTitle {
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
                             Text(hako: .copy(regularRootTitle))
-                                .font(.largeTitle.bold())
+                                .font(.title2.bold())
                                 .accessibilityAddTraits(.isHeader)
                                 .accessibilityIdentifier("regular.detail.title")
                                 .padding(.horizontal, HakoTheme.Spacing.standard)
@@ -513,8 +523,7 @@ public struct HakoRegularClientShell<
                                  
                                  
                                  
-                                .padding(.top, HakoTheme.Spacing.section)
-                                .padding(.top, reservedBarInset)
+                                .padding(.top, HakoTheme.Spacing.row)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         regularRootContent(shellDrawsHeading: true)
@@ -1433,12 +1442,6 @@ public struct HakoRegularClientShell<
      
     private static func quantised(_ value: CGFloat) -> CGFloat {
         (value * 2).rounded() / 2
-    }
-
-     
-     
-    private var reservedBarInset: CGFloat {
-        max(0, tallestRootBarInset - currentRootBarInset)
     }
 
     private var regularRootTitle: String {

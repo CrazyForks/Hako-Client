@@ -213,19 +213,17 @@ public enum HakoTheme {
                 return Spacing.row
 #endif
             }()
-            public static let minimumWidth: CGFloat = 240
+            public static let minimumWidth: CGFloat = 220
              
              
              
              
              
-            public static let width: CGFloat = {
-#if os(macOS)
-                return 220
-#else
-                return 256
-#endif
-            }()
+             
+             
+             
+             
+            public static let width: CGFloat = 220
             public static let maximumWidth: CGFloat = 272
 
              

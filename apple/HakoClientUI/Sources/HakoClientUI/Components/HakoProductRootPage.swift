@@ -643,8 +643,11 @@ struct HakoProductRootPage<Content: View>: View {
     }
 
     private func largeTitle(_ title: String) -> some View {
+         
+         
+         
         Text(hako: .copy(title))
-            .font(.largeTitle.bold())
+            .font(.title2.bold())
             .accessibilityAddTraits(.isHeader)
             .accessibilityIdentifier("regular.detail.title")
     }
