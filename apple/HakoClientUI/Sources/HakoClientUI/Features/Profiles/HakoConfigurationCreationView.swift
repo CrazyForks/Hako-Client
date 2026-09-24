@@ -236,7 +236,8 @@ public struct HakoConfigurationCreationView: View {
     }
 
     private var selectableLegacy: [HakoConfigurationLegacySource] {
-        legacy.filter { item in item.isSelectable && !library.sources.contains(where: { $0.id == "legacy-" + item.id }) }
+        let known = Set(library.sources.map(\.id))
+        return legacy.filter { item in item.isSelectable && !known.contains("legacy-" + item.id) }
     }
 
     private var sourceSelection: Binding<Set<String>> {
@@ -264,7 +265,12 @@ public struct HakoConfigurationCreationView: View {
     }
 
     private var sourceSections: some View {
-        let sources = self.sources.filter { source in !selectableLegacy.contains { "legacy-" + $0.id == source.id } }
+         
+         
+         
+        let availableLegacy = selectableLegacy
+        let legacyIDs = Set(availableLegacy.map { "legacy-" + $0.id })
+        let sources = self.sources.filter { !legacyIDs.contains($0.id) }
         return Group {
             sourceSelectionSection("From Profile URLs", items: sources.filter {
                 if case .subscription = $0.origin { return $0.nodeChain == nil }; return false
@@ -275,7 +281,6 @@ public struct HakoConfigurationCreationView: View {
             })
             sourceSelectionSection("Custom Nodes", items: sources.filter { $0.origin == .customNodes && $0.nodeChain == nil })
             sourceSelectionSection("Proxy Chains", items: sources.filter { $0.nodeChain != nil })
-            let availableLegacy = selectableLegacy
             if !availableLegacy.isEmpty {
                 Section {
                     ForEach(availableLegacy) { item in
