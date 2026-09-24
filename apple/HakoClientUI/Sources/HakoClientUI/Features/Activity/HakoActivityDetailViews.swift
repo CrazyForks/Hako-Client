@@ -560,6 +560,7 @@ public struct HakoConnectionsView<Icon: View>: View {
                     )
                     .accessibilityIdentifier("connections.closeAll")
                 }
+                HakoActivitySearchControl()
             }
             .hakoReaderControlGroupStyle()
         }
@@ -754,6 +755,7 @@ public struct HakoRequestsView<Icon: View>: View {
                     )
                 }
                 .accessibilityIdentifier("requests.autoScroll")
+                HakoActivitySearchControl()
                 }
                 .hakoReaderControlGroupStyle()
             }
@@ -1035,6 +1037,7 @@ public struct HakoLogsView<Icon: View>: View {
                     }
                     .accessibilityIdentifier("logs.more")
                 }
+                HakoActivitySearchControl()
             }
             .hakoReaderControlGroupStyle()
         }

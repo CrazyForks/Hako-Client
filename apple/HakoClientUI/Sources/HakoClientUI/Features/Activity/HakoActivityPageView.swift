@@ -111,6 +111,10 @@ public struct HakoActivityPageView<
      
      
     @State private var query = ""
+     
+     
+    @State private var searchPresented = false
+    @FocusState private var searchFocused: Bool
 
 
     @Environment(\.locale) private var locale
@@ -152,7 +156,12 @@ public struct HakoActivityPageView<
     public var body: some View {
         searchField(
             lensContent
-                .hakoPinnedTopBar { if showsLensStrip { strip } }
+                .hakoPinnedTopBar {
+                    VStack(spacing: 0) {
+                        if searchPresented { inlineSearchBar }
+                        if showsLensStrip { strip }
+                    }
+                }
         )
             .task(id: locale) { options = Self.options(in: locale) }
              
@@ -206,12 +215,20 @@ public struct HakoActivityPageView<
         case .phoneBottomBar:
             #if os(iOS)
             if #available(iOS 26, *) {
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
                 content
-                    .searchable(
-                        text: $query, placement: .toolbar,
-                        prompt: lens.searchPrompt
-                    )
-                    .searchToolbarBehavior(.minimize)
+                    .environment(\.hakoActivitySearchOpener, {
+                        searchPresented = true
+                        searchFocused = true
+                    })
             } else {
                 content.searchable(
                     text: $query,
@@ -225,6 +242,39 @@ public struct HakoActivityPageView<
         case .standard:
             content.searchable(text: $query, prompt: lens.searchPrompt)
         }
+    }
+
+     
+     
+     
+    private var inlineSearchBar: some View {
+        HStack(spacing: HakoTheme.Spacing.compact) {
+            HStack(spacing: HakoTheme.Spacing.tight) {
+                Image(systemName: HakoSymbol.magnifyingglass.rawValue)
+                    .foregroundStyle(.secondary)
+                TextField("", text: $query, prompt: Text(lens.searchPrompt))
+                    .textFieldStyle(.plain)
+                    .focused($searchFocused)
+                    .submitLabel(.search)
+                    .autocorrectionDisabled()
+                    .accessibilityIdentifier("activity.search.field")
+            }
+            .padding(.horizontal, HakoTheme.Spacing.row)
+            .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.compact))
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.quaternary))
+            Button {
+                query = ""
+                searchFocused = false
+                searchPresented = false
+            } label: {
+                Text(HakoCopy.key("Cancel"))
+            }
+            .accessibilityIdentifier("activity.search.cancel")
+        }
+        .padding(.horizontal, HakoTheme.Spacing.standard)
+        .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.compact))
+         
+         
     }
 
      
@@ -290,5 +340,38 @@ extension View {
         @ToolbarContentBuilder _ items: @escaping () -> Items
     ) -> some View {
         modifier(HakoActivityLensToolbar(active: active, items: items))
+    }
+}
+
+
+ 
+ 
+ 
+struct HakoActivitySearchOpenerKey: EnvironmentKey {
+    static let defaultValue: (@MainActor () -> Void)? = nil
+}
+
+extension EnvironmentValues {
+    var hakoActivitySearchOpener: (@MainActor () -> Void)? {
+        get { self[HakoActivitySearchOpenerKey.self] }
+        set { self[HakoActivitySearchOpenerKey.self] = newValue }
+    }
+}
+
+ 
+ 
+ 
+struct HakoActivitySearchControl: View {
+    @Environment(\.hakoActivitySearchOpener) private var open
+
+    var body: some View {
+        if let open {
+            HakoToolbarDivider()
+            Button { open() } label: {
+                Label("Search", systemImage: "magnifyingglass")
+            }
+            .hakoToolbarGlyph()
+            .accessibilityIdentifier("activity.search")
+        }
     }
 }
