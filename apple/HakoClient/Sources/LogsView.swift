@@ -91,6 +91,12 @@ struct LogShareSheet: UIViewControllerRepresentable {
 struct LogSettingsView: View {
     let onChange: () -> Void
 
+    static func followProfileTitle(profileLevel: String?) -> HakoDisplayText {
+        guard let level = profileLevel?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !level.isEmpty else { return .copy("Follow profile") }
+        return .format("Follow profile (%@)", [level])
+    }
+
      
      
      
@@ -137,14 +143,16 @@ struct LogSettingsView: View {
                     )
                     onChange()
                 }
-                Picker("Level", selection: $directive) {
-                    let followTitle: String = {
-                        if let profileLevel = HakoLogSettings.activeProfileLogLevel(from: defaults), !profileLevel.isEmpty {
-                            return "Follow profile (\(profileLevel))"
-                        }
-                        return "Follow profile"
-                    }()
-                    Text(hako: .verbatim(followTitle)).tag(nil as String?)
+                 
+                 
+                 
+                 
+                 
+                 
+                Picker("Log level", selection: $directive) {
+                    Text(hako: Self.followProfileTitle(
+                        profileLevel: HakoLogSettings.activeProfileLogLevel(from: defaults)
+                    )).tag(nil as String?)
                     ForEach(HakoLogLevel.allCases, id: \.self) { level in
                         Text(hako: .copy(level.rawValue.capitalized)).tag(level.rawValue as String?)
                     }
@@ -324,14 +332,7 @@ struct LogsContent: View {
                         directive,
                         in: GlobalConfig.appGroupDefaults
                     )
-                    let profileLevel = HakoLogSettings.activeProfileLogLevel(
-                        from: GlobalConfig.appGroupDefaults
-                    )
-                    let effective = HakoLogSettings.effectiveLogLevel(
-                        directive: directive,
-                        profileLevel: profileLevel
-                    )
-                    command?.setLogDisplayLevel(effective)
+                    command?.refreshLogDisplayLevel()
                     recordingGeneration &+= 1
                 case .setLogSeverityFilter(let levels):
                      
@@ -372,13 +373,7 @@ struct LogsContent: View {
         .hakoProductModal(isPresented: $showsSettings, role: .form) {
             HakoFeatureNavigationContainer {
                 LogSettingsView {
-                    let directive = HakoLogSettings.levelDirective(from: GlobalConfig.appGroupDefaults)
-                    let profileLevel = HakoLogSettings.activeProfileLogLevel(from: GlobalConfig.appGroupDefaults)
-                    let effective = HakoLogSettings.effectiveLogLevel(
-                        directive: directive,
-                        profileLevel: profileLevel
-                    )
-                    command?.setLogDisplayLevel(effective)
+                    command?.refreshLogDisplayLevel()
                     recordingGeneration &+= 1
                 }
             }

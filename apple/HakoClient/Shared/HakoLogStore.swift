@@ -207,7 +207,20 @@ public enum HakoLogSettings {
     }
 
      
-    public static func effectiveLogLevel(
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    public static func liveStreamLevel(
         directive: LevelDirective,
         profileLevel: String?
     ) -> String {
@@ -215,23 +228,18 @@ public enum HakoLogSettings {
         case .forced(let level):
             return level.rawValue
         case .followProfile:
-            if let profileLevel = profileLevel?.trimmingCharacters(in: .whitespacesAndNewlines),
-               !profileLevel.isEmpty {
-                return profileLevel.lowercased()
-            }
-             
-             
-             
-             
-             
-             
-             
-             
-             
-             
-             
-            return "info"
+            let declared = profileLevel?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            return declared == HakoLogLevel.debug.rawValue ? "debug" : "info"
         }
+    }
+
+    public static func liveStreamLevel(from defaults: UserDefaults) -> String {
+        liveStreamLevel(
+            directive: levelDirective(from: defaults),
+            profileLevel: activeProfileLogLevel(from: defaults)
+        )
     }
 
      
@@ -242,12 +250,25 @@ public enum HakoLogSettings {
     }
 
     public static func setActiveProfileLogLevel(_ level: String?, in defaults: UserDefaults) {
+        let previous = defaults.string(forKey: activeProfileLogLevelKey)
         if let level, !level.isEmpty {
             defaults.set(level, forKey: activeProfileLogLevelKey)
         } else {
             defaults.removeObject(forKey: activeProfileLogLevelKey)
         }
+         
+         
+         
+        if previous != defaults.string(forKey: activeProfileLogLevelKey) {
+            NotificationCenter.default.post(name: activeProfileLogLevelDidChange, object: nil)
+        }
     }
+
+     
+     
+    public static let activeProfileLogLevelDidChange = Notification.Name(
+        "network.hako.logs.activeProfileLevelDidChange"
+    )
 }
 
 public enum HakoLogLevel: String, Sendable, CaseIterable {

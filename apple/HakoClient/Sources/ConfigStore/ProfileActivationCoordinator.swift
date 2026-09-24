@@ -159,6 +159,13 @@ enum ProfileRuntimeConfigBuilder {
          
          
         var providerMerge = ProviderDefinitionMergeReport()
+         
+         
+         
+         
+         
+         
+        var profileLogLevel: String?
 
          
         func finished() throws -> String {
@@ -180,7 +187,8 @@ enum ProfileRuntimeConfigBuilder {
         postMergeScript: (String?, String, String) throws -> String = { _, yaml, _ in yaml },
         applyProviderDefinitions: Bool = true,
         applyProxyChain: Bool = true,
-        applyLegacyRelayMigration: Bool = true
+        applyLegacyRelayMigration: Bool = true,
+        logLevelDirective: HakoLogSettings.LevelDirective? = nil
     ) throws -> String {
         try buildStages(
             raw: raw,
@@ -192,7 +200,8 @@ enum ProfileRuntimeConfigBuilder {
             postMergeScript: postMergeScript,
             applyProviderDefinitions: applyProviderDefinitions,
             applyProxyChain: applyProxyChain,
-            applyLegacyRelayMigration: applyLegacyRelayMigration
+            applyLegacyRelayMigration: applyLegacyRelayMigration,
+            logLevelDirective: logLevelDirective
         ).finished()
     }
 
@@ -210,7 +219,14 @@ enum ProfileRuntimeConfigBuilder {
         postMergeScript: (String?, String, String) throws -> String = { _, yaml, _ in yaml },
         applyProviderDefinitions: Bool = true,
         applyProxyChain: Bool = true,
-        applyLegacyRelayMigration: Bool = true
+        applyLegacyRelayMigration: Bool = true,
+         
+         
+         
+         
+         
+         
+        logLevelDirective: HakoLogSettings.LevelDirective? = nil
     ) throws -> RuntimeBuildStages {
         let profileWorking: String
         switch profile.overwriteMode ?? .standard {
@@ -334,17 +350,23 @@ enum ProfileRuntimeConfigBuilder {
          
          
          
-        let directiveDefaults = UserDefaults(suiteName: HakoAppIdentifiers.appGroup) ?? .standard
-        HakoLogSettings.setActiveProfileLogLevel(profileLogLevel, in: directiveDefaults)
-
-        let directive = HakoLogSettings.levelDirective(from: directiveDefaults)
+         
+         
+         
+        let directive = logLevelDirective ?? HakoLogSettings.levelDirective(
+            from: UserDefaults(suiteName: HakoAppIdentifiers.appGroup) ?? .standard
+        )
         switch directive {
         case .forced(let forcedLevel):
             runtimePatch.logLevel = forcedLevel.rawValue
         case .followProfile:
-            if runtimePatch.logLevel == nil, !hasOwnLogLevel {
-                runtimePatch.logLevel = "warning"
-            }
+             
+             
+             
+             
+             
+             
+            runtimePatch.logLevel = hasOwnLogLevel ? nil : "warning"
         }
         effectiveRuntime.patchJSON = runtimePatch.patchJSON
         let disabledRuntimeRules = Set(
@@ -371,7 +393,8 @@ enum ProfileRuntimeConfigBuilder {
             excludeAPNsRoute: HakoTunnelRouteShaping.Switches.read(
                 from: UDPFallbackSettings.appGroupDefaults
             ).excludeAPNsRoute,
-            providerMerge: providerMerge
+            providerMerge: providerMerge,
+            profileLogLevel: profileLogLevel
         )
     }
 
@@ -1358,6 +1381,9 @@ final class ProfileActivationCoordinator {
      
      
     private var lastProviderMerge = ProviderDefinitionMergeReport()
+     
+     
+    private var lastProfileLogLevel: String?
 
     private func prepareConfig(raw: String, profile: Profile) throws -> String {
         let stages = try ProfileRuntimeConfigBuilder.buildStages(
@@ -1379,6 +1405,7 @@ final class ProfileActivationCoordinator {
             postMergeScript: postMergeScript
         )
         lastProviderMerge = stages.providerMerge
+        lastProfileLogLevel = stages.profileLogLevel
         let runtime = try stages.finished()
         noteExternalResources(in: runtime, profile: profile)
         return runtime
@@ -1747,6 +1774,13 @@ final class ProfileActivationCoordinator {
                     finalData: Data(finalYAML.utf8)
                 )
             }
+             
+             
+             
+            HakoLogSettings.setActiveProfileLogLevel(
+                lastProfileLogLevel,
+                in: UserDefaults(suiteName: HakoAppIdentifiers.appGroup) ?? .standard
+            )
              
              
              

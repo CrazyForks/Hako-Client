@@ -536,12 +536,18 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
      
      
      
-    private var logDisplayLevel: String = {
-        let defaults = GlobalConfig.appGroupDefaults
-        let directive = HakoLogSettings.levelDirective(from: defaults)
-        let profileLevel = HakoLogSettings.activeProfileLogLevel(from: defaults)
-        return HakoLogSettings.effectiveLogLevel(directive: directive, profileLevel: profileLevel)
-    }()
+     
+     
+    private var logDisplayLevel = HakoLogSettings.liveStreamLevel(
+        from: GlobalConfig.appGroupDefaults
+    )
+     
+     
+     
+     
+     
+    private var subscribedLogLevel = "info"
+    private var activeProfileLogLevelObserver: NSObjectProtocol?
     private var pendingLogs = HakoLogBuffer(maximumBytes: 256 * 1024, maximumCount: 1000)
     private var trafficReducer = ClashTrafficReducer()
     private let connectionRuntimeFeed: ConnectionRuntimeFeed
@@ -557,6 +563,9 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
 
 
     deinit {
+        if let activeProfileLogLevelObserver {
+            NotificationCenter.default.removeObserver(activeProfileLogLevelObserver)
+        }
         connectTask?.cancel()
         logBatchTask?.cancel()
         scheduledDiagnosticsTask?.cancel()
@@ -619,6 +628,16 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
         self.logRecordingEnabled = logRecordingEnabled
         self.memoryNow = memoryNow
         self.enqueueMemory = enqueueMemory
+         
+         
+         
+        activeProfileLogLevelObserver = NotificationCenter.default.addObserver(
+            forName: HakoLogSettings.activeProfileLogLevelDidChange,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.refreshLogDisplayLevel() }
+        }
 return 
 
     }
@@ -2081,9 +2100,12 @@ return
         guard token == generation, wantsConnection else { return }
         connectTask = nil
         let handler = makeCommandHandler()
+        let logLevel = Self.logSubscriptionLevel(forDisplay: logDisplayLevel)
         let options = Self.makeOptions(
-            onlyStatisticsProxy: TrafficStatisticsSettings.onlyProxy()
+            onlyStatisticsProxy: TrafficStatisticsSettings.onlyProxy(),
+            logLevel: logLevel
         )
+        subscribedLogLevel = logLevel
         var error: NSError?
         guard let newClient = HakoNewClashAPIClientWithOptions(
             socketPath,
@@ -2130,14 +2152,17 @@ return
         applyTrafficStatisticsPreference()
     }
 
-    static func makeOptions(onlyStatisticsProxy: Bool) -> HakoClashAPIClientOptions {
+    static func makeOptions(
+        onlyStatisticsProxy: Bool,
+        logLevel: String = "info"
+    ) -> HakoClashAPIClientOptions {
         let options = HakoClashAPIClientOptions()
          
          
         options.statusInterval = 250
         options.addCommand(HakoCommandStatus)
         options.addCommand(HakoCommandLog)
-        options.logLevel = "debug"
+        options.logLevel = logLevel
          
          
          
@@ -2404,9 +2429,31 @@ return
         } while memoryBytes != memoryState.inuse
     }
 
+     
+     
+     
+    static func logSubscriptionLevel(forDisplay level: String) -> String {
+        level.lowercased() == "debug" ? "debug" : "info"
+    }
+
     func setLogDisplayLevel(_ level: String) {
         logDisplayLevel = level.lowercased()
+         
+         
+         
+         
+        guard Self.logSubscriptionLevel(forDisplay: logDisplayLevel) != subscribedLogLevel,
+              client != nil || isConnecting else { return }
+        reconnectIfNeeded()
     }
+
+     
+     
+    func refreshLogDisplayLevel(from defaults: UserDefaults = GlobalConfig.appGroupDefaults) {
+        setLogDisplayLevel(HakoLogSettings.liveStreamLevel(from: defaults))
+    }
+
+    var logDisplayLevelForTesting: String { logDisplayLevel }
 
     private func handleLog(_ payload: LogPayload, token: UInt64) {
         guard token == generation, logDisplayLevel != "silent" else { return }

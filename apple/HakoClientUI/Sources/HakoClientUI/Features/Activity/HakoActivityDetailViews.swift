@@ -877,9 +877,7 @@ public struct HakoLogsView<Icon: View>: View {
                                  
                                  
                                  
-                                 
                                 severities.removeAll()
-                                send(.setLogLevelDirective(nil))
                                 _ = severity
                             }
                         }
@@ -1062,38 +1060,35 @@ public struct HakoLogsView<Icon: View>: View {
 
     private var levelsMenu: some View {
         Menu {
+             
+             
+             
+             
+             
+             
+             
+             
             Button {
                 severities.removeAll()
-                send(.setLogLevelDirective(nil))
             } label: {
-                let followTitle: String = {
-                    if let profileLevel = snapshot.activity.activeProfileLogLevel, !profileLevel.isEmpty {
-                        return "Follow profile (\(profileLevel))"
-                    }
-                    return "Follow profile"
-                }()
-                let isFollowSelected = (snapshot.activity.logLevelDirective == nil || snapshot.activity.logLevelDirective?.isEmpty == true) && severities.isEmpty
-                Label(
-                    followTitle,
-                    systemImage: isFollowSelected
-                        ? HakoSymbol.checkmark.rawValue
-                        : HakoSymbol.docText.rawValue
-                )
+                if severities.isEmpty {
+                    Label("All", systemImage: HakoSymbol.checkmark.rawValue)
+                } else {
+                    Text(hako: .copy("All"))
+                }
             }
 
             Divider()
 
             ForEach(HakoActivityLogSeverity.allCases) { severity in
                 Button {
-                    if severities == [severity] || snapshot.activity.logLevelDirective == severity.rawValue {
+                    if severities == [severity] {
                         severities.removeAll()
-                        send(.setLogLevelDirective(nil))
                     } else {
                         severities = [severity]
-                        send(.setLogLevelDirective(severity.rawValue))
                     }
                 } label: {
-                    let isSelected = severities.contains(severity) || snapshot.activity.logLevelDirective == severity.rawValue
+                    let isSelected = severities.contains(severity)
                      
                      
                      
