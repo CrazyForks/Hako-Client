@@ -3707,11 +3707,11 @@
 "“%@” has no profile URL yet — this profile is a template, and that line still holds placeholder text. Open it and paste your own profile URL." = "「%@」还没有配置链接——这份配置是模板，那一行填的还是占位文字。打开它，把你自己的配置链接粘进去。";
 "↑%@ · ↓%@" = "↑%1$@ · ↓%2$@";
 "≈ figures are estimates: entry count × a measured slope, or the staged file's size on disk." = "≈ 为估算值：条数 × 实测斜率，或其文件在磁盘的大小。";
-"修改名称与 Emoji" = "修改名称与 Emoji";
-"名称与 Emoji" = "名称与 Emoji";
+"修改名称与图标" = "修改名称与图标";
+"名称与图标" = "名称与图标";
 "导入 Clash YAML 规则方案。" = "导入 Clash YAML 规则方案。";
 "导入 Clash YAML 规则方案。配置链接中的节点不会显示在规则页。" = "导入 Clash YAML 规则方案。配置链接中的节点不会显示在规则页。";
 "恢复初始规则？" = "恢复初始规则？";
 "搜索规则：如 YouTube OpenAI" = "搜索规则：如 YouTube OpenAI";
-"显示策略组 Emoji" = "显示策略组 Emoji";
+"显示策略组图标" = "显示策略组图标";
 "粘贴规则集 URL，或逐行输入 DOMAIN、DOMAIN-SUFFIX、IP-CIDR 等规则；不需要填写出口策略。" = "粘贴规则集 URL，或逐行输入 DOMAIN、DOMAIN-SUFFIX、IP-CIDR 等规则；不需要填写出口策略。";

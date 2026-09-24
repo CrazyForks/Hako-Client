@@ -1191,6 +1191,9 @@ extension HakoProfileRulesView {
             HakoRuleBuilderView(
                 rule: target.rule,
                 options: loadedPolicyOptions ?? editor.policyOptions,
+                 
+                 
+                delete: target.rowID.map { id in { draftRows.remove(id, from: &draft.rules) } },
                 initialRoute: target.initialRoute,
                 runtimeProfile: runtimeProfile,
                 palette: palette,

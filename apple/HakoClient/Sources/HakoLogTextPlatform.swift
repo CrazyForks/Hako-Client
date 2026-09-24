@@ -13,7 +13,14 @@ import SwiftUI
 enum HakoLogTextPlatform {
     @MainActor
     static func install() {
-        HakoLogTextView.platformView = { request in AnyView(HakoLogTextPlatformView(request: request)) }
+         
+         
+         
+         
+         
+        HakoLogTextView.platformView = { request in
+            AnyView(HakoLogTextPlatformView(request: request).ignoresSafeArea(.container, edges: .bottom))
+        }
     }
 
      
@@ -278,16 +285,25 @@ private struct HakoLogTextPlatformView: View {
          
         let colorScheme: ColorScheme
 
+         
+         
+         
+         
+         
+         
+         
+         
+         
         private static func style(for traits: UITraitCollection) -> HakoLogTextStyle {
             HakoLogTextStyle(
                 font: UIFont.monospacedSystemFont(ofSize: 11, weight: .regular),
-                plain: UIColor.label.resolvedColor(with: traits),
-                dim: UIColor.secondaryLabel.resolvedColor(with: traits),
+                plain: UIColor.label,
+                dim: UIColor.secondaryLabel,
                 background: UIColor.systemBackground.resolvedColor(with: traits))
         }
 
         func makeUIView(context _: Context) -> UITextView {
-            let view = UITextView()
+            let view = HakoLogTextViewHost()
             view.isEditable = false
             view.isSelectable = true
             view.isScrollEnabled = true
@@ -302,13 +318,27 @@ private struct HakoLogTextPlatformView: View {
         }
 
         func updateUIView(_ view: UITextView, context: Context) {
+            let coordinator = context.coordinator
+            let followsEnd = followsEnd
+            let entries = entries
+            Self.render(entries, followsEnd: followsEnd, in: view, coordinator: coordinator)
              
+             
+             
+            (view as? HakoLogTextViewHost)?.onAppearanceChange = { [weak view, weak coordinator] in
+                guard let view, let coordinator else { return }
+                Self.render(entries, followsEnd: followsEnd, in: view, coordinator: coordinator)
+            }
+        }
+
+        private static func render(
+            _ entries: [HakoActivityLogEntry], followsEnd: Bool, in view: UITextView, coordinator: HakoLogTextCoordinator
+        ) {
              
             let appearance = view.traitCollection.userInterfaceStyle.rawValue
             let style = Self.style(for: view.traitCollection)
-            let strategy = context.coordinator.strategy(entries: entries, appearance: appearance)
-            let followsEnd = followsEnd
-            context.coordinator.schedule(
+            let strategy = coordinator.strategy(entries: entries, appearance: appearance)
+            coordinator.schedule(
                 entries: entries, strategy: strategy, appearance: appearance, style: style
             ) { [weak view] update in
                 guard let view else { return }
@@ -342,6 +372,18 @@ private struct HakoLogTextPlatformView: View {
         }
 
         func makeCoordinator() -> HakoLogTextCoordinator { HakoLogTextCoordinator() }
+    }
+
+     
+     
+    private final class HakoLogTextViewHost: UITextView {
+        var onAppearanceChange: (() -> Void)?
+
+        override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+            super.traitCollectionDidChange(previousTraitCollection)
+            guard previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle else { return }
+            onAppearanceChange?()
+        }
     }
 #endif
 

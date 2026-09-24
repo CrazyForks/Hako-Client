@@ -211,10 +211,13 @@ public struct HakoActivityPageView<
                  
                  
                  
-                content.searchable(
-                    text: $query, placement: .automatic,
-                    prompt: lens.searchPrompt
-                )
+                 
+                 
+                 
+                 
+                content.searchable(text: $query, placement: .toolbar, prompt: lens.searchPrompt)
+                    .toolbar { DefaultToolbarItem(kind: .search, placement: .bottomBar) }
+                    .toolbar(.hidden, for: .tabBar)
             } else {
                 content.searchable(
                     text: $query,

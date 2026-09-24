@@ -255,7 +255,7 @@ public struct HakoTowerRuleCustomizationView: View {
                 }
             } else {
                 HakoTowerInlineRules(rows: draft.rows, version: draft.version,
-                    query: search, palette: palette)
+                    query: search, palette: palette, remove: { draft.remove([$0]) })
             }
             Section {
                 ForEach(visibleGroups) { group in
@@ -280,10 +280,10 @@ public struct HakoTowerRuleCustomizationView: View {
                         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                         .moveDisabled(!search.isEmpty)
                         .contextMenu {
-                            Button("修改名称与 Emoji") { groupID = group.id; modal = .identity }
+                            Button("修改名称与图标") { groupID = group.id; modal = .identity }
                             Button("Delete", role: .destructive) { deletingGroup = group.id }
                         }
-                        .accessibilityAction(named: Text("修改名称与 Emoji")) { groupID = group.id; modal = .identity }
+                        .accessibilityAction(named: Text("修改名称与图标")) { groupID = group.id; modal = .identity }
                 }.onDelete { offsets in
                     guard let index = offsets.first, visibleGroups.indices.contains(index) else { return }
                     deletingGroup = visibleGroups[index].id
@@ -328,7 +328,7 @@ public struct HakoTowerRuleCustomizationView: View {
                  
                  
                 Section("More") {
-                    Toggle("显示策略组 Emoji", isOn: $emojis).accessibilityIdentifier("configuration.rules.emojis")
+                    Toggle("显示策略组图标", isOn: $emojis).accessibilityIdentifier("configuration.rules.emojis")
                     Button("Edit Rules Source") { modal = .manual }
                     Button("Save as New Scheme") { modal = .copy }
                     Button("Restore Initial Rules", role: .destructive) { confirmsReset = true }
@@ -360,7 +360,7 @@ public struct HakoTowerRuleCustomizationView: View {
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: pushed ? .primaryAction : .cancellationAction) {
                 Menu {
-                    Toggle("显示策略组 Emoji", isOn: $emojis).accessibilityIdentifier("configuration.rules.emojis")
+                    Toggle("显示策略组图标", isOn: $emojis).accessibilityIdentifier("configuration.rules.emojis")
                     Button("Edit Rules Source") { modal = .manual }
                     Button("Save as New Scheme") { modal = .copy }
                     Divider()
@@ -905,13 +905,13 @@ private struct HakoTowerGroupEditor: View {
     var body: some View {
         Form {
             if identityOnly {
-                Section("名称与 Emoji") {
+                Section("名称与图标") {
                     TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name")
                     TextField("Icon URL", text: $icon, prompt: Text(verbatim: "https://…")).autocorrectionDisabled().accessibilityIdentifier("configuration.rules.group.icon")
                     HakoTowerGroupIconEchoRow(icon: icon)
                 }
             } else {
-                Section("名称与 Emoji") {
+                Section("名称与图标") {
                     TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name")
                     TextField("Icon URL", text: $icon, prompt: Text(verbatim: "https://…")).autocorrectionDisabled().accessibilityIdentifier("configuration.rules.group.icon")
                     HakoTowerGroupIconEchoRow(icon: icon)
@@ -944,7 +944,7 @@ private struct HakoTowerGroupEditor: View {
             if let error { Text(verbatim: error).foregroundStyle(.orange) }
         }
         .modifier(HakoTowerReorderMode())
-        .disabled(busy).hakoPageTitle(.copy(identityOnly ? "修改名称与 Emoji" : group.name))
+        .disabled(busy).hakoPageTitle(.copy(identityOnly ? "修改名称与图标" : group.name))
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: close).disabled(busy) }
             ToolbarItem(placement: .confirmationAction) {
@@ -1047,6 +1047,10 @@ private struct HakoTowerInlineRules: View {
     let version: ConfigurationSourceVersion
     let query: String
     let palette: HakoProductPalette
+     
+     
+     
+    var remove: ((UUID) -> Void)? = nil
     @State private var results = HakoTowerRuleSearchSnapshot()
     @State private var completedRequest: SearchRequest?
 
@@ -1066,6 +1070,11 @@ private struct HakoTowerInlineRules: View {
         Section {
             ForEach(visible) { row in
                 HakoTowerRuleSummary(row: row, palette: palette)
+                    .deleteDisabled(row.isFinal)
+            }
+            .onDelete { offsets in
+                guard let remove else { return }
+                for index in offsets where visible.indices.contains(index) && !visible[index].isFinal { remove(visible[index].id) }
             }
             if searching && results.query != current.query { ProgressView("Searching…") }
             else if !searching && visible.isEmpty { Text("No results").foregroundStyle(.secondary) }
