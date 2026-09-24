@@ -362,7 +362,7 @@ struct ProfileCenterAdapter: View {
                                    usage: recipe.sources.count == 1 && links.count == 1 ? links[0].subscriptionUsage : nil)
     }
 
-    private static func subscriptionSnapshot(upload: Int64, download: Int64, total: Int64, expire: Int64) -> HakoProfileSubscriptionSnapshot {
+    static func subscriptionSnapshot(upload: Int64, download: Int64, total: Int64, expire: Int64) -> HakoProfileSubscriptionSnapshot {
         HakoProfileSubscriptionSnapshot(
             uploadBytes: upload, downloadBytes: download, totalBytes: total,
             expiration: expire > 0 ? Date(timeIntervalSince1970: TimeInterval(expire)) : nil)
@@ -494,6 +494,18 @@ struct ProfileCenterAdapter: View {
     private func sourceSummary(
         _ profile: Profile,
         updatedAt: Date?
+    ) -> HakoDisplayText {
+        Self.sourceSummary(profile, updatedAt: updatedAt, locale: locale)
+    }
+
+     
+     
+     
+     
+    static func sourceSummary(
+        _ profile: Profile,
+        updatedAt: Date?,
+        locale: Locale
     ) -> HakoDisplayText {
         switch profile.source {
         case .url(let rawURL):

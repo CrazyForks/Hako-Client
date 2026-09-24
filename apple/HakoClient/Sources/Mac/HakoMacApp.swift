@@ -1309,16 +1309,14 @@ private final class HakoMacSceneModel: ObservableObject {
                  
                  
                  
-                ConfigurationNodeSourceAdapter(
-                    accept: accept,
-                    dialerCandidates: {
-                        guard let self,
-                              let profile = self.currentProfile,
-                              let yaml = self.profiles.effectiveYAML(for: profile)
-                        else { return .empty }
-                        return DialerProxyCandidates.make(sourceYAML: yaml, excluding: "")
-                    }
-                )
+                HakoMacDialerCandidatesHost(
+                    load: { [weak self] in self?.dialerCandidates(excluding: "") ?? .empty }
+                ) { candidates in
+                    ConfigurationNodeSourceAdapter(
+                        accept: accept,
+                        dialerCandidates: candidates
+                    )
+                }
                 .environment(\.hakoProductModalDismiss, close)
             )
         }
@@ -1882,41 +1880,38 @@ private final class HakoMacSceneModel: ObservableObject {
          
         .hakoProductModal(item: configurationCenterEditingNodeBinding, role: .form) { [weak self] editing in
             HakoFeatureNavigationContainer {
-                ProxyNodeDetailsView(
-                    record: editing.record,
-                    retest: {},
-                    saveNode: { [weak self] _, json in
-                        guard let self else { throw ConfigurationLibraryError.unreadable }
-                        let next = try await self.profiles.saveConfigurationCustomNode(
-                            .init(editing.source), nodeJSON: json, index: editing.node.index
-                        )
-                        self.configurationLibrary.apply(next)
-                    },
-                    showsTesting: false,
-                     
-                     
-                     
-                     
-                     
-                     
-                     
-                     
-                     
-                     
-                    dialerRouting: .payloadField,
-                    dialerCandidates: { [weak self] in
-                        guard let self,
-                              let profile = self.currentProfile,
-                              let yaml = self.profiles.effectiveYAML(for: profile)
-                        else { return .empty }
-                        return DialerProxyCandidates.make(
-                            sourceYAML: yaml,
-                            excluding: editing.record.name
-                        )
-                    },
-                    onDone: { [weak self] in self?.configurationCenterEditingNode = nil },
-                    commitTitle: "Save"
-                )
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                HakoMacDialerCandidatesHost(
+                    load: { [weak self] in
+                        self?.dialerCandidates(excluding: editing.record.name) ?? .empty
+                    }
+                ) { candidates in
+                    ProxyNodeDetailsView(
+                        record: editing.record,
+                        retest: {},
+                        saveNode: { [weak self] _, json in
+                            guard let self else { throw ConfigurationLibraryError.unreadable }
+                            let next = try await self.profiles.saveConfigurationCustomNode(
+                                .init(editing.source), nodeJSON: json, index: editing.node.index
+                            )
+                            self.configurationLibrary.apply(next)
+                        },
+                        showsTesting: false,
+                        dialerRouting: .payloadField,
+                        dialerCandidates: candidates,
+                        onDone: { [weak self] in self?.configurationCenterEditingNode = nil },
+                        commitTitle: "Save"
+                    )
+                }
             }
             .hakoPageSizedSheet()
         }
@@ -1927,44 +1922,44 @@ private final class HakoMacSceneModel: ObservableObject {
          
         .hakoProductModal(isPresented: configurationCenterCreatesNodeBinding, role: .form) { [weak self] in
             HakoFeatureNavigationContainer {
-                ProxyNodeDetailsView(
-                    record: CustomNodesView.newNodeTemplate,
-                    retest: {},
-                    saveNode: { [weak self] _, json in
-                        guard let self else { throw ConfigurationLibraryError.unreadable }
-                        let payload = try await Task.detached {
-                            let node = try JSONSerialization.jsonObject(with: Data(json.utf8))
-                            guard let node = node as? [String: Any] else {
-                                throw ConfigurationLibraryError.unreadable
-                            }
-                            let document = try JSONSerialization.data(withJSONObject: ["proxies": [node]])
-                            let yaml = try ConfigTransforms.jsonToYAML(
-                                String(decoding: document, as: UTF8.self)
-                            )
-                            return try ConfigurationCenterSourceBridge.payload(
-                                label: node["name"] as? String ?? "Custom Nodes",
-                                origin: .customNodes,
-                                original: Data(yaml.utf8),
-                                yaml: yaml
-                            )
-                        }.value
-                        var source = payload
-                        source.record.registersSuppliedRules = false
-                        try await self.configurationLibrary.addSource(source)
-                    },
-                    showsTesting: false,
-                    isNew: true,
-                    dialerRouting: .payloadField,
-                    dialerCandidates: { [weak self] in
-                        guard let self,
-                              let profile = self.currentProfile,
-                              let yaml = self.profiles.effectiveYAML(for: profile)
-                        else { return .empty }
-                        return DialerProxyCandidates.make(sourceYAML: yaml, excluding: "")
-                    },
-                    onDone: { [weak self] in self?.configurationCenterCreatesNode = false },
-                    commitTitle: "Save"
-                )
+                HakoMacDialerCandidatesHost(
+                    load: { [weak self] in self?.dialerCandidates(excluding: "") ?? .empty }
+                ) { candidates in
+                    ProxyNodeDetailsView(
+                        record: CustomNodesView.newNodeTemplate,
+                        retest: {},
+                        saveNode: { [weak self] _, json in
+                            guard let self else { throw ConfigurationLibraryError.unreadable }
+                             
+                             
+                             
+                             
+                             
+                            let payload = try await Task.detached {
+                                let nodes = try CustomNodeAppend.appended(payload: [], editedJSON: json)
+                                let document = try JSONSerialization.data(withJSONObject: ["proxies": nodes])
+                                let yaml = try ConfigTransforms.jsonToYAML(
+                                    String(decoding: document, as: UTF8.self)
+                                )
+                                return try ConfigurationCenterSourceBridge.payload(
+                                    label: nodes.first?["name"] as? String ?? "Custom Nodes",
+                                    origin: .customNodes,
+                                    original: Data(yaml.utf8),
+                                    yaml: yaml
+                                )
+                            }.value
+                            var source = payload
+                            source.record.registersSuppliedRules = false
+                            try await self.configurationLibrary.addSource(source)
+                        },
+                        showsTesting: false,
+                        isNew: true,
+                        dialerRouting: .payloadField,
+                        dialerCandidates: candidates,
+                        onDone: { [weak self] in self?.configurationCenterCreatesNode = false },
+                        commitTitle: "Save"
+                    )
+                }
             }
             .hakoPageSizedSheet()
         }
@@ -1982,6 +1977,16 @@ private final class HakoMacSceneModel: ObservableObject {
                 .environment(\.hakoPresentsPanelsAsNativeSheets, true)
             }
         }
+    }
+
+     
+     
+     
+    func dialerCandidates(excluding selfName: String) -> DialerProxyCandidates {
+        guard let profile = currentProfile,
+              let yaml = profiles.effectiveYAML(for: profile)
+        else { return .empty }
+        return DialerProxyCandidates.make(sourceYAML: yaml, excluding: selfName)
     }
 
      
@@ -2199,19 +2204,11 @@ private final class HakoMacSceneModel: ObservableObject {
 
      
      
-    static func libraryLinks(
-        _ recipe: ConfigurationRecipe?, in snapshot: ConfigurationLibrarySnapshot
-    ) -> [ConfigurationSourceRecord] {
-        guard let recipe else { return [] }
-        return recipe.sources.compactMap { reference in
-            snapshot.sources.first { record in
-                guard record.id == reference.id else { return false }
-                if case .subscription = record.origin { return true }
-                return false
-            }
-        }
-    }
-
+     
+     
+     
+     
+     
      
      
      
@@ -2221,32 +2218,22 @@ private final class HakoMacSceneModel: ObservableObject {
      
     static func liveProfile(
         _ listed: HakoProfileSnapshot,
-        recipe: ConfigurationRecipe?,
         appProfile: Profile?,
         in snapshot: ConfigurationLibrarySnapshot
     ) -> HakoProfileSnapshot {
         var profile = listed
-        let links = libraryLinks(recipe, in: snapshot)
-        guard let updatedAt = links.map(\.updatedAt).max() else { return profile }
-        profile.lastUpdatedAt = updatedAt
+        guard let appProfile,
+              let facts = ProfileCenterView.libraryFacts(for: appProfile, in: snapshot)
+        else { return profile }
+        profile.lastUpdatedAt = facts.lastUpdatedAt
          
          
-        if let appProfile, case .url(let rawURL) = appProfile.source {
-            let host = SubscriptionURLPresentation.hostDescription(rawURL, locale: .current)
-            profile.sourceSummary = .verbatim(
-                "\(host) · \(updatedAt.formatted(.relative(presentation: .named)))"
-            )
-        }
-         
-         
-         
-        if links.count == 1, let usage = links[0].subscriptionUsage {
-            profile.subscription = HakoProfileSubscriptionSnapshot(
-                uploadBytes: usage.upload, downloadBytes: usage.download,
-                totalBytes: usage.total,
-                expiration: usage.expire > 0
-                    ? Date(timeIntervalSince1970: TimeInterval(usage.expire))
-                    : nil
+        profile.sourceSummary = ProfileCenterView.sourceSummary(
+            appProfile, updatedAt: facts.lastUpdatedAt, locale: .current
+        )
+        profile.subscription = facts.usage.map {
+            ProfileCenterView.subscriptionSnapshot(
+                upload: $0.upload, download: $0.download, total: $0.total, expire: $0.expire
             )
         }
         return profile
@@ -2273,7 +2260,7 @@ private final class HakoMacSceneModel: ObservableObject {
                  
                  
                 let profile = Self.liveProfile(
-                    listed, recipe: recipe, appProfile: appProfile, in: snapshot
+                    listed, appProfile: appProfile, in: snapshot
                 )
                 HakoMacConfigurationInspector(
                     profile: profile,
@@ -5600,6 +5587,26 @@ enum HakoMacLibraryBridge {
 }
 
  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+private struct HakoMacDialerCandidatesHost<Content: View>: View {
+    let load: () -> DialerProxyCandidates
+    @ViewBuilder let content: (@escaping () -> DialerProxyCandidates) -> Content
+    @State private var candidates = DialerProxyCandidates.empty
+
+    var body: some View {
+        content { candidates }
+            .task { candidates = load() }
+    }
+}
+
 struct HakoMacImportRequest: Identifiable {
     let purpose: HakoMacSourceImportPurpose
     var tab: HakoMacSourceImportSheet.Tab = .link
