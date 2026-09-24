@@ -133,6 +133,9 @@ public struct HakoTowerRulesLibraryView: View {
                     .swipeActions(allowsFullSwipe: false) {
                         if !bundled(scheme) {
                             Button("Delete", role: .destructive) { deleting = scheme }
+                                 
+                                 
+                                .tint(.red)
                                 .accessibilityIdentifier("configuration.rules.library.delete")
                         }
                     }
@@ -389,6 +392,7 @@ public struct HakoTowerRuleCustomizationView: View {
                     }
                     .swipeActions(allowsFullSwipe: false) {
                         Button("Delete", role: .destructive) { deletingLocal = item }
+                            .tint(.red)
                             .accessibilityIdentifier("configuration.rules.local.delete")
                     }
                 }

@@ -1435,7 +1435,7 @@ public struct HakoConfigurationContentsView: View {
                                 inspectNode: { openNode(index) }, showsLatency: false
                             )
                             .swipeActions {
-                                if let deleteNode { Button("Delete", role: .destructive) { deleteNode(index) } }
+                                if let deleteNode { Button("Delete", role: .destructive) { deleteNode(index) }.tint(.red) }
                             }
                         } else if let rule = row.rule, let palette {
                             HakoRuleListRow(row: HakoRuleFrozenRow(rule), palette: palette)
