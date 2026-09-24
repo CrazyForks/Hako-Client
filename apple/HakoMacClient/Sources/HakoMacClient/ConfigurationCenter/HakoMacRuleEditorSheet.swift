@@ -762,6 +762,9 @@ struct HakoMacRuleRowEditor: View {
  
  
  
+ 
+ 
+ 
 struct HakoMacRuleGroupEditor: View {
     let group: ConfigurationRuleDraft.Group?
     let all: [ConfigurationRuleDraft.Group]
@@ -772,6 +775,7 @@ struct HakoMacRuleGroupEditor: View {
     let close: () -> Void
     @State private var pickingNode = false
     @State private var name: String
+    @State private var icon: String
     @State private var kind: String
     @State private var selected: [String]
     @State private var includeAll: Bool
@@ -787,6 +791,7 @@ struct HakoMacRuleGroupEditor: View {
         self.close = close
         let seed = Self.fields(of: group)
         _name = State(initialValue: seed.name)
+        _icon = State(initialValue: seed.icon)
         _kind = State(initialValue: seed.kind)
         _selected = State(initialValue: seed.selected)
         _includeAll = State(initialValue: seed.includeAll)
@@ -799,6 +804,8 @@ struct HakoMacRuleGroupEditor: View {
         var selected: [String] = []
         var includeAll = false
         var filter = ""
+         
+        var icon = ""
     }
 
      
@@ -811,6 +818,7 @@ struct HakoMacRuleGroupEditor: View {
         fields.includeAll = group.document.topLevelValue("include-all") == .scalar("true")
             || group.document.topLevelValue("include-all-proxies") == .scalar("true")
         if case .string(let value) = group.document.topLevelValue("filter") { fields.filter = value }
+        fields.icon = HakoTowerGroupIcon.read(group.document)
         return fields
     }
 
@@ -819,6 +827,8 @@ struct HakoMacRuleGroupEditor: View {
      
     static func document(base: OrderedJSON?, fields: Fields) -> OrderedJSON {
         var document = (base ?? .object([])).settingTopLevel("name", to: .string(fields.name))
+         
+        document = HakoTowerGroupIcon.apply(fields.icon, to: document)
         let previousType: String? = { if case .string(let value) = base?.topLevelValue("type") { return value }; return nil }()
         if fields.kind != previousType, case .object(let entries) = document {
             let typeFields: Set<String> = ["url", "interval", "tolerance", "strategy", "lazy", "expected-status", "max-failed-times"]
@@ -836,7 +846,7 @@ struct HakoMacRuleGroupEditor: View {
         return document
     }
 
-    private var fields: Fields { Fields(name: name, kind: kind, selected: selected, includeAll: includeAll, filter: filter) }
+    private var fields: Fields { Fields(name: name, kind: kind, selected: selected, includeAll: includeAll, filter: filter, icon: icon) }
     private var dirty: Bool { fields != Self.fields(of: group) }
     private var canCommit: Bool { !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (!selected.isEmpty || includeAll) }
     private var kinds: [String] { Array(Set([group?.type ?? "select", "select", "url-test", "fallback"])).sorted() }
@@ -866,6 +876,28 @@ struct HakoMacRuleGroupEditor: View {
                 Section {
                     TextField(text: $name, prompt: Text(hako: .copy("e.g. 🎬 Netflix"))) { Text(hako: .copy("Group Name")) }
                         .accessibilityIdentifier("configuration-center.rule-editor.group.name")
+                    TextField(text: $icon, prompt: Text(verbatim: "https://…")) { Text(hako: .copy("Icon URL")) }
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier("configuration-center.rule-editor.group.icon")
+                     
+                     
+                     
+                    if let echo = HakoTowerGroupIconEcho.of(icon) {
+                        HStack {
+                            Text(hako: .copy(echo.label))
+                                .foregroundStyle(echo == .nothingDraws ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                            Spacer(minLength: HakoTheme.Spacing.compact)
+                            switch echo {
+                            case .emoji(let emoji): Text(verbatim: emoji).foregroundStyle(.secondary)
+                            case .symbol(let symbol): Image(systemName: symbol.rawValue).foregroundStyle(.secondary)
+                            case .image(let host): Text(verbatim: host).foregroundStyle(.secondary)
+                            case .nothingDraws: EmptyView()
+                            }
+                        }
+                        .font(.footnote)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("configuration-center.rule-editor.group.icon.echo")
+                    }
                     Picker(selection: $kind) {
                         ForEach(kinds, id: \.self) { Text(verbatim: $0).tag($0) }
                     } label: {
