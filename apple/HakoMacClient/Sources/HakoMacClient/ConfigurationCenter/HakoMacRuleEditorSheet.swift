@@ -647,9 +647,23 @@ public struct HakoMacRuleEditorSheet: View {
      
     private func adopt(_ next: HakoMacRuleEditorState, keepDraft: Bool) {
         if keepDraft, var current = state {
+             
+             
+             
+             
+            let rebased = current.draft.rebased(onto: next.draft)
+            current.draft = rebased.draft
             current.localSets = next.localSets
             current.resetDocument = next.resetDocument
             state = current
+            baseline = next.draft
+            installedRuleSets = Self.installedRuleSets(in: rebased.draft)
+            if !rebased.droppedRuleSets.isEmpty {
+                let names = rebased.droppedRuleSets.map { key in
+                    next.localSets.first { "local-" + $0.id == key }?.name ?? key
+                }
+                error = HakoCopy.format("Rules on removed rule sets were left out: %@", locale: locale, names.joined(separator: ", "))
+            }
         } else {
             state = next
             installedRuleSets = Self.installedRuleSets(in: next.draft)

@@ -2562,6 +2562,7 @@
 "Rules could not be saved. The previous configuration is still available." = "规则无法保存。先前的配置仍然可用。";
 "Rules from Sources" = "来自配置链接 / 文件";
 "Rules match from top to bottom. MATCH stays last." = "从上往下匹配，MATCH 固定在最后。";
+"Rules on removed rule sets were left out: %@" = "引用已删除规则集的规则已被略去：%@";
 "Rules preserved for this profile during the app-wide settings migration." = "全局设置迁移期间，本配置的规则已保留。";
 "Running with: %@" = "实际使用：%@";
 "Runs as written. This entry called the family inert while that was true, and it stopped being true the night the core wired the address to route.ReCreateServer — a sentence describing behaviour a build no longer has is the defect this surface exists to prevent." = "按配置运行。这一条曾把这一族称为「不生效」，那在当时为真；内核把地址接到 route.ReCreateServer 的那晚它不再为真——一句描述某个构建已经不具备的行为的话，正是这个界面存在的意义所要防的缺陷。";

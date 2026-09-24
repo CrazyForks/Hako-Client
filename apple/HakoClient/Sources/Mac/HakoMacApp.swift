@@ -2398,10 +2398,12 @@ private final class HakoMacSceneModel: ObservableObject {
                 library.apply(try await profiles.saveConfigurationLocalRuleSet(nil, deleting: id, generation: library.snapshot.generation))
                 return try await load(previous: nil)
             },
+             
+             
+             
             copy: { draft, name in
-                let saved = try await save(draft)
                 library.apply(try await profiles.copyConfigurationRuleScheme(
-                    saved.schemeID, label: name, generation: library.snapshot.generation
+                    draft: draft, label: name, generation: library.snapshot.generation
                 ))
             },
             download: { input in try await ConfigurationTowerRuleReader.rules(input) }
