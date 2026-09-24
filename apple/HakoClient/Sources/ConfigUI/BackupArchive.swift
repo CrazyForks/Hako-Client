@@ -904,6 +904,16 @@ struct BackupArchive: Codable, Equatable {
                         libraryArchive.payloads.append(contentsOf: registration.payloads)
                     }
                 } catch { registrationFailures.append(profile.label + ": " + error.localizedDescription) }
+                 
+                 
+                do {
+                    if let registration = try ConfigurationLegacyRegistration.prepareCustomNodes(profile: profile,
+                        snapshot: libraryArchive.snapshot,
+                        load: { try ConfigurationLegacyRegistration.customNodePayload(profile: profile, workingDir: workingDir) }) {
+                        libraryArchive.snapshot = registration.snapshot
+                        libraryArchive.payloads.append(contentsOf: registration.payloads)
+                    }
+                } catch { registrationFailures.append(profile.label + ": " + error.localizedDescription) }
             }
              
              

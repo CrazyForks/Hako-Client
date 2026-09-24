@@ -431,6 +431,8 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
+     
+     
     func registerLegacyConfigurationSources() async throws {
         if let registration = legacyRegistration {
             defer { if legacyRegistration?.id == registration.id { legacyRegistration = nil } }
@@ -444,17 +446,29 @@ final class ProfilesViewModel: ObservableObject {
             defer { changingConfigurationLibrary = false }
             let installed = profiles
             var failures: [String] = []
+            func register(_ prepare: @escaping @Sendable (ConfigurationLibrarySnapshot) throws
+                -> (snapshot: ConfigurationLibrarySnapshot, payloads: [ConfigurationSourcePayload])?) async throws {
+                try await Task.detached(priority: .utility) {
+                    let current = try store.snapshot()
+                    if let registration = try prepare(current) {
+                        _ = try store.commit(registration.snapshot, payloads: registration.payloads,
+                            expectedGeneration: current.generation)
+                    }
+                }.value
+            }
             for profile in installed {
                 try Task.checkCancellation()
                 do {
-                    try await Task.detached(priority: .utility) {
-                        let current = try store.snapshot()
-                        if let registration = try ConfigurationLegacyRegistration.prepare(profile: profile, snapshot: current,
-                            load: { try ConfigurationLegacyRegistration.payload(profile: profile, workingDir: workingDir) }) {
-                            _ = try store.commit(registration.snapshot, payloads: registration.payloads,
-                                expectedGeneration: current.generation)
-                        }
-                    }.value
+                    try await register { current in
+                        try ConfigurationLegacyRegistration.prepare(profile: profile, snapshot: current,
+                            load: { try ConfigurationLegacyRegistration.payload(profile: profile, workingDir: workingDir) })
+                    }
+                } catch { failures.append(profile.label + ": " + error.localizedDescription) }
+                do {
+                    try await register { current in
+                        try ConfigurationLegacyRegistration.prepareCustomNodes(profile: profile, snapshot: current,
+                            load: { try ConfigurationLegacyRegistration.customNodePayload(profile: profile, workingDir: workingDir) })
+                    }
                 } catch { failures.append(profile.label + ": " + error.localizedDescription) }
             }
             if !failures.isEmpty { throw PipelineError.sourceUnavailable(failures.joined(separator: "\n")) }

@@ -192,6 +192,9 @@ public struct ConfigurationLibrarySnapshot: Codable, Equatable, Sendable {
      
      
     public var registeredLegacyProfileIDs: [String]? = nil
+     
+     
+    public var registeredLegacyNodeProfileIDs: [String]? = nil
     public var updateIssues: [ConfigurationUpdateIssue]? = nil
     public var selectedRuleSchemeID: String? = nil
     public var localRuleSets: [ConfigurationLocalRuleSet]? = nil

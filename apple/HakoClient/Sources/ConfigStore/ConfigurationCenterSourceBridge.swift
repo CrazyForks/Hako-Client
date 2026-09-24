@@ -349,6 +349,54 @@ enum ConfigurationLegacyRegistration {
         return payload
     }
 
+    static func customNodeSourceID(for profileID: String) -> String { "legacy-nodes-" + profileID }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    static func prepareCustomNodes(profile: Profile, snapshot: ConfigurationLibrarySnapshot,
+                                   load: () throws -> ConfigurationSourcePayload?) throws
+        -> (snapshot: ConfigurationLibrarySnapshot, payloads: [ConfigurationSourcePayload])? {
+        guard !(snapshot.registeredLegacyNodeProfileIDs ?? []).contains(profile.id) else { return nil }
+        let sourceID = customNodeSourceID(for: profile.id)
+        var next = snapshot
+        var payloads: [ConfigurationSourcePayload] = []
+        if !snapshot.sources.contains(where: { $0.id == sourceID }) {
+             
+             
+            guard let payload = try load() else { return nil }
+            guard payload.record.id == sourceID, payload.record.origin == .customNodes else {
+                throw ConfigurationLibraryError.invalidIdentifier
+            }
+            next.sources.append(payload.record)
+            payloads.append(payload)
+        }
+        next.registeredLegacyNodeProfileIDs = (next.registeredLegacyNodeProfileIDs ?? []) + [profile.id]
+        return (next, payloads)
+    }
+
+     
+     
+     
+     
+    static func customNodePayload(profile: Profile, workingDir: URL) throws -> ConfigurationSourcePayload? {
+        guard let definition = profile.providerDefinitions?.proxyProviders
+                .first(where: { $0.name == CustomNodePayload.providerName })?.definitionJSON else { return nil }
+        guard !(try CustomNodePayload.payload(inDefinition: definition)).isEmpty else { return nil }
+        guard case .array(let nodes)? = try OrderedJSON.parse(definition).topLevelValue("payload") else {
+            throw ProfileProviderDefinitionError.invalidPayload
+        }
+        let yaml = try ConfigTransforms.jsonToYAML(OrderedJSON.object([(key: "proxies", value: .array(nodes))]).serialized())
+        let files = try ConfigurationCenterSourceBridge.capturedFiles(profile: profile, yaml: yaml, workingDir: workingDir)
+        return try ConfigurationCenterSourceBridge.payload(label: profile.label, origin: .customNodes,
+            original: Data(yaml.utf8), yaml: yaml, resources: files, id: customNodeSourceID(for: profile.id))
+    }
 }
 
  
