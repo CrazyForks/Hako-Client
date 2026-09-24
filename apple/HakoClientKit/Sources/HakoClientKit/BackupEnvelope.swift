@@ -7,8 +7,14 @@ import Foundation
  
  
  
+ 
+ 
+ 
+ 
+ 
+ 
 public struct BackupEnvelope: Equatable, Sendable {
-    public static let supportedSchemaVersion = 5
+    public static let supportedSchemaVersion = 6
     public static let effectiveStageAfterClientTransforms = "afterClientTransforms"
 
     public enum Source: Equatable, Sendable {

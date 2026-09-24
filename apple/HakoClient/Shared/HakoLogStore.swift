@@ -74,11 +74,19 @@ public enum HakoLogRetention: String, CaseIterable, Sendable {
  
  
  
+ 
+ 
 public enum HakoLogSettings {
     public static let recordingKey = "logs.recording"
 
+    #if os(tvOS)
+    public static let defaultRecording = true
+    #else
+    public static let defaultRecording = false
+    #endif
+
     public static func isRecording(from defaults: UserDefaults) -> Bool {
-        defaults.object(forKey: recordingKey) as? Bool ?? false
+        defaults.object(forKey: recordingKey) as? Bool ?? defaultRecording
     }
 
     public static func setRecording(_ value: Bool, in defaults: UserDefaults) {
