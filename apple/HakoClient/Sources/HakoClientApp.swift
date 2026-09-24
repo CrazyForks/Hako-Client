@@ -144,6 +144,9 @@ struct AppShellView: View {
      
      
     @State private var lastRouteNotedVPNStatus = ""
+     
+     
+    @State private var egressRecheck = EgressRecheckDebt()
     @State private var profileCenterDestination: AppNavigationDestination?
      
      
@@ -326,6 +329,11 @@ struct AppShellView: View {
              
              
              
+            if egressRecheck.channelChanged(up: connected) {
+                Task { _ = await stats.checkEgressIP() }
+            }
+             
+             
              
              
              
@@ -416,7 +424,11 @@ struct AppShellView: View {
         .onChange(of: nodes.routeGeneration) { _ in
              
              
-            guard command.isConnected else { return }
+             
+             
+             
+             
+            guard egressRecheck.routeMoved(channelUp: command.isConnected) else { return }
             Task { _ = await stats.checkEgressIP() }
         }
          
@@ -1270,6 +1282,11 @@ struct AppShellView: View {
          
          
         command.bind(session: vpn.session)
+         
+         
+         
+         
+        stats.bind(session: vpn.session, command: command)
         command.sync(vpnStatus: status)
         publishVPNControlSnapshot(status: status)
          

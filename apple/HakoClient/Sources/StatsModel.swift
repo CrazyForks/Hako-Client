@@ -153,3 +153,33 @@ enum EgressRetryPolicy {
         return urlError.code == .timedOut
     }
 }
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+struct EgressRecheckDebt {
+    private(set) var isOwed = false
+
+     
+    mutating func routeMoved(channelUp: Bool) -> Bool {
+        isOwed = !channelUp
+        return channelUp
+    }
+
+     
+    mutating func channelChanged(up: Bool) -> Bool {
+        guard up, isOwed else { return false }
+        isOwed = false
+        return true
+    }
+}
