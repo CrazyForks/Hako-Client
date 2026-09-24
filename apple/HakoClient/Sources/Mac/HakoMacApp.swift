@@ -4687,10 +4687,19 @@ private struct HakoMacRuntimeConfigurationPage: View, Equatable {
             async let snapshotTask = Task.detached(
                 priority: .userInitiated
             ) {
-                ProfileFinalConfigurationSnapshot.make(
+                 
+                 
+                 
+                 
+                 
+                let omittedPersonalRules = texts.effective.map {
+                    ProfileRuntimeConfigBuilder.personalRulesLeftOut(of: $0, profile: captured)
+                } ?? []
+                return ProfileFinalConfigurationSnapshot.make(
                     sourceYAML: texts.source,
                     effectiveYAML: texts.effective,
-                    omittedRules: omittedRules
+                    omittedRules: omittedRules,
+                    omittedPersonalRules: omittedPersonalRules
                 )
             }.value
             inputs = await Inputs(
