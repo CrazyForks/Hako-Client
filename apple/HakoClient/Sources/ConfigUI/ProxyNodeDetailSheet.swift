@@ -21,6 +21,12 @@ enum ProxyNodeDetailLookup {
     enum Source: Equatable {
         case main
         case provider(String)
+         
+         
+         
+         
+         
+        case presented
     }
 
     static func details(
@@ -36,9 +42,26 @@ enum ProxyNodeDetailLookup {
         yaml: String?,
         providersDir: URL?
     ) -> (details: ProxyProtocolDetails, source: Source)? {
+        locate(named: name, yaml: yaml, presentedYAML: nil, providersDir: providersDir)
+    }
+
+     
+     
+     
+     
+    static func locate(
+        named name: String,
+        yaml: String?,
+        presentedYAML: String?,
+        providersDir: URL?
+    ) -> (details: ProxyProtocolDetails, source: Source)? {
         if let yaml,
            let found = ProxyConfigurationInspector.detailsByNodeName(yaml: yaml)[name] {
             return (found, .main)
+        }
+        if let presentedYAML,
+           let found = ProxyConfigurationInspector.detailsByNodeName(yaml: presentedYAML)[name] {
+            return (found, .presented)
         }
         guard let providersDir,
               let catalog = ProviderCatalog.load(providersDir: providersDir) else {
@@ -482,6 +505,9 @@ struct ProxyNodeEditorSheet: View {
     @Environment(\.hakoProductModalDismiss) private var productModalDismiss
     @State private var loaded = false
     @State private var projected: String?
+     
+     
+    @State private var presented: String?
     @State private var located: (details: ProxyProtocolDetails, source: ProxyNodeDetailLookup.Source)?
     @State private var overridden = false
 
@@ -536,7 +562,11 @@ struct ProxyNodeEditorSheet: View {
                     }
                 }
             } else {
-                ProxyNodeDetailSheet(nodeName: nodeName, yaml: projected, providersDir: providersDir)
+                ProxyNodeDetailSheet(
+                    nodeName: nodeName,
+                    yaml: located?.source == .presented ? presented : projected,
+                    providersDir: providersDir
+                )
             }
         }
         .task(id: nodeName) {
@@ -545,11 +575,16 @@ struct ProxyNodeEditorSheet: View {
             let cached = cachedProjection
             let current = profile
             let directory = providersDir
+             
+             
+             
+            let presentedDocument = await profiles.loadPresentedProxiesYAML(for: current)
             let result = await Task.detached(priority: .userInitiated) { () -> (String?, (details: ProxyProtocolDetails, source: ProxyNodeDetailLookup.Source)?) in
                 let yaml = cached ?? CustomNodesGroupMaterializer.projectForUI(sourceYAML: source, profile: current)
-                return (yaml, ProxyNodeDetailLookup.locate(named: name, yaml: yaml, providersDir: directory))
+                return (yaml, ProxyNodeDetailLookup.locate(named: name, yaml: yaml, presentedYAML: presentedDocument, providersDir: directory))
             }.value
             projected = result.0
+            presented = presentedDocument
             located = result.1
             overridden = profiles.proxyNodeOverridePatch(named: name) != nil
             loaded = true
