@@ -1026,6 +1026,13 @@ final class ExtensionProvider: NSObject {
             guard let name = req["name"] as? String else { return jsonError("missing name") }
             let delay = HakoURLTest(name, req["url"] as? String ?? "")
             return Data("{\"delay\":\(delay)}".utf8)
+         
+         
+         
+        case "dnsQuery":
+            guard currentService != nil else { return jsonError("service not running") }
+            guard let name = req["name"] as? String else { return jsonError("missing name") }
+            return Data(HakoDNSQueryJSON(name, req["type"] as? String ?? "A").utf8)
         case "close":
             guard let id = req["id"] as? String else { return jsonError("missing id") }
             return Data("{\"closed\":\(HakoCloseConnection(id))}".utf8)

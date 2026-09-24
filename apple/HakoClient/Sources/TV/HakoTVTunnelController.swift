@@ -1617,6 +1617,7 @@ actor HakoTVIPCChannel {
          
         case "ruleProviders": return object["providers"] is [String: Any]
         case "urltest": return object["delay"] is NSNumber
+        case "dnsQuery": return object["Status"] is NSNumber
         case "close": return object["closed"] is NSNumber
         case "proxyShareStart", "proxyShareStop", "proxyShareStatus":
             return object["ok"] as? Bool == true && object["status"] is [String: Any]

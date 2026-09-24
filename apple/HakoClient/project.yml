@@ -589,6 +589,7 @@ targets:
     - path: Sources/TV
     - path: Shared/ConfigResourceStore.swift
     - path: Shared/HakoAppIdentifiers.swift
+    - path: Shared/HakoMDNSProbeDriver.swift
     - path: Shared/HakoDeviceModel.swift
       group: Shared
     - path: ../HakoClientUI/Sources/HakoClientUI/Features/Rules/HakoRulesSnapshot.swift
