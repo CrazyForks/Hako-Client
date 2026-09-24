@@ -174,6 +174,12 @@ public struct HakoProxiesToolbar<Icon: View>: ToolbarContent {
                     }
                     .accessibilityLabel("Display Options")
                     .accessibilityIdentifier("proxies.display.options")
+                     
+                     
+                     
+                     
+                     
+                    .id(preferences.menuIdentity)
                 } else {
                     Button {
                         onShowDisplayOptions()
@@ -226,6 +232,17 @@ public struct HakoProxiesToolbar<Icon: View>: ToolbarContent {
             Text("Minimal").tag(HakoProxiesDisplayPreferences.Size.minimal)
         }
             .accessibilityIdentifier("proxies.display.size")
+    }
+}
+
+extension HakoProxiesDisplayPreferences {
+     
+     
+     
+     
+     
+    var menuIdentity: String {
+        "\(style.rawValue)|\(sort.rawValue)|\(layout.rawValue)|\(size.rawValue)|\(groupIconImages)"
     }
 }
 

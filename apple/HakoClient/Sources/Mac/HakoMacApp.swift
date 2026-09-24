@@ -736,10 +736,23 @@ private final class HakoMacMenuBarTrafficFeed: ObservableObject {
 private struct HakoMacProxiesGhostChrome: View, Equatable {
     let model: HakoMacSceneModel
     @ObservedObject var channels: HakoRegularRootChannels
+     
+     
+     
+     
+     
+     
+     
+     
+    @State private var preferences: HakoProxiesDisplayPreferences
 
     init(model: HakoMacSceneModel) {
         self.model = model
         self.channels = model.proxiesChannels
+        _preferences = State(
+            initialValue: HakoProxiesDisplayPreferences.uiTestOverride()
+                ?? HakoProxiesDisplayPreferences.load()
+        )
     }
 
     static func == (
@@ -767,20 +780,7 @@ private struct HakoMacProxiesGhostChrome: View, Equatable {
                      
                     canRefreshCatalog: true,
                     refreshDisabled: model.isTestingLatencyNow,
-                    preferences: Binding(
-                        get: {
-                            HakoProxiesDisplayPreferences.uiTestOverride()
-                                ?? HakoProxiesDisplayPreferences.load()
-                        },
-                        set: { [weak model] value in
-                             
-                             
-                             
-                             
-                             
-                            model?.applyProxiesDisplayPreferences(value)
-                        }
-                    ),
+                    preferences: $preferences,
                     onDismiss: {},
                     onToggleFold: { [weak model] in
                         model?.proxiesChannels.foldCommand += 1
@@ -792,6 +792,13 @@ private struct HakoMacProxiesGhostChrome: View, Equatable {
                     onShowDisplayOptions: {},
                     icon: { HakoSymbolImage(symbol: $0) }
                 )
+            }
+            .onChange(of: preferences) { [weak model] value in
+                 
+                 
+                 
+                 
+                model?.applyProxiesDisplayPreferences(value)
             }
     }
 }
