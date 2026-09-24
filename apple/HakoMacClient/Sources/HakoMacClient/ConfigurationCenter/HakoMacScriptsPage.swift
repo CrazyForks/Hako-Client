@@ -173,11 +173,16 @@ public struct HakoMacScriptsPage: View {
             }
             if !others.isEmpty {
                 HakoMacCardSection(chosen == nil ? .copy("Scripts") : .copy("Other Scripts")) {
-                    ForEach(others) { script in
-                        scriptRow(script).hakoMacCardRow()
+                     
+                     
+                     
+                    LazyVStack(spacing: 0) {
+                        ForEach(others) { script in
+                            scriptRow(script).hakoMacCardRow()
+                        }
                     }
                 }
-                .accessibilityIdentifier(chosen == nil ? "configuration-center.scripts.all" : "configuration-center.scripts.other")
+                .accessibilityIdentifier("configuration-center.scripts.other")
             }
             if state.scripts.isEmpty {
                 HakoMacCardSection(.copy("Scripts")) {
@@ -224,6 +229,7 @@ public struct HakoMacScriptsPage: View {
             }
             if !state.exceptions.isEmpty {
                 HakoMacCardSection(.copy("This Profile's Exceptions")) {
+                    LazyVStack(spacing: 0) {
                     ForEach(Array(state.exceptions.enumerated()), id: \.offset) { index, rule in
                         HStack { Text(verbatim: rule).font(.body.monospaced()); Spacer() }
                             .contextMenu {
@@ -235,6 +241,7 @@ public struct HakoMacScriptsPage: View {
                             }
                             .accessibilityIdentifier("configuration-center.scripts.exception.\(index)")
                             .hakoMacCardRow()
+                    }
                     }
                 }
             }

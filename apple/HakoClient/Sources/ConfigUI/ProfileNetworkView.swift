@@ -371,7 +371,7 @@ struct ProfileNetworkSettingsView: View {
  
  
  
-private enum CoreBehaviorDoor: String, Identifiable {
+private enum CoreBehaviorRoute: String, Identifiable {
     case keepAlive
     var id: String { rawValue }
 }
@@ -387,7 +387,7 @@ struct GlobalCoreBehaviorSettingsView: View {
      
     @Environment(\.hakoProductModalDismiss)
     private var productModalDismiss
-    @State private var doorSelection: CoreBehaviorDoor?
+    @State private var doorSelection: CoreBehaviorRoute?
 
     private var keepAliveDestination: some View {
         GlobalKeepAliveSettingsView(
@@ -589,7 +589,7 @@ struct GlobalCoreBehaviorSettingsView: View {
                     upstreamDefault: UpstreamBoolDefault.value(for: "tcp-concurrent"),
                     identifier: "global-core.tcp-concurrent"
                 )
-                HakoDoorLink(CoreBehaviorDoor.keepAlive, selection: $doorSelection) {
+                HakoDoorLink(CoreBehaviorRoute.keepAlive, selection: $doorSelection) {
                     keepAliveDestination
                 } label: {
                     DNSHubRow(
