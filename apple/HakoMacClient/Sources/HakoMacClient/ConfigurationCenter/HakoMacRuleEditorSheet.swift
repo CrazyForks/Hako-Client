@@ -834,13 +834,17 @@ struct HakoMacRuleRowEditor: View {
                              
                              
                             LabeledContent {
-                                TextField(text: $content, prompt: Text(verbatim: action.contentPlaceholder)) { Text(verbatim: action.contentLabel) }
+                                TextField(text: $content, prompt: Text(verbatim: action.contentPlaceholder)) { Text(hako: .copy(action.contentLabel)) }
                                     .labelsHidden()
                                     .font(.body.monospaced())
                                     .multilineTextAlignment(.trailing)
                                     .accessibilityIdentifier("configuration-center.rule-editor.rule.content")
                             } label: {
-                                Text(verbatim: action.contentLabel)
+                                 
+                                 
+                                 
+                                 
+                                Text(hako: .copy(action.contentLabel))
                             }
                         }
                         HakoMacTargetRow(title: .copy("Target"), value: target, identifier: "configuration-center.rule-editor.rule.target") {
