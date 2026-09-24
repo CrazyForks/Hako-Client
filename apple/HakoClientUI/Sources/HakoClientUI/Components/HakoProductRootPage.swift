@@ -743,7 +743,13 @@ struct HakoProductPageSection<Content: View>: View {
 
          
          
-        if usesTraditionalPrimaryCard {
+         
+         
+         
+         
+         
+        if usesTraditionalPrimaryCard
+            || !HakoPlatformLayout.touchCardWearsSystemMaterial {
             traditionalCard
         } else if #available(iOS 26.0, macOS 26.0, tvOS 26.0, *) {
              

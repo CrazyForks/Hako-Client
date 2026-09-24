@@ -128,6 +128,35 @@ public enum HakoPlatformLayout {
 #endif
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    public static func touchCardWearsSystemMaterial(
+        onSystemMajorVersion major: Int
+    ) -> Bool {
+        major < 27
+    }
+
+    public static var touchCardWearsSystemMaterial: Bool {
+        touchCardWearsSystemMaterial(
+            onSystemMajorVersion: ProcessInfo.processInfo
+                .operatingSystemVersion.majorVersion
+        )
+    }
+
 
      
      

@@ -1021,7 +1021,10 @@ private struct HakoHomePrimaryPageCard<Content: View>: View {
             if HakoPerfExperiment.suppressesGlass { return false }
             if HakoPlatformLayout.primaryPageCardUsesLiquidGlass { return true }
             if HakoPlatformLayout.pageUsesSystemSettingsIdiom { return false }
-            return true
+             
+             
+             
+            return HakoPlatformLayout.touchCardWearsSystemMaterial
         }()
 
          
