@@ -1385,6 +1385,75 @@ extension ConfigResourceStore {
         }
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func supersededRevisionDirectories() throws -> [URL] {
+        try withExclusiveLock { try supersededRevisionDirectoriesLocked() }
+    }
+
+     
+     
+    @discardableResult
+    func removeSupersededRevisionDirectories() throws -> [URL] {
+        try withExclusiveLock {
+            var removed: [URL] = []
+            var parents = Set<URL>()
+            for url in try supersededRevisionDirectoriesLocked() {
+                guard (try? fileManager.removeItem(at: url)) != nil else { continue }
+                removed.append(url)
+                parents.insert(url.deletingLastPathComponent())
+            }
+            for parent in parents { try syncDirectory(parent) }
+            return removed
+        }
+    }
+
+    private func supersededRevisionDirectoriesLocked() throws -> [URL] {
+        guard fileManager.fileExists(atPath: profilesURL.path) else { return [] }
+        let active = try? readPointer(Name.activePointer)
+        let lastKnownGood = try? readPointer(Name.lastKnownGoodPointer)
+        let profileDirectories = try fileManager.contentsOfDirectory(
+            at: profilesURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        )
+        .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+        var superseded: [URL] = []
+        for directory in profileDirectories {
+            let profileID = directory.lastPathComponent
+            let profile = profilePaths(profileID)
+            guard fileManager.fileExists(atPath: profile.revisions.path) else { continue }
+            var protected = Set<String>()
+            if let current = try? readProfileCurrent(profile) { protected.insert(current) }
+            if active?.profileID == profileID, let revision = active?.revision { protected.insert(revision) }
+            if lastKnownGood?.profileID == profileID, let revision = lastKnownGood?.revision { protected.insert(revision) }
+            let revisions = try fileManager.contentsOfDirectory(
+                at: profile.revisions,
+                includingPropertiesForKeys: [.contentModificationDateKey],
+                options: [.skipsHiddenFiles]
+            )
+            .filter { Self.isValidRevision($0.lastPathComponent) }
+            func modified(_ url: URL) -> Date {
+                (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
+            }
+             
+             
+            if let newest = revisions.max(by: { modified($0) < modified($1) }) {
+                protected.insert(newest.lastPathComponent)
+            }
+            superseded += revisions.filter { !protected.contains($0.lastPathComponent) }
+        }
+        return superseded.sorted { $0.path < $1.path }
+    }
+
     private func orphanedProfileDirectoriesLocked(registered: Set<String>) throws -> [URL] {
         var protected = registered
         protected.insert(Self.defaultProfileID)

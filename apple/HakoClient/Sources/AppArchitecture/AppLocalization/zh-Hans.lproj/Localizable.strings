@@ -967,6 +967,7 @@
 "Discard Previous Script" = "丢弃旧版脚本";
 "Disclaimer" = "免责声明";
 "Disconnect" = "断开";
+"Disconnect first to clean up compiled geo data." = "请先断开连接，再清理已编译的地理数据。";
 "Disconnect first to reset local data." = "重置本地数据前请先断开连接。";
 "Disconnect on Sleep" = "睡眠时断开";
 "Disconnected" = "未连接";
@@ -2383,6 +2384,7 @@
 "Removed" = "已移除";
 "Removed by the profile URL · yours: %@" = "配置链接已删除 · 你的：%@";
 "Removes configurations no longer listed, superseded downloads, and temporary files. Data any configuration still uses is never touched." = "清理不再列出的配置、已被替换的下载和临时文件。任何配置仍在使用的数据不会被动。";
+"Removes configurations no longer listed, superseded revisions and downloads, log files from earlier days, and temporary files. Data any configuration still uses is never touched." = "清理不再列出的配置、已被替换的修订与下载、往日的日志文件和临时文件。任何配置仍在使用的数据不会被动。";
 "Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay." = "移除当前方案后来添加的规则、改名与排序；我的规则集会保留。";
 "Removing the override does not delete or modify the downloaded source." = "移除覆写不会删除或修改已下载的源码。";
 "Removing them may require importing again." = "移除后可能需要重新导入。";
@@ -2982,6 +2984,7 @@
 "The controller runs what your profile asks for: the API listens where you wrote it, and the bundled web UI is served, fetching itself once if the app has not already placed it. Two spellings are not carried over — the Windows named pipe, and the routing mark, which is a Linux socket option Darwin does not define." = "控制器按你的配置运行：API 在你写的地址上监听，内置面板也会提供；若 App 尚未预置面板，它会自行取回一次。两种写法不予沿用——Windows 命名管道，以及 routing mark（那是 Linux 的 socket 选项，Darwin 不定义）。";
 "The copy was not created." = "副本没有创建。";
 "The core accepts this configuration" = "内核接受这份配置";
+"The core clears this cache each time it starts." = "内核每次启动时自行清理这份缓存。";
 "The core did not release this group's pin." = "内核没有释放这个分组的固定。";
 "The core did not return an address." = "内核未返回地址。";
 "The core did not return an address. Names cannot be resolved with these settings on this network." = "内核没有返回地址。在当前网络下，用这些设置无法解析域名。";
@@ -2998,6 +3001,7 @@
 "The core's own notices, verbatim: what it removed, what it kept but cannot match, and anything it wants you to know about who can reach this device." = "内核自己的通知，逐字呈现：它移除了什么、保留了但匹配不到什么，以及任何它想让你知道的、关于谁能访问这台设备的事。";
 "The core's own notices: what this platform removed from the runtime copy and why it is safe." = "内核自己的通告：本平台从运行副本移除了什么、为何安全。";
 "The core's own words, unedited. Not everything here is the reason it stopped; these are the things it thought worth saying." = "内核的原话，未经改写。这里不是每一条都是它停下来的原因，而是它认为值得说出来的事。";
+"The core's own working files and the downloaded dashboard." = "内核自己的工作文件与已下载的控制台。";
 "The current path can run automatic updates." = "当前网络路径可运行自动更新。";
 "The current path cannot reach the internet." = "当前网络路径无法访问互联网。";
 "The current path cannot route IPv4 or IPv6 traffic." = "当前网络路径无法路由 IPv4 或 IPv6 流量。";
@@ -3034,6 +3038,7 @@
 "The last configuration applied to the tunnel, including overrides and scripts." = "上次应用给隧道的配置，已包含覆写与脚本。";
 "The last known good configuration remains published." = "上一个可用配置仍在发布状态。";
 "The last update changed %@ setting(s) that your app-wide settings override. Each is shown with the new value; adopt it or keep yours." = "上次更新改了 %@ 项设置，但被你的应用设置压住了。下面逐项列出新值；可以采用，也可以保留你的。";
+"The library removes its own unused data whenever it is written." = "节点与规则库在每次写入时自动回收未使用的数据。";
 "The line this traffic took does not carry UDP. HTTP and HTTPS proxies have no UDP transport at all, and Shadowsocks or Trojan lines can have it switched off. Pick a UDP-capable outbound and test again." = "这次走的线路不带 UDP。HTTP 与 HTTPS 代理根本没有 UDP 通道，Shadowsocks 或 Trojan 线路也可能把它关掉了。换一条支持 UDP 的出站再测。";
 "The local Direct profile could not be prepared" = "无法准备本地 Direct 配置";
 "The local diagnostics container is unavailable." = "本地诊断容器不可用。";

@@ -22,6 +22,16 @@ import HakoClientKit
  
  
  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 struct StorageMaintenance {
     enum Area: String, CaseIterable, Hashable, Sendable {
         case configurations, library, geodata, providerCaches, compiledGeodata, logs, temporary
@@ -99,8 +109,11 @@ struct StorageMaintenance {
         switch area {
         case .configurations:
             guard let store = try? ConfigResourceStore(containerURL: containerURL) else { return [] }
-            return (try? store.orphanedProfileDirectories(registered: registeredProfileIDs())) ?? []
-        case .library, .providerCaches, .logs:
+            return ((try? store.orphanedProfileDirectories(registered: registeredProfileIDs())) ?? [])
+                + ((try? store.supersededRevisionDirectories()) ?? [])
+        case .logs:
+            return staleLogFiles()
+        case .library, .providerCaches:
             return []
         case .geodata:
             return GeodataManager.staleGeodataBlobs(homeDir: working)
@@ -130,6 +143,9 @@ struct StorageMaintenance {
             case .configurations:
                 let store = try ConfigResourceStore(containerURL: containerURL)
                 try store.removeOrphanedProfileDirectories(registered: registeredProfileIDs())
+                try store.removeSupersededRevisionDirectories()
+            case .logs:
+                for url in staleLogFiles() { try? fileManager.removeItem(at: url) }
             case .geodata:
                 GeodataManager.removeStaleGeodataBlobs(homeDir: working)
             case .compiledGeodata:
@@ -137,7 +153,7 @@ struct StorageMaintenance {
                 for url in paths(.compiledGeodata) { try? fileManager.removeItem(at: url) }
             case .temporary:
                 for url in temporaryItems() { try? fileManager.removeItem(at: url) }
-            case .library, .providerCaches, .logs:
+            case .library, .providerCaches:
                 continue
             }
             let freed = before - measure(area).reclaimable
@@ -161,6 +177,23 @@ struct StorageMaintenance {
             ids.formUnion(pending.map(\.profileID))
         }
         return ids
+    }
+
+     
+     
+     
+     
+     
+    func staleLogFiles(now: Date = Date()) -> [URL] {
+        let directory = paths(.logs)[0]
+        let live = Set(HakoLogStore.mirrorableFileNames(now: now))
+        let entries = (try? fileManager.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]
+        )) ?? []
+        return entries
+            .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
+            .filter { HakoLogStore.isDayFileName($0.lastPathComponent) && !live.contains($0.lastPathComponent) }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
      

@@ -967,6 +967,7 @@
 "Discard Previous Script" = "Discard Previous Script";
 "Disclaimer" = "Disclaimer";
 "Disconnect" = "Disconnect";
+"Disconnect first to clean up compiled geo data." = "Disconnect first to clean up compiled geo data.";
 "Disconnect first to reset local data." = "Disconnect first to reset local data.";
 "Disconnect on Sleep" = "Disconnect on Sleep";
 "Disconnected" = "Disconnected";
@@ -2383,6 +2384,7 @@
 "Removed" = "Removed";
 "Removed by the profile URL · yours: %@" = "Removed by the profile URL · yours: %@";
 "Removes configurations no longer listed, superseded downloads, and temporary files. Data any configuration still uses is never touched." = "Removes configurations no longer listed, superseded downloads, and temporary files. Data any configuration still uses is never touched.";
+"Removes configurations no longer listed, superseded revisions and downloads, log files from earlier days, and temporary files. Data any configuration still uses is never touched." = "Removes configurations no longer listed, superseded revisions and downloads, log files from earlier days, and temporary files. Data any configuration still uses is never touched.";
 "Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay." = "Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay.";
 "Removing the override does not delete or modify the downloaded source." = "Removing the override does not delete or modify the downloaded source.";
 "Removing them may require importing again." = "Removing them may require importing again.";
@@ -2982,6 +2984,7 @@
 "The controller runs what your profile asks for: the API listens where you wrote it, and the bundled web UI is served, fetching itself once if the app has not already placed it. Two spellings are not carried over — the Windows named pipe, and the routing mark, which is a Linux socket option Darwin does not define." = "The controller runs what your profile asks for: the API listens where you wrote it, and the bundled web UI is served, fetching itself once if the app has not already placed it. Two spellings are not carried over — the Windows named pipe, and the routing mark, which is a Linux socket option Darwin does not define.";
 "The copy was not created." = "The copy was not created.";
 "The core accepts this configuration" = "The core accepts this configuration";
+"The core clears this cache each time it starts." = "The core clears this cache each time it starts.";
 "The core did not release this group's pin." = "The core did not release this group's pin.";
 "The core did not return an address." = "The core did not return an address.";
 "The core did not return an address. Names cannot be resolved with these settings on this network." = "The core did not return an address. Names cannot be resolved with these settings on this network.";
@@ -2998,6 +3001,7 @@
 "The core's own notices, verbatim: what it removed, what it kept but cannot match, and anything it wants you to know about who can reach this device." = "The core's own notices, verbatim: what it removed, what it kept but cannot match, and anything it wants you to know about who can reach this device.";
 "The core's own notices: what this platform removed from the runtime copy and why it is safe." = "The core's own notices: what this platform removed from the runtime copy and why it is safe.";
 "The core's own words, unedited. Not everything here is the reason it stopped; these are the things it thought worth saying." = "The core's own words, unedited. Not everything here is the reason it stopped; these are the things it thought worth saying.";
+"The core's own working files and the downloaded dashboard." = "The core's own working files and the downloaded dashboard.";
 "The current path can run automatic updates." = "The current path can run automatic updates.";
 "The current path cannot reach the internet." = "The current path cannot reach the internet.";
 "The current path cannot route IPv4 or IPv6 traffic." = "The current path cannot route IPv4 or IPv6 traffic.";
@@ -3034,6 +3038,7 @@
 "The last configuration applied to the tunnel, including overrides and scripts." = "The last configuration applied to the tunnel, including overrides and scripts.";
 "The last known good configuration remains published." = "The last known good configuration remains published.";
 "The last update changed %@ setting(s) that your app-wide settings override. Each is shown with the new value; adopt it or keep yours." = "The last update changed %@ setting(s) that your app-wide settings override. Each is shown with the new value; adopt it or keep yours.";
+"The library removes its own unused data whenever it is written." = "The library removes its own unused data whenever it is written.";
 "The line this traffic took does not carry UDP. HTTP and HTTPS proxies have no UDP transport at all, and Shadowsocks or Trojan lines can have it switched off. Pick a UDP-capable outbound and test again." = "The line this traffic took does not carry UDP. HTTP and HTTPS proxies have no UDP transport at all, and Shadowsocks or Trojan lines can have it switched off. Pick a UDP-capable outbound and test again.";
 "The local Direct profile could not be prepared" = "The local Direct profile could not be prepared";
 "The local diagnostics container is unavailable." = "The local diagnostics container is unavailable.";

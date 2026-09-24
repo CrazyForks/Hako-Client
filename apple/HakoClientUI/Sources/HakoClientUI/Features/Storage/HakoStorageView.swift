@@ -32,6 +32,20 @@ public enum HakoStorageArea: String, CaseIterable, Codable, Identifiable, Sendab
         case .other: "Other"
         }
     }
+
+     
+     
+     
+     
+     
+    public var unreclaimableReason: String? {
+        switch self {
+        case .library: "The library removes its own unused data whenever it is written."
+        case .providerCaches: "The core clears this cache each time it starts."
+        case .other: "The core's own working files and the downloaded dashboard."
+        case .configurations, .geodata, .compiledGeodata, .logs, .temporary: nil
+        }
+    }
 }
 
 public struct HakoStorageRow: Codable, Equatable, Identifiable, Sendable {
@@ -70,7 +84,9 @@ public struct HakoStorageSnapshot: Codable, Equatable, Sendable {
  
 public struct HakoStorageCapabilities: Sendable {
     public typealias Measure = @Sendable () async -> HakoStorageSnapshot
-    public typealias Reclaim = @Sendable () async throws -> Int64
+     
+     
+    public typealias Reclaim = @Sendable (Set<HakoStorageArea>) async throws -> Int64
     public typealias Reset = @Sendable () async throws -> Void
 
     public let measure: Measure
@@ -100,6 +116,8 @@ public struct HakoStorageView: View {
     @State private var snapshot: HakoStorageSnapshot?
     @State private var isWorking = false
     @State private var freed: Int64?
+     
+    @State private var freedByArea: [HakoStorageArea: Int64] = [:]
     @State private var didReset = false
     @State private var failure: String?
     @State private var confirmingReset = false
@@ -130,15 +148,7 @@ public struct HakoStorageView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("storage.total")
                 ForEach(snapshot?.rows ?? []) { row in
-                    HStack {
-                        Text(hako: .copy(row.area.title))
-                        Spacer()
-                        Text(verbatim: Self.formatted(row.bytes))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("storage.row.\(row.area.rawValue)")
+                    storageRow(row)
                 }
             }
 
@@ -149,7 +159,7 @@ public struct HakoStorageView: View {
                 if HakoPlatformLayout.pageUsesSystemSettingsIdiom {
                     HStack(spacing: HakoTheme.Spacing.compact) {
                         Button {
-                            Task { await reclaim() }
+                            Task { await reclaim(Set(HakoStorageArea.allCases)) }
                         } label: {
                             Text(hako: .copy("Clean Up Unused Data"))
                         }
@@ -163,7 +173,7 @@ public struct HakoStorageView: View {
                     }
                 } else {
                     Button {
-                        Task { await reclaim() }
+                        Task { await reclaim(Set(HakoStorageArea.allCases)) }
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(hako: .copy("Clean Up Unused Data"))
@@ -187,7 +197,7 @@ public struct HakoStorageView: View {
                 }
             } footer: {
                 Text(hako: .copy(
-                    "Removes configurations no longer listed, superseded downloads, and temporary files. Data any configuration still uses is never touched."
+                    "Removes configurations no longer listed, superseded revisions and downloads, log files from earlier days, and temporary files. Data any configuration still uses is never touched."
                 ))
             }
 
@@ -245,6 +255,65 @@ public struct HakoStorageView: View {
         }
     }
 
+     
+     
+     
+     
+     
+     
+    @ViewBuilder
+    private func storageRow(_ row: HakoStorageRow) -> some View {
+        let area = row.area.rawValue
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(hako: .copy(row.area.title))
+                Spacer()
+                Text(verbatim: Self.formatted(row.bytes))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("storage.row.\(area)")
+            if row.reclaimable > 0 {
+                HStack(spacing: HakoTheme.Spacing.compact) {
+                    Text(hako: .format("%@ can be freed", [Self.formatted(row.reclaimable)]))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        Task { await reclaim([row.area]) }
+                    } label: {
+                        Text(hako: .copy("Clean Up"))
+                            .font(.footnote)
+                    }
+                    .buttonStyle(.borderless)
+                    .hakoMacFormActionChrome()
+                    .disabled(isWorking)
+                    .accessibilityIdentifier("storage.row.\(area).reclaim")
+                }
+            } else if row.bytes > 0, let reason = unreclaimableReason(for: row) {
+                Text(hako: .copy(reason))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            if let freed = freedByArea[row.area] {
+                Text(hako: .format("Freed %@", [Self.formatted(freed)]))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("storage.row.\(area).echo")
+            }
+        }
+    }
+
+     
+     
+    private func unreclaimableReason(for row: HakoStorageRow) -> String? {
+        if row.area == .compiledGeodata, tunnelIsRunning {
+            return "Disconnect first to clean up compiled geo data."
+        }
+        return row.area.unreclaimableReason
+    }
+
     private var reclaimableLine: HakoDisplayText {
         let reclaimable = snapshot?.reclaimableBytes ?? 0
         return reclaimable > 0
@@ -256,12 +325,18 @@ public struct HakoStorageView: View {
         snapshot = await capabilities.measure()
     }
 
-    private func reclaim() async {
+    private func reclaim(_ areas: Set<HakoStorageArea>) async {
         isWorking = true
         defer { isWorking = false }
         failure = nil
         do {
-            freed = try await capabilities.reclaim()
+            let went = try await capabilities.reclaim(areas)
+            if areas.count == 1, let area = areas.first {
+                freedByArea[area] = went
+            } else {
+                freed = went
+                freedByArea = [:]
+            }
         } catch {
             failure = error.localizedDescription
         }

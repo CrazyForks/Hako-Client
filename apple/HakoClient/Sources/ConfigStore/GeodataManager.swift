@@ -30,8 +30,9 @@ final class GeodataManager {
         validatesWithCore: Bool = true
     ) async throws {
         guard !plan.geodata.isEmpty else { return }
-        let cacheDir = homeDir.appendingPathComponent("geodata", isDirectory: true)
-        try FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+         
+         
+        try FileManager.default.createDirectory(at: homeDir, withIntermediateDirectories: true)
         for geo in plan.geodata {
             guard let url = URL(string: geo.url) else { continue }
             let ext = fileExtension(kind: geo.kind, url: url)
@@ -60,10 +61,15 @@ final class GeodataManager {
             guard result.data.count <= maxBytesEach else {
                 throw DownloadError.tooLarge(result.data.count)
             }
-            let sha = SHA256.hash(data: result.data).map { String(format: "%02x", $0) }.joined()
-            let blobURL = cacheDir.appendingPathComponent("\(sha).\(ext)")
-            if !FileManager.default.fileExists(atPath: blobURL.path) {
-                try result.data.write(to: blobURL, options: Self.writeOptions)
+            let namedURL = homeDir.appendingPathComponent(expectedName)
+             
+             
+             
+             
+             
+             
+            if let existing = try? Data(contentsOf: namedURL), existing == result.data {
+                continue
             }
              
              
@@ -73,7 +79,6 @@ final class GeodataManager {
             if let reason = Self.rejectionReason(for: result.data, kind: geo.kind) {
                 throw DownloadError.invalidPayload(name: expectedName, reason: reason)
             }
-            let namedURL = homeDir.appendingPathComponent(expectedName)
             if validatesWithCore, let reason = Self.coreRejectionReason(
                 for: result.data,
                 kind: geo.kind,
@@ -219,23 +224,25 @@ extension GeodataManager {
      
      
      
+     
     static func staleGeodataBlobs(homeDir: URL) -> [URL] {
         let fm = FileManager.default
-        let live = Set(namedGeodataFiles.compactMap { name -> String? in
-            guard let data = try? Data(contentsOf: homeDir.appendingPathComponent(name)) else { return nil }
-            return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-        })
         let cacheDir = homeDir.appendingPathComponent("geodata", isDirectory: true)
         let entries = (try? fm.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])) ?? []
         return entries
             .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
-            .filter { !live.contains($0.deletingPathExtension().lastPathComponent) }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
      
+     
     @discardableResult
     static func removeStaleGeodataBlobs(homeDir: URL) -> [URL] {
-        staleGeodataBlobs(homeDir: homeDir).filter { (try? FileManager.default.removeItem(at: $0)) != nil }
+        let removed = staleGeodataBlobs(homeDir: homeDir).filter { (try? FileManager.default.removeItem(at: $0)) != nil }
+        let cacheDir = homeDir.appendingPathComponent("geodata", isDirectory: true)
+        if let rest = try? FileManager.default.contentsOfDirectory(atPath: cacheDir.path), rest.isEmpty {
+            try? FileManager.default.removeItem(at: cacheDir)
+        }
+        return removed
     }
 }

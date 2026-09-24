@@ -24,11 +24,12 @@ struct StorageView: View {
                     Self.snapshot(tunnelIsRunning: running)
                 }.value
             },
-            reclaim: {
+            reclaim: { areas in
                 let running = await MainActor.run { Self.tunnelIsRunning(vpn.status) }
+                let engineAreas = Set(areas.compactMap(Self.engineArea))
                 return try await Task.detached(priority: .utility) { () throws -> Int64 in
                     guard let engine = Self.engine(tunnelIsRunning: { running }) else { return 0 }
-                    return try engine.reclaim().reclaimedBytes
+                    return try engine.reclaim(engineAreas).reclaimedBytes
                 }.value
             },
             reset: {
@@ -73,6 +74,20 @@ struct StorageView: View {
         case .compiledGeodata: .compiledGeodata
         case .logs: .logs
         case .temporary: .temporary
+        }
+    }
+
+     
+    static func engineArea(_ area: HakoStorageArea) -> StorageMaintenance.Area? {
+        switch area {
+        case .configurations: .configurations
+        case .library: .library
+        case .geodata: .geodata
+        case .providerCaches: .providerCaches
+        case .compiledGeodata: .compiledGeodata
+        case .logs: .logs
+        case .temporary: .temporary
+        case .other: nil
         }
     }
 
