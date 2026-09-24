@@ -30,7 +30,12 @@ public struct HakoMacChainSheetActions {
  
  
  
+ 
+ 
+ 
+ 
 public struct HakoMacChainSheet: View {
+    private enum Slot { case entry, exit }
     private let existing: ConfigurationSourceRecord?
     private let actions: HakoMacChainSheetActions
     private let close: () -> Void
@@ -41,6 +46,9 @@ public struct HakoMacChainSheet: View {
     @State private var error: String?
     @State private var busy = false
     @State private var confirmsDiscard = false
+     
+    @State private var picking: Slot?
+    @State private var query = ""
 
     public init(existing: ConfigurationSourceRecord?, actions: HakoMacChainSheetActions, close: @escaping () -> Void) {
         self.existing = existing; self.actions = actions; self.close = close
@@ -52,32 +60,28 @@ public struct HakoMacChainSheet: View {
     private var dirty: Bool {
         name != (existing?.label ?? "") || entry != existing?.nodeChain?.entry || exit != existing?.nodeChain?.exit
     }
-    private var canCommit: Bool { entry != nil && exit != nil && entry != exit && !busy && choices != nil }
+    private var canCommit: Bool { entry != nil && exit != nil && entry != exit && !busy && choices != nil && picking == nil }
+
+    private var title: HakoDisplayText {
+        switch picking {
+        case .entry: .copy("Entry Node")
+        case .exit: .copy("Exit Node")
+        case nil: existing == nil ? .copy("Add Proxy Chain") : .copy("Edit Proxy Chain")
+        }
+    }
 
     public var body: some View {
-        HakoMacSheetFrame(title: existing == nil ? .copy("Add Proxy Chain") : .copy("Edit Proxy Chain"), width: 560, height: 460) {
-            HakoMacSheetForm {
-                Section {
-                    TextField(text: $name, prompt: Text(hako: .copy("Entry → Exit"))) { Text(hako: .copy("Name")) }
-                        .accessibilityIdentifier("configuration-center.chain.name")
-                }
-                Section {
-                     
-                     
-                     
-                    Text(hako: .copy("This Device"))
-                    hopPicker(.copy("Entry Node"), selection: $entry, identifier: "configuration-center.chain.entry")
-                    hopPicker(.copy("Exit Node"), selection: $exit, identifier: "configuration-center.chain.exit")
-                    Text(hako: .copy("Destination Website"))
-                } header: {
-                    Text(hako: .copy("Connection Order"))
-                }
-                if let choices, choices.isEmpty {
-                    Section { Text(hako: .copy("Add nodes to Node Library first.")).foregroundStyle(.secondary) }
-                }
+        HakoMacSheetFrame(title: title, width: 560, height: 460) {
+            if let picking {
+                nodePicker(picking)
+            } else {
+                form
             }
         } leading: {
-            if let error {
+            if picking != nil {
+                Button { picking = nil } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.chain.back")
+            } else if let error {
                 Text(verbatim: error).foregroundStyle(.red).font(.subheadline).lineLimit(2)
                     .accessibilityIdentifier("configuration-center.chain.error")
             }
@@ -112,34 +116,105 @@ public struct HakoMacChainSheet: View {
         return order.map { (label: $0, choices: grouped[$0] ?? []) }
     }
 
-    private func hopPicker(_ title: HakoDisplayText, selection: Binding<ConfigurationNodeChain.Hop?>, identifier: String) -> some View {
-        Picker(selection: selection) {
-             
-            Text(hako: .copy("Choose Node")).tag(ConfigurationNodeChain.Hop?.none)
-             
-             
-             
-             
-             
-            ForEach(Self.sourceGroups(choices ?? []), id: \.label) { group in
-                Section {
-                    ForEach(group.choices) { choice in
-                        Text(verbatim: choice.hop.nodeName).tag(ConfigurationNodeChain.Hop?.some(choice.hop))
-                    }
-                } header: {
-                    Text(verbatim: group.label)
-                }
+    private var form: some View {
+        HakoMacSheetForm {
+            Section {
+                TextField(text: $name, prompt: Text(hako: .copy("Entry → Exit"))) { Text(hako: .copy("Name")) }
+                    .accessibilityIdentifier("configuration-center.chain.name")
             }
-        } label: {
-            HStack(spacing: HakoTheme.Spacing.compact) {
+            Section {
                  
-                HakoSymbolImage(symbol: .arrowDown).foregroundStyle(.secondary)
-                Text(hako: title)
+                 
+                 
+                Text(hako: .copy("This Device"))
+                hopRow(.copy("Entry Node"), hop: entry, slot: .entry, identifier: "configuration-center.chain.entry")
+                hopRow(.copy("Exit Node"), hop: exit, slot: .exit, identifier: "configuration-center.chain.exit")
+                Text(hako: .copy("Destination Website"))
+            } header: {
+                Text(hako: .copy("Connection Order"))
+            }
+            if let choices, choices.isEmpty {
+                Section { Text(hako: .copy("Add nodes to Node Library first.")).foregroundStyle(.secondary) }
             }
         }
-        .pickerStyle(.menu)
-        .disabled(choices == nil)
+    }
+
+     
+     
+     
+    private func hopRow(_ title: HakoDisplayText, hop: ConfigurationNodeChain.Hop?, slot: Slot, identifier: String) -> some View {
+        HStack(spacing: HakoTheme.Spacing.compact) {
+             
+            HakoSymbolImage(symbol: .arrowDown).foregroundStyle(.secondary)
+            Text(hako: title)
+            Spacer()
+            if let hop {
+                Text(verbatim: hop.nodeName).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+            } else {
+                 
+                Text(hako: .copy("Choose Node")).foregroundStyle(.tertiary)
+            }
+            HakoSymbolImage(symbol: .chevronForward)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .hakoMacPressableRow { query = ""; picking = slot }
+        .disabled(choices == nil || busy)
         .accessibilityIdentifier(identifier)
+        .accessibilityValue(Text(verbatim: hop?.nodeName ?? ""))
+    }
+
+     
+     
+    private func nodePicker(_ slot: Slot) -> some View {
+        let current = slot == .entry ? entry : exit
+        let needle = query.trimmingCharacters(in: .whitespaces)
+        let groups = Self.sourceGroups((choices ?? []).filter { choice in
+            needle.isEmpty
+                || choice.hop.nodeName.localizedCaseInsensitiveContains(needle)
+                || choice.sourceLabel.localizedCaseInsensitiveContains(needle)
+        })
+        return VStack(spacing: 0) {
+            TextField(text: $query, prompt: Text(hako: .copy("Search nodes"))) { Text(hako: .copy("Search nodes")) }
+                .labelsHidden()
+                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .accessibilityIdentifier("configuration-center.chain.search")
+            Divider()
+            if groups.isEmpty {
+                HakoMacSheetPlaceholder(title: .copy("No results"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier("configuration-center.chain.no-results")
+            } else {
+                List {
+                    ForEach(groups, id: \.label) { group in
+                        Section {
+                            ForEach(group.choices) { choice in
+                                HStack(spacing: HakoTheme.Spacing.compact) {
+                                    Text(verbatim: choice.hop.nodeName).lineLimit(1)
+                                    Spacer()
+                                    if choice.hop == current {
+                                        HakoSymbolImage(symbol: .checkmark).foregroundStyle(.tint)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .hakoMacPressableRow {
+                                    if slot == .entry { entry = choice.hop } else { exit = choice.hop }
+                                    picking = nil
+                                }
+                                .accessibilityLabel(Text(verbatim: choice.hop.nodeName))
+                                .accessibilityIdentifier("configuration-center.chain.pick.\(choice.id)")
+                            }
+                        } header: {
+                            Text(verbatim: group.label)
+                        }
+                    }
+                }
+                .hakoMacSettingsList(minRowHeight: HakoMacSettingsMetrics.listRowMinHeight)
+            }
+        }
     }
 
     private func load() async {

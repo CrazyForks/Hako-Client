@@ -1160,6 +1160,11 @@ private final class HakoMacSceneModel: ObservableObject {
         )
          
          
+        actions.geoValues = { resource in
+            await GeoCategoryCache.shared.categories(for: resource == .geoIP ? .geoip : .geosite)
+        }
+         
+         
          
         actions.quickRuleTargets = { [weak self] in
             guard let self, let store = profiles.configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
@@ -1329,7 +1334,20 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
         actions.syncLegacyProfiles = { progress in
-            let remote = profiles.profiles.filter { if case .url = $0.source { return true }; return false }
+             
+             
+             
+             
+             
+            var recipeIDs: Set<String> = []
+            if let store = profiles.configurationLibraryStore,
+               let snapshot = try? await Task.detached { try store.snapshot() }.value {
+                recipeIDs = Set(snapshot.recipes.map(\.id))
+            }
+            let remote = profiles.profiles.filter { profile in
+                guard case .url = profile.source else { return false }
+                return !recipeIDs.contains(profile.id)
+            }
             guard !remote.isEmpty else { return HakoMacBatchOutcome() }
             var outcome = HakoMacBatchOutcome()
             for (index, profile) in remote.enumerated() {
@@ -1790,14 +1808,23 @@ private final class HakoMacSceneModel: ObservableObject {
             pendingDelete: configurationCenterPendingDeleteBinding,
             actions: actions
         ) { [weak self] item in
-            if let self {
+            self?.configurationCenterRoutedDetail(item, list: list, actions: actions) ?? AnyView(EmptyView())
+        }
+    }
+
+     
+     
+     
+    private func configurationCenterRoutedDetail(
+        _ item: HakoMacConfigurationCenterItem, list: HakoProfilesListPresentation, actions: HakoMacConfigurationCenterListActions
+    ) -> AnyView {
                  
                  
                 let hadRecipe: Bool = {
                     guard case .configuration(let id) = item else { return false }
                     return self.configurationLibrary.snapshot.recipes.contains { $0.id == id.rawValue }
                 }()
-                AnyView(
+                return AnyView(
                     HakoMacObservedLibraryPage(model: self.configurationLibrary) { [weak self] _ in
                         if let self {
                              
@@ -1822,10 +1849,6 @@ private final class HakoMacSceneModel: ObservableObject {
                      
                     .modifier(HakoMacCentrePresentations(model: self, actions: actions))
                 )
-            } else {
-                AnyView(EmptyView())
-            }
-        }
     }
 
      
@@ -1969,20 +1992,28 @@ private final class HakoMacSceneModel: ObservableObject {
             usedBy: list.profiles.filter { readers.contains($0.id.rawValue) },
             actions: HakoMacSchemePaneActions(
                 edit: { [weak self] in self?.configurationCenterEditingScheme = HakoMacLibrarySelection(id: schemeID) },
+                 
+                 
                 duplicate: { [weak self] in
-                    Task { @MainActor in
-                        guard let self else { return }
-                        let label = HakoCopy.string("My Rules", locale: self.preferences.language.locale)
-                        do { _ = try await self.configurationLibrary.copyScheme(schemeID, label: label) } catch {
-                            self.configurationLibrary.report(error.localizedDescription)
-                        }
+                    guard let self else { throw ConfigurationLibraryError.unreadable }
+                    let label = HakoCopy.string("Copy", locale: self.preferences.language.locale) + " · " + scheme.displayLabel
+                    return try await self.configurationLibrary.copyScheme(schemeID, label: label)
+                },
+                update: { [weak self] in
+                    guard let self else { throw ConfigurationLibraryError.unreadable }
+                    guard await self.configurationLibrary.updateSource(scheme.sourceID) else {
+                        throw HakoMacUpdateFailure(message: self.configurationLibrary.updateFailures[scheme.sourceID]
+                            ?? ConfigurationLibraryError.unreadable.localizedDescription)
                     }
                 },
-                update: { [weak self] in Task { _ = await self?.configurationLibrary.updateSource(scheme.sourceID) } },
                 delete: { [weak self] in self?.configurationCenterPendingDelete = .scheme(schemeID) },
                 load: { [weak self] in
                     guard let self else { throw ConfigurationLibraryError.unreadable }
                     return try await self.ruleEditorActions(schemeID: schemeID).load()
+                },
+                page: { [weak self] id in
+                    guard let self else { return AnyView(EmptyView()) }
+                    return self.configurationCenterRoutedDetail(.scheme(id), list: self.configurationCenterLatestList ?? list, actions: self.configurationCenterListActions(list))
                 }
             )
         )
@@ -2258,6 +2289,9 @@ private final class HakoMacSceneModel: ObservableObject {
                     }
                     return names
                 }.value
+            },
+            geoValues: { resource in
+                await GeoCategoryCache.shared.categories(for: resource == .geoIP ? .geoip : .geosite)
             }
         )
     }
@@ -4783,6 +4817,12 @@ private struct HakoMacFollowsProfilesPage<Content: View>: View {
         content()
             .onReceive(profiles.$profiles.dropFirst()) { _ in generation &+= 1 }
     }
+}
+
+ 
+private struct HakoMacUpdateFailure: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
 }
 
 private struct HakoMacCentrePresentations: ViewModifier {

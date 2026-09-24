@@ -37,14 +37,18 @@ public struct HakoMacCustomRulesActions {
      
      
     public var targets: @MainActor () async throws -> [String]
+     
+     
+    public var geoValues: HakoMacGeoValueLoader
 
     public init(
         load: @escaping @MainActor () async -> HakoMacCustomRulesState,
         save: @escaping @MainActor ([HakoMacCustomRule]) async throws -> HakoMacCustomRulesState,
         setPrepends: @escaping @MainActor (Bool) async throws -> HakoMacCustomRulesState,
-        targets: @escaping @MainActor () async throws -> [String]
+        targets: @escaping @MainActor () async throws -> [String],
+        geoValues: @escaping HakoMacGeoValueLoader = { _ in [] }
     ) {
-        self.load = load; self.save = save; self.setPrepends = setPrepends; self.targets = targets
+        self.load = load; self.save = save; self.setPrepends = setPrepends; self.targets = targets; self.geoValues = geoValues
     }
 }
 
@@ -119,6 +123,7 @@ public struct HakoMacCustomRulesPage: View {
         .sheet(isPresented: $adding) {
             HakoMacAddRuleSheet(
                 targets: actions.targets,
+                geoValues: actions.geoValues,
                 add: { rule in
                     let next = try await actions.save(state.rules + [rule])
                     state = next
@@ -156,10 +161,16 @@ public struct HakoMacCustomRulesPage: View {
  
 struct HakoMacAddRuleSheet: View {
     let targets: @MainActor () async throws -> [String]
+    let geoValues: HakoMacGeoValueLoader
     let add: @MainActor (HakoMacCustomRule) async throws -> Void
     let close: () -> Void
     @State private var action: HakoStructuredRule.Action = .domainSuffix
     @State private var content = ""
+     
+    @State private var pickingGeo = false
+     
+     
+    @State private var pickedFrom: HakoMacGeoResource?
     @State private var target = "DIRECT"
     @State private var candidates: [String] = ["DIRECT", "REJECT"]
     @State private var enabled = true
@@ -175,11 +186,53 @@ struct HakoMacAddRuleSheet: View {
     }
 
     private var canAdd: Bool {
-        (!action.needsContent || !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy
+        (!action.needsContent || !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy && !pickingGeo
+    }
+
+    private var title: HakoDisplayText {
+        if pickingGeo, let resource = action.hakoMacGeoResource { return resource.rowTitle }
+        return .copy("Add Rule")
     }
 
     var body: some View {
-        HakoMacSheetFrame(title: .copy("Add Rule"), width: 520, height: 440) {
+        HakoMacSheetFrame(title: title, width: 520, height: 440) {
+            if pickingGeo, let resource = action.hakoMacGeoResource {
+                HakoMacGeoValuePickerPage(
+                    resource: resource, current: content, load: geoValues,
+                    identifier: "configuration-center.custom-rules.form.geo"
+                ) { picked in
+                    content = picked
+                    pickedFrom = resource
+                    pickingGeo = false
+                }
+            } else {
+                form
+            }
+        } leading: {
+            if pickingGeo {
+                Button { pickingGeo = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.custom-rules.form.geo.back")
+            }
+        } trailing: {
+            HakoMacSheetButtons(
+                closeTitle: .copy("Cancel"),
+                closeIdentifier: "configuration-center.custom-rules.form.cancel",
+                primaryTitle: .copy("Add"),
+                primaryIdentifier: "configuration-center.custom-rules.form.add",
+                primaryDisabled: !canAdd,
+                isBusy: busy,
+                onClose: close,
+                onPrimary: submit
+            )
+        }
+        .onChange(of: action) { changed in
+             
+             
+            if changed.hakoMacGeoResource != pickedFrom { content = ""; pickedFrom = nil }
+        }
+    }
+
+    private var form: some View {
             HakoMacSheetForm {
                 Section {
                     Picker(selection: $action) {
@@ -189,16 +242,22 @@ struct HakoMacAddRuleSheet: View {
                     }
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.custom-rules.form.action")
-                    if action.needsContent {
+                    if let resource = action.hakoMacGeoResource {
+                         
+                        HakoMacGeoValueRow(resource: resource, value: content, identifier: "configuration-center.custom-rules.form.geo") {
+                            pickingGeo = true
+                        }
+                        .disabled(busy)
+                    } else if action.needsContent {
                         LabeledContent {
-                            TextField(text: $content, prompt: Text(verbatim: action.contentPlaceholder)) { Text(verbatim: action.contentLabel) }
+                            TextField(text: $content, prompt: Text(verbatim: action.contentPlaceholder)) { Text(hako: .copy(action.contentLabel)) }
                                 .labelsHidden()
                                 .font(.body.monospaced())
                                 .multilineTextAlignment(.trailing)
                                 .disabled(busy)
                                 .accessibilityIdentifier("configuration-center.custom-rules.form.content")
                         } label: {
-                            Text(verbatim: action.contentLabel)
+                            Text(hako: .copy(action.contentLabel))
                         }
                     }
                     Picker(selection: $target) {
@@ -229,20 +288,6 @@ struct HakoMacAddRuleSheet: View {
                     if !loaded.contains(target) { target = loaded[0] }
                 }
             }
-        } leading: {
-            EmptyView()
-        } trailing: {
-            HakoMacSheetButtons(
-                closeTitle: .copy("Cancel"),
-                closeIdentifier: "configuration-center.custom-rules.form.cancel",
-                primaryTitle: .copy("Add"),
-                primaryIdentifier: "configuration-center.custom-rules.form.add",
-                primaryDisabled: !canAdd,
-                isBusy: busy,
-                onClose: close,
-                onPrimary: submit
-            )
-        }
     }
 
     private func submit() {

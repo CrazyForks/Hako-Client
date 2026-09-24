@@ -35,6 +35,9 @@ public struct HakoMacSourceImportActions {
     public var quickRuleTargets: (@MainActor () async throws -> [String])?
      
      
+    public var geoValues: HakoMacGeoValueLoader?
+     
+     
     public var addRuleSet: (@MainActor (HakoMacRuleSetImportDraft) async throws -> Void)?
      
      
@@ -125,6 +128,9 @@ public struct HakoMacSourceImportSheet: View {
     @State private var ruleEnabled = true
     @State private var ruleComment = ""
     @State private var ruleTargets: [String] = ["DIRECT", "REJECT"]
+     
+    @State private var pickingGeo = false
+    @State private var pickedFrom: HakoMacGeoResource?
     @State private var resources: [HakoMacImportResourceFile] = []
     @State private var pendingTab: Tab?
     @State private var confirmsTabDiscard = false
@@ -181,7 +187,7 @@ public struct HakoMacSourceImportSheet: View {
      
     private var canAdd: Bool {
         if tab == .manual {
-            return (!ruleAction.needsContent || !ruleContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy
+            return (!ruleAction.needsContent || !ruleContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy && !pickingGeo
         }
         return canRead
     }
@@ -244,7 +250,21 @@ public struct HakoMacSourceImportSheet: View {
     }
 
     private var importBody: some View {
-        HakoMacSheetFrame(title: title, subtitle: subtitle, width: 560, height: 540) {
+        HakoMacSheetFrame(
+            title: pickingGeo ? (ruleAction.hakoMacGeoResource?.rowTitle ?? title) : title,
+            subtitle: pickingGeo ? nil : subtitle,
+            width: 560, height: 540
+        ) {
+            if pickingGeo, let resource = ruleAction.hakoMacGeoResource, let load = actions.geoValues {
+                HakoMacGeoValuePickerPage(
+                    resource: resource, current: ruleContent, load: load,
+                    identifier: "configuration-center.import.manual.geo"
+                ) { picked in
+                    ruleContent = picked
+                    pickedFrom = resource
+                    pickingGeo = false
+                }
+            } else {
             VStack(spacing: 0) {
                 Picker(selection: Binding(get: { tab }, set: { requestTab($0) })) {
                     ForEach(tabs) { item in
@@ -275,8 +295,10 @@ public struct HakoMacSourceImportSheet: View {
                     if purpose == .rules, actions.addRuleSet != nil, tab == .link || tab == .file {
                          
                         Section {
+                             
+                             
                             Button { importingRuleSet = true } label: { Text(hako: .opens("Import Rule Set", locale: locale)) }
-                                .buttonStyle(.borderless)
+                                .buttonStyle(.bordered).tint(.primary)
                                 .disabled(busy)
                                 .accessibilityIdentifier("configuration-center.import.rule-set")
                         } footer: {
@@ -293,8 +315,12 @@ public struct HakoMacSourceImportSheet: View {
                 .accessibilityIdentifier("configuration-center.import")
                 }
             }
+            }
         } leading: {
-            if offersOriginalImport {
+            if pickingGeo {
+                Button { pickingGeo = false } label: { Text(hako: .copy("Back")) }
+                    .accessibilityIdentifier("configuration-center.import.manual.geo.back")
+            } else if offersOriginalImport {
                 Button {
                     run { payload in try await actions.importOriginal?(payload) }
                 } label: {
@@ -318,6 +344,11 @@ public struct HakoMacSourceImportSheet: View {
             }
         }
         .onChange(of: tab) { _ in preview = nil; error = nil }
+        .onChange(of: ruleAction) { changed in
+             
+             
+            if changed.hakoMacGeoResource != pickedFrom { ruleContent = ""; pickedFrom = nil }
+        }
         .alert(Text(hako: .copy("Discard Changes?")), isPresented: $confirmsTabDiscard) {
             Button(role: .destructive) { discardTabAndSwitch() } label: { Text(hako: .copy("Discard Changes")) }
                 .accessibilityIdentifier("configuration-center.import.discard.confirm")
@@ -355,6 +386,7 @@ public struct HakoMacSourceImportSheet: View {
         Section {
             LabeledContent {
                 Button { choosingFile = true } label: { Text(hako: .copy("Choose File")) }
+                    .buttonStyle(.bordered).tint(.primary)
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.import.choose-file")
             } label: {
@@ -373,6 +405,7 @@ public struct HakoMacSourceImportSheet: View {
              
             LabeledContent {
                 Button { pasteConfigurationText() } label: { Text(hako: .copy("Paste")) }
+                    .buttonStyle(.bordered).tint(.primary)
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.import.paste")
             } label: {
@@ -440,19 +473,25 @@ public struct HakoMacSourceImportSheet: View {
             }
             .disabled(busy)
             .accessibilityIdentifier("configuration-center.import.manual.action")
-            if ruleAction.needsContent {
+            if let resource = ruleAction.hakoMacGeoResource, actions.geoValues != nil {
+                 
+                HakoMacGeoValueRow(resource: resource, value: ruleContent, identifier: "configuration-center.import.manual.geo") {
+                    pickingGeo = true
+                }
+                .disabled(busy)
+            } else if ruleAction.needsContent {
                  
                  
                  
                 LabeledContent {
-                    TextField(text: $ruleContent, prompt: Text(verbatim: ruleAction.contentPlaceholder)) { Text(verbatim: ruleAction.contentLabel) }
+                    TextField(text: $ruleContent, prompt: Text(verbatim: ruleAction.contentPlaceholder)) { Text(hako: .copy(ruleAction.contentLabel)) }
                         .labelsHidden()
                         .font(.body.monospaced())
                         .multilineTextAlignment(.trailing)
                         .disabled(busy)
                         .accessibilityIdentifier("configuration-center.import.manual.content")
                 } label: {
-                    Text(verbatim: ruleAction.contentLabel)
+                    Text(hako: .copy(ruleAction.contentLabel))
                 }
             }
              

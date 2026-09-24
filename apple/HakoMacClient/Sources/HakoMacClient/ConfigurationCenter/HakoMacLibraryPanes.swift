@@ -33,23 +33,31 @@ public struct HakoMacSourcePaneActions {
  
 public struct HakoMacSchemePaneActions {
     public var edit: @MainActor () -> Void
-    public var duplicate: @MainActor () -> Void
-    public var update: @MainActor () -> Void
+     
+     
+     
+     
+    public var duplicate: @MainActor () async throws -> String
+     
+    public var update: @MainActor () async throws -> Void
     public var delete: @MainActor () -> Void
      
     public var load: @MainActor () async throws -> HakoMacRuleEditorState
+     
+    public var page: (@MainActor (String) -> AnyView)?
 
     public init(
         edit: @escaping @MainActor () -> Void,
-        duplicate: @escaping @MainActor () -> Void,
-        update: @escaping @MainActor () -> Void = {},
+        duplicate: @escaping @MainActor () async throws -> String,
+        update: @escaping @MainActor () async throws -> Void = {},
         delete: @escaping @MainActor () -> Void,
-        load: @escaping @MainActor () async throws -> HakoMacRuleEditorState = { throw ConfigurationLibraryError.unreadable }
+        load: @escaping @MainActor () async throws -> HakoMacRuleEditorState = { throw ConfigurationLibraryError.unreadable },
+        page: (@MainActor (String) -> AnyView)? = nil
     ) {
-        self.edit = edit; self.duplicate = duplicate; self.update = update; self.delete = delete; self.load = load
+        self.edit = edit; self.duplicate = duplicate; self.update = update; self.delete = delete; self.load = load; self.page = page
     }
 
-    public static var unavailable: Self { Self(edit: {}, duplicate: {}, delete: {}) }
+    public static var unavailable: Self { Self(edit: {}, duplicate: { throw ConfigurationLibraryError.unreadable }, delete: {}) }
 }
 
  
@@ -63,6 +71,11 @@ public struct HakoMacSchemePane: View {
     private let actions: HakoMacSchemePaneActions
      
     public var updateError: String?
+    @Environment(\.hakoPushRoute) private var pushRoute
+    @State private var busy = false
+     
+    @State private var status: HakoDisplayText?
+    @State private var failure: String?
 
     public init(scheme: ConfigurationRuleScheme, source: ConfigurationSourceRecord?, usedBy: [HakoProfileSnapshot], actions: HakoMacSchemePaneActions) {
         self.scheme = scheme
@@ -133,15 +146,18 @@ public struct HakoMacSchemePane: View {
             HStack(spacing: HakoTheme.Spacing.compact) {
                 Text(hako: kind).lineLimit(1)
                 Spacer()
+                if busy { ProgressView().controlSize(.small) }
                 if isEditable {
                     Button { actions.edit() } label: { Text(hako: .copy("Edit")) }
+                        .disabled(busy)
                         .accessibilityIdentifier("configuration-center.scheme.edit")
                 }
                 Menu {
-                    Button { actions.duplicate() } label: { Text(hako: .copy("Copy Rule Scheme")) }
+                    Button { perform { let id = try await actions.duplicate(); open(id) } } label: { Text(hako: .copy("Copy Rule Scheme")) }
                         .accessibilityIdentifier("configuration-center.scheme.duplicate")
                     if comesFromLink {
-                        Button { actions.update() } label: { Text(hako: .copy("Update")) }
+                        Button { perform { try await actions.update(); status = .copy("Up to date") } } label: { Text(hako: .copy("Update")) }
+                            .accessibilityIdentifier("configuration-center.scheme.update")
                     }
                     if scheme.canBeDeleted {
                         Divider()
@@ -156,17 +172,41 @@ public struct HakoMacSchemePane: View {
                     Image(systemName: "ellipsis")
                 }
                 .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize()
+                .disabled(busy)
                 .accessibilityIdentifier("configuration-center.scheme.more")
             }
             .tint(.primary)
             .padding(.vertical, 4)
-            if let updateError {
-                Text(verbatim: updateError)
+            if let text = failure ?? updateError {
+                Text(verbatim: text)
                     .font(.footnote).foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("configuration-center.scheme.update-error")
+            } else if let status {
+                Text(hako: status)
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("configuration-center.scheme.update-status")
             }
         }
+    }
+
+    private func perform(_ operation: @escaping @MainActor () async throws -> Void) {
+        guard !busy else { return }
+        busy = true
+        failure = nil
+        status = nil
+        Task { @MainActor in
+            defer { busy = false }
+            do { try await operation() } catch { failure = error.localizedDescription }
+        }
+    }
+
+     
+    private func open(_ id: String) {
+        guard let page = actions.page, let pushRoute else { return }
+        let token = UUID()
+        HakoViewRouteRegistry.set(token, ownership: .oneShot, onReturn: {}) { page(id) }
+        pushRoute(HakoViewRoute(id: token))
     }
 }
 
