@@ -3603,7 +3603,10 @@ public enum HakoRulePolicyBuiltIns {
 private struct HakoRulePolicyGroupCreationPage: View {
     let make: (@escaping (String?) -> Void) -> AnyView
     let onCreated: (String) -> Void
-    @Environment(\.dismiss) private var dismiss
+     
+     
+     
+    @State private var dismiss = HakoDismissHandle()
     @Environment(\.hakoPopRoute) private var popRoute
 
     var body: some View {
@@ -3611,6 +3614,7 @@ private struct HakoRulePolicyGroupCreationPage: View {
             leave()
             if let name, !name.isEmpty { onCreated(name) }
         }
+        .hakoCapturesDismiss(dismiss)
     }
 
     private func leave() {
