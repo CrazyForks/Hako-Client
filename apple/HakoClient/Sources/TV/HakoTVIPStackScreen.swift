@@ -6,6 +6,7 @@ struct HakoTVIPStackScreen: View {
     @ObservedObject var tunnel: HakoTVTunnelController
     @State private var saved: IPStackSettings?
     @State private var error = ""
+    @State private var explainedTitle = String(localized: "IP Query Mode")
     @State private var explained = String(localized: "Choose the IP query mode and how the tunnel handles IPv6. Changes restart a connected VPN.")
 
     var body: some View {
@@ -19,7 +20,10 @@ struct HakoTVIPStackScreen: View {
                             next.queryMode = mode
                             apply(next)
                         }
-                        .onHakoTVFocus { explained = Self.explanation(mode) }
+                        .onHakoTVFocus {
+                            explainedTitle = mode.title.localizedForTelevision
+                            explained = Self.explanation(mode)
+                        }
                     }
                 }
                 Section("TUN IPv6 Configuration") {
@@ -30,15 +34,28 @@ struct HakoTVIPStackScreen: View {
                             next.tunIPv6Mode = mode
                             apply(next)
                         }
-                        .onHakoTVFocus { explained = Self.explanation(mode) }
+                        .onHakoTVFocus {
+                            explainedTitle = mode.title.localizedForTelevision
+                            explained = Self.explanation(mode)
+                        }
                     }
                 }
             }
+            .listStyle(.grouped)
+            .safeAreaPadding(.horizontal, 44)
             .frame(maxWidth: .infinity)
-            VStack(alignment: .leading, spacing: 24) {
-                Text("IP Stack").font(.title2)
+            VStack(alignment: .leading, spacing: 16) {
+                Text(explainedTitle)
+                    .font(.caption)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.tertiary)
                 Text(explained).font(.title3).foregroundStyle(.secondary)
-                Text("Changing this setting restarts the VPN.").foregroundStyle(.secondary)
+                if tunnel.state.isConnected {
+                    Text("Changing this setting restarts the VPN.")
+                        .font(.body)
+                        .foregroundStyle(.tertiary)
+                        .padding(.top, 8)
+                }
                 if tunnel.isApplyingIPStack {
                     ProgressView("Applying IP Stack settings…")
                         .accessibilityIdentifier("tvos.ipStack.applying")
@@ -50,6 +67,8 @@ struct HakoTVIPStackScreen: View {
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.trailing, 44)
+            .animation(.easeOut(duration: 0.18), value: explained)
         }
         .task { reload() }
         .accessibilityIdentifier("tvos.ipStack.screen")
@@ -61,7 +80,7 @@ struct HakoTVIPStackScreen: View {
             HStack {
                 Text(title.localizedForTelevision)
                 Spacer()
-                if selected { Image(systemName: "checkmark") }
+                if selected { Image(systemName: HakoSymbol.checkmark.rawValue) }
             }
         }
         .disabled(saved == nil || tunnel.isApplyingIPStack || tunnel.state.stage == .connecting || tunnel.state.stage == .disconnecting)
