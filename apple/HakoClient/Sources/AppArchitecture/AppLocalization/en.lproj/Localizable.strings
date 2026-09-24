@@ -46,6 +46,7 @@
 "%@ is not a valid domain." = "%@ is not a valid domain.";
 "%@ is not used here: this platform picks the physical network itself." = "%@ is not used here: this platform picks the physical network itself.";
 "%@ is up to date" = "%@ is up to date";
+"%@ items" = "%@ items";
 "%@ matches" = "%@ matches";
 "%@ matches addresses, not domains, so DNS cannot use it." = "%@ matches addresses, not domains, so DNS cannot use it.";
 "%@ members" = "%@ members";
@@ -271,6 +272,7 @@
 "Add chains in Node Library." = "Add chains in Node Library.";
 "Add from a share link" = "Add from a share link";
 "Add from this profile" = "Add from this profile";
+"Add manually or use a rule set link" = "Add manually or use a rule set link";
 "Add match domains" = "Add match domains";
 "Add nodes to Node Library first." = "Add nodes to Node Library first.";
 "Add only profile-specific fields not available in Personal Rules, Profile Network, or Resources. App-wide fields are ignored here." = "Add only profile-specific fields not available in Personal Rules, Profile Network, or Resources. App-wide fields are ignored here.";
@@ -498,6 +500,7 @@
 "Change what this profile sends to the core" = "Change what this profile sends to the core";
 "Changed Fields" = "Changed Fields";
 "Changes apply immediately. System Default follows the language selected in iOS Settings." = "Changes apply immediately. System Default follows the language selected in iOS Settings.";
+"Changing the group type changes how routes are chosen." = "Changing the group type changes how routes are chosen.";
 "Changing the link clears cached update metadata. The current working revision remains available if the next sync fails." = "Changing the link clears cached update metadata. The current working revision remains available if the next sync fails.";
 "Changing these can cut battery drain on mobile. Zero asks the system for its default." = "Changing these can cut battery drain on mobile. Zero asks the system for its default.";
 "Changing this setting restarts the VPN." = "Changing this setting restarts the VPN.";
@@ -601,6 +604,7 @@
 "Clash's shared import storage is unavailable." = "Clash's shared import storage is unavailable.";
 "Clash, Powered by Hako, Version %@" = "Clash, Powered by Hako, Version %@";
 "Clash’s VPN profile is ready. Connect when you are ready." = "Clash’s VPN profile is ready. Connect when you are ready.";
+"Classical" = "Classical";
 "Clear" = "Clear";
 "Clear DNS cache?" = "Clear DNS cache?";
 "Clear Field Patch" = "Clear Field Patch";
@@ -800,6 +804,7 @@
 "Critical memory pressure was recorded before the previous Extension ended; iOS may have terminated it." = "Critical memory pressure was recorded before the previous Extension ended; iOS may have terminated it.";
 "Current" = "Current";
 "Current Network" = "Current Network";
+"Current Rules" = "Current Rules";
 "Current Session" = "Current Session";
 "Current → " = "Current → ";
 "Custom" = "Custom";
@@ -882,6 +887,7 @@
 "Delete %@? This cannot be undone." = "Delete %@? This cannot be undone.";
 "Delete Collection" = "Delete Collection";
 "Delete Local Copy" = "Delete Local Copy";
+"Delete Local Rule Set" = "Delete Local Rule Set";
 "Delete Node" = "Delete Node";
 "Delete Profile" = "Delete Profile";
 "Delete Profile?" = "Delete Profile?";
@@ -1005,6 +1011,7 @@
 "Edit Profile" = "Edit Profile";
 "Edit Provider" = "Edit Provider";
 "Edit Proxy Chain" = "Edit Proxy Chain";
+"Edit Rule Content" = "Edit Rule Content";
 "Edit Rule Scheme" = "Edit Rule Scheme";
 "Edit Rules Source" = "Edit Rules Source";
 "Edit Source" = "Edit Source";
@@ -1270,6 +1277,7 @@
 "Got It" = "Got It";
 "Green" = "Green";
 "Group" = "Group";
+"Group Name" = "Group Name";
 "Group Type" = "Group Type";
 "Group name is already in use: %@" = "Group name is already in use: %@";
 "Group name is required." = "Group name is required.";
@@ -1392,6 +1400,7 @@
 "Import Failed" = "Import Failed";
 "Import File" = "Import File";
 "Import File…" = "Import File…";
+"Import Method" = "Import Method";
 "Import Original Configuration" = "Import Original Configuration";
 "Import Preview" = "Import Preview";
 "Import Rule Set" = "Import Rule Set";
@@ -1523,6 +1532,7 @@
 "Lazy Configuration" = "Lazy Rules";
 "Lazy Testing" = "Lazy Testing";
 "Leave Password empty to keep the credential saved in this device's Keychain." = "Leave Password empty to keep the credential saved in this device's Keychain.";
+"Leave blank to use the file name" = "Leave blank to use the file name";
 "Leave blank to use the first source's name." = "Leave blank to use the first source's name.";
 "Leave blank to use the source's suggested name." = "Leave blank to use the source's suggested name.";
 "Leave empty and %@ sniffs only port %@. Listing ports here replaces that, it does not add to it." = "Leave empty and %@ sniffs only port %@. Listing ports here replaces that, it does not add to it.";
@@ -1554,6 +1564,7 @@
 "Live sessions and their routes" = "Live sessions and their routes";
 "Live sessions, requests, and logs" = "Live sessions, requests, and logs";
 "Load Balance" = "Load Balance";
+"Load More" = "Load More";
 "Load local file" = "Load local file";
 "Loading" = "Loading";
 "Loading Connections" = "Loading Connections";
@@ -1582,6 +1593,7 @@
 "Local paths and credentials stay private. Re-import the profile if one of its supporting files is missing." = "Local paths and credentials stay private. Re-import the profile if one of its supporting files is missing.";
 "Local profile" = "Local profile";
 "Local script selected" = "Local script selected";
+"Local · %@ rules" = "Local · %@ rules";
 "Local · Imported file" = "Local · Imported file";
 "Local · Manually managed" = "Local · Manually managed";
 "Log" = "Log";
@@ -1608,6 +1620,7 @@
 "MTU Discovery" = "MTU Discovery";
 "Mac UI Review" = "Mac UI Review";
 "Manage" = "Manage";
+"Manage Collections" = "Manage Collections";
 "Manage DNS Routing" = "Manage DNS Routing";
 "Manage GEO Rules" = "Manage GEO Rules";
 "Manage Local Scripts" = "Manage Local Scripts";
@@ -1631,6 +1644,7 @@
 "Match the configured routing rules" = "Match the configured routing rules";
 "Match value" = "Match value";
 "Matched a nameserver-policy entry" = "Matched a nameserver-policy entry";
+"Matched from top to bottom" = "Matched from top to bottom";
 "Matches Nothing" = "Matches Nothing";
 "Matches destination IPv4 addresses inside this network." = "Matches destination IPv4 addresses inside this network.";
 "Matches destination IPv6 addresses inside this network." = "Matches destination IPv6 addresses inside this network.";
@@ -1737,6 +1751,7 @@
 "Mutual TLS" = "Mutual TLS";
 "Mux Protocol" = "Mux Protocol";
 "Mux Streams" = "Mux Streams";
+"My Rule Sets" = "My Rule Sets";
 "My Rules" = "My Rules";
 "NAT filtering" = "NAT filtering";
 "NAT mapping" = "NAT mapping";
@@ -1776,6 +1791,7 @@
 "New Chain" = "New Chain";
 "New Node" = "New Node";
 "New Rule Scheme" = "New Rule Scheme";
+"New Rule Set" = "New Rule Set";
 "New Script" = "New Script";
 "New proxy" = "New proxy";
 "Next" = "Next";
@@ -1868,6 +1884,7 @@
 "Node Details" = "Node Details";
 "Node Display" = "Node Display";
 "Node Library" = "Nodes";
+"Node Name Match" = "Node Name Match";
 "Node Overrides" = "Node Overrides";
 "Node Sets (%@)" = "Node Sets (%@)";
 "Node Sources" = "Node Sources";
@@ -1946,6 +1963,7 @@
 "One backup of your profiles stays in your iCloud account and is updated while Clash is open. Apple TV restores from it." = "One backup of your profiles stays in your iCloud account and is updated while Clash is open. Apple TV restores from it.";
 "One domain, or a wildcard such as +.example.com." = "One domain, or a wildcard such as +.example.com.";
 "One or more rules cannot be matched safely on iOS." = "One or more rules cannot be matched safely on iOS.";
+"Online Rule Library" = "Online Rule Library";
 "Only affects this configuration. Does not change Rule Library. Personal rules apply in Standard override mode." = "Only affects this configuration. Does not change Rule Library. Personal rules apply in Standard override mode.";
 "Only matching domains" = "Only matching domains";
 "Only nodes and proxy providers belong here. Edit rules in Rule Library." = "Only nodes and proxy providers belong here. Edit rules in Rule Library.";
@@ -2287,6 +2305,7 @@
 "Referenced scripts" = "Referenced scripts";
 "Refresh" = "Refresh";
 "Refresh Proxies" = "Refresh Proxies";
+"Refresh Rules" = "Refresh Rules";
 "Refresh System Status" = "Refresh System Status";
 "Refresh all providers" = "Refresh all providers";
 "Refresh backup list" = "Refresh backup list";
@@ -2321,6 +2340,7 @@
 "Remove Custom Overrides" = "Remove Custom Overrides";
 "Remove DNS & Return to VPN" = "Remove DNS & Return to VPN";
 "Remove DNS Server" = "Remove DNS Server";
+"Remove File" = "Remove File";
 "Remove Migration" = "Remove Migration";
 "Remove Stored URL Credentials" = "Remove Stored URL Credentials";
 "Remove TCP-only migration?" = "Remove TCP-only migration?";
@@ -2329,6 +2349,7 @@
 "Remove this profile from Clash" = "Remove this profile from Clash";
 "Removed" = "Removed";
 "Removed by the profile URL · yours: %@" = "Removed by the profile URL · yours: %@";
+"Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay." = "Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay.";
 "Removing the override does not delete or modify the downloaded source." = "Removing the override does not delete or modify the downloaded source.";
 "Removing them may require importing again." = "Removing them may require importing again.";
 "Rename…" = "Rename…";
@@ -2400,6 +2421,7 @@
 "Restart VPN Core" = "Restart VPN Core";
 "Restart VPN Core?" = "Restart VPN Core?";
 "Restore All" = "Restore All";
+"Restore Initial Rules" = "Restore Initial Rules";
 "Restore Last Known Good" = "Restore Last Known Good";
 "Restore Options" = "Restore Options";
 "Restore Preview" = "Restore Preview";
@@ -2450,6 +2472,8 @@
 "Rule" = "Rule";
 "Rule Collection" = "Rule Collection";
 "Rule Collections" = "Rule Collections";
+"Rule Content" = "Rule Content";
+"Rule Customization" = "Rule Customization";
 "Rule Library" = "Rules";
 "Rule Priority" = "Rule Priority";
 "Rule Providers" = "Rule Providers";
@@ -2463,6 +2487,7 @@
 "Rule Sets, Not Yet Itemised" = "Rule Sets, Not Yet Itemised";
 "Rule Target" = "Rule Target";
 "Rule Type" = "Rule Type";
+"Rule URL" = "Rule URL";
 "Rule set" = "Rule set";
 "Rule sets run from their compiled MRS form. A set that cannot be compiled is left out of the runtime — its rules never match. Each line is the core's own sentence." = "Rule sets run from their compiled MRS form. A set that cannot be compiled is left out of the runtime — its rules never match. Each line is the core's own sentence.";
 "Rule sets updated" = "Rule sets updated";
@@ -2513,6 +2538,7 @@
 "Save and Retry" = "Save and Retry";
 "Save and Retry · about −%@" = "Save and Retry · about −%@";
 "Save and Retry · frees about %@" = "Save and Retry · frees about %@";
+"Save as New Scheme" = "Save as New Scheme";
 "Save custom nodes here, then select them when creating a configuration." = "Save custom nodes here, then select them when creating a configuration.";
 "Save your changes?" = "Save your changes?";
 "Saved Copy" = "Saved Copy";
@@ -2529,6 +2555,7 @@
 "Saving switches this profile to Standard overrides." = "Saving switches this profile to Standard overrides.";
 "Saving…" = "Saving…";
 "Scan QR Code" = "Scan QR Code";
+"Scheme Name" = "Scheme Name";
 "Script" = "Script";
 "Script URL" = "Script URL";
 "Script name" = "Script name";
@@ -2560,6 +2587,7 @@
 "Select one YAML file plus any certificates or keys it references. Clash copies only the files you explicitly select." = "Select one YAML file plus any certificates or keys it references. Clash copies only the files you explicitly select.";
 "Select one rule scheme" = "Select one rule scheme";
 "Selected" = "Selected";
+"Selected (in priority order)" = "Selected (in priority order)";
 "Selected File" = "Selected File";
 "Selected Script" = "Selected Script";
 "Selected automatically" = "Selected automatically";
@@ -2739,6 +2767,7 @@
 "Switched-off rule sets are not loaded on the next start. The source file is unchanged." = "Switched-off rule sets are not loaded on the next start. The source file is unchanged.";
 "Switching Profile…" = "Switching Profile…";
 "Switching Route" = "Switching Route";
+"Switching tabs discards what you have not saved." = "Switching tabs discards what you have not saved.";
 "Sync" = "Sync";
 "Sync Now" = "Sync Now";
 "Sync all Geo resources" = "Sync all Geo resources";
@@ -3427,6 +3456,7 @@
 "Version, open source, and release information" = "Version, open source, and release information";
 "Versions" = "Versions";
 "View Captured Source" = "View Captured Source";
+"View Details" = "View Details";
 "View Effective DNS" = "View Effective DNS";
 "View Reason" = "View Reason";
 "View Runtime Configuration" = "View Runtime Configuration";
@@ -3521,6 +3551,7 @@
 "dns explain not understood: " = "dns explain not understood: ";
 "dns explain unavailable: " = "dns explain unavailable: ";
 "dual" = "dual";
+"e.g. 🎬 Netflix" = "e.g. 🎬 Netflix";
 "earlier run" = "earlier run";
 "emoji, a name, or https URL" = "emoji, a name, or https URL";
 "empty server" = "empty server";

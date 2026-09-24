@@ -2029,7 +2029,7 @@ public struct HakoConfigurationCollectionContentsView: View {
                     } else { Text(verbatim: row.title).textSelection(.enabled) }
                 }
                 if rows.isEmpty && !loading && !query.isEmpty { Text("No results") }
-                if let next { Button("加载更多", action: next).disabled(loading) }
+                if let next { Button("Load More", action: next).disabled(loading) }
             }
         }.hakoConfigurationFormSpacing()
             .hakoProductModalSearchable(text: $query)
@@ -2037,7 +2037,7 @@ public struct HakoConfigurationCollectionContentsView: View {
             .hakoToolbarUnlessInPanel {
                 ToolbarItem(placement: .cancellationAction) { HakoSheetCloseButton(dismiss: close) }
                 ToolbarItem(placement: .primaryAction) {
-                    if details == nil { Button(action: manage) { Image(systemName: "gearshape").hakoToolbarGlyph() }.accessibilityLabel("管理集合") }
+                    if details == nil { Button(action: manage) { Image(systemName: "gearshape").hakoToolbarGlyph() }.accessibilityLabel("Manage Collections") }
                 }
             }
     }

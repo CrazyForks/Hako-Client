@@ -46,6 +46,7 @@
 "%@ is not a valid domain." = "%@ 不是有效的域名。";
 "%@ is not used here: this platform picks the physical network itself." = "%@ 在这里用不上：这个平台自己选择物理网络。";
 "%@ is up to date" = "%@ 已是最新";
+"%@ items" = "%@ 个";
 "%@ matches" = "%@ 条匹配";
 "%@ matches addresses, not domains, so DNS cannot use it." = "%@ 匹配的是地址而不是域名，DNS 无法使用。";
 "%@ members" = "%@ 个成员";
@@ -271,6 +272,7 @@
 "Add chains in Node Library." = "链式代理在节点库添加。";
 "Add from a share link" = "从分享链接添加";
 "Add from this profile" = "从本配置中添加";
+"Add manually or use a rule set link" = "手动添加或使用规则集链接";
 "Add match domains" = "添加匹配域名";
 "Add nodes to Node Library first." = "请先在节点库添加节点。";
 "Add only profile-specific fields not available in Personal Rules, Profile Network, or Resources. App-wide fields are ignored here." = "只添加个人规则、配置网络或资源里没有的、专属于本配置的字段。全局字段在此处会被忽略。";
@@ -498,6 +500,7 @@
 "Change what this profile sends to the core" = "更改本配置下发给内核的内容";
 "Changed Fields" = "变化字段";
 "Changes apply immediately. System Default follows the language selected in iOS Settings." = "更改会立即生效。“跟随系统”使用 iOS 设置中选择的语言。";
+"Changing the group type changes how routes are chosen." = "更改策略类型会改变选路行为。";
 "Changing the link clears cached update metadata. The current working revision remains available if the next sync fails." = "更改链接会清除缓存的更新元数据。若下次同步失败，当前可用版本仍然保留。";
 "Changing these can cut battery drain on mobile. Zero asks the system for its default." = "修改这些可减少移动设备的电量消耗。填 0 表示由系统决定。";
 "Changing this setting restarts the VPN." = "注意：修改此项会重启 VPN。";
@@ -601,6 +604,7 @@
 "Clash's shared import storage is unavailable." = "Clash 的共享导入存储不可用。";
 "Clash, Powered by Hako, Version %@" = "Clash，由 Hako 驱动，版本 %@";
 "Clash’s VPN profile is ready. Connect when you are ready." = "Clash VPN 配置已准备好，可在需要时连接。";
+"Classical" = "完整规则";
 "Clear" = "清除";
 "Clear DNS cache?" = "清除 DNS 缓存？";
 "Clear Field Patch" = "清除字段补丁";
@@ -800,6 +804,7 @@
 "Critical memory pressure was recorded before the previous Extension ended; iOS may have terminated it." = "上一次扩展结束前记录到严重内存压力；可能已被 iOS 终止。";
 "Current" = "当前";
 "Current Network" = "当前网络";
+"Current Rules" = "当前规则";
 "Current Session" = "当前会话";
 "Current → " = "当前 → ";
 "Custom" = "自定义";
@@ -882,6 +887,7 @@
 "Delete %@? This cannot be undone." = "删除 %@？此操作无法撤销。";
 "Delete Collection" = "删除集合";
 "Delete Local Copy" = "删除本地副本";
+"Delete Local Rule Set" = "删除本地规则集";
 "Delete Node" = "删除节点";
 "Delete Profile" = "删除配置";
 "Delete Profile?" = "删除配置？";
@@ -1005,6 +1011,7 @@
 "Edit Profile" = "编辑配置";
 "Edit Provider" = "编辑代理集合";
 "Edit Proxy Chain" = "编辑链式代理";
+"Edit Rule Content" = "编辑规则内容";
 "Edit Rule Scheme" = "编辑规则方案";
 "Edit Rules Source" = "编辑规则源码";
 "Edit Source" = "编辑源码";
@@ -1270,6 +1277,7 @@
 "Got It" = "知道了";
 "Green" = "绿色";
 "Group" = "分组";
+"Group Name" = "策略组名称";
 "Group Type" = "组类型";
 "Group name is already in use: %@" = "组名已被使用：%@";
 "Group name is required." = "必须填写组名。";
@@ -1392,6 +1400,7 @@
 "Import Failed" = "导入失败";
 "Import File" = "导入文件";
 "Import File…" = "导入文件…";
+"Import Method" = "导入方式";
 "Import Original Configuration" = "按原配置导入";
 "Import Preview" = "读取完成";
 "Import Rule Set" = "导入规则集";
@@ -1523,6 +1532,7 @@
 "Lazy Configuration" = "懒人配置";
 "Lazy Testing" = "惰性测试 (lazy)";
 "Leave Password empty to keep the credential saved in this device's Keychain." = "密码留空即沿用保存在本机钥匙串中的凭据。";
+"Leave blank to use the file name" = "留空则使用文件名";
 "Leave blank to use the first source's name." = "留空使用第一个来源的名称。";
 "Leave blank to use the source's suggested name." = "留空则使用来源建议的名称。";
 "Leave empty and %@ sniffs only port %@. Listing ports here replaces that, it does not add to it." = "留空则 %@ 只嗅 %@ 端口。在这里列出端口是替换它，不是追加。";
@@ -1554,6 +1564,7 @@
 "Live sessions and their routes" = "实时会话与其路由";
 "Live sessions, requests, and logs" = "实时会话、请求与日志";
 "Load Balance" = "负载均衡";
+"Load More" = "加载更多";
 "Load local file" = "加载本地文件";
 "Loading" = "加载中";
 "Loading Connections" = "正在加载连接";
@@ -1582,6 +1593,7 @@
 "Local paths and credentials stay private. Re-import the profile if one of its supporting files is missing." = "本地路径与凭据不外泄。若某个附属文件缺失，请重新导入该配置。";
 "Local profile" = "本地配置";
 "Local script selected" = "已选择本地脚本";
+"Local · %@ rules" = "本地 · %@ 条规则";
 "Local · Imported file" = "本地 · 导入的文件";
 "Local · Manually managed" = "本地 · 手动管理";
 "Log" = "日志";
@@ -1608,6 +1620,7 @@
 "MTU Discovery" = "MTU 探测";
 "Mac UI Review" = "Mac 界面评审";
 "Manage" = "管理";
+"Manage Collections" = "管理集合";
 "Manage DNS Routing" = "DNS 分流规则管理";
 "Manage GEO Rules" = "管理 GEO 规则";
 "Manage Local Scripts" = "管理本地脚本";
@@ -1631,6 +1644,7 @@
 "Match the configured routing rules" = "按已配置的分流规则匹配";
 "Match value" = "匹配值";
 "Matched a nameserver-policy entry" = "命中了一条 nameserver-policy";
+"Matched from top to bottom" = "按从上到下的顺序匹配";
 "Matches Nothing" = "Matches Nothing";
 "Matches destination IPv4 addresses inside this network." = "匹配该网段内的目标 IPv4 地址。";
 "Matches destination IPv6 addresses inside this network." = "匹配该网段内的目标 IPv6 地址。";
@@ -1737,6 +1751,7 @@
 "Mutual TLS" = "双向 TLS";
 "Mux Protocol" = "多路复用协议";
 "Mux Streams" = "多路复用流数";
+"My Rule Sets" = "我的规则集";
 "My Rules" = "我的规则";
 "NAT filtering" = "NAT 过滤";
 "NAT mapping" = "NAT 映射";
@@ -1776,6 +1791,7 @@
 "New Chain" = "新建链式代理";
 "New Node" = "新节点";
 "New Rule Scheme" = "新建规则方案";
+"New Rule Set" = "新建规则集";
 "New Script" = "新建脚本";
 "New proxy" = "新建代理";
 "Next" = "下一步";
@@ -1868,6 +1884,7 @@
 "Node Details" = "节点详情";
 "Node Display" = "节点显示";
 "Node Library" = "节点库";
+"Node Name Match" = "节点名称匹配";
 "Node Overrides" = "节点覆写";
 "Node Sets (%@)" = "节点集合（%@）";
 "Node Sources" = "节点来源";
@@ -1946,6 +1963,7 @@
 "One backup of your profiles stays in your iCloud account and is updated while Clash is open. Apple TV restores from it." = "你的配置在 iCloud 账户中保留一份备份，并在 Clash 打开期间随改动更新。Apple TV 从这份备份恢复。";
 "One domain, or a wildcard such as +.example.com." = "一个域名，或形如 +.example.com 的通配符。";
 "One or more rules cannot be matched safely on iOS." = "有规则无法在 iOS 上安全匹配。";
+"Online Rule Library" = "在线规则库";
 "Only affects this configuration. Does not change Rule Library. Personal rules apply in Standard override mode." = "仅影响本配置，不修改规则库。个人规则在标准覆写模式下生效。";
 "Only matching domains" = "仅匹配的域名";
 "Only nodes and proxy providers belong here. Edit rules in Rule Library." = "这里只能编辑节点和代理集合，规则请到规则库编辑。";
@@ -2287,6 +2305,7 @@
 "Referenced scripts" = "被引用的脚本";
 "Refresh" = "刷新";
 "Refresh Proxies" = "刷新代理";
+"Refresh Rules" = "刷新规则";
 "Refresh System Status" = "刷新系统状态";
 "Refresh all providers" = "刷新全部外部资源";
 "Refresh backup list" = "刷新备份列表";
@@ -2321,6 +2340,7 @@
 "Remove Custom Overrides" = "移除自定义覆写";
 "Remove DNS & Return to VPN" = "移除 DNS 并回到 VPN";
 "Remove DNS Server" = "移除 DNS 服务器";
+"Remove File" = "移除文件";
 "Remove Migration" = "移除迁移";
 "Remove Stored URL Credentials" = "移除配置链接中保存的凭据";
 "Remove TCP-only migration?" = "移除仅 TCP 迁移?";
@@ -2329,6 +2349,7 @@
 "Remove this profile from Clash" = "从 Clash 中移除此配置";
 "Removed" = "已移除";
 "Removed by the profile URL · yours: %@" = "配置链接已删除 · 你的：%@";
+"Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay." = "移除当前方案后来添加的规则、改名与排序；我的规则集会保留。";
 "Removing the override does not delete or modify the downloaded source." = "移除覆写不会删除或修改已下载的源码。";
 "Removing them may require importing again." = "移除后可能需要重新导入。";
 "Rename…" = "重命名…";
@@ -2400,6 +2421,7 @@
 "Restart VPN Core" = "重启 VPN 内核";
 "Restart VPN Core?" = "重启 VPN 内核？";
 "Restore All" = "恢复全部";
+"Restore Initial Rules" = "恢复初始规则";
 "Restore Last Known Good" = "恢复上一个可用版本";
 "Restore Options" = "恢复选项";
 "Restore Preview" = "恢复预览";
@@ -2450,6 +2472,8 @@
 "Rule" = "规则";
 "Rule Collection" = "规则集合";
 "Rule Collections" = "规则集合";
+"Rule Content" = "规则内容";
+"Rule Customization" = "规则定制";
 "Rule Library" = "规则库";
 "Rule Priority" = "规则优先级";
 "Rule Providers" = "规则集";
@@ -2463,6 +2487,7 @@
 "Rule Sets, Not Yet Itemised" = "规则集（尚未逐项计价）";
 "Rule Target" = "规则目标";
 "Rule Type" = "规则类型";
+"Rule URL" = "规则配置地址";
 "Rule set" = "规则集";
 "Rule sets run from their compiled MRS form. A set that cannot be compiled is left out of the runtime — its rules never match. Each line is the core's own sentence." = "规则集以编译后的 MRS 形式运行。无法编译的规则集不会进入运行时——其中的规则永远不会命中。每一行都是内核的原话。";
 "Rule sets updated" = "已更新规则集";
@@ -2513,6 +2538,7 @@
 "Save and Retry" = "保存并重试";
 "Save and Retry · about −%@" = "保存并重试 · 预计 −%@";
 "Save and Retry · frees about %@" = "保存并重试 · 省下约 %@";
+"Save as New Scheme" = "另存为新方案";
 "Save custom nodes here, then select them when creating a configuration." = "在这里保存自建节点，创建配置时即可选用。";
 "Save your changes?" = "保存你的更改？";
 "Saved Copy" = "已保存副本";
@@ -2529,6 +2555,7 @@
 "Saving switches this profile to Standard overrides." = "保存会把本配置切换为标准覆写。";
 "Saving…" = "保存中…";
 "Scan QR Code" = "扫描二维码";
+"Scheme Name" = "方案名称";
 "Script" = "脚本";
 "Script URL" = "脚本 URL";
 "Script name" = "脚本名称";
@@ -2560,6 +2587,7 @@
 "Select one YAML file plus any certificates or keys it references. Clash copies only the files you explicitly select." = "选择一个 YAML 文件及其引用的证书或密钥。Clash 只复制你明确选择的文件。";
 "Select one rule scheme" = "选择规则方案（单选）";
 "Selected" = "已选择";
+"Selected (in priority order)" = "已选策略（按优先级排序）";
 "Selected File" = "已选文件";
 "Selected Script" = "已选脚本";
 "Selected automatically" = "自动选中";
@@ -2739,6 +2767,7 @@
 "Switched-off rule sets are not loaded on the next start. The source file is unchanged." = "关掉的规则集下次启动不装。源文件不改。";
 "Switching Profile…" = "正在切换配置…";
 "Switching Route" = "正在切换线路";
+"Switching tabs discards what you have not saved." = "切换后，当前未保存的内容将被放弃。";
 "Sync" = "同步";
 "Sync Now" = "立即同步";
 "Sync all Geo resources" = "同步全部 Geo 资源";
@@ -3427,6 +3456,7 @@
 "Version, open source, and release information" = "版本、开源与发行信息";
 "Versions" = "版本";
 "View Captured Source" = "查看捕获的源文本";
+"View Details" = "查看详情";
 "View Effective DNS" = "查看最终生效的 DNS";
 "View Reason" = "查看原因";
 "View Runtime Configuration" = "查看运行时配置";
@@ -3521,6 +3551,7 @@
 "dns explain not understood: " = "DNS 走向响应无法解析：";
 "dns explain unavailable: " = "DNS 走向查询不可用：";
 "dual" = "dual";
+"e.g. 🎬 Netflix" = "例如 🎬 奈飞";
 "earlier run" = "上次启动";
 "emoji, a name, or https URL" = "emoji、名称或 https 链接";
 "empty server" = "空的服务器地址";

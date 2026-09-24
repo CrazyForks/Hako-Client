@@ -107,9 +107,9 @@ struct AddProfileView: View {
             Form {
                 if tabHeader != nil && purpose == .rules && sourceKind == nil {
                     Section {
-                        Picker("导入方式", selection: $draft.tab) {
-                            Text("链接").tag(AddProfileDraft.Tab.link)
-                            Text("文件").tag(AddProfileDraft.Tab.file)
+                        Picker("Import Method", selection: $draft.tab) {
+                            Text("URL").tag(AddProfileDraft.Tab.link)
+                            Text("File").tag(AddProfileDraft.Tab.file)
                         }.pickerStyle(.menu)
                             .accessibilityIdentifier("configuration.rules.add.method")
                     }

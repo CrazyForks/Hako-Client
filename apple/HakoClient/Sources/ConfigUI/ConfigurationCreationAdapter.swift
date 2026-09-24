@@ -692,7 +692,7 @@ struct ConfigurationSourceImportAdapter: View {
         .padding(.horizontal, 18)
         .padding(.top, 14)
         .padding(.bottom, 2)
-        .alert("放弃草稿？", isPresented: $confirmsTabDiscard) {
+        .alert("Discard Changes?", isPresented: $confirmsTabDiscard) {
             Button("Discard Changes", role: .destructive) {
                 nodeDraft.customRows = nodeDraft.openedWith
                 nodeDraft.pendingRenames = []
@@ -701,7 +701,7 @@ struct ConfigurationSourceImportAdapter: View {
                 pendingKind = nil
             }
             Button("Keep Editing", role: .cancel) { pendingKind = nil }
-        } message: { Text("切换后，当前未保存的内容将被放弃。") }
+        } message: { Text("Switching tabs discards what you have not saved.") }
     }
     private func close() { (finishImport ?? productModalDismiss ?? { dismiss() })() }
 }
@@ -921,10 +921,10 @@ struct ConfigurationRuleLibraryAdapter: View {
                         close: { importingCollection = false })
                 }
             }
-            .alert("放弃草稿？", isPresented: $confirmsAddTabDiscard) {
-                Button("继续编辑", role: .cancel) { pendingAddMode = nil }
-                Button("放弃更改", role: .destructive) { if let next = pendingAddMode { addMode = next }; pendingAddMode = nil }
-            } message: { Text("切换后，当前未保存的内容将被放弃。") }
+            .alert("Discard Changes?", isPresented: $confirmsAddTabDiscard) {
+                Button("Keep Editing", role: .cancel) { pendingAddMode = nil }
+                Button("Discard Changes", role: .destructive) { if let next = pendingAddMode { addMode = next }; pendingAddMode = nil }
+            } message: { Text("Switching tabs discards what you have not saved.") }
             .onChange(of: openedSchemeID == nil) { closed in
                 if closed { Task { await loadCollections() } }
             }
@@ -943,7 +943,7 @@ struct ConfigurationRuleLibraryAdapter: View {
         }
     }
     private func ruleAddTabs(dirty: Bool) -> some View {
-        Picker("添加规则", selection: Binding(get: { addMode }, set: { next in
+        Picker("Add Rules", selection: Binding(get: { addMode }, set: { next in
             guard next != addMode else { return }
             if dirty { pendingAddMode = next; confirmsAddTabDiscard = true } else { addMode = next }
         })) {
@@ -1038,7 +1038,7 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
                         }, close: close,
                         manualEditor: { draft, accept in AnyView(ConfigurationTowerManualRuleEditor(draft: draft, accept: accept)) })
                 } else if let errorMessage {
-                    Form { Text(verbatim: errorMessage); Button("重试") { Task { await load() } }; Button("关闭", action: close) }
+                    Form { Text(verbatim: errorMessage); Button("Retry") { Task { await load() } }; Button("Close", action: close) }
                 } else { ProgressView() }
             }.task { if initial == nil { await load() } }
         }
@@ -1092,13 +1092,13 @@ private struct ConfigurationTowerRuleImportAdapter: View {
     var body: some View {
         HakoFeatureNavigationContainer {
             Form {
-                Section("规则配置地址") { TextField("URL", text: $link, prompt: Text("https://…")).accessibilityIdentifier("configuration.rule.import.url").autocorrectionDisabled().textInputAutocapitalization(.never) }
-                Section("名称（可选）") { TextField("留空则使用文件名", text: $name).accessibilityIdentifier("configuration.rule.import.name") }
+                Section("Rule URL") { TextField("URL", text: $link, prompt: Text("https://…")).accessibilityIdentifier("configuration.rule.import.url").autocorrectionDisabled().textInputAutocapitalization(.never) }
+                Section("Name (Optional)") { TextField("Leave blank to use the file name", text: $name).accessibilityIdentifier("configuration.rule.import.name") }
                 Section { Text("导入 Clash YAML 规则方案。").font(.footnote).foregroundStyle(.secondary) }
                 if let errorMessage { Text(verbatim: errorMessage).foregroundStyle(.orange) }
-            }.disabled(busy).hakoPageTitle("导入规则")
+            }.disabled(busy).hakoPageTitle("Import Rules")
             .hakoToolbarUnlessInPanel {
-                ToolbarItem(placement: .cancellationAction) { Button("取消", action: close).disabled(busy) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: close).disabled(busy) }
                 ToolbarItem(placement: .confirmationAction) { Button(busy ? "正在下载…" : "导入") { submit() }.disabled(busy || link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
             }
             .hakoRegistersDeparture(isDirty: !link.isEmpty || !name.isEmpty, isBusy: busy, save: { submit($0) }, discard: { link = ""; name = "" })
@@ -2007,10 +2007,10 @@ struct ConfigurationCollectionAdapter: View {
     }
     private var identitySections: some View {
         Group {
-            Section("来源") { Text(verbatim: entry.source.label) }
+            Section("Source") { Text(verbatim: entry.source.label) }
             Section {
-                HStack { Text("名称"); Spacer(); Text(verbatim: entry.collection.name) }
-                if entry.id.kind == .nodes { HStack { Text("类型"); Spacer(); Text(verbatim: entry.collection.type) } }
+                HStack { Text("Name"); Spacer(); Text(verbatim: entry.collection.name) }
+                if entry.id.kind == .nodes { HStack { Text("Type"); Spacer(); Text(verbatim: entry.collection.type) } }
                 if let location = entry.collection.location { Text(verbatim: location).textSelection(.enabled) }
             }
         }.accessibilityIdentifier("configuration.collection.settings")
@@ -2019,7 +2019,7 @@ struct ConfigurationCollectionAdapter: View {
         Group {
             if entry.id.kind == .rules {
                 Section {
-                    Button("用此集合创建规则方案") {
+                    Button("Add Rule Scheme") {
                         Task {
                             do {
                                 guard let store = model.configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
@@ -2032,8 +2032,8 @@ struct ConfigurationCollectionAdapter: View {
                     }
                 }
             }
-            Section { Button("编辑集合源码") { editor = true }.buttonStyle(.plain).foregroundStyle(.primary) }
-            Section { Button("删除集合", role: .destructive) { deleting = true } }
+            Section { Button("Edit Source") { editor = true }.buttonStyle(.plain).foregroundStyle(.primary) }
+            Section { Button("Delete Collection", role: .destructive) { deleting = true } }
         }
         .hakoDeleteConfirmation(entry.collection.name, isPresented: $deleting,
             actionTitle: .copy("Delete Collection"),
@@ -2047,7 +2047,7 @@ struct ConfigurationCollectionAdapter: View {
         .hakoProductModal(isPresented: $editor, role: .page) {
             let profile = Profile(id: entry.source.id, label: entry.collection.name, source: .clipboard,
                 autoUpdate: false, updateIntervalHours: 0, subscriptionInfo: nil, selectedMap: [:], activeRevision: nil, order: 0, lastUpdatedAt: nil)
-            ProfileEditView(profile: profile, rawYAML: entry.collection.definition.serialized(), editorTitle: "编辑集合源码") { _, text, files, _ in
+            ProfileEditView(profile: profile, rawYAML: entry.collection.definition.serialized(), editorTitle: "Edit Source") { _, text, files, _ in
                 guard let text, files.isEmpty else { throw ConfigurationLibraryError.unreadable }
                 let json = try ConfigTransforms.yamlToJSON(text)
                 changed(try await model.saveConfigurationCollection(entry, definitionJSON: json))
@@ -2108,20 +2108,20 @@ private struct ConfigurationCollectionImportAdapter: View {
         HakoFeatureNavigationContainer {
             Form {
                 Section {
-                    TextField("名称", text: $name)
+                    TextField("Name", text: $name)
                         .accessibilityIdentifier("configuration.rules.import.name")
                     TextField("URL", text: $link).autocorrectionDisabled().textInputAutocapitalization(.never)
                         .disabled(fileData != nil)
                         .accessibilityIdentifier("configuration.rules.import.url")
                     Button(fileName ?? "选择集合文件") { pickingFile = true }.buttonStyle(.plain).foregroundStyle(.primary)
-                    if fileData != nil { Button("移除文件") { fileData = nil; fileName = nil } }
+                    if fileData != nil { Button("Remove File") { fileData = nil; fileName = nil } }
                 }
                 Section {
-                    Picker("规则类型", selection: $behavior) {
-                        Text("域名").tag("domain"); Text("IP CIDR").tag("ipcidr"); Text("完整规则").tag("classical")
+                    Picker("Rule Type", selection: $behavior) {
+                        Text("Domain").tag("domain"); Text("IP CIDR").tag("ipcidr"); Text("Classical").tag("classical")
                     }
                     .accessibilityIdentifier("configuration.rules.import.behavior")
-                    Picker("文件格式", selection: $format) {
+                    Picker("Format", selection: $format) {
                         Text("YAML").tag("yaml"); Text("Text").tag("text")
                         if behavior != "classical" { Text("MRS").tag("mrs") }
                     }
@@ -2131,7 +2131,7 @@ private struct ConfigurationCollectionImportAdapter: View {
             }.disabled(busy)
                 .onChange(of: behavior) { if $0 == "classical" && format == "mrs" { format = "yaml" } }
                 .safeAreaInset(edge: .top, spacing: 0) { if let tabHeader { tabHeader(dirty).disabled(busy) } }
-                .hakoPageTitle(tabHeader == nil ? "添加规则集合" : "添加规则")
+                .hakoPageTitle(tabHeader == nil ? "添加规则集合" : "Add Rules")
                 .hakoToolbarUnlessInPanel {
                     ToolbarItem(placement: .cancellationAction) { HakoSheetCloseButton(dismiss: close) }
                     ToolbarItem(placement: .confirmationAction) { Button { save() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(busy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (fileData == nil && link.isEmpty)) }

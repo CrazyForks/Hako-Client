@@ -130,9 +130,9 @@ public struct HakoTowerRulesLibraryView: View {
                 }.buttonStyle(.plain)
                     .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.row))
                     .contextMenu {
-                        Button("查看详情") { open(scheme.id) }
-                        if case .subscription = record(scheme)?.origin { Button("刷新规则") { refresh(scheme.id) } }
-                        if !bundled(scheme) { Button("删除", role: .destructive) { deleting = scheme } }
+                        Button("View Details") { open(scheme.id) }
+                        if case .subscription = record(scheme)?.origin { Button("Refresh Rules") { refresh(scheme.id) } }
+                        if !bundled(scheme) { Button("Delete", role: .destructive) { deleting = scheme } }
                     }
                     .swipeActions(allowsFullSwipe: false) {
                         if !bundled(scheme) {
@@ -252,7 +252,7 @@ public struct HakoTowerRuleCustomizationView: View {
                         .moveDisabled(!search.isEmpty)
                         .contextMenu {
                             Button("修改名称与 Emoji") { groupID = group.id; modal = .identity }
-                            Button("删除", role: .destructive) { deletingGroup = group.id }
+                            Button("Delete", role: .destructive) { deletingGroup = group.id }
                         }
                         .accessibilityAction(named: Text("修改名称与 Emoji")) { groupID = group.id; modal = .identity }
                 }.onDelete { offsets in
@@ -265,7 +265,7 @@ public struct HakoTowerRuleCustomizationView: View {
                     draft = changed; hasUnsavedChanges = true
                     persist(changed)
                 }
-            } header: { HStack { Text("策略组"); Spacer(); Text("\(visibleGroups.count) 组") } }
+            } header: { HStack { Text("Policy Groups"); Spacer(); Text(hako: .format("%@ groups", [String(visibleGroups.count)])) } }
             if reordering {
                 localRuleSetsSection
                 Section {
@@ -282,11 +282,11 @@ public struct HakoTowerRuleCustomizationView: View {
                     if entries.isEmpty { Text("No results").foregroundStyle(.secondary) }
                 } header: {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("在线规则库")
+                        Text("Online Rule Library")
                         Text("\(entries.count)").monospacedDigit()
                         Spacer()
                         Picker("Category", selection: $category) {
-                            Text("全部").tag(Optional<ConfigurationRuleCatalogCategory>.none)
+                            Text("All").tag(Optional<ConfigurationRuleCatalogCategory>.none)
                             ForEach(ConfigurationRuleCatalogCategory.allCases, id: \.self) { item in
                                 Text(verbatim: item.displayName).tag(Optional(item))
                             }
@@ -298,23 +298,23 @@ public struct HakoTowerRuleCustomizationView: View {
             if insideProductModal {
                  
                  
-                Section("更多") {
+                Section("More") {
                     Toggle("显示策略组 Emoji", isOn: $emojis).accessibilityIdentifier("configuration.rules.emojis")
                     Button("Edit Rules Source") { modal = .manual }
-                    Button("另存为新方案") { modal = .copy }
-                    Button("恢复初始规则", role: .destructive) { confirmsReset = true }
+                    Button("Save as New Scheme") { modal = .copy }
+                    Button("Restore Initial Rules", role: .destructive) { confirmsReset = true }
                 }.disabled(busy)
             }
         }
         .modifier(HakoTowerReorderMode(active: reordering))
         .allowsHitTesting(!busy)
         .modifier(HakoTowerSearchPlacement(text: $search, palette: palette))
-        .hakoPageTitle("规则定制")
+        .hakoPageTitle("Rule Customization")
          
          
          
         .hakoProductModalRoot(
-            title: "规则定制",
+            title: "Rule Customization",
             actionTitle: reordering ? "结束编辑" : "编辑",
             actionDisabled: busy,
             action: {
@@ -333,10 +333,10 @@ public struct HakoTowerRuleCustomizationView: View {
                 Menu {
                     Toggle("显示策略组 Emoji", isOn: $emojis).accessibilityIdentifier("configuration.rules.emojis")
                     Button("Edit Rules Source") { modal = .manual }
-                    Button("另存为新方案") { modal = .copy }
+                    Button("Save as New Scheme") { modal = .copy }
                     Divider()
-                    Button("恢复初始规则", role: .destructive) { confirmsReset = true }
-                } label: { Label("更多", systemImage: "ellipsis").foregroundStyle(.tint) }.disabled(busy)
+                    Button("Restore Initial Rules", role: .destructive) { confirmsReset = true }
+                } label: { Label("More", systemImage: "ellipsis").foregroundStyle(.tint) }.disabled(busy)
             }
             ToolbarItemGroup(placement: .confirmationAction) {
                 Button {
@@ -380,19 +380,19 @@ public struct HakoTowerRuleCustomizationView: View {
                         let updated = try await saveLocal(value); await receiveSaved(updated.0); localSets = updated.1; modal = nil
                     }, close: { modal = nil })
                 case .copy:
-                    HakoTowerNameEditor(title: "另存为新方案", name: draft.label + " · 自定义", save: { name in try await copy(draft, name); modal = nil; close() }, close: { modal = nil })
+                    HakoTowerNameEditor(title: "Save as New Scheme", name: draft.label + " · 自定义", save: { name in try await copy(draft, name); modal = nil; close() }, close: { modal = nil })
                 case .manual:
                     manualEditor(draft) { value in let result = try await save(value); await receiveSaved(result) }
                 }
             }.environment(\.hakoProductModalDismiss, { modal = nil })
         }
         .alert("恢复初始规则？", isPresented: $confirmsReset) {
-            Button("恢复初始规则", role: .destructive) {
+            Button("Restore Initial Rules", role: .destructive) {
                 let source = resetDocument
                 mutate { snapshot in var value = snapshot; try value.replaceContents(OrderedJSON.parse(source)); return value }
             }
             Button("Cancel", role: .cancel) {}
-        } message: { Text("移除当前方案后来添加的规则、改名与排序；我的规则集会保留。") }
+        } message: { Text("Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay.") }
         .hakoDeleteConfirmation(draft.groups.first(where: { $0.id == deletingGroup })?.name ?? "",
             isPresented: Binding(get: { deletingGroup != nil }, set: { if !$0 { deletingGroup = nil } }),
             actionTitle: .copy("Delete Rule Group"), message: .copy("This group and its associated rules will be removed from the current scheme."),
@@ -410,17 +410,17 @@ public struct HakoTowerRuleCustomizationView: View {
     private var localRuleSetsSection: some View {
             Section {
                 Button { localID = nil; modal = .local } label: {
-                    Label { VStack(alignment: .leading, spacing: 3) { Text("新建规则集").font(.body).foregroundStyle(.primary); Text("手动添加或使用规则集链接").font(.caption).foregroundStyle(Color.secondary) } } icon: { Image(systemName: "text.badge.plus").foregroundStyle(.primary) }
+                    Label { VStack(alignment: .leading, spacing: 3) { Text("New Rule Set").font(.body).foregroundStyle(.primary); Text("Add manually or use a rule set link").font(.caption).foregroundStyle(Color.secondary) } } icon: { Image(systemName: "text.badge.plus").foregroundStyle(.primary) }
                 }.buttonStyle(.plain)
                 ForEach(localSets.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { item in
                     HStack(spacing: 12) {
                         Button { localID = item.id; modal = .local } label: {
-                            HStack { Text("🧩").font(.title3); VStack(alignment: .leading, spacing: 3) { Text(verbatim: item.name).foregroundStyle(.primary); Text("本地 · \(item.rules.count) 条规则").font(.caption).foregroundStyle(.secondary) }; Spacer() }.contentShape(Rectangle())
+                            HStack { Text("🧩").font(.title3); VStack(alignment: .leading, spacing: 3) { Text(verbatim: item.name).foregroundStyle(.primary); Text(hako: .format("Local · %@ rules", [String(item.rules.count)])).font(.caption).foregroundStyle(.secondary) }; Spacer() }.contentShape(Rectangle())
                         }.buttonStyle(.plain)
                         Button { toggleLocal(item) } label: { mark(installedRuleSets.contains("local-" + item.id)) }.buttonStyle(.plain)
                     }.contextMenu {
-                        Button("编辑规则内容") { localID = item.id; modal = .local }
-                        Button("删除本地规则集", role: .destructive) { deletingLocal = item }
+                        Button("Edit Rule Content") { localID = item.id; modal = .local }
+                        Button("Delete Local Rule Set", role: .destructive) { deletingLocal = item }
                     }
                     .swipeActions(allowsFullSwipe: false) {
                         Button("Delete", role: .destructive) { deletingLocal = item }
@@ -428,7 +428,7 @@ public struct HakoTowerRuleCustomizationView: View {
                             .accessibilityIdentifier("configuration.rules.local.delete")
                     }
                 }
-            } header: { HStack { Text("我的规则集"); Spacer(); Text("\(localSets.count) 个") } }
+            } header: { HStack { Text("My Rule Sets"); Spacer(); Text(hako: .format("%@ items", [String(localSets.count)])) } }
 
     }
     private func mark(_ selected: Bool) -> some View {
@@ -527,10 +527,10 @@ private struct HakoTowerNameEditor: View {
         Task { @MainActor in defer { busy = false }; do { try await save(name); completion(true) } catch { self.error = error.localizedDescription; completion(false) } }
     }
     var body: some View {
-        Form { Section("方案名称") { TextField("名称", text: $name).accessibilityIdentifier("configuration.rules.copy.name") }; if let error { Text(verbatim: error).foregroundStyle(.orange) } }
+        Form { Section("Scheme Name") { TextField("Name", text: $name).accessibilityIdentifier("configuration.rules.copy.name") }; if let error { Text(verbatim: error).foregroundStyle(.orange) } }
             .hakoPageTitle(.copy(title)).disabled(busy)
             .hakoToolbarUnlessInPanel {
-                ToolbarItem(placement: .cancellationAction) { Button("取消", action: close) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: close) }
                 ToolbarItem(placement: .confirmationAction) { Button { commit() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(busy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
             }
             .hakoRegistersDeparture(isDirty: name != initialName, isBusy: busy, save: { commit($0) }, discard: { name = initialName })
@@ -562,14 +562,14 @@ private struct HakoTowerLocalRuleEditor: View {
     }
     var body: some View {
         Form {
-            Section("规则集") { TextField("名称，例如 🎬 奈飞", text: $name).accessibilityIdentifier("configuration.rules.set.name") }
+            Section("Rule Set") { TextField("Name", text: $name, prompt: Text(hako: .copy("e.g. 🎬 Netflix"))).accessibilityIdentifier("configuration.rules.set.name") }
             Section {
                 TextEditor(text: $input).accessibilityIdentifier("configuration.rules.set.contents").font(.body.monospaced()).frame(minHeight: 220)
-            } header: { Text("规则内容") } footer: { Text("粘贴规则集 URL，或逐行输入 DOMAIN、DOMAIN-SUFFIX、IP-CIDR 等规则；不需要填写出口策略。") }
+            } header: { Text("Rule Content") } footer: { Text("粘贴规则集 URL，或逐行输入 DOMAIN、DOMAIN-SUFFIX、IP-CIDR 等规则；不需要填写出口策略。") }
             if let error { Text(verbatim: error).foregroundStyle(.orange) }
-        }.disabled(busy).hakoPageTitle("我的规则集")
+        }.disabled(busy).hakoPageTitle("My Rule Sets")
             .hakoToolbarUnlessInPanel {
-                ToolbarItem(placement: .cancellationAction) { Button("取消", action: close).disabled(busy) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: close).disabled(busy) }
                 ToolbarItem(placement: .confirmationAction) { Button { commit() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(busy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
             }
             .hakoRegistersDeparture(isDirty: name != (value?.name ?? "") || input != (value?.input ?? ""), isBusy: busy, save: { commit($0) }, discard: { name = value?.name ?? ""; input = value?.input ?? "" })
@@ -619,25 +619,25 @@ private struct HakoTowerGroupEditor: View {
     var body: some View {
         Form {
             if identityOnly {
-                Section("名称与 Emoji") { TextField("策略组名称", text: $name).accessibilityIdentifier("configuration.rules.group.name") }
+                Section("名称与 Emoji") { TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name") }
             } else {
-                Section("名称与 Emoji") { TextField("策略组名称", text: $name).accessibilityIdentifier("configuration.rules.group.name") }
+                Section("名称与 Emoji") { TextField("Group Name", text: $name).accessibilityIdentifier("configuration.rules.group.name") }
                 Section {
-                    Picker("策略类型", selection: $kind) { ForEach(Array(Set([group.type, "select", "url-test", "fallback"])).sorted(), id: \.self) { Text(verbatim: $0).tag($0) } }.accessibilityIdentifier("configuration.rules.group.type")
-                } footer: { Text("更改策略类型会改变选路行为。") }
-                Section("已选策略（按优先级排序）") {
+                    Picker("Group Type", selection: $kind) { ForEach(Array(Set([group.type, "select", "url-test", "fallback"])).sorted(), id: \.self) { Text(verbatim: $0).tag($0) } }.accessibilityIdentifier("configuration.rules.group.type")
+                } footer: { Text("Changing the group type changes how routes are chosen.") }
+                Section("Selected (in priority order)") {
                     ForEach(selected, id: \.self) { item in
                         HStack { Text(verbatim: item); Spacer(); Button { selected.removeAll { $0 == item } } label: { Image(systemName: "minus.circle").foregroundStyle(.red) }.buttonStyle(.borderless) }
                     }.onMove { selected.move(fromOffsets: $0, toOffset: $1) }
                 }
-                Section("可选策略") {
+                Section("Available") {
                     ForEach(availableOptions, id: \.self) { item in
                         Button { selected.append(item) } label: { HStack { Text(verbatim: item).foregroundStyle(.primary); Spacer(); Image(systemName: "plus.circle") }.contentShape(Rectangle()) }.buttonStyle(.plain)
                     }
                 }
-                Section("节点名称匹配") {
-                    Toggle("全部节点", isOn: $includeAll).accessibilityIdentifier("configuration.rules.group.include-all")
-                    TextField("节点名称正则表达式", text: $filter).accessibilityIdentifier("configuration.rules.group.filter")
+                Section("Node Name Match") {
+                    Toggle("Include all proxies", isOn: $includeAll).accessibilityIdentifier("configuration.rules.group.include-all")
+                    TextField("Include filter", text: $filter).accessibilityIdentifier("configuration.rules.group.filter")
                 }
             }
             if let error { Text(verbatim: error).foregroundStyle(.orange) }
@@ -645,7 +645,7 @@ private struct HakoTowerGroupEditor: View {
         .modifier(HakoTowerReorderMode())
         .disabled(busy).hakoPageTitle(.copy(identityOnly ? "修改名称与 Emoji" : group.name))
         .hakoToolbarUnlessInPanel {
-            ToolbarItem(placement: .cancellationAction) { Button("取消", action: close).disabled(busy) }
+            ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: close).disabled(busy) }
             ToolbarItem(placement: .confirmationAction) {
                 Button { commit() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(busy || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (!identityOnly && selected.isEmpty && !includeAll))
             }
@@ -756,8 +756,8 @@ private struct HakoTowerInlineRules: View {
             if searching && results.query != current.query { ProgressView("Searching…") }
             else if !searching && visible.isEmpty { Text("No results").foregroundStyle(.secondary) }
         } header: {
-            HStack { Text("当前规则"); Spacer(); Text("\(visible.count) 条规则") }
-        } footer: { Text("按从上到下的顺序匹配") }
+            HStack { Text("Current Rules"); Spacer(); Text(hako: .format("%@ rules", [String(visible.count)])) }
+        } footer: { Text("Matched from top to bottom") }
         .task(id: current) {
             guard !current.query.isEmpty else { results = .init(); completedRequest = current; return }
             let source = rows, text = current.query
