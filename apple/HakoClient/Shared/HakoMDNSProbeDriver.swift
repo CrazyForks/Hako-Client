@@ -14,6 +14,8 @@ enum HakoMDNSProbeDriver {
         let names: [String]
         let repeatCount: Int
         let concurrent: Int
+         
+        let dnsServer: String
 
         init?(json: String) {
             guard let data = json.data(using: .utf8),
@@ -23,6 +25,7 @@ enum HakoMDNSProbeDriver {
             self.names = names
             repeatCount = max(1, root["repeat"] as? Int ?? 10)
             concurrent = max(1, root["concurrent"] as? Int ?? 40)
+            dnsServer = root["dnsServer"] as? String ?? "198.18.0.2"
         }
     }
 
@@ -71,17 +74,23 @@ enum HakoMDNSProbeDriver {
      
      
      
+     
+     
+     
     static func run(
         spec: Spec,
         query: @escaping @Sendable (String, String) async throws -> Data,
+        concurrentQuery: (@Sendable (String, String) async throws -> Data)? = nil,
         memory: @escaping @Sendable () async -> Int64?,
         log: @escaping @Sendable (String) -> Void
     ) async {
+        let direct = concurrentQuery ?? query
         @Sendable func ask(_ phase: String, _ name: String, _ type: String) async -> (Outcome, Int) {
             let began = Date()
             let outcome: Outcome
             do {
-                outcome = Outcome(replyJSON: String(decoding: try await query(name, type), as: UTF8.self))
+                let reply = try await (phase == "concurrent" ? direct(name, type) : query(name, type))
+                outcome = Outcome(replyJSON: String(decoding: reply, as: UTF8.self))
             } catch {
                 outcome = Outcome(replyJSON: "{\"error\":\"channel: \(error.localizedDescription)\"}")
             }
@@ -108,7 +117,12 @@ enum HakoMDNSProbeDriver {
             try? await Task.sleep(nanoseconds: 200_000_000)
         }
 
-        let target = spec.names[0]
+         
+         
+         
+         
+         
+        let target = spec.names[spec.names.count - 1]
         let concurrentOutcomes = await withTaskGroup(of: (Outcome, Int).self, returning: [(Outcome, Int)].self) { group in
             for _ in 0..<spec.concurrent {
                 group.addTask { await ask("concurrent", target, "A") }
