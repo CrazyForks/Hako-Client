@@ -2358,28 +2358,16 @@ private final class HakoMacSceneModel: ObservableObject {
             }.value
         }
         @MainActor func save(_ draft: ConfigurationRuleDraft) async throws -> ConfigurationRuleDraft {
-            var snapshot = try await profiles.saveConfigurationRuleCustomization(draft, generation: library.snapshot.generation)
+            let snapshot = try await profiles.saveConfigurationRuleCustomization(draft, generation: library.snapshot.generation)
             library.apply(snapshot)
+             
+             
+             
+             
+             
+             
             guard let current = snapshot.ruleSchemeAfterSavingCustomization(draft.schemeID) else {
                 throw ConfigurationLibraryError.unreadable
-            }
-             
-             
-             
-             
-             
-             
-            if let active = profiles.activeProfileID,
-               let recipe = snapshot.recipes.first(where: { $0.id == active }),
-               recipe.ruleSchemeID != current.id,
-               (recipe.ruleSchemeID == draft.schemeID
-                || snapshot.rules.first(where: { $0.id == recipe.ruleSchemeID })?.baseSchemeID == (current.baseSchemeID ?? current.id)) {
-                var edit = ConfigurationCreationAdapter.editingDraft(
-                    recipe: recipe, label: profiles.profiles.first(where: { $0.id == active })?.label ?? recipe.label
-                )
-                edit.selectedRuleID = current.id
-                try await profiles.editConfiguration(edit, id: active, generation: snapshot.generation)
-                snapshot = library.snapshot
             }
             let store = try store()
             return try await Task.detached {
@@ -2510,7 +2498,10 @@ private final class HakoMacSceneModel: ObservableObject {
             }
             return HakoMacScriptsState(
                 scripts: scripts,
-                selectedID: profile.selectedScriptID,
+                 
+                 
+                 
+                selectedID: profile.overwriteMode == .script ? profile.selectedScriptID : nil,
                 patchFieldCount: fields,
                 exceptions: profile.override.appendRules
             )
