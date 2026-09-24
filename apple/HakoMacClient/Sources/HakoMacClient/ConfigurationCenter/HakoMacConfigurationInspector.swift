@@ -138,7 +138,11 @@ public struct HakoMacConfigurationInspector: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            Form {
+             
+             
+             
+             
+            HakoMacCardPage {
                 headerCard
                 identity
                 if isComposed || profile.canEditSource {
@@ -158,7 +162,6 @@ public struct HakoMacConfigurationInspector: View {
                 network
                 if profile.source == .remote { profileURLSection }
             }
-            .formStyle(.grouped)
             .accessibilityIdentifier("configuration-center.configuration")
          
          
@@ -197,7 +200,7 @@ public struct HakoMacConfigurationInspector: View {
      
      
     private var headerCard: some View {
-        Section {
+        HakoMacCardSection {
             HStack(spacing: HakoTheme.Spacing.compact) {
                  
                  
@@ -238,15 +241,23 @@ public struct HakoMacConfigurationInspector: View {
             }
             .tint(.primary)
             .padding(.vertical, 4)
+            .hakoMacCardRow()
         }
     }
 
     private var identity: some View {
-        Section {
-            TextField(text: $name) { Text(hako: .copy("Name")) }
-                .onSubmit { commitName() }
-                .accessibilityIdentifier("configuration-center.configuration.name")
-            HakoMacValueRow(.copy("Source"), value: profile.sourceSummary)
+        HakoMacCardSection {
+            HStack(spacing: HakoTheme.Spacing.compact) {
+                Text(hako: .copy("Name"))
+                TextField(text: $name) { Text(hako: .copy("Name")) }
+                    .labelsHidden()
+                    .textFieldStyle(.plain)
+                    .multilineTextAlignment(.trailing)
+                    .onSubmit { commitName() }
+                    .accessibilityIdentifier("configuration-center.configuration.name")
+            }
+            .hakoMacCardRow()
+            HakoMacValueRow(.copy("Source"), value: profile.sourceSummary).hakoMacCardRow()
         }
     }
 
@@ -313,7 +324,7 @@ public struct HakoMacConfigurationInspector: View {
     }
 
     private var composition: some View {
-        Section {
+        HakoMacCardSection {
              
              
              
@@ -325,19 +336,26 @@ public struct HakoMacConfigurationInspector: View {
                  
                  
                  
-                Toggle(isOn: Binding(get: { usesOriginal }, set: { actions.setOriginalUse($0) })) {
+                HStack(spacing: HakoTheme.Spacing.compact) {
                     VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
                         Text(hako: .copy("Use Original Configuration"))
                         if let name = originalSourceName {
                             Text(verbatim: name).font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
+                    Spacer()
+                    Toggle(isOn: Binding(get: { usesOriginal }, set: { actions.setOriginalUse($0) })) {
+                        Text(hako: .copy("Use Original Configuration"))
+                    }
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .disabled(profile.isBusy)
+                    .accessibilityIdentifier("configuration-center.configuration.original")
                 }
-                .disabled(profile.isBusy)
-                .accessibilityIdentifier("configuration-center.configuration.original")
+                .hakoMacCardRow()
             }
             if !(offersOriginal && usesOriginal) {
-            HakoRoutedViewLink {
+            HakoMacRoutedRow {
                 HakoMacConfigurationSourcesPage(
                     sources: sources, chosen: $chosenSources, recipe: recipe, actions: actions,
                     toggle: toggleSource
@@ -348,7 +366,8 @@ public struct HakoMacConfigurationInspector: View {
             }
             .accessibilityValue(Text(hako: Self.sourcesValue(sources, chosen: chosenSources)))
             .accessibilityIdentifier("configuration-center.configuration.sources.all")
-            HakoRoutedViewLink {
+            .hakoMacCardRow()
+            HakoMacRoutedRow {
                 HakoMacConfigurationSchemesPage(
                     shelves: ruleShelves, chosen: $chosenScheme,
                     choose: chooseScheme, page: { door(.scheme($0)) }
@@ -359,6 +378,7 @@ public struct HakoMacConfigurationInspector: View {
             }
             .accessibilityValue(Text(hako: schemeValue))
             .accessibilityIdentifier("configuration-center.configuration.schemes.all")
+            .hakoMacCardRow()
             }
              
              
@@ -367,11 +387,18 @@ public struct HakoMacConfigurationInspector: View {
              
              
             if let follows = recipe?.followsUpdates ?? profile.followsConfigurationSourceUpdates {
-                Toggle(isOn: Binding(get: { follows }, set: { actions.setSourceUpdates($0) })) {
+                HStack(spacing: HakoTheme.Spacing.compact) {
                     Text(hako: .copy("Automatically Update Sources"))
+                    Spacer()
+                    Toggle(isOn: Binding(get: { follows }, set: { actions.setSourceUpdates($0) })) {
+                        Text(hako: .copy("Automatically Update Sources"))
+                    }
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .disabled(profile.isBusy)
+                    .accessibilityIdentifier("configuration-center.configuration.source-updates")
                 }
-                .disabled(profile.isBusy)
-                .accessibilityIdentifier("configuration-center.configuration.source-updates")
+                .hakoMacCardRow()
             }
         }
          
@@ -398,29 +425,25 @@ public struct HakoMacConfigurationInspector: View {
     }
 
     private var overrides: some View {
-        Section {
+        HakoMacCardSection {
              
              
              
-            HakoRoutedViewLink(onReturn: { Task { @MainActor in scripts = await scriptsActions.load() } }) {
+            HakoMacRoutedRow(onReturn: { Task { @MainActor in scripts = await scriptsActions.load() } }) {
                 HakoMacScriptsPage(actions: scriptsActions, initial: scripts)
                     .navigationTitle(Text(hako: .copy("Overrides and Scripts")))
             } label: {
-                HStack(spacing: HakoTheme.Spacing.compact) {
-                    Text(hako: .copy("Overrides and Scripts"))
-                    Spacer()
-                    Text(hako: scripts.selectedID.flatMap { id in scripts.scripts.first { $0.id == id } }
-                        .map { .verbatim($0.label) } ?? .copy("None"))
-                        .foregroundStyle(.secondary)
-                }
+                HakoMacPushRowLabel(.copy("Overrides and Scripts"), value: scripts.selectedID.flatMap { id in scripts.scripts.first { $0.id == id } }
+                    .map { .verbatim($0.label) } ?? .copy("None"))
             }
             .accessibilityIdentifier("configuration-center.configuration.scripts")
+            .hakoMacCardRow()
              
              
              
              
             if let rules = actions.customRules {
-                HakoRoutedViewLink(onReturn: { Task { @MainActor in customRules = await rules.load() } }) {
+                HakoMacRoutedRow(onReturn: { Task { @MainActor in customRules = await rules.load() } }) {
                     HakoMacCustomRulesPage(actions: rules, initial: customRules)
                         .navigationTitle(Text(hako: .copy("Custom Rules")))
                 } label: {
@@ -430,60 +453,77 @@ public struct HakoMacConfigurationInspector: View {
                 .accessibilityValue(Text(hako: customRules.rules.isEmpty
                     ? .copy("None") : .count(customRules.rules.count, one: "%@ rule", other: "%@ rules")))
                 .accessibilityIdentifier("configuration-center.configuration.custom-rules")
+                .hakoMacCardRow()
             }
         }
     }
 
     private var network: some View {
-        Section {
-            HakoRoutedViewLink { door(.network) } label: { HakoMacPushRowLabel(.copy("Sniffer & NTP")) }
+        HakoMacCardSection(.copy("Network")) {
+            HakoMacRoutedRow { door(.network) } label: { HakoMacPushRowLabel(.copy("Sniffer & NTP")) }
                 .accessibilityIdentifier("configuration-center.configuration.network")
-            HakoRoutedViewLink { door(.trust) } label: { HakoMacPushRowLabel(.copy("Compatibility & Trust")) }
+                .hakoMacCardRow()
+            HakoMacRoutedRow { door(.trust) } label: { HakoMacPushRowLabel(.copy("Compatibility & Trust")) }
                 .accessibilityIdentifier("configuration-center.configuration.trust")
-        } header: {
-            Text(hako: .copy("Network"))
+                .hakoMacCardRow()
         }
     }
 
     private var profileURLSection: some View {
-        Section {
+        HakoMacCardSection(.copy("Profile URL")) {
             if let profileURL {
                 HStack(spacing: HakoTheme.Spacing.compact) {
                     Text(hako: .copy("Profile URL"))
                     Spacer()
                     Text(verbatim: profileURL).foregroundStyle(.secondary).textSelection(.enabled).lineLimit(2).multilineTextAlignment(.trailing)
                 }
+                .hakoMacCardRow()
             }
             if recipe == nil {
                  
                  
-                Toggle(isOn: Binding(get: { profile.autoUpdate }, set: { actions.setAutoUpdate($0) })) {
+                HStack(spacing: HakoTheme.Spacing.compact) {
                     Text(hako: .copy("Automatic Updates"))
-                }
-                .accessibilityIdentifier("configuration-center.config-url.auto-update")
-                Picker(selection: Binding(get: { profile.updateIntervalHours }, set: { actions.setInterval($0) })) {
-                    ForEach([1, 3, 6, 12, 24, 48, 72], id: \.self) { hours in
-                        Text(hako: .format("Every %@ hours", [String(hours)])).tag(hours)
+                    Spacer()
+                    Toggle(isOn: Binding(get: { profile.autoUpdate }, set: { actions.setAutoUpdate($0) })) {
+                        Text(hako: .copy("Automatic Updates"))
                     }
-                } label: {
-                    Text(hako: .copy("Interval"))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .accessibilityIdentifier("configuration-center.config-url.auto-update")
                 }
-                .pickerStyle(.menu)
-                .disabled(!profile.autoUpdate)
-                .accessibilityIdentifier("configuration-center.config-url.interval")
+                .hakoMacCardRow()
+                HStack(spacing: HakoTheme.Spacing.compact) {
+                    Text(hako: .copy("Interval"))
+                    Spacer()
+                    Picker(selection: Binding(get: { profile.updateIntervalHours }, set: { actions.setInterval($0) })) {
+                        ForEach([1, 3, 6, 12, 24, 48, 72], id: \.self) { hours in
+                            Text(hako: .format("Every %@ hours", [String(hours)])).tag(hours)
+                        }
+                    } label: {
+                        Text(hako: .copy("Interval"))
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .fixedSize()
+                    .disabled(!profile.autoUpdate)
+                    .accessibilityIdentifier("configuration-center.config-url.interval")
+                }
+                .hakoMacCardRow()
             } else if let hours = librarySourceInterval {
                  
                  
                  
                  
                  
-                HakoMacValueRow(.copy("Update Interval"), value: .format("Every %@ hours", [String(hours)]))
+                HakoMacValueRow(.copy("Update Interval"), value: .format("Every %@ hours", [String(hours)])).hakoMacCardRow()
             }
             if let usage = profile.subscription {
                 HakoMacValueRow(.copy("Traffic"), value: HakoMacSubscriptionUsageCopy.traffic(ConfigurationSubscriptionUsage(
                     upload: usage.uploadBytes, download: usage.downloadBytes, total: usage.totalBytes,
                     expire: usage.expiration.map { Int64($0.timeIntervalSince1970) } ?? 0
                 )))
+                .hakoMacCardRow()
             }
             HStack(spacing: HakoTheme.Spacing.compact) {
                 Text(hako: .copy("Updated"))
@@ -503,6 +543,7 @@ public struct HakoMacConfigurationInspector: View {
                     .disabled(profile.isBusy)
                     .accessibilityIdentifier("configuration-center.config-url.update")
             }
+            .hakoMacCardRow()
             HStack(spacing: HakoTheme.Spacing.row) {
                 Button { actions.copyProfileURL() } label: { Text(hako: .copy("Copy Profile URL")) }
                     .buttonStyle(.bordered)
@@ -521,13 +562,15 @@ public struct HakoMacConfigurationInspector: View {
             } message: {
                 Text(hako: .copy("The saved profile URL carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them."))
             }
-        } header: {
-            Text(hako: .copy("Profile URL"))
+            .hakoMacCardRow()
         }
     }
 
     private var heldBack: some View {
-        Section {
+        HakoMacCardSection(footer: .format(
+            "The last update changed %@ setting(s) that your app-wide settings override. Each is shown with the new value; adopt it or keep yours.",
+            [String(profile.heldBackUpdates.count)]
+        )) {
             if profile.heldBackUpdates.count > Self.heldBackRowsShownAtOnce {
                 Button {
                     showsAllHeldBack.toggle()
@@ -541,38 +584,41 @@ public struct HakoMacConfigurationInspector: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("configuration-center.configuration.held-back.disclosure")
+                .hakoMacCardRow()
                 if showsAllHeldBack { heldBackRows }
             } else {
                 heldBackRows
             }
-            Button { actions.dismissHeldBack() } label: { Text(hako: .copy("Keep My Settings")) }
-                .buttonStyle(.borderless)
-                .accessibilityIdentifier("configuration-center.configuration.held-back.dismiss")
-        } footer: {
-            Text(hako: .format(
-                "The last update changed %@ setting(s) that your app-wide settings override. Each is shown with the new value; adopt it or keep yours.",
-                [String(profile.heldBackUpdates.count)]
-            ))
+            HStack {
+                Button { actions.dismissHeldBack() } label: { Text(hako: .copy("Keep My Settings")) }
+                    .buttonStyle(.bordered)
+                    .tint(.primary)
+                    .accessibilityIdentifier("configuration-center.configuration.held-back.dismiss")
+                Spacer()
+            }
+            .hakoMacCardRow()
         }
     }
 
     private var heldBackRows: some View {
         ForEach(profile.heldBackUpdates) { item in
-            LabeledContent {
-                Button { actions.adoptHeldBack(item.keyPath) } label: {
-                    Text(hako: item.change == .removed ? .copy("Follow Removal") : .copy("Use New Value"))
-                }
-                .buttonStyle(.borderless)
-                .accessibilityIdentifier("configuration-center.configuration.held-back.adopt.\(item.keyPath)")
-            } label: {
+            HStack(spacing: HakoTheme.Spacing.compact) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: item.keyPath).font(.subheadline.monospaced())
                      
                     Text(hako: Self.heldBackLine(item)).font(.caption).foregroundStyle(.secondary)
                 }
+                Spacer()
+                Button { actions.adoptHeldBack(item.keyPath) } label: {
+                    Text(hako: item.change == .removed ? .copy("Follow Removal") : .copy("Use New Value"))
+                }
+                .buttonStyle(.bordered)
+                .tint(.primary)
+                .accessibilityIdentifier("configuration-center.configuration.held-back.adopt.\(item.keyPath)")
             }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("configuration-center.configuration.held-back.item.\(item.keyPath)")
+            .hakoMacCardRow()
         }
     }
 
@@ -618,6 +664,9 @@ struct HakoMacPushRowLabel: View {
             Text(hako: title)
             Spacer()
             if let value { Text(hako: value).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail) }
+             
+             
+            HakoMacTrailingChevron()
         }
         .contentShape(Rectangle())
     }
@@ -771,22 +820,30 @@ struct HakoMacConfigurationSourcesPage: View {
     }
 
     var body: some View {
-        List {
+         
+         
+         
+         
+         
+         
+         
+         
+        HakoMacCardPage {
             ForEach(Self.shelves(shown)) { shelf in
-                Section {
-                    ForEach(shelf.sources) { source in
-                        HakoMacConfigurationSourceRow(
-                            source: source, chosen: chosen.contains(source.id),
-                            toggle: { toggle(source.id) },
-                            inspect: { scopeSource = HakoMacScopeRequest(source: source, chosen: chosen.contains(source.id)) }
-                        )
+                HakoMacCardSection(.copy(shelf.group.title)) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(shelf.sources) { source in
+                            HakoMacConfigurationSourceRow(
+                                source: source, chosen: chosen.contains(source.id),
+                                toggle: { toggle(source.id) },
+                                inspect: { scopeSource = HakoMacScopeRequest(source: source, chosen: chosen.contains(source.id)) }
+                            )
+                            .hakoMacCardRow()
+                        }
                     }
-                } header: {
-                    Text(hako: .copy(shelf.group.title))
                 }
             }
         }
-        .listStyle(.inset)
         .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Filter")))
         .sheet(item: $scopeSource) { request in
             HakoMacScopeSheet(request: request, initial: scope(of: request.source.id), actions: actions, done: { scope in
@@ -820,21 +877,21 @@ struct HakoMacConfigurationSchemesPage: View {
     }
 
     var body: some View {
-        List {
+        HakoMacCardPage {
             ForEach(shown) { shelf in
-                Section {
-                    ForEach(shelf.schemes) { scheme in
-                        HakoMacConfigurationSchemeRow(
-                            scheme: scheme, chosen: scheme.id == chosen,
-                            choose: { choose(scheme.id) }, page: { page(scheme.id) }
-                        )
+                HakoMacCardSection(.copy(shelf.section.title)) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(shelf.schemes) { scheme in
+                            HakoMacConfigurationSchemeRow(
+                                scheme: scheme, chosen: scheme.id == chosen,
+                                choose: { choose(scheme.id) }, page: { page(scheme.id) }
+                            )
+                            .hakoMacCardRow()
+                        }
                     }
-                } header: {
-                    Text(hako: .copy(shelf.section.title))
                 }
             }
         }
-        .listStyle(.inset)
         .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Filter")))
     }
 }

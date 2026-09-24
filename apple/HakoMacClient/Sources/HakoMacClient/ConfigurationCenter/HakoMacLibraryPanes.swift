@@ -100,49 +100,51 @@ public struct HakoMacSchemePane: View {
     }
 
     public var body: some View {
-        Form {
+         
+         
+         
+         
+        HakoMacCardPage {
             headerCard
-            Section {
-                LabeledContent { Text(hako: kind) } label: { Text(hako: .copy("Kind")) }
+            HakoMacCardSection(footer: isEditable ? nil : .copy("Copy this rule scheme to make changes.")) {
+                HakoMacValueRow(.copy("Kind"), value: kind).hakoMacCardRow()
                 if let source {
-                    HakoRoutedViewLink {
+                    HakoMacRoutedRow {
                         HakoMacRuleBrowsePage(kind: .groups, load: actions.load)
                             .navigationTitle(Text(hako: .copy("Policy Groups")))
                     } label: {
                         HakoMacPushRowLabel(.copy("Policy Groups"), value: .verbatim(String(source.groupCount)))
                     }
                     .accessibilityIdentifier("configuration-center.scheme.groups")
-                    HakoRoutedViewLink {
+                    .hakoMacCardRow()
+                    HakoMacRoutedRow {
                         HakoMacRuleBrowsePage(kind: .rules, load: actions.load)
                             .navigationTitle(Text(hako: .copy("Rules")))
                     } label: {
                         HakoMacPushRowLabel(.copy("Rules"), value: .verbatim(String(source.ruleCount)))
                     }
                     .accessibilityIdentifier("configuration-center.scheme.rules")
+                    .hakoMacCardRow()
                 }
-            } footer: {
-                if !isEditable { Text(hako: .copy("Copy this rule scheme to make changes.")) }
             }
-            Section {
+            HakoMacCardSection(.copy("Used by Profiles")) {
                 if usedBy.isEmpty {
-                    Text(hako: .copy("None")).foregroundStyle(.secondary)
+                    HStack { Text(hako: .copy("None")).foregroundStyle(.secondary); Spacer() }.hakoMacCardRow()
                 } else {
                      
                     ForEach(usedBy) { profile in
-                        Text(verbatim: profile.label)
+                        HStack { Text(verbatim: profile.label); Spacer() }
                             .accessibilityIdentifier("configuration-center.scheme.used-by.\(profile.id.rawValue)")
+                            .hakoMacCardRow()
                     }
                 }
-            } header: {
-                Text(hako: .copy("Used by Profiles"))
             }
         }
-        .formStyle(.grouped)
         .accessibilityIdentifier("configuration-center.scheme")
     }
 
     private var headerCard: some View {
-        Section {
+        HakoMacCardSection {
             HStack(spacing: HakoTheme.Spacing.compact) {
                 Text(hako: kind).lineLimit(1)
                 Spacer()
@@ -177,15 +179,24 @@ public struct HakoMacSchemePane: View {
             }
             .tint(.primary)
             .padding(.vertical, 4)
+            .hakoMacCardRow()
             if let text = failure ?? updateError {
-                Text(verbatim: text)
-                    .font(.footnote).foregroundStyle(.red)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("configuration-center.scheme.update-error")
+                HStack {
+                    Text(verbatim: text)
+                        .font(.footnote).foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("configuration-center.scheme.update-error")
+                    Spacer()
+                }
+                .hakoMacCardRow()
             } else if let status {
-                Text(hako: status)
-                    .font(.footnote).foregroundStyle(.secondary)
-                    .accessibilityIdentifier("configuration-center.scheme.update-status")
+                HStack {
+                    Text(hako: status)
+                        .font(.footnote).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("configuration-center.scheme.update-status")
+                    Spacer()
+                }
+                .hakoMacCardRow()
             }
         }
     }
@@ -240,48 +251,65 @@ struct HakoMacRuleBrowsePage: View {
     }
 
     var body: some View {
-        List {
+         
+         
+        HakoMacCardPage {
             if let error {
-                Section { Text(verbatim: error).foregroundStyle(.red).accessibilityIdentifier("configuration-center.scheme.browse.error") }
+                HakoMacCardSection {
+                    HStack { Text(verbatim: error).foregroundStyle(.red).accessibilityIdentifier("configuration-center.scheme.browse.error"); Spacer() }
+                        .hakoMacCardRow()
+                }
             }
             if let state {
                 switch kind {
                 case .groups:
-                    Section {
-                        ForEach(groups(in: state)) { group in
-                            let isOpen = expanded.contains(group.id)
-                            HStack(spacing: HakoTheme.Spacing.compact) {
-                                Text(verbatim: group.name)
-                                Spacer()
-                                Text(verbatim: group.type).foregroundStyle(.secondary)
-                                HakoMacTrailingChevron(expanded: isOpen)
-                            }
-                            .hakoMacPressableRow {
-                                if isOpen { expanded.remove(group.id) } else { expanded.insert(group.id) }
-                            }
-                            .accessibilityIdentifier("configuration-center.scheme.browse.group")
-                            if isOpen {
-                                ForEach(Self.members(of: group), id: \.self) { member in
-                                    Text(verbatim: member).font(.subheadline).foregroundStyle(.secondary)
-                                        .padding(.leading, HakoTheme.Spacing.row)
+                    HakoMacCardSection {
+                        LazyVStack(spacing: 0) {
+                            ForEach(groups(in: state)) { group in
+                                let isOpen = expanded.contains(group.id)
+                                HStack(spacing: HakoTheme.Spacing.compact) {
+                                    Text(verbatim: group.name)
+                                    Spacer()
+                                    Text(verbatim: group.type).foregroundStyle(.secondary)
+                                    HakoMacTrailingChevron(expanded: isOpen)
+                                }
+                                .hakoMacPressableRow {
+                                    if isOpen { expanded.remove(group.id) } else { expanded.insert(group.id) }
+                                }
+                                .accessibilityIdentifier("configuration-center.scheme.browse.group")
+                                .hakoMacCardRow()
+                                if isOpen {
+                                    ForEach(Self.members(of: group), id: \.self) { member in
+                                        HStack {
+                                            Text(verbatim: member).font(.subheadline).foregroundStyle(.secondary)
+                                                .padding(.leading, HakoTheme.Spacing.row)
+                                            Spacer()
+                                        }
+                                        .hakoMacCardRow()
+                                    }
                                 }
                             }
                         }
                     }
                 case .rules:
-                    Section {
-                        ForEach(rules(in: state)) { row in
-                            Text(verbatim: row.raw)
-                                .font(.body.monospaced())
-                                .foregroundStyle(state.draft.disabledRules.contains(row.raw) ? Color.secondary : Color.primary)
+                    HakoMacCardSection {
+                        LazyVStack(spacing: 0) {
+                            ForEach(rules(in: state)) { row in
+                                HStack {
+                                    Text(verbatim: row.raw)
+                                        .font(.body.monospaced())
+                                        .foregroundStyle(state.draft.disabledRules.contains(row.raw) ? Color.secondary : Color.primary)
+                                    Spacer()
+                                }
+                                .hakoMacCardRow()
+                            }
                         }
                     }
                 }
             } else if error == nil {
-                Section { ProgressView().controlSize(.small) }
+                HakoMacCardSection { HStack { ProgressView().controlSize(.small); Spacer() }.hakoMacCardRow() }
             }
         }
-        .listStyle(.inset)
         .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Filter")))
         .task {
             do { state = try await load() } catch { self.error = error.localizedDescription }

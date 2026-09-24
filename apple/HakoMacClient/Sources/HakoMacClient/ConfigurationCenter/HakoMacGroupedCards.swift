@@ -9,10 +9,13 @@ import SwiftUI
  
 struct HakoMacCardSection<Content: View>: View {
     private let header: HakoDisplayText?
+     
+    private let footer: HakoDisplayText?
     private let content: () -> Content
 
-    init(_ header: HakoDisplayText? = nil, @ViewBuilder content: @escaping () -> Content) {
+    init(_ header: HakoDisplayText? = nil, footer: HakoDisplayText? = nil, @ViewBuilder content: @escaping () -> Content) {
         self.header = header
+        self.footer = footer
         self.content = content
     }
 
@@ -25,9 +28,26 @@ struct HakoMacCardSection<Content: View>: View {
                     .padding(.leading, 4)
             }
             VStack(spacing: 0) { content() }
+                 
+                 
+                 
+                .padding(.top, -1)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.055)))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.primary.opacity(0.07)))
+                 
+                 
+                 
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("hako.mac.card")
+            if let footer {
+                Text(hako: footer)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 4)
+            }
         }
     }
 }
@@ -47,8 +67,39 @@ struct HakoMacCardRow: ViewModifier {
     }
 }
 
+ 
+ 
+struct HakoMacCardRowAbove: ViewModifier {
+    func body(content: Content) -> some View {
+        VStack(spacing: 0) {
+            Divider().padding(.leading, 12)
+            content
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+        }
+    }
+}
+
 extension View {
     func hakoMacCardRow(isLast: Bool) -> some View { modifier(HakoMacCardRow(isLast: isLast)) }
+    func hakoMacCardRow() -> some View { modifier(HakoMacCardRowAbove()) }
+
+     
+     
+     
+     
+     
+    func hakoMacCardList() -> some View {
+        self
+            .listStyle(.inset)
+            .scrollContentBackground(.hidden)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.055)))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.primary.opacity(0.07)))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("hako.mac.card-list")
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+    }
 }
 
  

@@ -41,10 +41,14 @@ struct HakoMacRoutedRow<Label: View>: View {
     @Environment(\.hakoPushRoute) private var pushRoute
     private let destination: () -> AnyView
     private let label: Label
+     
+     
+    private let onReturn: () -> Void
 
-    init(@ViewBuilder destination: @escaping () -> some View, @ViewBuilder label: () -> Label) {
+    init(onReturn: @escaping () -> Void = {}, @ViewBuilder destination: @escaping () -> some View, @ViewBuilder label: () -> Label) {
         self.destination = { AnyView(destination()) }
         self.label = label()
+        self.onReturn = onReturn
     }
 
     var body: some View {
@@ -57,7 +61,7 @@ struct HakoMacRoutedRow<Label: View>: View {
     private func push() {
         guard let pushRoute else { return }
         let token = UUID()
-        HakoViewRouteRegistry.set(token, ownership: .oneShot, onReturn: {}, destination)
+        HakoViewRouteRegistry.set(token, ownership: .oneShot, onReturn: onReturn, destination)
         pushRoute(HakoViewRoute(id: token))
     }
 }

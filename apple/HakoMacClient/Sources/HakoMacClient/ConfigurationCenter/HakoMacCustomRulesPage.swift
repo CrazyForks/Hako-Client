@@ -117,7 +117,7 @@ public struct HakoMacCustomRulesPage: View {
                 }
             }
         }
-        .listStyle(.inset)
+        .hakoMacCardList()
         .accessibilityIdentifier("configuration-center.custom-rules")
         .task { state = await actions.load() }
         .sheet(isPresented: $adding) {

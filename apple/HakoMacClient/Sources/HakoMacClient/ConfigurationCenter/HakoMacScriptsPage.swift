@@ -165,7 +165,7 @@ public struct HakoMacScriptsPage: View {
                 }
             }
         }
-        .listStyle(.inset)
+        .hakoMacCardList()
         .task {
             guard !loaded else { return }
             loaded = true
