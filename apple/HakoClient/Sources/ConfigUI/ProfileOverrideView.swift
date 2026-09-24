@@ -42,11 +42,20 @@ struct ProfileOverrideView: View {
     @State private var error = ""
     @State private var isConfirmingQuickFill = false
     @State private var editingRule: RuleEditTarget?
+    @State private var editingScript: ConfigScript?
+    @State private var addingScript = false
+    @State private var deletingScript: ConfigScript?
 
     private let globalRules: [String]
     @State private var scripts: [ConfigScript]
     private let scriptLibrary: UserDefaults
-    private let rawYAML: String?
+     
+     
+     
+     
+    @State private var rawYAML: String?
+    private let loadRawYAML: (() async -> String?)?
+    @State private var projectionPending: Bool
     private let opensProxyChainsDirectly: Bool
     private let configurationCenter: Bool
 
@@ -68,6 +77,7 @@ struct ProfileOverrideView: View {
         openProxyChains: Bool = false,
         configurationCenter: Bool = false,
         scriptLibrary: UserDefaults = ScriptLibrary.appGroupDefaults,
+        loadRawYAML: (() async -> String?)? = nil,
         save: @escaping (Profile) -> Void
     ) {
         let settingsFacade = ProfileSettingsFacade()
@@ -75,7 +85,9 @@ struct ProfileOverrideView: View {
         self.configurationCenter = configurationCenter
         self.profile = profile
         self.save = save
-        self.rawYAML = rawYAML
+        _rawYAML = State(initialValue: rawYAML)
+        self.loadRawYAML = loadRawYAML
+        _projectionPending = State(initialValue: rawYAML == nil && loadRawYAML != nil)
         self.settingsFacade = settingsFacade
         opensProxyChainsDirectly = openProxyChains
         _patchText = State(initialValue: Self.prettyJSON(settings.override.patchJSON))
@@ -187,40 +199,22 @@ struct ProfileOverrideView: View {
                     }
                     }
                 } else if mode == .script {
+                     
+                     
+                     
+                     
+                     
+                     
                     Section {
-                        if scripts.isEmpty {
-                            HakoEmptyState(
-                                title: "No Local Scripts",
-                                message: "Create a local script before selecting Script mode.",
-                                symbol: .curlybraces
-                            )
-                            .listRowSeparator(.hidden)
-                        } else {
-                            Picker("Override Script", selection: $selectedScriptID) {
-                                Text("None").tag(String?.none)
-                                ForEach(scripts) { script in
-                                    Text(script.label).tag(Optional(script.id))
-                                }
-                            }
-                            .accessibilityIdentifier("profile.override.script")
+                        ForEach(scripts) { script in
+                            scriptRow(script)
                         }
-                         
-                         
-                         
-                         
-                         
-                         
-                        HakoRoutedViewLink {
-                            HakoLazyView { ScriptLibraryView() }
-                        } label: {
-                            HakoDestinationRow(
-                                title: "Manage Local Scripts",
-                                subtitle: .format("%@ scripts", [String(scripts.count)]),
-                                symbol: .curlybraces,
-                                tint: .purple
-                            )
+                        HakoAddRow(Text("Add Script")) {
+                            addingScript = true
+                        } touchLabel: {
+                            Label("Add Script", systemImage: HakoSymbol.plus.name)
                         }
-                        .accessibilityIdentifier("profile.override.manage-scripts")
+                        .accessibilityIdentifier("profile.override.script.add")
                     } header: {
                         Text("Script")
                     } footer: {
@@ -384,6 +378,12 @@ struct ProfileOverrideView: View {
              
              
              
+            .task(id: profile.id) {
+                guard projectionPending, let loadRawYAML else { return }
+                let loaded = await loadRawYAML()
+                if rawYAML == nil { rawYAML = loaded }
+                projectionPending = false
+            }
             .onReceive(NotificationCenter.default.publisher(for: ScriptLibrary.didChange)) { _ in
                 scripts = ScriptLibrary.load(from: scriptLibrary)
                 if let selected = selectedScriptID, !scripts.contains(where: { $0.id == selected }) {
@@ -412,6 +412,7 @@ struct ProfileOverrideView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     if !insideProductModal {
                         HakoSaveButton { persist() }
+                            .disabled(projectionPending)
                     }
                 }
 #if !os(macOS)
@@ -425,7 +426,7 @@ struct ProfileOverrideView: View {
                 if insideProductModal {
                     HakoModalActionBar(
                         primaryTitle: "Save",
-                    primaryDisabled: !hasChanges,
+                    primaryDisabled: !hasChanges || projectionPending,
                         onPrimary: persist
                     )
                 }
@@ -443,6 +444,35 @@ struct ProfileOverrideView: View {
                 }
                 .hakoModalPresentation(.page)
             }
+            .hakoProductModal(item: $editingScript, role: .page) { script in
+                ScriptEditorView(script: script) { saved in
+                    ScriptLibrary.upsert(saved, in: scriptLibrary)
+                    editingScript = nil
+                }
+                .hakoModalPresentation(.page)
+            }
+            .hakoProductModal(isPresented: $addingScript, role: .page) {
+                ScriptEditorView(script: ConfigScript(
+                    id: UUID().uuidString.lowercased(),
+                    label: ScriptLibrary.defaultLabel,
+                    body: ScriptSettings.template
+                )) { saved in
+                     
+                     
+                    ScriptLibrary.upsert(saved, in: scriptLibrary)
+                    selectedScriptID = saved.id
+                    addingScript = false
+                }
+                .hakoModalPresentation(.page)
+            }
+            .hakoDeleteConfirmation(deletingScript?.label ?? "",
+                isPresented: Binding(get: { deletingScript != nil }, set: { if !$0 { deletingScript = nil } }),
+                message: .copy("These scripts will be deleted. Configurations using them must choose another script before starting."),
+                identifier: "profile.override.script.delete.confirm") { [deletingScript] in
+                    guard let deletingScript else { return }
+                    ScriptLibrary.remove(id: deletingScript.id, in: scriptLibrary)
+                    if selectedScriptID == deletingScript.id { selectedScriptID = nil }
+                }
             }
         }
         .hakoStackNavigationViewStyle()
@@ -494,6 +524,55 @@ struct ProfileOverrideView: View {
 
     private func dismissPresentation() {
         (productModalDismiss ?? { dismiss() })()
+    }
+
+     
+     
+    @ViewBuilder
+    private func scriptRow(_ script: ConfigScript) -> some View {
+        let selected = selectedScriptID == script.id
+        HStack(spacing: HakoTheme.Spacing.row) {
+            Button {
+                selectedScriptID = script.id
+            } label: {
+                HStack {
+                    Text(verbatim: script.label)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                    Spacer(minLength: HakoTheme.Spacing.compact)
+                    HakoSelectionMark(isSelected: selected)
+                }
+                .frame(
+                    maxWidth: .infinity,
+                    minHeight: HakoClientUI.HakoTheme.Control.fullWidthRowMinHeightOnItsOwnPlatform,
+                    alignment: .leading
+                )
+                .contentShape(Rectangle())
+            }
+            .hakoSelectionRowStyle()
+            .accessibilityIdentifier("profile.override.script.\(script.id)")
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            Button {
+                editingScript = script
+            } label: {
+                Image(systemName: HakoSymbol.infoCircle.rawValue)
+                    .font(.body)
+                    .frame(width: HakoClientUI.HakoTheme.Control.minimumHitTarget, height: HakoClientUI.HakoTheme.Control.minimumHitTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Edit")
+            .accessibilityIdentifier("profile.override.script.edit.\(script.id)")
+        }
+         
+         
+        .accessibilityElement(children: .contain)
+        .swipeActions(allowsFullSwipe: false) {
+            Button("Delete", role: .destructive) { deletingScript = script }
+                 
+                 
+                .tint(.red)
+        }
     }
 
      

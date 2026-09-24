@@ -488,7 +488,7 @@ struct ScriptLibraryView: View {
     }
 }
 
-private struct ScriptEditorView: View {
+struct ScriptEditorView: View {
     let script: ConfigScript
     let save: (ConfigScript) -> Void
 

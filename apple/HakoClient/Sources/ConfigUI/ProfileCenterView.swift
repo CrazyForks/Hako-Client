@@ -531,9 +531,11 @@ struct ProfileCenterAdapter: View {
             }
         case .override(let id):
             if let profile = appProfile(id) {
-                ProfileProjectionLoader(profile: profile, model: model) { projected in
-                    ProfileOverrideView(profile: profile, rawYAML: projected, configurationCenter: true) { model.update($0) }
-                }
+                 
+                 
+                 
+                ProfileOverrideView(profile: profile, rawYAML: model.cachedUIProjectedYAML(for: profile),
+                    configurationCenter: true, loadRawYAML: { await model.loadUIProjectedYAML(for: profile) }) { model.update($0) }
             } else {
                 EmptyView()
             }
