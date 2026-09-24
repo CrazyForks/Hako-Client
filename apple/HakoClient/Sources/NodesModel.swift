@@ -59,6 +59,25 @@ struct ProxyGroup: Identifiable, Equatable {
         ProxyGroupControlKind(rawType: type).acceptsMemberChoice
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func holdsSelection(_ member: String) -> Bool {
+        if ProxyGroupControlKind(rawType: type).canBeUnpinned {
+            return fixed == member
+        }
+        return now == member
+    }
+
     init(name: String, type: String, now: String, members: [String],
          resolvedNow: String? = nil, memberTypes: [String: String] = [:],
          memberGroupNames: Set<String> = [],
@@ -320,6 +339,13 @@ enum OfflineProxyCatalogBuilder {
             }
             let selected = selectedMap[name].flatMap { members.contains($0) ? $0 : nil }
                 ?? defaultSelection(type: type, members: members)
+             
+             
+             
+             
+             
+             
+             
             proxies[name] = [
                 "type": runtimeGroupType(type),
                 "now": selected,
@@ -1351,9 +1377,14 @@ final class NodesModel: ObservableObject {
              
             if confirmed { noteKernelAcceptedSelection(group: group, name: name) }
             await applyInventoryOffMain(command.proxiesData, reason: .selectionReadback)
+             
+             
+             
+             
+             
             guard confirmed,
-                  groups.first(where: { $0.name == group })?.now
-                    == name else {
+                  groups.first(where: { $0.name == group })?
+                    .holdsSelection(name) == true else {
                 return
             }
 
@@ -1364,7 +1395,7 @@ final class NodesModel: ObservableObject {
                let global = groups.first(where: {
                     $0.name == GlobalProxySelectionPolicy.groupName
                }),
-               global.now != group,
+               !global.holdsSelection(group),
                global.members.contains(group),
                GlobalProxySelectionPolicy.isSafeManualGroup(
                     group,
@@ -1380,7 +1411,7 @@ final class NodesModel: ObservableObject {
                 guard retargeted,
                       groups.first(where: {
                           $0.name == GlobalProxySelectionPolicy.groupName
-                      })?.now == group else {
+                      })?.holdsSelection(group) == true else {
                     return
                 }
             }
@@ -2897,10 +2928,18 @@ final class NodesModel: ObservableObject {
      
      
     private func noteKernelAcceptedSelection(group: String, name: String) {
-        applyOfflineSelection(group: group, name: name)
+        applyOfflineSelection(group: group, name: name, kernelConfirmed: true)
     }
 
-    private func applyOfflineSelection(group: String, name: String) {
+     
+     
+     
+     
+    private func applyOfflineSelection(
+        group: String,
+        name: String,
+        kernelConfirmed: Bool = false
+    ) {
         guard let index = groups.firstIndex(where: { $0.name == group }) else { return }
         let current = groups[index]
         groups[index] = ProxyGroup(
@@ -2912,9 +2951,25 @@ final class NodesModel: ObservableObject {
             memberTypes: current.memberTypes,
             memberGroupNames: current.memberGroupNames,
             memberResolvedNames: current.memberResolvedNames,
+             
+             
+             
+             
+            memberPlaceholderTypes: current.memberPlaceholderTypes,
             configurationDetails: current.configurationDetails,
             hidden: current.hidden,
-            fixed: current.fixed
+            testURL: current.testURL,
+            iconURL: current.iconURL,
+            emptyFallback: current.emptyFallback,
+             
+             
+             
+             
+             
+            fixed: kernelConfirmed
+                && ProxyGroupControlKind(rawType: current.type).canBeUnpinned
+                ? name
+                : current.fixed
         )
     }
 
@@ -2950,6 +3005,12 @@ final class NodesModel: ObservableObject {
          
          
         guard command.isConnected else { return }
+         
+         
+         
+         
+         
+        guard isRuntimeAvailable else { return }
 
         let restorePlan = groups.compactMap {
             group -> (group: String, member: String)? in
@@ -2971,7 +3032,7 @@ final class NodesModel: ObservableObject {
                item.group != GlobalProxySelectionPolicy.groupName {
                 restoredManualGroup = restoredManualGroup ?? item.group
             }
-            guard current.now != item.member else { continue }
+            guard !current.holdsSelection(item.member) else { continue }
             let confirmed = await command.select(
                 group: item.group,
                 name: item.member
@@ -2979,8 +3040,8 @@ final class NodesModel: ObservableObject {
             if confirmed { noteKernelAcceptedSelection(group: item.group, name: item.member) }
             await applyInventoryOffMain(command.proxiesData, reason: .selectionReadback)
             guard confirmed,
-                  groups.first(where: { $0.name == item.group })?.now
-                    == item.member else {
+                  groups.first(where: { $0.name == item.group })?
+                    .holdsSelection(item.member) == true else {
                  
                  
                 return
@@ -3004,7 +3065,7 @@ final class NodesModel: ObservableObject {
                         groups: groups
                     )
             }
-            if let preferred, global.now != preferred {
+            if let preferred, !global.holdsSelection(preferred) {
                 let confirmed = await command.select(
                     group: global.name,
                     name: preferred
@@ -3014,7 +3075,7 @@ final class NodesModel: ObservableObject {
                 guard confirmed,
                       groups.first(where: {
                           $0.name == GlobalProxySelectionPolicy.groupName
-                      })?.now == preferred else {
+                      })?.holdsSelection(preferred) == true else {
                     return
                 }
             }

@@ -1541,7 +1541,13 @@ return
             guard token == generation,
                   self.client === client,
                   isConnected,
-                  confirmedGroup?.now == name else {
+                   
+                   
+                   
+                   
+                   
+                   
+                  confirmedGroup?.holdsSelection(name) == true else {
                 lastError =
                     "The running proxy group did not confirm the selected route."
                 recordRouteControl(
@@ -2613,6 +2619,16 @@ return
               var selected = proxies[group] as? [String: Any]
         else { return }
         selected["now"] = name
+         
+         
+         
+         
+         
+        if ["urltest", "url-test", "fallback"].contains(
+            ((selected["type"] as? String) ?? "").lowercased()
+        ) {
+            selected["fixed"] = name
+        }
         proxies[group] = selected
         root["proxies"] = proxies
         self.proxiesData = try? JSONSerialization.data(withJSONObject: root)
