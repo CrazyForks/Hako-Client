@@ -336,7 +336,13 @@ struct ProfileQuickAddCard: View {
  
  
  
-private struct QuickAddDoorLabelStyle: LabelStyle {
+ 
+ 
+ 
+ 
+ 
+ 
+struct QuickAddDoorLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         VStack(spacing: HakoTheme.Spacing.compact - 2) {
             configuration.icon

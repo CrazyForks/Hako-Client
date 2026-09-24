@@ -711,26 +711,30 @@ struct ProfileOverrideView: View {
                 }
                 .accessibilityIdentifier("scripts.add.status")
             }
-            HStack(spacing: 0) {
+             
+             
+             
+             
+            HStack(alignment: .top, spacing: HakoTheme.Spacing.compact) {
                 Button {
                     showsScriptFileImporter = true
                 } label: {
                     Label(HakoCopy.key("Import"), systemImage: HakoSymbol.arrowUpDocument.name)
-                        .lineLimit(1).frame(maxWidth: .infinity)
                 }
                 .accessibilityIdentifier("profile.override.script.add.file")
-                Divider()
                 Button {
                     addingScriptSheet = true
                 } label: {
-                    Label(HakoCopy.key("Manual"), systemImage: HakoSymbol.pencilLine.name)
-                        .lineLimit(1).frame(maxWidth: .infinity)
+                     
+                    Label(HakoCopy.key("quick-add.door.create"), systemImage: HakoSymbol.pencilLine.name)
                 }
                 .accessibilityIdentifier("profile.override.script.add")
             }
+            .labelStyle(QuickAddDoorLabelStyle())
             .buttonStyle(.plain)
-            .foregroundStyle(.primary)
+            .foregroundStyle(.tint)
             .disabled(importingScript)
+            .padding(.vertical, HakoTheme.Spacing.tight)
         } header: {
             HakoConfigurationLibraryHeader(title: .copy("Add Script"))
         }

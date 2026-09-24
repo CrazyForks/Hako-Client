@@ -457,6 +457,26 @@ struct ProxiesOverviewAdapter: View {
                     isTesting: false
                 ))
             }
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+            .onChange(of: effectiveRuntime.resolvedNowByGroup) { _ in
+                guard !isTestingLatency else { return }
+                pulseHub.replaceIdle(currentPulse(isTesting: false))
+            }
             .onReceive(
                 latencyPulseGate?.opened.eraseToAnyPublisher()
                     ?? Empty<Void, Never>(completeImmediately: false).eraseToAnyPublisher()

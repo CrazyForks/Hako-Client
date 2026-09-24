@@ -190,6 +190,26 @@ struct QRScannerView: UIViewControllerRepresentable {
             }
             session.addOutput(output)
             output.setMetadataObjectsDelegate(delegate, queue: .main)
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+            guard output.availableMetadataObjectTypes.contains(.qr) else {
+                session.removeOutput(output)
+                showUnavailable()
+                return
+            }
             output.metadataObjectTypes = [.qr]
 
             let preview = AVCaptureVideoPreviewLayer(session: session)
