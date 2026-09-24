@@ -44,13 +44,23 @@ struct OnDemandConfigView: View {
                 Text("If YES, the VPN connection will be always on. The default is NO")
             }
 
+             
+             
+             
+             
+             
             Section {
                 Toggle("On Demand", isOn: setting(\.enabled))
                     .accessibilityIdentifier("onDemand.enabled")
+                    .disabled(draft.alwaysOn)
             } header: {
                 Text("On Demand")
             } footer: {
-                Text("Toggles VPN On Demand.")
+                if draft.alwaysOn {
+                    Text("Always On is on, so On Demand and its rules do not apply.")
+                } else {
+                    Text("Toggles VPN On Demand.")
+                }
             }
 
             Section {
@@ -129,6 +139,7 @@ struct OnDemandConfigView: View {
                     .accessibilityIdentifier("onDemand.rules.add")
                 }
             }
+            .disabled(draft.alwaysOn)
 
             if !error.isEmpty {
                 Section {
@@ -151,6 +162,7 @@ struct OnDemandConfigView: View {
                     Label("Add Rule", systemImage: HakoSymbol.plus.name)
                 }
                 .accessibilityIdentifier("onDemand.addRule")
+                .disabled(draft.alwaysOn)
             }
         }
     }
