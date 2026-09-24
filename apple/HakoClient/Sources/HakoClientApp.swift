@@ -100,6 +100,15 @@ struct DisclaimerView: View {
 
 struct AppShellView: View {
     @Environment(\.scenePhase) private var scenePhase
+     
+     
+     
+     
+     
+     
+     
+     
+    @State private var scenePhaseWitness = ScenePhaseWitness()
 
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -423,6 +432,7 @@ struct AppShellView: View {
             ICloudAutoBackup.shared.start()
         }
         .onChange(of: scenePhase) { phase in
+            scenePhaseWitness.phase = phase
             command.syncConnectionObservationScene(isActive: phase == .active, isBackground: phase == .background)
              
              
@@ -435,7 +445,10 @@ struct AppShellView: View {
                      
                      
                      
-                    syncConnectionsForSelectedTab(isForeground: true)
+                     
+                     
+                     
+                    syncConnectionsForSelectedTab(isForeground: scenePhaseWitness.phase == .active)
                 }
 
 
@@ -1296,4 +1309,9 @@ private struct RegularSidebarTitleStyle: ViewModifier {
             content.navigationBarTitleDisplayMode(.large)
         }
     }
+}
+
+ 
+private final class ScenePhaseWitness {
+    var phase: ScenePhase = .inactive
 }
