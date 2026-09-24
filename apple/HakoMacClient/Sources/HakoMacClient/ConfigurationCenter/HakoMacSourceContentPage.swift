@@ -251,7 +251,7 @@ public struct HakoMacSourceContentPage: View {
                 } label: {
                     Image(systemName: "ellipsis")
                 }
-                .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize()
+                .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize(horizontal: true, vertical: false)
                 .accessibilityIdentifier("configuration-center.source.more")
             }
             .tint(.primary)

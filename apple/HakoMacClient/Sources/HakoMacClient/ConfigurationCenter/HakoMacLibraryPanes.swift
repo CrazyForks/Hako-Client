@@ -211,7 +211,7 @@ public struct HakoMacSchemePane: View {
                 } label: {
                     Image(systemName: "ellipsis")
                 }
-                .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize()
+                .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize(horizontal: true, vertical: false)
                 .disabled(busy)
                 .accessibilityIdentifier("configuration-center.scheme.more")
             }
@@ -513,7 +513,7 @@ public struct HakoMacCollectionPane: View {
                         } label: {
                             Image(systemName: "ellipsis")
                         }
-                        .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize()
+                        .menuStyle(.borderedButton).menuIndicator(.hidden).fixedSize(horizontal: true, vertical: false)
                         .disabled(busy)
                         .accessibilityIdentifier("configuration-center.collection.manage")
                     }
