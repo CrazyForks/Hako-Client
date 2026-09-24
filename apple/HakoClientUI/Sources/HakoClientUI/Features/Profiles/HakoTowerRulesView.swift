@@ -210,6 +210,10 @@ public struct HakoTowerRuleCustomizationView: View {
     private let palette: HakoProductPalette
     private let close: () -> Void
     private let manualEditor: (ConfigurationRuleDraft, @escaping (ConfigurationRuleDraft) async throws -> Void) -> AnyView
+     
+     
+    private let nodeCandidates: (() async -> [ConfigurationRuleTargetCandidates.Section])?
+    @State private var nodeSections: [ConfigurationRuleTargetCandidates.Section] = []
     private enum Modal: String, Identifiable { case identity, group, local, copy, manual; var id: String { rawValue } }
     @State private var groupID: UUID?
     @State private var localID: String?
@@ -219,7 +223,9 @@ public struct HakoTowerRuleCustomizationView: View {
         save: @escaping (ConfigurationRuleDraft) async throws -> ConfigurationRuleDraft, download: @escaping (String) async throws -> [String],
         saveLocal: @escaping (ConfigurationLocalRuleSet) async throws -> (ConfigurationRuleDraft, [ConfigurationLocalRuleSet]), deleteLocal: @escaping (String) async throws -> (ConfigurationRuleDraft, [ConfigurationLocalRuleSet]),
         copy: @escaping (ConfigurationRuleDraft, String) async throws -> Void, close: @escaping () -> Void,
-        manualEditor: @escaping (ConfigurationRuleDraft, @escaping (ConfigurationRuleDraft) async throws -> Void) -> AnyView) {
+        manualEditor: @escaping (ConfigurationRuleDraft, @escaping (ConfigurationRuleDraft) async throws -> Void) -> AnyView,
+        nodeCandidates: (() async -> [ConfigurationRuleTargetCandidates.Section])? = nil) {
+        self.nodeCandidates = nodeCandidates
         _draft = State(initialValue: draft); _baseline = State(initialValue: draft); _installedRuleSets = State(initialValue: ruleSetKeys); _baselineRuleSets = State(initialValue: ruleSetKeys); _localSets = State(initialValue: localSets)
         self.palette = palette
         self.pushed = pushed
@@ -384,12 +390,13 @@ public struct HakoTowerRuleCustomizationView: View {
             save: { persist(draft, then: close) },
             discard: { draft = baseline; installedRuleSets = baselineRuleSets; hasUnsavedChanges = false; close() })
         .hakoRegistersDeparture(isDirty: hasUnsavedChanges, isBusy: busy, save: { completion in persist(draft, completion: completion) }, discard: { draft = baseline; installedRuleSets = baselineRuleSets; hasUnsavedChanges = false })
+        .task { if let nodeCandidates, nodeSections.isEmpty { nodeSections = await nodeCandidates() } }
         .hakoProductModal(item: $modal, role: .form) { kind in
             HakoSingleColumnNavigationContainer {
                 switch kind {
                 case .identity, .group:
                     if let id = groupID, let group = draft.groups.first(where: { $0.id == id }) {
-                        HakoTowerGroupEditor(group: group, all: draft.groups, identityOnly: kind == .identity, save: { value in
+                        HakoTowerGroupEditor(group: group, all: draft.groups, identityOnly: kind == .identity, nodeSections: nodeSections, save: { value in
                             let snapshot = draft
                             let changed = try await Task.detached { var valueDraft = snapshot; try valueDraft.setGroup(value, groupID: id); return valueDraft }.value
                             let saved = try await save(changed); await receiveSaved(saved); modal = nil
@@ -669,12 +676,49 @@ private struct HakoTowerLocalRuleEditor: View {
     }
 }
 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+enum HakoTowerGroupCandidates {
+    static let builtinMembers = ["DIRECT", "REJECT"]
+
+    static func available(
+        groups: [String], excludingGroup: String,
+        nodeSections: [ConfigurationRuleTargetCandidates.Section],
+        selected: [String], query: String
+    ) -> [ConfigurationRuleTargetCandidates.Section] {
+        let taken = Set(selected)
+        var sections = [
+            ConfigurationRuleTargetCandidates.Section(id: "builtin", kind: .builtin, names: builtinMembers),
+            ConfigurationRuleTargetCandidates.Section(id: "groups", kind: .groups, names: groups.filter { $0 != excludingGroup }),
+        ]
+        sections.append(contentsOf: nodeSections)
+        let offered = sections.compactMap { section -> ConfigurationRuleTargetCandidates.Section? in
+            var seen = Set<String>()
+             
+            let names = section.names.filter { !taken.contains($0) && (section.kind == .builtin || !builtinMembers.contains($0)) }
+                .filter { seen.insert($0).inserted }
+            return names.isEmpty ? nil : ConfigurationRuleTargetCandidates.Section(id: section.id, kind: section.kind, sourceLabel: section.sourceLabel, names: names)
+        }
+        return ConfigurationRuleTargetCandidates(sections: offered).filtered(by: query).sections
+    }
+}
+
 private struct HakoTowerGroupEditor: View {
     let group: ConfigurationRuleDraft.Group
     let all: [ConfigurationRuleDraft.Group]
     let identityOnly: Bool
+     
+     
+    let nodeSections: [ConfigurationRuleTargetCandidates.Section]
     let save: (OrderedJSON) async throws -> Void
     let close: () -> Void
+    @State private var query = ""
     @State private var name: String
     @State private var kind: String
     @State private var selected: [String]
@@ -684,8 +728,9 @@ private struct HakoTowerGroupEditor: View {
     @State private var error: String?
     @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     init(group: ConfigurationRuleDraft.Group, all: [ConfigurationRuleDraft.Group], identityOnly: Bool,
+        nodeSections: [ConfigurationRuleTargetCandidates.Section] = [],
         save: @escaping (OrderedJSON) async throws -> Void, close: @escaping () -> Void) {
-        self.group = group; self.all = all; self.identityOnly = identityOnly; self.save = save; self.close = close
+        self.group = group; self.all = all; self.identityOnly = identityOnly; self.nodeSections = nodeSections; self.save = save; self.close = close
         _name = State(initialValue: group.name); _kind = State(initialValue: group.type)
         if case .array(let values) = group.document.topLevelValue("proxies") { _selected = State(initialValue: values.compactMap { if case .string(let value) = $0 { return value }; return nil }) }
         else { _selected = State(initialValue: []) }
@@ -699,11 +744,19 @@ private struct HakoTowerGroupEditor: View {
     private var originalIncludeAll: Bool { group.document.topLevelValue("include-all") == .scalar("true") || group.document.topLevelValue("include-all-proxies") == .scalar("true") }
     private var originalFilter: String { if case .string(let value) = group.document.topLevelValue("filter") { return value }; return "" }
     private var dirty: Bool { name != group.name || kind != group.type || selected != originalSelected || includeAll != originalIncludeAll || filter != originalFilter }
-    private var availableOptions: [String] {
-        let selectedNames = Set(selected)
-        return options.filter { !selectedNames.contains($0) }
+    private var availableSections: [ConfigurationRuleTargetCandidates.Section] {
+        HakoTowerGroupCandidates.available(
+            groups: all.filter { $0.id != group.id }.map(\.name), excludingGroup: group.name,
+            nodeSections: nodeSections, selected: selected, query: query
+        )
     }
-    private var options: [String] { var seen = Set<String>(); return (["DIRECT", "REJECT"] + all.filter { $0.id != group.id }.map(\.name) + selected).filter { seen.insert($0).inserted } }
+    private func sectionTitle(_ section: ConfigurationRuleTargetCandidates.Section) -> Text {
+        switch section.kind {
+        case .builtin: return Text("Built-in")
+        case .groups: return Text("Policy Groups")
+        case .source: return Text(verbatim: section.sourceLabel ?? section.id)
+        }
+    }
     var body: some View {
         Form {
             if identityOnly {
@@ -718,10 +771,17 @@ private struct HakoTowerGroupEditor: View {
                         HStack { Text(verbatim: item); Spacer(); Button { selected.removeAll { $0 == item } } label: { Image(systemName: "minus.circle").foregroundStyle(.red) }.buttonStyle(.borderless) }
                     }.onMove { selected.move(fromOffsets: $0, toOffset: $1) }
                 }
-                Section("Available") {
-                    ForEach(availableOptions, id: \.self) { item in
-                        Button { selected.append(item) } label: { HStack { Text(verbatim: item).foregroundStyle(.primary); Spacer(); Image(systemName: "plus.circle") }.contentShape(Rectangle()) }.buttonStyle(.plain)
+                if !nodeSections.isEmpty {
+                    Section("Available") {
+                        TextField("Search nodes", text: $query).accessibilityIdentifier("configuration.rules.group.search")
                     }
+                }
+                ForEach(availableSections) { section in
+                    Section {
+                        ForEach(section.names, id: \.self) { item in
+                            Button { selected.append(item) } label: { HStack { Text(verbatim: item).foregroundStyle(.primary); Spacer(); Image(systemName: "plus.circle") }.contentShape(Rectangle()) }.buttonStyle(.plain)
+                        }
+                    } header: { sectionTitle(section) }
                 }
                 Section("Node Name Match") {
                     Toggle("Include all proxies", isOn: $includeAll).accessibilityIdentifier("configuration.rules.group.include-all")

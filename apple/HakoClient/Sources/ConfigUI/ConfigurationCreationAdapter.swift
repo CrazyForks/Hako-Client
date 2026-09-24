@@ -842,7 +842,8 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
                             let saved = try await save(draft)
                             apply(try await model.copyConfigurationRuleScheme(saved.schemeID, label: name, generation: library.generation))
                         }, close: close,
-                        manualEditor: { draft, accept in AnyView(ConfigurationTowerManualRuleEditor(draft: draft, accept: accept)) })
+                        manualEditor: { draft, accept in AnyView(ConfigurationTowerManualRuleEditor(draft: draft, accept: accept)) },
+                        nodeCandidates: { await loadNodeCandidates() })
                 } else if let errorMessage {
                     Form { Text(verbatim: errorMessage); Button("Retry") { Task { await load() } }; Button("Close", action: close) }
                 } else { ProgressView() }
@@ -850,6 +851,18 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
         }
     }
     private func apply(_ value: ConfigurationLibrarySnapshot) { library = value; changed(value) }
+     
+     
+     
+     
+    private func loadNodeCandidates() async -> [ConfigurationRuleTargetCandidates.Section] {
+        guard let store = model.configurationLibraryStore else { return [] }
+        let snapshot = library
+        return await Task.detached(priority: .userInitiated) {
+            let candidates = try? ConfigurationRuleTargetCandidates.make(groups: [], snapshot: snapshot, payload: { try store.payload($0) })
+            return candidates?.sections.filter { $0.kind == .source } ?? []
+        }.value
+    }
     private func load() async {
         do {
             guard let store = model.configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
