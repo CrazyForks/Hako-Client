@@ -20,19 +20,33 @@ public struct HakoMacConfigurationLibraryActions {
     public var updateSource: @MainActor (String) async throws -> Void
      
     public var deleteRuleScheme: @MainActor (String, UInt64) async throws -> ConfigurationLibrarySnapshot
+     
+     
+    public var addSource: @MainActor (ConfigurationSourcePayload, UInt64) async throws -> ConfigurationLibrarySnapshot
+     
+     
+    public var addRuleScheme: @MainActor (ConfigurationSourcePayload, UInt64) async throws -> ConfigurationLibrarySnapshot
 
     public init(
         load: @escaping @Sendable () async throws -> ConfigurationLibrarySnapshot,
         renameSource: @escaping @MainActor (String, String, UInt64) async throws -> ConfigurationLibrarySnapshot,
         deleteSource: @escaping @MainActor (String, UInt64) async throws -> ConfigurationLibrarySnapshot,
         updateSource: @escaping @MainActor (String) async throws -> Void,
-        deleteRuleScheme: @escaping @MainActor (String, UInt64) async throws -> ConfigurationLibrarySnapshot
+        deleteRuleScheme: @escaping @MainActor (String, UInt64) async throws -> ConfigurationLibrarySnapshot,
+        addSource: @escaping @MainActor (ConfigurationSourcePayload, UInt64) async throws -> ConfigurationLibrarySnapshot = { _, _ in
+            throw ConfigurationLibraryError.unreadable
+        },
+        addRuleScheme: @escaping @MainActor (ConfigurationSourcePayload, UInt64) async throws -> ConfigurationLibrarySnapshot = { _, _ in
+            throw ConfigurationLibraryError.unreadable
+        }
     ) {
         self.load = load
         self.renameSource = renameSource
         self.deleteSource = deleteSource
         self.updateSource = updateSource
         self.deleteRuleScheme = deleteRuleScheme
+        self.addSource = addSource
+        self.addRuleScheme = addRuleScheme
     }
 
      
@@ -158,6 +172,25 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
     @discardableResult
     public func deleteRuleScheme(_ id: String) async -> Bool {
         await write { [actions] generation in try await actions.deleteRuleScheme(id, generation) }
+    }
+
+     
+     
+    public func addSource(_ payload: ConfigurationSourcePayload) async throws {
+        try await writeOrThrow { [actions] generation in try await actions.addSource(payload, generation) }
+    }
+
+    public func addRuleScheme(_ payload: ConfigurationSourcePayload) async throws {
+        try await writeOrThrow { [actions] generation in try await actions.addRuleScheme(payload, generation) }
+    }
+
+    private func writeOrThrow(_ operation: (UInt64) async throws -> ConfigurationLibrarySnapshot) async throws {
+        guard !isBusy else { throw ConfigurationLibraryError.busy }
+        isBusy = true
+        lastError = nil
+        defer { isBusy = false }
+        let next = try await operation(snapshot.generation)
+        _ = apply(next)
     }
 
      

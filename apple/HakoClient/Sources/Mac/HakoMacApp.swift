@@ -926,6 +926,58 @@ private final class HakoMacSceneModel: ObservableObject {
     }
 
      
+    @Published var showsConfigurationWizard = false
+
+    var showsConfigurationWizardBinding: Binding<Bool> {
+        Binding(get: { self.showsConfigurationWizard }, set: { self.showsConfigurationWizard = $0 })
+    }
+
+     
+     
+     
+     
+    private func configurationImportActions() -> HakoMacSourceImportActions {
+        let profiles = self.profiles
+        return HakoMacSourceImportActions(
+            fetch: { url, label in
+                try await profiles.fetchConfigurationSource(url: url, label: label)
+            },
+            readFile: { name, text in
+                try await Task.detached {
+                    try ConfigurationCenterSourceBridge.payload(
+                        label: name, origin: .file(name), original: Data(text.utf8), yaml: text
+                    )
+                }.value
+            },
+            importOriginal: { payload in
+                let source: Profile.Source
+                switch payload.record.origin {
+                case .subscription(let link):
+                    source = .url(link)
+                case .file(let name):
+                    source = .file(name)
+                case .customNodes, .bundled:
+                    source = .clipboard
+                }
+                profiles.add(
+                    label: payload.record.label,
+                    source: source,
+                    rawYAML: String(decoding: payload.original, as: UTF8.self)
+                )
+            }
+        )
+    }
+
+    lazy var configurationImportActionsValue = configurationImportActions()
+
+    lazy var configurationWizardActions = HakoMacConfigurationWizardActions(
+        create: { [profiles] draft, generation, id in
+            _ = try await profiles.createConfiguration(draft, generation: generation, id: id)
+        },
+        sourceImport: configurationImportActionsValue
+    )
+
+     
      
     private func configurationLibraryActions() -> HakoMacConfigurationLibraryActions {
         let profiles = self.profiles
@@ -947,6 +999,12 @@ private final class HakoMacSceneModel: ObservableObject {
             },
             deleteRuleScheme: { id, generation in
                 try await profiles.deleteConfigurationRuleScheme(id, generation: generation)
+            },
+            addSource: { payload, generation in
+                try await profiles.addConfigurationSource(payload, generation: generation)
+            },
+            addRuleScheme: { payload, generation in
+                try await profiles.addConfigurationRuleScheme(payload, generation: generation)
             }
         )
     }
@@ -1779,7 +1837,11 @@ private final class HakoMacSceneModel: ObservableObject {
                                 reorder: list.reorder,
                                  
                                  
-                                addProfile: list.openImport,
+                                 
+                                 
+                                addProfile: { [weak self] in
+                                    self?.showsConfigurationWizard = true
+                                },
                                  
                                  
                                  
@@ -1816,6 +1878,13 @@ private final class HakoMacSceneModel: ObservableObject {
                             .sheet(item: self.inspectedConfigurationBinding) { selection in
                                 self.configurationDetail(selection, in: list)
                             }
+                            .sheet(isPresented: self.showsConfigurationWizardBinding) {
+                                HakoMacConfigurationWizardSheet(
+                                    model: self.configurationLibrary,
+                                    actions: self.configurationWizardActions,
+                                    created: {}
+                                )
+                            }
                         )
                     }
                 )
@@ -1851,9 +1920,9 @@ private final class HakoMacSceneModel: ObservableObject {
                     }
                 }
                 } nodes: {
-                    HakoMacNodeLibraryView(model: self.configurationLibrary)
+                    HakoMacNodeLibraryView(model: self.configurationLibrary, importActions: self.configurationImportActionsValue)
                 } rules: {
-                    HakoMacRuleLibraryView(model: self.configurationLibrary)
+                    HakoMacRuleLibraryView(model: self.configurationLibrary, importActions: self.configurationImportActionsValue)
                 }
             )
         case .proxies:
