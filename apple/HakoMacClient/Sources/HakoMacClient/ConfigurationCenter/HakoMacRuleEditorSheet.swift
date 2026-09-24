@@ -394,6 +394,10 @@ public struct HakoMacRuleEditorSheet: View {
         .accessibilityIdentifier("configuration-center.rule-editor.rule.\(row.id.uuidString)")
     }
 
+     
+     
+    static let groupIconSize: CGFloat = 22
+
     private func groupsSection(_ draft: ConfigurationRuleDraft) -> some View {
         Section {
             HakoMacListAddRow(.copy("Add Group")) { sheet = .group(nil) }
@@ -401,6 +405,11 @@ public struct HakoMacRuleEditorSheet: View {
                 .accessibilityIdentifier("configuration-center.rule-editor.add-group")
             ForEach(draft.groups) { group in
                 HStack(spacing: HakoTheme.Spacing.compact) {
+                     
+                     
+                     
+                     
+                    HakoTowerGroupIconView(icon: HakoTowerGroupIcon.read(group.document), size: Self.groupIconSize) { EmptyView() }
                     VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
                         Text(verbatim: group.name)
                         Text(verbatim: group.type).font(.subheadline).foregroundStyle(.secondary)

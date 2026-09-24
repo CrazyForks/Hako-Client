@@ -1867,6 +1867,12 @@ private final class HakoMacSceneModel: ObservableObject {
             actions: ruleEditorActions(schemeID: selection.id),
             saved: { [weak self] in Task { await self?.configurationLibrary.reload() } }
         )
+         
+         
+        .environment(
+            \.hakoGroupIconImages,
+            (HakoProxiesDisplayPreferences.uiTestOverride() ?? HakoProxiesDisplayPreferences.load()).groupIconImages
+        )
     }
 
      
