@@ -63,40 +63,59 @@ public struct HakoAddRow<TouchLabel: View>: View {
             .tint(.primary)
         } else {
         Button(action: action) {
-            HStack(spacing: HakoTheme.Spacing.row) {
-                Image(systemName: HakoSymbol.plusCircleFill.rawValue)
-                    .font(.title3)
-                title
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(.tint)
-            .padding(
-                context == .standaloneCard
-                    ? EdgeInsets(
-                        top: HakoTheme.Spacing.standard,
-                        leading: HakoTheme.Spacing.standard,
-                        bottom: HakoTheme.Spacing.standard,
-                        trailing: HakoTheme.Spacing.standard
-                    )
-                    : EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0)
-            )
-            .frame(
-                maxWidth: .infinity,
-                minHeight: HakoTheme.Control.fullWidthRowMinHeight,
-                alignment: .leading
-            )
-             
-             
-             
-            .contentShape(Rectangle())
+            standardLabel
         }
         .buttonStyle(.plain)
         }
 #else
+         
+         
+         
+         
+         
+         
         Button(action: action) {
-            touchLabel()
+            if TouchLabel.self == EmptyView.self {
+                standardLabel
+            } else {
+                touchLabel()
+            }
         }
 #endif
+    }
+
+     
+     
+     
+    private var standardLabel: some View {
+        HStack(spacing: HakoTheme.Spacing.row) {
+            Image(systemName: HakoSymbol.plusCircleFill.rawValue)
+                .font(.title3)
+            title
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(.tint)
+        .padding(
+            context == .standaloneCard
+                ? EdgeInsets(
+                    top: HakoTheme.Spacing.standard,
+                    leading: HakoTheme.Spacing.standard,
+                    bottom: HakoTheme.Spacing.standard,
+                    trailing: HakoTheme.Spacing.standard
+                )
+                : EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0)
+        )
+        .frame(
+            maxWidth: .infinity,
+             
+             
+            minHeight: HakoTheme.Control.fullWidthRowMinHeightOnItsOwnPlatform,
+            alignment: .leading
+        )
+         
+         
+         
+        .contentShape(Rectangle())
     }
 }
 
