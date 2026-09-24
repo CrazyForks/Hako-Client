@@ -19,15 +19,25 @@ public struct HakoMacSourceImportActions {
      
      
     public var importOriginal: (@MainActor (ConfigurationSourcePayload) async throws -> Void)?
+     
+     
+    public var readNodes: (@MainActor (String) async throws -> ConfigurationSourcePayload)?
+     
+     
+    public var createQuickRule: (@MainActor (String) async throws -> Void)?
 
     public init(
         fetch: @escaping @MainActor (String, String) async throws -> ConfigurationSourcePayload,
         readFile: @escaping @MainActor (String, String) async throws -> ConfigurationSourcePayload,
-        importOriginal: (@MainActor (ConfigurationSourcePayload) async throws -> Void)? = nil
+        importOriginal: (@MainActor (ConfigurationSourcePayload) async throws -> Void)? = nil,
+        readNodes: (@MainActor (String) async throws -> ConfigurationSourcePayload)? = nil,
+        createQuickRule: (@MainActor (String) async throws -> Void)? = nil
     ) {
         self.fetch = fetch
         self.readFile = readFile
         self.importOriginal = importOriginal
+        self.readNodes = readNodes
+        self.createQuickRule = createQuickRule
     }
 
     public static var unavailable: HakoMacSourceImportActions {
@@ -53,12 +63,14 @@ public enum HakoMacSourceImportPurpose: Sendable {
  
 public struct HakoMacSourceImportPage: View {
     public enum Tab: Int, CaseIterable, Identifiable {
-        case link, file
+        case link, file, nodes, manual
         public var id: Int { rawValue }
         var title: String {
             switch self {
             case .link: "Link"
             case .file: "File"
+            case .nodes: "Nodes"
+            case .manual: "Manual"
             }
         }
     }
@@ -77,6 +89,10 @@ public struct HakoMacSourceImportPage: View {
     @State private var preview: ConfigurationSourcePayload?
     @State private var busy = false
     @State private var error: String?
+    @State private var nodesText = ""
+    @State private var ruleAction: HakoStructuredRule.Action = .domainSuffix
+    @State private var ruleContent = ""
+    @State private var ruleTarget = "DIRECT"
 
     public init(
         purpose: HakoMacSourceImportPurpose,
@@ -91,13 +107,35 @@ public struct HakoMacSourceImportPage: View {
     }
 
      
-    private var canAdd: Bool { preview != nil && !busy }
+     
+    private var tabs: [Tab] {
+        var result: [Tab] = [.link, .file]
+        if purpose == .nodes, actions.readNodes != nil { result.append(.nodes) }
+        if purpose == .rules, actions.createQuickRule != nil { result.append(.manual) }
+        return result
+    }
+
+     
+     
+    private var canAdd: Bool {
+        if tab == .manual { return !assembledRule.isEmpty && (!ruleAction.needsContent || !ruleContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) && !busy }
+        return preview != nil && !busy
+    }
 
     private var canRead: Bool {
         switch tab {
         case .link: !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !busy
         case .file: !text.isEmpty && !busy
+        case .nodes: !nodesText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !busy
+        case .manual: false
         }
+    }
+
+    private var assembledRule: String {
+        var parts = [ruleAction.rawValue]
+        if ruleAction.needsContent { parts.append(ruleContent.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        parts.append(ruleTarget)
+        return parts.joined(separator: ",")
     }
 
      
@@ -109,7 +147,7 @@ public struct HakoMacSourceImportPage: View {
     public var body: some View {
         VStack(spacing: 0) {
             Picker(selection: $tab) {
-                ForEach(Tab.allCases) { item in
+                ForEach(tabs) { item in
                     Text(hako: .copy(item.title)).tag(item)
                 }
             } label: {
@@ -123,8 +161,10 @@ public struct HakoMacSourceImportPage: View {
                 switch tab {
                 case .link: linkSection
                 case .file: fileSection
+                case .nodes: nodesSection
+                case .manual: manualSection
                 }
-                if let preview { previewSection(preview) }
+                if let preview, tab != .manual { previewSection(preview) }
                 if let error {
                     Section {
                         Text(verbatim: error).foregroundStyle(.red)
@@ -133,6 +173,7 @@ public struct HakoMacSourceImportPage: View {
                 }
             }
             .listStyle(.inset)
+            .accessibilityIdentifier("configuration-center.import")
             HStack {
                 Button(action: close) { Text(hako: .copy("Cancel")) }
                     .keyboardShortcut(.cancelAction)
@@ -148,7 +189,7 @@ public struct HakoMacSourceImportPage: View {
                     .accessibilityIdentifier("configuration-center.import.original")
                 }
                 Button {
-                    run(accept)
+                    if tab == .manual { createRule() } else { run(accept) }
                 } label: {
                     HakoActionProgressLabel(.copy("Add"), isBusy: busy)
                 }
@@ -166,7 +207,6 @@ public struct HakoMacSourceImportPage: View {
             case .failure(let failure): error = failure.localizedDescription
             }
         }
-        .accessibilityIdentifier("configuration-center.import")
     }
 
     private static var fileTypes: [UTType] {
@@ -223,6 +263,53 @@ public struct HakoMacSourceImportPage: View {
         }
     }
 
+    private var nodesSection: some View {
+        Section {
+            TextEditor(text: $nodesText)
+                .font(.body.monospaced())
+                .frame(minHeight: 160)
+                .disabled(busy)
+                .accessibilityLabel(Text(hako: .copy("Custom Nodes")))
+                .accessibilityIdentifier("configuration-center.import.nodes-text")
+            HakoMacActionRow(.copy("Read from Source"), actionTitle: .copy("Read"), action: read) {
+                if busy { ProgressView().controlSize(.small) }
+            }
+            .disabled(!canRead)
+            .accessibilityIdentifier("configuration-center.import.read-nodes")
+        } header: {
+            Text(hako: .copy("Custom Nodes"))
+        }
+    }
+
+    private var manualSection: some View {
+        Section {
+            Picker(selection: $ruleAction) {
+                ForEach(HakoStructuredRule.Action.allCases, id: \.self) { item in
+                    Text(verbatim: item.rawValue).tag(item)
+                }
+            } label: {
+                Text(hako: .copy("Rule Type"))
+            }
+            .disabled(busy)
+            .accessibilityIdentifier("configuration-center.import.manual.action")
+            if ruleAction.needsContent {
+                HakoMacFieldRow(.verbatim(ruleAction.contentLabel), prompt: ruleAction.contentPlaceholder, text: $ruleContent,
+                                monospaced: true, identifier: "configuration-center.import.manual.content")
+                    .disabled(busy)
+            }
+            Picker(selection: $ruleTarget) {
+                ForEach(["DIRECT", "REJECT", "PROXY"], id: \.self) { name in Text(verbatim: name).tag(name) }
+            } label: {
+                Text(hako: .copy("Policy Groups"))
+            }
+            .disabled(busy)
+            .accessibilityIdentifier("configuration-center.import.manual.target")
+            HakoMacNavigationRowLabel(.copy("Rule"), value: .verbatim(assembledRule))
+        } header: {
+            Text(hako: .copy("Add Rule"))
+        }
+    }
+
     private func previewSection(_ payload: ConfigurationSourcePayload) -> some View {
         Section {
             HakoMacNavigationRowLabel(.copy("Name"), value: .verbatim(payload.record.label))
@@ -262,6 +349,11 @@ public struct HakoMacSourceImportPage: View {
                 case .file:
                     let name = fileName.isEmpty ? "Configuration.yaml" : fileName
                     preview = try await actions.readFile(label.isEmpty ? name : label, text)
+                case .nodes:
+                    guard let readNodes = actions.readNodes else { throw ConfigurationLibraryError.unreadable }
+                    preview = try await readNodes(nodesText)
+                case .manual:
+                    break
                 }
             } catch {
                 self.error = error.localizedDescription
@@ -277,6 +369,21 @@ public struct HakoMacSourceImportPage: View {
             defer { busy = false }
             do {
                 try await operation(preview)
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
+
+    private func createRule() {
+        guard canAdd, let create = actions.createQuickRule else { return }
+        busy = true
+        error = nil
+        Task { @MainActor in
+            defer { busy = false }
+            do {
+                try await create(assembledRule)
+                close()
             } catch {
                 self.error = error.localizedDescription
             }

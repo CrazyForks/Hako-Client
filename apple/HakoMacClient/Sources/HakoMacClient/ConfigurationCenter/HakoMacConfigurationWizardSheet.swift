@@ -116,6 +116,7 @@ public struct HakoMacConfigurationWizardSheet: View {
                     }
                 }
                 .listStyle(.inset)
+                .accessibilityIdentifier("configuration-center.wizard")
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case .addSource:
@@ -131,11 +132,12 @@ public struct HakoMacConfigurationWizardSheet: View {
                     }
                 }
             }
-            bar
+             
+             
+            if path.isEmpty { bar }
         }
         .frame(width: 600, height: 560)
         .task { if model.phase == .idle { await model.reload() } }
-        .accessibilityIdentifier("configuration-center.wizard")
     }
 
      

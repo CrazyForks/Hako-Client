@@ -964,6 +964,63 @@ private final class HakoMacSceneModel: ObservableObject {
                     source: source,
                     rawYAML: String(decoding: payload.original, as: UTF8.self)
                 )
+            },
+             
+             
+             
+            readNodes: { definition in
+                try await Task.detached {
+                    let nodes = try CustomNodePayload.payload(inDefinition: definition)
+                    guard !nodes.isEmpty else { throw CustomNodeAppendError.missingName }
+                    let document = try JSONSerialization.data(withJSONObject: ["proxies": nodes])
+                    let yaml = try ConfigTransforms.jsonToYAML(String(decoding: document, as: UTF8.self))
+                    return try ConfigurationCenterSourceBridge.payload(
+                        label: nodes.count == 1 ? (nodes[0]["name"] as? String ?? "Custom Nodes") : "Custom Nodes",
+                        origin: .customNodes, original: Data(yaml.utf8), yaml: yaml
+                    )
+                }.value
+            },
+             
+             
+             
+             
+            createQuickRule: { [weak self] raw in
+                guard let self, let store = profiles.configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+                var snapshot = try await Task.detached { try store.snapshot() }.value
+                let myRules = HakoCopy.string("My Rules", locale: .current)
+                let active = profiles.activeProfileID
+                let activeSchemeID = active.flatMap { id in snapshot.recipes.first { $0.id == id }?.ruleSchemeID }
+                let schemeID: String
+                switch QuickRulePlan.make(activeSchemeID: activeSchemeID, schemes: snapshot.rules, myRulesLabel: myRules) {
+                case .reuse(let id):
+                    schemeID = id
+                case .copy(let base):
+                    let before = Set(snapshot.rules.map(\.id))
+                    snapshot = try await profiles.copyConfigurationRuleScheme(base, label: myRules, generation: snapshot.generation)
+                    guard let made = snapshot.rules.first(where: { !before.contains($0.id) }) else {
+                        throw ConfigurationLibraryError.invalidIdentifier
+                    }
+                    schemeID = made.id
+                }
+                guard let scheme = snapshot.rules.first(where: { $0.id == schemeID }) else {
+                    throw ConfigurationLibraryError.missingDependency(schemeID)
+                }
+                var draft = try await Task.detached(priority: .userInitiated) {
+                    try ConfigurationRuleDraft(scheme: scheme, payload: try store.ruleSchemePayload(schemeID))
+                }.value
+                draft.insertRuleFirst(raw)
+                if let first = draft.rows.first { draft.setRule(raw, enabled: true, note: "", rowID: first.id) }
+                snapshot = try await profiles.saveConfigurationRuleDraft(draft, generation: snapshot.generation)
+                if let active,
+                   let recipe = snapshot.recipes.first(where: { $0.id == active }),
+                   recipe.ruleSchemeID != schemeID {
+                    var edit = ConfigurationCreationAdapter.editingDraft(
+                        recipe: recipe, label: profiles.profiles.first(where: { $0.id == active })?.label ?? recipe.label
+                    )
+                    edit.selectedRuleID = schemeID
+                    try await profiles.editConfiguration(edit, id: active, generation: snapshot.generation)
+                }
+                await self.configurationLibrary.reload()
             }
         )
     }
@@ -1005,6 +1062,9 @@ private final class HakoMacSceneModel: ObservableObject {
             },
             addRuleScheme: { payload, generation in
                 try await profiles.addConfigurationRuleScheme(payload, generation: generation)
+            },
+            copyScheme: { id, label, generation in
+                try await profiles.copyConfigurationRuleScheme(id, label: label, generation: generation)
             }
         )
     }
@@ -1051,10 +1111,210 @@ private final class HakoMacSceneModel: ObservableObject {
                     draft.rawPatchJSON = patchJSON
                     try profiles.updateAdvancedOverrides(draft)
                 }
+            case .subscriptionSettings:
+                HakoMacSubscriptionSettingsPage(
+                    state: Self.subscriptionState(profile),
+                    actions: subscriptionActions(profileID: profileID)
+                )
+            case .scripts:
+                HakoMacScriptsPage(actions: scriptsActions(profileID: profileID))
             }
         } else {
             EmptyView()
         }
+    }
+
+     
+
+     
+     
+     
+    func ruleEditorActions(schemeID: String) -> HakoMacRuleEditorActions {
+        let profiles = self.profiles
+        let library = configurationLibrary
+        func store() throws -> ConfigurationLibraryStore {
+            guard let store = profiles.configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+            return store
+        }
+        @MainActor func load(previous: ConfigurationRuleDraft?) async throws -> HakoMacRuleEditorState {
+            let store = try store()
+            let snapshot = try await Task.detached { try store.snapshot() }.value
+            library.apply(snapshot)
+            let wanted = previous?.schemeID ?? schemeID
+            guard let scheme = snapshot.effectiveRuleScheme(wanted) else {
+                throw ConfigurationLibraryError.missingDependency(wanted)
+            }
+            let sets = snapshot.localRuleSets ?? []
+            return try await Task.detached {
+                _ = ConfigurationRuleCatalog.builtIn
+                let draft = try ConfigurationRuleDraft(scheme: scheme, payload: store.ruleSchemePayload(scheme.id))
+                let base = try scheme.baseSchemeID.flatMap { id in
+                    ConfigurationBuiltins.isNative(id) ? try ConfigurationBuiltins.source(for: id)?.documentJSON : nil
+                }
+                return HakoMacRuleEditorState(
+                    draft: previous.map { draft.preservingIdentity(from: $0) } ?? draft,
+                    localSets: sets,
+                    resetDocument: base ?? scheme.initialDocumentJSON ?? draft.originalDocument.serialized()
+                )
+            }.value
+        }
+        @MainActor func save(_ draft: ConfigurationRuleDraft) async throws -> ConfigurationRuleDraft {
+            let snapshot = try await profiles.saveConfigurationRuleCustomization(draft, generation: library.snapshot.generation)
+            library.apply(snapshot)
+            guard let current = snapshot.ruleSchemeAfterSavingCustomization(draft.schemeID) else {
+                throw ConfigurationLibraryError.unreadable
+            }
+            let store = try store()
+            return try await Task.detached {
+                try ConfigurationRuleDraft(scheme: current, payload: store.ruleSchemePayload(current.id))
+                    .preservingIdentity(from: draft)
+            }.value
+        }
+        return HakoMacRuleEditorActions(
+            load: { try await load(previous: nil) },
+            save: { draft in try await save(draft) },
+            saveLocal: { value in
+                library.apply(try await profiles.saveConfigurationLocalRuleSet(value))
+                return try await load(previous: nil)
+            },
+            deleteLocal: { id in
+                library.apply(try await profiles.saveConfigurationLocalRuleSet(nil, deleting: id))
+                return try await load(previous: nil)
+            },
+            copy: { draft, name in
+                let saved = try await save(draft)
+                library.apply(try await profiles.copyConfigurationRuleScheme(
+                    saved.schemeID, label: name, generation: library.snapshot.generation
+                ))
+            },
+            download: { input in try await HakoMacRuleReader.rules(input) }
+        )
+    }
+
+     
+
+    private static func subscriptionState(_ profile: Profile) -> HakoMacSubscriptionSettingsState {
+        var url = ""
+        if case .url(let link) = profile.source { url = link }
+        return HakoMacSubscriptionSettingsState(
+            url: url,
+            autoUpdate: profile.autoUpdate,
+            updateIntervalHours: profile.updateIntervalHours,
+            canStripCredentials: ProfileMetadataUpdate.strippingSourceCredentials(from: profile) != nil
+        )
+    }
+
+    private func appProfile(_ id: HakoClientKit.Profile.ID) throws -> Profile {
+        guard let profile = profiles.profiles.first(where: { $0.id == id.rawValue }) else {
+            throw ConfigurationLibraryError.unreadable
+        }
+        return profile
+    }
+
+     
+     
+     
+    private func subscriptionActions(profileID: HakoClientKit.Profile.ID) -> HakoMacSubscriptionSettingsActions {
+        HakoMacSubscriptionSettingsActions(
+            save: { [weak self] draft in
+                guard let self else { throw ConfigurationLibraryError.unreadable }
+                let current = try self.appProfile(profileID)
+                try self.profiles.updateMetadata(
+                    current, label: current.label, subscriptionURL: draft.url,
+                    autoUpdate: draft.autoUpdate, updateIntervalHours: draft.updateIntervalHours
+                )
+                return Self.subscriptionState(try self.appProfile(profileID))
+            },
+            stripCredentials: { [weak self] in
+                guard let self else { throw ConfigurationLibraryError.unreadable }
+                try self.profiles.stripSourceCredentials(try self.appProfile(profileID))
+                return Self.subscriptionState(try self.appProfile(profileID))
+            }
+        )
+    }
+
+     
+
+     
+     
+     
+     
+    private func scriptsActions(profileID: HakoClientKit.Profile.ID) -> HakoMacScriptsActions {
+        func state() throws -> HakoMacScriptsState {
+            let profile = try appProfile(profileID)
+            let scripts = ScriptLibrary.load().map { HakoMacScriptEntry(id: $0.id, label: $0.label) }
+            var fields = 0
+            if let data = profile.override.patchJSON.data(using: .utf8),
+               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                fields = object.count
+            }
+            return HakoMacScriptsState(
+                scripts: scripts,
+                selectedID: profile.selectedScriptID,
+                patchFieldCount: fields,
+                exceptions: profile.override.appendRules
+            )
+        }
+        func write(_ change: (inout Profile) -> Void) throws -> HakoMacScriptsState {
+            var profile = try appProfile(profileID)
+            change(&profile)
+            profiles.update(profile)
+            return try state()
+        }
+        func select(_ id: String?) throws -> HakoMacScriptsState {
+            try write { profile in
+                profile.selectedScriptID = id
+                profile.overwriteMode = ProfileOverrideModePolicy.mode(
+                    stored: profile.overwriteMode ?? .standard, selectedScriptID: id
+                )
+            }
+        }
+         
+         
+        func store(label: String, body: String) throws -> ConfigScript {
+            let existing = ScriptLibrary.load()
+            let id = UUID().uuidString
+            var candidate = label.trimmingCharacters(in: .whitespacesAndNewlines)
+            if candidate.isEmpty { candidate = ScriptLibrary.defaultLabel }
+            var attempt = 2
+            var script = ScriptLibrary.editedScript(id: id, label: candidate, body: body, existing: existing)
+            while script == nil, attempt < 100 {
+                script = ScriptLibrary.editedScript(id: id, label: "\(candidate) \(attempt)", body: body, existing: existing)
+                attempt += 1
+            }
+            guard let script else { throw ScriptImportError.empty }
+            ScriptLibrary.upsert(script)
+            return script
+        }
+        return HakoMacScriptsActions(
+            load: { (try? state()) ?? .empty },
+            select: { id in try select(id) },
+            addLink: { link in
+                let body = try await ScriptImport.body(at: link)
+                let label = (try? ScriptImport.address(link)).flatMap(ScriptImport.suggestedName(for:))
+                    ?? ScriptLibrary.defaultLabel
+                let script = try store(label: label, body: body)
+                return try select(script.id)
+            },
+            addManual: { name, body in
+                let script = try store(label: name, body: body)
+                return try select(script.id)
+            },
+            remove: { id in
+                ScriptLibrary.remove(id: id)
+                return try state()
+            },
+            clearPatch: {
+                try write { $0.override.patchJSON = "" }
+            },
+            removeException: { index in
+                try write { profile in
+                    if profile.override.appendRules.indices.contains(index) {
+                        profile.override.appendRules.remove(at: index)
+                    }
+                }
+            }
+        )
     }
 
     @Published var navigationRequest: HakoMacSecondaryDestination?
@@ -1922,7 +2182,11 @@ private final class HakoMacSceneModel: ObservableObject {
                 } nodes: {
                     HakoMacNodeLibraryView(model: self.configurationLibrary, importActions: self.configurationImportActionsValue)
                 } rules: {
-                    HakoMacRuleLibraryView(model: self.configurationLibrary, importActions: self.configurationImportActionsValue)
+                    HakoMacRuleLibraryView(
+                        model: self.configurationLibrary,
+                        importActions: self.configurationImportActionsValue,
+                        editor: { [weak self] id in self?.ruleEditorActions(schemeID: id) ?? .unavailable }
+                    )
                 }
             )
         case .proxies:
@@ -3301,5 +3565,63 @@ extension HakoMacSceneModel {
             self?.copyShellCommand(externalIP: externalIP)
         }
         return actions
+    }
+}
+
+ 
+ 
+ 
+ 
+enum HakoMacRuleReader {
+    static func normalizedURL(_ value: String) -> String {
+        let value = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard var parts = URLComponents(string: value) else { return value }
+        if parts.host == "github.com" {
+            let path = parts.path.split(separator: "/").map(String.init)
+            if path.count > 4, path[2] == "blob" {
+                parts.host = "raw.githubusercontent.com"
+                parts.path = "/" + ([path[0], path[1]] + Array(path.dropFirst(3))).joined(separator: "/")
+            }
+        }
+        return parts.string ?? value
+    }
+
+    static func rules(_ input: String) async throws -> [String] {
+        var text = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let url = URL(string: normalizedURL(text)), ["https", "http"].contains(url.scheme?.lowercased() ?? "") {
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 30
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+                  data.count <= 32 * 1024 * 1024, let decoded = String(data: data, encoding: .utf8)
+            else { throw ConfigurationLibraryError.unreadable }
+            text = decoded
+        }
+        let raw = text
+        return try await Task.detached {
+            let lines: [String]
+            if raw.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("payload:") {
+                let object = try OrderedJSON.parse(ConfigTransforms.yamlToJSON(raw))
+                guard case .array(let values) = object.topLevelValue("payload") else { throw ConfigurationLibraryError.missingRules }
+                lines = try values.map { value in
+                    guard case .string(let line) = value else { throw ConfigurationLibraryError.missingRules }
+                    return line
+                }
+            } else {
+                lines = raw.split(whereSeparator: \.isNewline)
+                    .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty && !$0.hasPrefix("#") && !$0.hasPrefix("//") }
+            }
+            guard !lines.isEmpty else { throw ConfigurationLibraryError.missingRules }
+            let document = OrderedJSON.object([
+                ("rule-providers", .object([("check", .object([
+                    ("type", .string("inline")), ("behavior", .string("classical")),
+                    ("payload", .array(lines.map(OrderedJSON.string))),
+                ]))])),
+                ("rules", .array([.string("RULE-SET,check,DIRECT"), .string("MATCH,DIRECT")])),
+            ])
+            try ConfigTransforms.validateSource(document.serialized())
+            return lines
+        }.value
     }
 }

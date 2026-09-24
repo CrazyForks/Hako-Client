@@ -26,6 +26,9 @@ public struct HakoMacConfigurationLibraryActions {
      
      
     public var addRuleScheme: @MainActor (ConfigurationSourcePayload, UInt64) async throws -> ConfigurationLibrarySnapshot
+     
+     
+    public var copyScheme: @MainActor (String, String, UInt64) async throws -> ConfigurationLibrarySnapshot
 
     public init(
         load: @escaping @Sendable () async throws -> ConfigurationLibrarySnapshot,
@@ -38,6 +41,9 @@ public struct HakoMacConfigurationLibraryActions {
         },
         addRuleScheme: @escaping @MainActor (ConfigurationSourcePayload, UInt64) async throws -> ConfigurationLibrarySnapshot = { _, _ in
             throw ConfigurationLibraryError.unreadable
+        },
+        copyScheme: @escaping @MainActor (String, String, UInt64) async throws -> ConfigurationLibrarySnapshot = { _, _, _ in
+            throw ConfigurationLibraryError.unreadable
         }
     ) {
         self.load = load
@@ -47,6 +53,7 @@ public struct HakoMacConfigurationLibraryActions {
         self.deleteRuleScheme = deleteRuleScheme
         self.addSource = addSource
         self.addRuleScheme = addRuleScheme
+        self.copyScheme = copyScheme
     }
 
      
@@ -78,7 +85,7 @@ public enum HakoMacNodeLibraryGroup: CaseIterable, Sendable {
 
     public var identifier: String {
         switch self {
-        case .subscriptions: "subscriptions"
+        case .subscriptions: "config-urls"
         case .files: "files"
         case .customNodes: "custom-nodes"
         case .proxyChains: "proxy-chains"
@@ -182,6 +189,17 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
 
     public func addRuleScheme(_ payload: ConfigurationSourcePayload) async throws {
         try await writeOrThrow { [actions] generation in try await actions.addRuleScheme(payload, generation) }
+    }
+
+     
+     
+    public func copyScheme(_ id: String, label: String) async throws -> String {
+        let before = Set(snapshot.rules.map(\.id))
+        try await writeOrThrow { [actions] generation in try await actions.copyScheme(id, label, generation) }
+        guard let made = snapshot.rules.first(where: { !before.contains($0.id) }) else {
+            throw ConfigurationLibraryError.unreadable
+        }
+        return made.id
     }
 
     private func writeOrThrow(_ operation: (UInt64) async throws -> ConfigurationLibrarySnapshot) async throws {
