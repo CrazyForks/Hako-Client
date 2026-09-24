@@ -65,21 +65,36 @@ struct HakoMacRoutedRow<Label: View>: View {
  
  
  
+ 
+ 
+ 
+struct HakoMacInfoGlyph: View {
+    let identifier: String
+    let action: () -> Void
+
+    var body: some View {
+        Image(systemName: "info.circle")
+            .foregroundStyle(Color.accentColor)
+            .frame(width: HakoTheme.Control.pointerRowTarget, height: HakoTheme.Control.pointerRowTarget)
+            .hakoMacPressableRow(action)
+            .accessibilityIdentifier(identifier)
+    }
+}
+
+ 
+ 
+ 
 struct HakoMacRoutedInfoButton: View {
     @Environment(\.hakoPushRoute) private var pushRoute
     let identifier: String
     let page: () -> AnyView
 
     var body: some View {
-        Button {
+        HakoMacInfoGlyph(identifier: identifier) {
             guard let pushRoute else { return }
             let token = UUID()
             HakoViewRouteRegistry.set(token, ownership: .oneShot, onReturn: {}, page)
             pushRoute(HakoViewRoute(id: token))
-        } label: {
-            Image(systemName: "info.circle")
         }
-        .buttonStyle(.borderless)
-        .accessibilityIdentifier(identifier)
     }
 }

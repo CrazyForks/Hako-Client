@@ -29,6 +29,11 @@ struct HakoMacNodeScopePage: View {
      
      
     var closeTitle: HakoDisplayText = .copy("Back")
+     
+     
+     
+     
+    var savesUnchanged = false
     @State private var choices: HakoMacNodeScopeChoices?
     @State private var selectedNodes: Set<String> = []
     @State private var selectedCollections: Set<String> = []
@@ -132,7 +137,7 @@ struct HakoMacNodeScopePage: View {
                 closeIdentifier: "configuration-center.scope.cancel",
                 primaryTitle: .copy("Done"),
                 primaryIdentifier: "configuration-center.scope.done",
-                primaryDisabled: !dirty || choices == nil,
+                primaryDisabled: choices == nil || (!dirty && !savesUnchanged),
                 onClose: back,
                 onPrimary: {
                     guard let choices else { return }

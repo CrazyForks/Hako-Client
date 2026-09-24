@@ -156,7 +156,7 @@ public struct HakoMacConfigurationInspector: View {
              
             .sheet(item: $scopeSource) { request in
                 HakoMacScopeSheet(request: request, recipe: recipe, actions: actions, done: { scope in
-                    if scope?.isEmpty == true { chosenSources.remove(request.source.id) }
+                    if scope?.isEmpty == true { chosenSources.remove(request.source.id) } else { chosenSources.insert(request.source.id) }
                     scopeSource = nil
                 }, back: { scopeSource = nil })
             }
@@ -571,6 +571,10 @@ struct HakoMacValueRow: View {
  
 struct HakoMacScopeRequest: Identifiable {
     let source: ConfigurationSourceRecord
+     
+     
+     
+    var chosen = true
     var id: String { source.id }
 }
 
@@ -606,13 +610,16 @@ struct HakoMacConfigurationSourceRow: View {
             }
             .toggleStyle(HakoMacCheckboxStyle())
             .accessibilityIdentifier("configuration-center.configuration.source.\(source.id)")
-            Spacer(minLength: HakoTheme.Spacing.row)
-            if chosen {
-                Button(action: inspect) { Image(systemName: "info.circle") }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(hako: .copy("Node Collections")))
-                    .accessibilityIdentifier("configuration-center.configuration.scope.\(source.id)")
-            }
+             
+             
+             
+             
+             
+             
+             
+             
+            HakoMacInfoGlyph(identifier: "configuration-center.configuration.scope.\(source.id)", action: inspect)
+                .accessibilityLabel(Text(hako: .copy("Node Collections")))
         }
     }
 }
@@ -647,10 +654,8 @@ struct HakoMacConfigurationSchemeRow: View {
                 identifier: "configuration-center.configuration.scheme.\(scheme.id)",
                 toggle: choose
             )
-            if chosen {
-                HakoMacRoutedInfoButton(identifier: "configuration-center.configuration.scheme-info", page: page)
-                    .accessibilityLabel(Text(hako: .copy("Rule Scheme")))
-            }
+            HakoMacRoutedInfoButton(identifier: "configuration-center.configuration.scheme-info", page: page)
+                .accessibilityLabel(Text(hako: .copy("Rule Scheme")))
         }
     }
 }
@@ -680,7 +685,7 @@ struct HakoMacConfigurationSourcesPage: View {
                     HakoMacConfigurationSourceRow(
                         source: source, chosen: chosen.contains(source.id),
                         toggle: { toggle(source.id) },
-                        inspect: { scopeSource = HakoMacScopeRequest(source: source) }
+                        inspect: { scopeSource = HakoMacScopeRequest(source: source, chosen: chosen.contains(source.id)) }
                     )
                 }
             }
@@ -689,7 +694,7 @@ struct HakoMacConfigurationSourcesPage: View {
         .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Filter")))
         .sheet(item: $scopeSource) { request in
             HakoMacScopeSheet(request: request, recipe: recipe, actions: actions, done: { scope in
-                if scope?.isEmpty == true { chosen.remove(request.source.id) }
+                if scope?.isEmpty == true { chosen.remove(request.source.id) } else { chosen.insert(request.source.id) }
                 scopeSource = nil
             }, back: { scopeSource = nil })
         }
@@ -731,6 +736,7 @@ struct HakoMacConfigurationSchemesPage: View {
  
  
  
+ 
 struct HakoMacScopeSheet: View {
     let request: HakoMacScopeRequest
     let recipe: ConfigurationRecipe?
@@ -748,7 +754,8 @@ struct HakoMacScopeSheet: View {
                 done(scope)
             },
             back: back,
-            closeTitle: .copy("Cancel")
+            closeTitle: .copy("Cancel"),
+            savesUnchanged: !request.chosen
         )
     }
 }
@@ -768,8 +775,12 @@ struct HakoMacCheckboxStyle: ToggleStyle {
                 .foregroundStyle(configuration.isOn ? Color.accentColor : Color.secondary)
                 .frame(width: HakoTheme.Control.pointerRowTarget)
             configuration.label
+             
+             
+             
+            Spacer(minLength: 0)
         }
-        .frame(maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .hakoMacPressableRow { configuration.isOn.toggle() }
     }
 }

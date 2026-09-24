@@ -2162,6 +2162,10 @@ private final class HakoMacSceneModel: ObservableObject {
                 scopes[sourceID] = scope?.isEmpty == true ? nil : scope
                 draft.nodeScopes = scopes.isEmpty ? nil : scopes
                 if scope?.isEmpty == true { draft.selectedSourceIDs.removeAll { $0 == sourceID } }
+                 
+                 
+                 
+                else if !draft.selectedSourceIDs.contains(sourceID) { draft.selectedSourceIDs.append(sourceID) }
             }
         }
         actions.loadScopeChoices = { source in
