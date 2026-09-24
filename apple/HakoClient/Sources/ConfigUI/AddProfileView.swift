@@ -86,6 +86,13 @@ struct AddProfileView: View {
         }
     }
 
+     
+     
+     
+    private var primaryActionTitle: String {
+        isFirstConfigurationStep ? "Next" : (draft.tab == .blank ? "Create" : (purpose == .source ? "Import" : (dismissAfterSave ? "Add" : "Read")))
+    }
+
     var body: some View {
         HakoFeatureNavigationContainer {
             VStack(spacing: 0) {
@@ -204,7 +211,7 @@ struct AddProfileView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if insideProductModal {
                     HakoModalActionBar(
-                        primaryTitle: isFirstConfigurationStep ? "Next" : (draft.tab == .blank ? "Create" : (purpose == .source ? "Import" : (dismissAfterSave ? "Add" : "Read"))),
+                        primaryTitle: primaryActionTitle,
                         primaryDisabled: !draft.canSubmit || isSaving,
                          
                          
