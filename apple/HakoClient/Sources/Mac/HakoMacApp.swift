@@ -5006,6 +5006,20 @@ private final class HakoMacSceneModel: ObservableObject {
          
          
          
+        NotificationCenter.default.publisher(for: HakoLogSettings.levelDirectiveDidChange)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                command.refreshLogDisplayLevel()
+                profiles.restageActiveRuntime()
+            }
+            .store(in: &cancellables)
+
+         
+         
+         
+         
+         
+         
          
          
          
