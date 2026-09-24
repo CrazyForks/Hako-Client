@@ -1119,6 +1119,15 @@ private final class HakoMacSceneModel: ObservableObject {
             )
             try await self.configurationLibrary.addSource(payload)
         }
+         
+         
+         
+        actions.customNodesEditor = { accept, close in
+            AnyView(
+                ConfigurationNodeSourceAdapter(accept: accept)
+                    .environment(\.hakoProductModalDismiss, close)
+            )
+        }
         return actions
     }
 
@@ -1641,13 +1650,17 @@ private final class HakoMacSceneModel: ObservableObject {
                 .hakoModalPresentation(.fitted)
             }
         }
-        .sheet(item: configurationCenterInspectedNodeBinding) { inspected in
-             
+         
+         
+         
+         
+         
+        .hakoProductModal(item: configurationCenterInspectedNodeBinding, role: .form) { inspected in
             ProxyNodeDetailSheet(
                 nodeName: inspected.node.name, yaml: nil, providersDir: nil,
                 suppliedDetails: CustomNodesView.record(fromNodeJSON: inspected.node.json)?.protocolDetails
             )
-            .hakoModalPresentation(.fitted)
+            .hakoModalPresentation(.form)
         }
          
          
@@ -1895,37 +1908,51 @@ private final class HakoMacSceneModel: ObservableObject {
                 do { _ = try await actions.save(state) } catch { library.report(error.localizedDescription) }
             }
         }
+         
+         
+         
+         
+         
+         
+         
+        func convertLegacy(sources: [String]?, scheme: String?) {
+            Task { @MainActor in
+                do {
+                    let generation = library.snapshot.generation
+                    let source = try await profiles.configurationSourceFromLegacy(id.rawValue)
+                    var draft = ConfigurationCreationDraft()
+                    let hasRules = source.record.hasRules && source.record.registersSuppliedRules != false
+                    let ownRules = "rules-" + source.record.id
+                    let rule: ConfigurationRuleScheme? = hasRules
+                        ? ConfigurationRuleScheme(id: ownRules, label: source.record.label, kind: .supplied, sourceID: source.record.id)
+                        : nil
+                    draft.add(source, rule: rule)
+                    if let sources { draft.selectedSourceIDs = sources.filter { $0 != source.record.id } }
+                    draft.selectedRuleID = scheme ?? (hasRules ? ownRules : ConfigurationBuiltins.basicRuleID)
+                    draft.label = profile.label
+                    draft.dnsMode = .source
+                    draft.connectAfterCreation = false
+                    try await profiles.editConfiguration(draft, id: id.rawValue, generation: generation)
+                    await library.reload()
+                } catch {
+                    library.report(error.localizedDescription)
+                }
+            }
+        }
         var actions = HakoMacConfigurationInspectorActions(
             rename: { label in list.perform(.rename(id: id, label: label)) },
-            setSources: { ids in edit { $0.selectedSourceIDs = ids } },
+            setSources: { ids in
+                if library.snapshot.recipes.contains(where: { $0.id == id.rawValue }) {
+                    edit { $0.selectedSourceIDs = ids }
+                } else {
+                    convertLegacy(sources: ids, scheme: nil)
+                }
+            },
             setScheme: { scheme in
                 if library.snapshot.recipes.contains(where: { $0.id == id.rawValue }) {
                     edit { $0.selectedRuleID = scheme }
                 } else {
-                     
-                     
-                     
-                     
-                    Task { @MainActor in
-                        do {
-                            let generation = library.snapshot.generation
-                            let source = try await profiles.configurationSourceFromLegacy(id.rawValue)
-                            var draft = ConfigurationCreationDraft()
-                            let hasRules = source.record.hasRules && source.record.registersSuppliedRules != false
-                            let rule: ConfigurationRuleScheme? = hasRules
-                                ? ConfigurationRuleScheme(id: "rules-" + source.record.id, label: source.record.label, kind: .supplied, sourceID: source.record.id)
-                                : nil
-                            draft.add(source, rule: rule)
-                            draft.selectedRuleID = scheme
-                            draft.label = profile.label
-                            draft.dnsMode = .source
-                            draft.connectAfterCreation = false
-                            try await profiles.editConfiguration(draft, id: id.rawValue, generation: generation)
-                            await library.reload()
-                        } catch {
-                            library.report(error.localizedDescription)
-                        }
-                    }
+                    convertLegacy(sources: nil, scheme: scheme)
                 }
             },
             editScheme: { [weak self] scheme in self?.configurationCenterEditingScheme = HakoMacLibrarySelection(id: scheme) },
@@ -1973,6 +2000,7 @@ private final class HakoMacSceneModel: ObservableObject {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(link, forType: .string)
         }
+        actions.addScheme = { [weak self] in self?.configurationCenterImport = HakoMacImportRequest(purpose: .rules) }
         return actions
     }
 
@@ -4057,9 +4085,9 @@ private struct HakoMacProductCommands: Commands {
                 Text(hako: .copy("Add Profile"))
             }
             .keyboardShortcut("n", modifiers: [.command])
-            sceneCommand(.copy("Add Source")) { $0.requestAddSource(purpose: .nodes) }
+            sceneCommand(.copy("Create Nodes")) { $0.requestAddSource(purpose: .nodes) }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
-            sceneCommand(.copy("Add Rule Scheme")) { $0.requestAddSource(purpose: .rules) }
+            sceneCommand(.copy("Create Rules")) { $0.requestAddSource(purpose: .rules) }
                 .keyboardShortcut("n", modifiers: [.command, .option])
             Divider()
             Button {

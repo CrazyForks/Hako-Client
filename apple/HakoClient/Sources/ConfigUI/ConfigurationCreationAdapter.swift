@@ -219,7 +219,7 @@ struct ConfigurationCreationAdapter: View {
     private func close() { (productModalDismiss ?? { dismiss() })() }
 }
 
-private struct ConfigurationNodeSourceAdapter: View {
+struct ConfigurationNodeSourceAdapter: View {
     var editorState: CustomNodesEditorState? = nil
     var isFirstConfigurationStep = false
     var tabHeader: ((Bool) -> AnyView)? = nil

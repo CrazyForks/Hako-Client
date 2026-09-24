@@ -10,6 +10,8 @@ public struct HakoMacConfigurationInspectorActions {
     public var setScheme: @MainActor (String) -> Void
     public var editScheme: @MainActor (String) -> Void
     public var addSource: @MainActor () -> Void
+     
+    public var addScheme: @MainActor () -> Void = {}
     public var activate: @MainActor () -> Void
     public var duplicate: @MainActor () -> Void
     public var export: @MainActor () -> Void
@@ -98,6 +100,7 @@ public struct HakoMacConfigurationInspector: View {
     @State private var scripts = HakoMacScriptsState.empty
     @State private var showsAllHeldBack = false
     @State private var showsAllSources = false
+    @State private var showsAllSchemes = false
     @State private var confirmsCredentialRemoval = false
     @State private var scopeSource: HakoMacScopeRequest?
     @Environment(\.locale) private var locale
@@ -121,8 +124,9 @@ public struct HakoMacConfigurationInspector: View {
         self.actions = actions
         self.door = door
         _name = State(initialValue: profile.label)
-        _chosenSources = State(initialValue: Set(recipe?.sources.map(\.id) ?? []))
-        _chosenScheme = State(initialValue: recipe?.ruleSchemeID ?? "")
+        let seeds = Self.seeds(profile: profile, recipe: recipe, sources: sources, schemes: schemes)
+        _chosenSources = State(initialValue: seeds.sources)
+        _chosenScheme = State(initialValue: seeds.scheme)
     }
 
     private var isComposed: Bool { recipe != nil }
@@ -134,13 +138,17 @@ public struct HakoMacConfigurationInspector: View {
             Form {
                 headerCard
                 identity
-                if isComposed {
+                if isComposed || profile.canEditSource {
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
                     composition
-                    rules
-                } else if profile.canEditSource {
-                     
-                     
-                     
                     rules
                 }
                 if !profile.heldBackUpdates.isEmpty { heldBack }
@@ -150,6 +158,13 @@ public struct HakoMacConfigurationInspector: View {
             }
             .formStyle(.grouped)
             .accessibilityIdentifier("configuration-center.configuration")
+         
+         
+         
+         
+         
+        .onChange(of: recipe?.sources.map(\.id)) { _ in chosenSources = Self.seeds(profile: profile, recipe: recipe, sources: sources, schemes: schemes).sources }
+        .onChange(of: recipe?.ruleSchemeID) { _ in chosenScheme = Self.seeds(profile: profile, recipe: recipe, sources: sources, schemes: schemes).scheme }
         }
         .task(id: profile.id) { scripts = await scriptsActions.load() }
     }
@@ -221,6 +236,23 @@ public struct HakoMacConfigurationInspector: View {
 
     private static let sourcesShownAtOnce = 6
 
+     
+     
+     
+     
+    static func seeds(
+        profile: HakoProfileSnapshot, recipe: ConfigurationRecipe?,
+        sources: [ConfigurationSourceRecord], schemes: [ConfigurationRuleScheme]
+    ) -> (sources: Set<String>, scheme: String) {
+        if let recipe { return (Set(recipe.sources.map(\.id)), recipe.ruleSchemeID) }
+        let own = "legacy-" + profile.id.rawValue
+        let ownRules = "rules-" + own
+        return (
+            Set(sources.map(\.id).filter { $0 == own }),
+            schemes.contains { $0.id == ownRules } ? ownRules : ""
+        )
+    }
+
     private func toggleSource(_ id: String) {
         if chosenSources.contains(id) { chosenSources.remove(id) } else { chosenSources.insert(id) }
         actions.setSources(sources.map(\.id).filter { chosenSources.contains($0) })
@@ -283,34 +315,72 @@ public struct HakoMacConfigurationInspector: View {
         }
     }
 
+     
+     
+     
+     
+    private var orderedSchemes: [ConfigurationRuleScheme] {
+        schemes.filter { $0.id == chosenScheme } + schemes.filter { $0.id != chosenScheme }
+    }
+
+    private func chooseScheme(_ id: String) {
+        guard id != chosenScheme else { return }
+        chosenScheme = id
+        actions.setScheme(id)
+    }
+
+    private static func schemeLine(_ scheme: ConfigurationRuleScheme) -> HakoDisplayText {
+        switch scheme.kind {
+        case .builtin: .copy("Built-in")
+        case .custom: .copy("Custom")
+        case .supplied, .imported, .community: .copy("Imported")
+        }
+    }
+
+    private func schemeRow(_ scheme: ConfigurationRuleScheme) -> some View {
+        let chosen = scheme.id == chosenScheme
+        return HStack(spacing: HakoTheme.Spacing.compact) {
+            HakoMacChoiceRow(
+                title: .verbatim(scheme.displayLabel),
+                subtitle: Self.schemeLine(scheme),
+                style: .single,
+                isSelected: chosen,
+                identifier: "configuration-center.configuration.scheme.\(scheme.id)",
+                toggle: { chooseScheme(scheme.id) }
+            )
+            if chosen {
+                Button { actions.editScheme(scheme.id) } label: { Text(hako: .copy("Edit")) }
+                    .buttonStyle(.borderless)
+                    .accessibilityIdentifier("configuration-center.configuration.edit-scheme")
+            }
+        }
+    }
+
     private var rules: some View {
         Section {
-            HStack(spacing: HakoTheme.Spacing.compact) {
-                Text(hako: .copy("Rule Scheme"))
-                Spacer()
-                HStack(spacing: HakoTheme.Spacing.compact) {
-                    Picker(selection: Binding(
-                        get: { chosenScheme },
-                        set: { chosenScheme = $0; actions.setScheme($0) }
-                    )) {
-                        if chosenScheme.isEmpty {
-                            Text(hako: .copy("Choose a rule scheme")).tag("")
-                        }
-                        ForEach(schemes) { scheme in
-                            Text(verbatim: scheme.displayLabel).tag(scheme.id)
-                        }
-                    } label: { EmptyView() }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .fixedSize()
-                    .accessibilityIdentifier("configuration-center.configuration.scheme")
-                    if !chosenScheme.isEmpty {
-                        Button { actions.editScheme(chosenScheme) } label: { Text(hako: .copy("Edit")) }
-                            .buttonStyle(.borderless)
-                            .accessibilityIdentifier("configuration-center.configuration.edit-scheme")
+            let ordered = orderedSchemes
+            if ordered.count > Self.sourcesShownAtOnce {
+                ForEach(showsAllSchemes ? ordered : Array(ordered.prefix(Self.sourcesShownAtOnce))) { schemeRow($0) }
+                Button {
+                    showsAllSchemes.toggle()
+                } label: {
+                    HStack {
+                        Text(hako: .copy("All Rule Schemes"))
+                        Spacer()
+                        HakoMacTrailingChevron(expanded: showsAllSchemes)
                     }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("configuration-center.configuration.schemes.disclosure")
+            } else {
+                ForEach(ordered) { schemeRow($0) }
             }
+            Button { actions.addScheme() } label: { Text(hako: .copy("Create Rules")) }
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("configuration-center.configuration.add-scheme")
+        } header: {
+            Text(hako: .copy("Rule Scheme"))
         }
     }
 

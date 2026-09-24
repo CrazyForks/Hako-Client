@@ -1,3 +1,4 @@
+import AppKit
 import HakoClientKit
 import HakoClientUI
 import SwiftUI
@@ -35,6 +36,11 @@ public struct HakoMacSourceImportActions {
      
      
     public var addRuleSet: (@MainActor (HakoMacRuleSetImportDraft) async throws -> Void)?
+     
+     
+     
+     
+    public var customNodesEditor: ((_ accept: @escaping (ConfigurationSourcePayload) async throws -> Void, _ close: @escaping () -> Void) -> AnyView)? = nil
 
     public init(
         fetch: @escaping @MainActor (String, String) async throws -> ConfigurationSourcePayload,
@@ -90,7 +96,7 @@ public struct HakoMacSourceImportSheet: View {
             switch self {
             case .link: "URL"
             case .file: "File"
-            case .nodes: "Nodes"
+            case .nodes: "Node"
             case .manual: "Manual"
             }
         }
@@ -123,6 +129,7 @@ public struct HakoMacSourceImportSheet: View {
     @State private var pendingTab: Tab?
     @State private var confirmsTabDiscard = false
     @State private var importingRuleSet = false
+    @State private var reviewsText = false
 
     public init(
         purpose: HakoMacSourceImportPurpose,
@@ -150,7 +157,7 @@ public struct HakoMacSourceImportSheet: View {
     }
 
     private var title: HakoDisplayText {
-        purpose == .nodes ? .copy("Add Source") : .copy("Add Rule Scheme")
+        purpose == .nodes ? .copy("Create Nodes") : .copy("Create Rules")
     }
 
     private var subtitle: HakoDisplayText {
@@ -251,6 +258,13 @@ public struct HakoMacSourceImportSheet: View {
                 .fixedSize()
                 .padding(.top, 16)
                 .accessibilityIdentifier("configuration-center.import.tabs")
+                if tab == .nodes, let editor = actions.customNodesEditor {
+                     
+                     
+                     
+                    editor(accept, close)
+                        .accessibilityIdentifier("configuration-center.import.nodes")
+                } else {
                 HakoMacSheetForm {
                     switch tab {
                     case .link: linkSection
@@ -277,6 +291,7 @@ public struct HakoMacSourceImportSheet: View {
                     }
                 }
                 .accessibilityIdentifier("configuration-center.import")
+                }
             }
         } leading: {
             if offersOriginalImport {
@@ -289,16 +304,18 @@ public struct HakoMacSourceImportSheet: View {
                 .accessibilityIdentifier("configuration-center.import.original")
             }
         } trailing: {
-            HakoMacSheetButtons(
-                closeTitle: closeTitle,
-                closeIdentifier: "configuration-center.import.cancel",
-                primaryTitle: .copy("Add"),
-                primaryIdentifier: "configuration-center.import.add",
-                primaryDisabled: !canAdd,
-                isBusy: busy,
-                onClose: close,
-                onPrimary: { if tab == .manual { createRule() } else { run(accept) } }
-            )
+            if tab != .nodes || actions.customNodesEditor == nil {
+                HakoMacSheetButtons(
+                    closeTitle: closeTitle,
+                    closeIdentifier: "configuration-center.import.cancel",
+                    primaryTitle: .copy("Add"),
+                    primaryIdentifier: "configuration-center.import.add",
+                    primaryDisabled: !canAdd,
+                    isBusy: busy,
+                    onClose: close,
+                    onPrimary: { if tab == .manual { createRule() } else { run(accept) } }
+                )
+            }
         }
         .onChange(of: tab) { _ in preview = nil; error = nil }
         .alert(Text(hako: .copy("Discard Changes?")), isPresented: $confirmsTabDiscard) {
@@ -351,28 +368,62 @@ public struct HakoMacSourceImportSheet: View {
                 }
                 .accessibilityIdentifier("configuration-center.import.resources")
             }
-            TextEditor(text: $text)
-                .font(.body.monospaced())
-                .frame(minHeight: 120)
-                .disabled(busy)
-                .accessibilityLabel(Text(hako: .copy("Paste YAML text")))
-                .accessibilityIdentifier("configuration-center.import.text")
+             
+             
+             
+            LabeledContent {
+                Button { pasteConfigurationText() } label: { Text(hako: .copy("Paste")) }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.import.paste")
+            } label: {
+                Text(hako: .copy("Paste YAML text"))
+            }
+            if !text.isEmpty {
+                 
+                 
+                Button { reviewsText.toggle() } label: {
+                    HStack {
+                        Text(hako: .format("Review all %@ lines", [String(lineCount)]))
+                        Spacer()
+                        HakoSymbolImage(symbol: reviewsText ? .chevronDown : .chevronForward).foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("configuration-center.import.review")
+                if reviewsText {
+                    TextEditor(text: $text)
+                        .font(.body.monospaced())
+                        .frame(minHeight: 120)
+                        .disabled(busy)
+                        .accessibilityLabel(Text(hako: .copy("Paste YAML text")))
+                        .accessibilityIdentifier("configuration-center.import.text")
+                }
+            }
             TextField(text: $label, prompt: Text(hako: .copy("Name"))) { Text(hako: .copy("Name")) }
                 .disabled(busy)
                 .accessibilityIdentifier("configuration-center.import.file-name")
         } header: {
-            Text(hako: .copy("Paste YAML text"))
+            Text(hako: .copy("File"))
         }
     }
 
+    private var lineCount: Int {
+        text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).count
+    }
+
+    private func pasteConfigurationText() {
+        guard let pasted = NSPasteboard.general.string(forType: .string), !pasted.isEmpty else { return }
+        text = pasted
+        reviewsText = false
+        error = nil
+    }
+
+     
+     
     private var nodesSection: some View {
         Section {
-            TextEditor(text: $nodesText)
-                .font(.body.monospaced())
-                .frame(minHeight: 140)
-                .disabled(busy)
-                .accessibilityLabel(Text(hako: .copy("Custom Nodes")))
-                .accessibilityIdentifier("configuration-center.import.nodes-text")
+            Text(hako: .copy("Custom Nodes")).foregroundStyle(.secondary)
         } header: {
             Text(hako: .copy("Custom Nodes"))
         }

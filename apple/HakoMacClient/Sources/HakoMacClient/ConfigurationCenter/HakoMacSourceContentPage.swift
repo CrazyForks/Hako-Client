@@ -125,9 +125,6 @@ public struct HakoMacSourceContentPage: View {
                     HakoMacValueRow(.copy("Destination Website"), value: .verbatim("")).hakoMacCardRow(isLast: true)
                 }
             } else {
-                TextField(text: $filter) { Text(hako: .copy("Search Nodes")) }
-                    .textFieldStyle(.roundedBorder)
-                    .accessibilityIdentifier("configuration-center.source.filter")
                 nodesCard
                 if let addNode = actions.addNode {
                     HakoMacCardButtons { EmptyView() } trailing: {
@@ -156,6 +153,10 @@ public struct HakoMacSourceContentPage: View {
             readers
         }
         .accessibilityIdentifier("configuration-center.source")
+         
+         
+         
+        .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Search Nodes")))
         .task(id: source.version) { await load() }
         .sheet(isPresented: $showsDetails) {
             HakoMacSourceDetailsSheet(source: source, usedBy: usedBy, actions: actions.details, close: { showsDetails = false })

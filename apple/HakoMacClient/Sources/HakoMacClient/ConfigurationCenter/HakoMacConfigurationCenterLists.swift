@@ -368,10 +368,14 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
             Menu {
                 Button { actions.addSource(.link) } label: { Text(hako: .copy("Profile URL")) }
                 Button { actions.addSource(.file) } label: { Text(hako: .copy("File")) }
-                Button { actions.addSource(.nodes) } label: { Text(hako: .copy("Nodes")) }
+                Button { actions.addSource(.nodes) } label: { Text(hako: .copy("Node")) }
                 Button { actions.addChain() } label: { Text(hako: .copy("Proxy Chain")) }
             } label: {
-                Text(hako: .opens("Add Source", locale: locale))
+                 
+                 
+                 
+                 
+                Text(hako: .opens("Create Nodes", locale: locale))
             }
             .fixedSize()
             .accessibilityIdentifier("configuration-center.nodes.add")
@@ -429,7 +433,8 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                 Button { actions.addScheme(.file) } label: { Text(hako: .copy("File")) }
                 Button { actions.addScheme(.manual) } label: { Text(hako: .copy("Manual")) }
             } label: {
-                Text(hako: .opens("Add Rule Scheme", locale: locale))
+                 
+                Text(hako: .opens("Create Rules", locale: locale))
             }
             .fixedSize()
             .accessibilityIdentifier("configuration-center.rules.add")

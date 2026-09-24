@@ -199,11 +199,6 @@ struct HakoMacRuleBrowsePage: View {
 
     var body: some View {
         List {
-            Section {
-                TextField(text: $filter) { Text(hako: .copy("Filter")) }
-                    .textFieldStyle(.roundedBorder)
-                    .accessibilityIdentifier("configuration-center.scheme.browse.filter")
-            }
             if let error {
                 Section { Text(verbatim: error).foregroundStyle(.red).accessibilityIdentifier("configuration-center.scheme.browse.error") }
             }
@@ -245,6 +240,7 @@ struct HakoMacRuleBrowsePage: View {
             }
         }
         .listStyle(.inset)
+        .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Filter")))
         .task {
             do { state = try await load() } catch { self.error = error.localizedDescription }
         }
@@ -349,11 +345,9 @@ public struct HakoMacCollectionPane: View {
         HakoMacCardPage {
             headerCard
             detailsCard
-            TextField(text: $filter) { Text(hako: .copy("Filter")) }
-                .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("configuration-center.collection.filter")
             membersCard
         }
+        .hakoProductModalSearchable(text: $filter, prompt: Text(hako: .copy("Filter")))
         .accessibilityIdentifier("configuration-center.collection")
         .task(id: filter) {
             if !filter.isEmpty { try? await Task.sleep(nanoseconds: 180_000_000) }
