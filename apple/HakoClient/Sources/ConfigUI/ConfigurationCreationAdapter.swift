@@ -2248,10 +2248,13 @@ enum QuickRulePlan: Equatable {
     case copy(base: String)
 
     static func make(activeSchemeID: String?, schemes: [ConfigurationRuleScheme], myRulesLabel: String) -> QuickRulePlan {
-        if let activeSchemeID, schemes.contains(where: { $0.id == activeSchemeID && $0.kind == .custom }) {
+         
+         
+         
+        if let activeSchemeID, schemes.contains(where: { $0.id == activeSchemeID && $0.kind == .custom && $0.collectionKey == nil }) {
             return .reuse(activeSchemeID)
         }
-        if let mine = schemes.first(where: { $0.kind == .custom && $0.label == myRulesLabel }) {
+        if let mine = schemes.first(where: { $0.kind == .custom && $0.collectionKey == nil && $0.label == myRulesLabel }) {
             return .reuse(mine.id)
         }
         return .copy(base: activeSchemeID ?? ConfigurationBuiltins.basicRuleID)

@@ -122,14 +122,19 @@ extension ConfigurationLibraryStore {
         }
         let records = try draft.selectedSourceIDs.map(record)
         let inputs = try records.map(input)
-        let composition = try composeInputs(inputs, ruleInput: input(ruleRecord), schemeID: scheme.id, nodeNameservers: draft.nodeNameservers, dnsMode: draft.dnsMode, customDNSJSON: draft.customDNSJSON, settingsJSON: settingsJSON, nodeScopes: draft.nodeScopes, settingsProviders: try settingsProviders(settingsRuleDependencies, resolveInput: resolveInput))
+        let composition = try composeInputs(inputs, ruleInput: input(ruleRecord), schemeID: scheme.id, scheme: scheme, nodeNameservers: draft.nodeNameservers, dnsMode: draft.dnsMode, customDNSJSON: draft.customDNSJSON, settingsJSON: settingsJSON, nodeScopes: draft.nodeScopes, settingsProviders: try settingsProviders(settingsRuleDependencies, resolveInput: resolveInput))
         let used = Set(records.map(\.id) + [ruleRecord.id])
         let payloads = staged.filter { used.contains($0.record.id) }
+         
+         
+         
         for value in available where used.contains(value.id) {
-            candidate.sources.removeAll { $0.id == value.id }; candidate.sources.append(value)
+            if let i = candidate.sources.firstIndex(where: { $0.id == value.id }) { candidate.sources[i] = value }
+            else { candidate.sources.append(value) }
         }
         for value in schemes where value.id == scheme.id {
-            candidate.rules.removeAll { $0.id == value.id }; candidate.rules.append(value)
+            if let i = candidate.rules.firstIndex(where: { $0.id == value.id }) { candidate.rules[i] = value }
+            else { candidate.rules.append(value) }
         }
         let label = draft.label.trimmingCharacters(in:.whitespacesAndNewlines)
         var recipe = ConfigurationRecipe(id:profileID, label:label.isEmpty ? (records.first?.label ?? "Direct") : label,
@@ -169,6 +174,8 @@ extension ConfigurationLibraryStore {
             pinnedNodes: (draft.step == .rules || draft.step == .finish) ? existing.sources : existing.sources.filter { reference in current.sources.contains { $0.id == reference.id && $0.isRetainedSnapshot == true } },
             settingsJSON: existing.settingsJSON ?? "{}", settingsSource: existing.settingsSource, settingsRuleDependencies: existing.settingsRuleDependencies, resolveInput: resolveInput)
         existing.preservesOriginal = nil  
+        existing.composedRuleSchemeID = nil
+        existing.droppedRules = prepared.recipe.droppedRules  
         existing.label = prepared.recipe.label
         existing.sources = prepared.recipe.sources
         existing.nodeScopes = prepared.recipe.nodeScopes
@@ -249,7 +256,10 @@ extension ConfigurationLibraryStore {
             do {
             if recipe.preservesOriginal != true { try freezeSettings(in: &recipe, resolveInput: resolveInput) }
             recipe.sources = recipe.sources.map { reference in byID[reference.id].map { .init($0.record) } ?? reference }
-            if candidate.rules.first(where: { $0.id == recipe.ruleSchemeID })?.isRetainedSnapshot != true,
+             
+             
+             
+            if recipe.preservesOriginal == true || candidate.rules.first(where: { $0.id == recipe.ruleSchemeID })?.isRetainedSnapshot != true,
                let source = byID[recipe.ruleSource.id] { recipe.ruleSource = .init(source.record) }
             func input(_ reference: ConfigurationSourceVersion) throws -> ConfigurationInput {
                 let source = try replacements.first(where: { ConfigurationSourceVersion($0.record) == reference }) ?? payload(reference)
@@ -264,7 +274,7 @@ extension ConfigurationLibraryStore {
                 recipe.droppedRules = nil
             } else {
             compositions[recipe.id] = try composeInputs(recipe.sources.map(input),
-                ruleInput: input(recipe.ruleSource), schemeID: recipe.ruleSchemeID, nodeNameservers: recipe.nodeNameservers, dnsMode: recipe.dnsMode ?? .source, customDNSJSON: recipe.customDNSJSON, settingsJSON: recipe.settingsJSON ?? "{}", nodeScopes: recipe.nodeScopes, settingsProviders: try settingsProviders(recipe.settingsRuleDependencies, resolveInput: resolveInput))
+                ruleInput: input(recipe.ruleSource), schemeID: recipe.ruleSchemeID, scheme: candidate.rules.first { $0.id == recipe.ruleSchemeID }, nodeNameservers: recipe.nodeNameservers, dnsMode: recipe.dnsMode ?? .source, customDNSJSON: recipe.customDNSJSON, settingsJSON: recipe.settingsJSON ?? "{}", nodeScopes: recipe.nodeScopes, settingsProviders: try settingsProviders(recipe.settingsRuleDependencies, resolveInput: resolveInput))
             recipe.droppedRules = compositions[recipe.id].flatMap { $0.droppedRules.isEmpty ? nil : $0.droppedRules }
             }
             candidate.recipes[index] = recipe
@@ -324,7 +334,8 @@ extension ConfigurationLibraryStore {
     }
 
     private func registerRuleScheme(_ source: ConfigurationSourcePayload, kind: ConfigurationRuleScheme.Kind,
-                                    expectedGeneration: UInt64, generatedRuleGroups: [String: String]? = nil) throws -> ConfigurationLibrarySnapshot {
+                                    expectedGeneration: UInt64, generatedRuleGroups: [String: String]? = nil,
+                                    disabledRules: [String]? = nil, ruleNotes: [String: String]? = nil) throws -> ConfigurationLibrarySnapshot {
         var candidate = try snapshot()
         guard candidate.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
         guard !candidate.sources.contains(where: { $0.id == source.record.id }) else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
@@ -334,6 +345,8 @@ extension ConfigurationLibraryStore {
         candidate.sources.append(stored.record)
         var scheme = ConfigurationRuleScheme(id: "rules-" + stored.record.id, label: stored.record.label, kind: kind, sourceID: stored.record.id)
         scheme.generatedRuleGroups = generatedRuleGroups
+        scheme.disabledRules = disabledRules.flatMap { $0.isEmpty ? nil : $0 }
+        scheme.ruleNotes = ruleNotes.flatMap { $0.isEmpty ? nil : $0 }
         candidate.rules.append(scheme)
         return try commit(candidate, payloads: [stored], expectedGeneration: expectedGeneration)
     }
@@ -365,8 +378,37 @@ extension ConfigurationLibraryStore {
         let rules = ConfigurationRuleDocument.project(try OrderedJSON.parse(original.documentJSON))
         let copied = ConfigurationSourcePayload(record: record, original: Data(rules.serialized().utf8),
             documentJSON: rules.serialized(), resourceFiles: original.resourceFiles)
+         
+         
+         
+        let copiedScheme = current.rules.first { $0.id == id } ?? ConfigurationBuiltins.schemes.first { $0.id == id }
         return try registerRuleScheme(copied, kind: .custom, expectedGeneration: expectedGeneration,
-            generatedRuleGroups: current.effectiveRuleScheme(id)?.generatedRuleGroups)
+            generatedRuleGroups: copiedScheme?.generatedRuleGroups,
+            disabledRules: copiedScheme?.disabledRules, ruleNotes: copiedScheme?.ruleNotes)
+    }
+
+     
+     
+     
+     
+     
+     
+    public func copyRuleScheme(_ draft: ConfigurationRuleDraft, label: String, expectedGeneration: UInt64) throws -> ConfigurationLibrarySnapshot {
+        let name = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw ConfigurationLibraryError.emptyName }
+        let current = try snapshot()
+        guard current.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
+        let document = try draft.document()
+        let original = try ruleSchemePayload(draft.schemeID)
+        let record = ConfigurationSourceRecord(label: name, origin: .file(name + ".yaml"),
+            nodeCount: 0, providerCount: 0,
+            groupCount: draft.groups.count, ruleCount: draft.rows.count, suppliesNodes: false)
+        let copied = ConfigurationSourcePayload(record: record, original: Data(document.serialized().utf8),
+            documentJSON: document.serialized(), resourceFiles: original.resourceFiles)
+        return try registerRuleScheme(copied, kind: .custom, expectedGeneration: expectedGeneration,
+            generatedRuleGroups: draft.generatedRuleGroups.isEmpty ? nil : draft.generatedRuleGroups,
+            disabledRules: draft.disabledRules.isEmpty ? nil : draft.disabledRules.sorted(),
+            ruleNotes: draft.notes.isEmpty ? nil : draft.notes)
     }
 
     public func prepareRuleEditing(_ draft: ConfigurationRuleDraft, expectedGeneration: UInt64,
@@ -383,6 +425,10 @@ extension ConfigurationLibraryStore {
         guard candidate.rules[schemeIndex].isRetainedSnapshot != true else { throw ConfigurationLibraryError.retainedSnapshot }
         let kind = candidate.rules[schemeIndex].kind
         guard kind == .custom || kind == .imported else { throw ConfigurationLibraryError.readOnlyRuleScheme }
+         
+         
+         
+        guard candidate.rules[schemeIndex].collectionKey == nil else { throw ConfigurationLibraryError.readOnlyRuleScheme }
         var record = candidate.sources[sourceIndex]
         guard ConfigurationSourceVersion(record) == draft.version else { throw ConfigurationLibraryError.staleGeneration }
         let previous = try payload(draft.version)
@@ -414,7 +460,7 @@ extension ConfigurationLibraryStore {
                 guard resolved.id == reference.id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
                 return resolved
             }
-            compositions[recipe.id] = try composeInputs(inputs, ruleInput: rules, schemeID: draft.schemeID,
+            compositions[recipe.id] = try composeInputs(inputs, ruleInput: rules, schemeID: draft.schemeID, scheme: candidate.rules[schemeIndex],
                 nodeNameservers: recipe.nodeNameservers, dnsMode: recipe.dnsMode ?? .source, customDNSJSON: recipe.customDNSJSON, settingsJSON: recipe.settingsJSON ?? "{}", nodeScopes: recipe.nodeScopes, settingsProviders: try settingsProviders(recipe.settingsRuleDependencies, resolveInput: resolveInput))
             recipe.droppedRules = compositions[recipe.id].flatMap { $0.droppedRules.isEmpty ? nil : $0.droppedRules }
             candidate.recipes[index] = recipe
@@ -433,6 +479,13 @@ extension ConfigurationLibraryStore {
         guard let scheme = candidate.rules.first(where: { $0.id == id }) else { throw ConfigurationLibraryError.missingDependency(id) }
         guard scheme.kind == .imported || scheme.kind == .custom || scheme.kind == .supplied else { throw ConfigurationLibraryError.readOnlyRuleScheme }
         guard scheme.isRetainedSnapshot != true else { throw ConfigurationLibraryError.retainedSnapshot }
+         
+         
+         
+         
+        if scheme.kind == .supplied, candidate.recipes.contains(where: { $0.preservesOriginal == true && $0.ruleSchemeID == id }) {
+            throw ConfigurationLibraryError.referencedBy(scheme.label)
+        }
         if candidate.recipes.contains(where: { $0.ruleSchemeID == id }) {
             if let index = candidate.rules.firstIndex(where: { $0.id == id }) { candidate.rules[index].isRetainedSnapshot = true }
         } else { candidate.rules.removeAll { $0.id == id } }
@@ -590,10 +643,14 @@ extension ConfigurationLibraryStore {
         return result
     }
 
+     
+     
+     
+     
     private func composeInputs(_ allInputs: [ConfigurationInput], ruleInput original: ConfigurationInput,
-                               schemeID: String, nodeNameservers: [String]?, dnsMode: ConfigurationDNSMode, customDNSJSON: String?, settingsJSON: String, nodeScopes: [String: ConfigurationNodeScope]? = nil, settingsProviders: OrderedJSON = .object([])) throws -> ConfigurationComposition {
+                               schemeID: String, scheme candidateScheme: ConfigurationRuleScheme? = nil, nodeNameservers: [String]?, dnsMode: ConfigurationDNSMode, customDNSJSON: String?, settingsJSON: String, nodeScopes: [String: ConfigurationNodeScope]? = nil, settingsProviders: OrderedJSON = .object([])) throws -> ConfigurationComposition {
         let inputs = try allInputs.map { input in try nodeScopes?[input.id]?.applying(to: input) ?? input }
-        let scheme = try snapshot().rules.first { $0.id == schemeID }
+        let scheme = try candidateScheme ?? snapshot().rules.first { $0.id == schemeID }
         var routing = ConfigurationRuleDocument.project(try scheme?.projectingCollection(original.document) ?? original.document)
          
          
@@ -831,6 +888,11 @@ public extension ConfigurationLibraryStore {
         var customized = ConfigurationRuleScheme(label: draft.label, kind: .custom, sourceID: record.id)
         customized.baseSchemeID = scheme.id; customized.initialDocumentJSON = previous.documentJSON
         customized.generatedRuleGroups = draft.generatedRuleGroups
+         
+         
+         
+        customized.disabledRules = draft.disabledRules.isEmpty ? nil : draft.disabledRules.sorted()
+        customized.ruleNotes = draft.notes.isEmpty ? nil : draft.notes
         var candidate = current
         candidate.sources.append(record); candidate.rules.append(customized)
         if candidate.selectedRuleSchemeID == scheme.id || (candidate.selectedRuleSchemeID == nil && current.visibleRuleSchemes.first?.id == scheme.id) { candidate.selectedRuleSchemeID = customized.id }
@@ -842,7 +904,7 @@ public extension ConfigurationLibraryStore {
             try freezeSettings(in: &recipe, resolveInput: resolveInput)
             recipe.ruleSchemeID = customized.id; recipe.ruleSource = .init(record)
             let inputs = try recipe.sources.map { try resolveInput(payload($0)) }
-            compositions[recipe.id] = try composeInputs(inputs, ruleInput: ruleInput, schemeID: customized.id,
+            compositions[recipe.id] = try composeInputs(inputs, ruleInput: ruleInput, schemeID: customized.id, scheme: customized,
                 nodeNameservers: recipe.nodeNameservers, dnsMode: recipe.dnsMode ?? .source, customDNSJSON: recipe.customDNSJSON, settingsJSON: recipe.settingsJSON ?? "{}", nodeScopes: recipe.nodeScopes, settingsProviders: try settingsProviders(recipe.settingsRuleDependencies, resolveInput: resolveInput))
             recipe.droppedRules = compositions[recipe.id].flatMap { $0.droppedRules.isEmpty ? nil : $0.droppedRules }
             candidate.recipes[index] = recipe
@@ -854,9 +916,10 @@ public extension ConfigurationLibraryStore {
 
 public extension ConfigurationLibraryStore {
      
-    func prepareLocalRuleSet(_ value: ConfigurationLocalRuleSet?, deleting id: String?,
+    func prepareLocalRuleSet(_ value: ConfigurationLocalRuleSet?, deleting id: String?, expectedGeneration: UInt64,
         resolveInput: (ConfigurationSourcePayload) throws -> ConfigurationInput) throws -> PreparedConfigurationSourceUpdate {
         let original = try snapshot()
+        guard original.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
         guard original.pendingPublications?.isEmpty ?? true else { throw ConfigurationLibraryError.busy }
         guard let targetID = value?.id ?? id else { throw ConfigurationLibraryError.invalidIdentifier.noted() }
         if let value {
@@ -1014,7 +1077,7 @@ public extension ConfigurationLibraryStore {
         try captureSettingsDependencies(in: &recipe, resolveInput: resolveInput)
         let inputs = try recipe.sources.map { try resolveInput(payload($0)) }
         let rule = try resolveInput(payload(recipe.ruleSource))
-        let composition = try composeInputs(inputs, ruleInput: rule, schemeID: recipe.ruleSchemeID,
+        let composition = try composeInputs(inputs, ruleInput: rule, schemeID: recipe.ruleSchemeID, scheme: candidate.rules.first { $0.id == recipe.ruleSchemeID },
             nodeNameservers: recipe.nodeNameservers, dnsMode: recipe.dnsMode ?? .source,
             customDNSJSON: recipe.customDNSJSON, settingsJSON: recipe.settingsJSON ?? "{}", nodeScopes: recipe.nodeScopes, settingsProviders: try settingsProviders(recipe.settingsRuleDependencies, resolveInput: resolveInput))
         var recorded = recipe

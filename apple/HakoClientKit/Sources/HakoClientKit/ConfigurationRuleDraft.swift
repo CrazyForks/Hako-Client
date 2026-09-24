@@ -67,10 +67,10 @@ public struct ConfigurationRuleDraft: Equatable, Sendable {
     public private(set) var groups: [Group]
     private var additionalDocument: OrderedJSON
     public let schemeID: String
-    public let version: ConfigurationSourceVersion
+    public private(set) var version: ConfigurationSourceVersion
     public var label: String
     public private(set) var rows: [Row]
-    public let originalDocument: OrderedJSON
+    public private(set) var originalDocument: OrderedJSON
     public private(set) var generatedRuleGroups: [String: String]
      
     public private(set) var disabledRules: Set<String>
@@ -90,6 +90,42 @@ public struct ConfigurationRuleDraft: Equatable, Sendable {
             return Row(raw: raw)
         }
     }
+     
+     
+    public struct Rebased: Equatable, Sendable {
+        public var draft: ConfigurationRuleDraft
+        public var droppedRuleSets: [String]
+    }
+
+     
+     
+     
+     
+     
+     
+    public func rebased(onto stored: Self) -> Rebased {
+        var result = self
+        result.version = stored.version
+        result.originalDocument = stored.originalDocument
+        result.additionalDocument = stored.additionalDocument
+        let storedKeys: Set<String>
+        if case .object(let providers)? = stored.additionalDocument.topLevelValue("rule-providers") {
+            storedKeys = Set(providers.map(\.key))
+        } else { storedKeys = [] }
+        var dropped: [String] = []
+        for key in referencedRuleSets.sorted() where !storedKeys.contains(key) {
+            dropped.append(key)
+            result.rows.removeAll { $0.raw.hasPrefix("RULE-SET," + key + ",") }
+        }
+        let kept = Set(result.rows.map(\.raw))
+        result.disabledRules = result.disabledRules.filter { kept.contains($0) }
+        result.notes = result.notes.filter { kept.contains($0.key) }
+        result.generatedRuleGroups = result.generatedRuleGroups.filter { key, name in
+            result.containsRuleSet(key) && result.groups.contains { $0.name == name }
+        }
+        return Rebased(draft: result, droppedRuleSets: dropped)
+    }
+
      
     public func preservingIdentity(from previous: Self) -> Self {
         var result = self

@@ -895,7 +895,8 @@ final class ProfilesViewModel: ObservableObject {
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
         let prepared = try await Task.detached {
-            let prepared = try store.prepareLocalRuleSet(value, deleting: id, resolveInput: ConfigurationCenterSourceBridge.boundInput)
+            let prepared = try store.prepareLocalRuleSet(value, deleting: id, expectedGeneration: try store.snapshot().generation,
+                                                         resolveInput: ConfigurationCenterSourceBridge.boundInput)
             for payload in prepared.payloads { try ConfigTransforms.validateSource(payload.documentJSON) }
             return prepared
         }.value

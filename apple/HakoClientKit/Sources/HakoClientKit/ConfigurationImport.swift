@@ -136,7 +136,14 @@ public extension ConfigurationLibraryStore {
             draft.step = .finish
             draft.selectedSourceIDs = [reference.id]
             let supplied = "rules-" + reference.id
-            draft.selectedRuleID = current.rules.contains { $0.id == supplied } ? supplied : ConfigurationBuiltins.basicRuleID
+             
+             
+            let remembered = existing.composedRuleSchemeID.flatMap { id in
+                current.rules.first { $0.id == id && $0.isRetainedSnapshot != true } ?? ConfigurationBuiltins.schemes.first { $0.id == id }
+            }
+            draft.selectedRuleID = remembered?.id
+                ?? (current.rules.contains { $0.id == supplied } ? current.effectiveRuleScheme(supplied)?.id : nil)
+                ?? ConfigurationBuiltins.basicRuleID
             draft.label = existing.label
             draft.dnsMode = existing.dnsMode ?? .source
             draft.customDNSJSON = existing.customDNSJSON
@@ -153,6 +160,7 @@ public extension ConfigurationLibraryStore {
         let prepared = try prepareOriginal(draft, profileID: profileID, starting: current, resolveInput: resolveInput)
         var recipe = prepared.recipe
         recipe.followsUpdates = existing.followsUpdates
+        recipe.composedRuleSchemeID = existing.ruleSchemeID
          
          
          

@@ -184,6 +184,11 @@ public struct ConfigurationRecipe: Codable, Equatable, Identifiable, Sendable {
      
      
     public var droppedRules: [String]? = nil
+     
+     
+     
+     
+    public var composedRuleSchemeID: String? = nil
     public var dependencies: [ConfigurationSourceVersion] {
         sources + [ruleSource] + (settingsSource.map { [$0] } ?? []) + Array((settingsRuleDependencies ?? [:]).values)
     }

@@ -101,6 +101,15 @@ public enum ConfigurationComposer {
                 $0.topLevelValue("name")?.compositionString
             }
         })
+         
+         
+        var sourceGroupOwners: [String: String] = [:]
+        for source in sources {
+            for group in source.document.topLevelValue("proxy-groups")?.compositionArray ?? [] {
+                guard let name = group.topLevelValue("name")?.compositionString, sourceGroupOwners[name] == nil else { continue }
+                sourceGroupOwners[name] = source.id
+            }
+        }
         let providerNames = try nameTable(sources, key: "proxy-providers", preferred: rules.id,
             reserved: groupNames.union(sourceGroupNames))
         var dependencyGroups = DependencyGroups(sources: sources, rules: rules, nodes: nodeNames,
@@ -194,8 +203,17 @@ public enum ConfigurationComposer {
                     }
                      
                      
-                } else if groupNames.contains(name) || sourceGroupNames.contains(name) || Self.builtins.contains(name) {
+                } else if groupNames.contains(name) || Self.builtins.contains(name) {
                     rewritten.append(member)  
+                } else if let owner = sourceGroupOwners[name] {
+                     
+                     
+                     
+                     
+                     
+                    if let resolved = try? dependencyGroups.resolve(name, source: owner) {
+                        rewritten.append(.string(resolved))
+                    }
                 } else {
                     referencedNodes += 1
                     if let mapped = sources.lazy.compactMap({ nodeNames[$0.id]?[name] }).first {
@@ -239,9 +257,6 @@ public enum ConfigurationComposer {
         var result = rules.document
             .settingTopLevel("proxies", to: .array(nodes))
             .settingTopLevel("proxy-providers", to: .object(providers))
-        if !dependencyGroups.output.isEmpty || rules.document.topLevelValue("proxy-groups") != nil {
-            result = result.settingTopLevel("proxy-groups", to: .array(outputGroups + dependencyGroups.output))
-        }
          
          
         var droppedRules: [String] = []
@@ -265,6 +280,19 @@ public enum ConfigurationComposer {
                 let target = fields[index].trimmingCharacters(in: .whitespaces)
                 if originalNodes.contains(target) {
                     fields[index] = try dependency(target, source: rules.id, nodes: nodeNames, groups: groupNames)
+                } else if !groupNames.contains(target), !Self.builtins.contains(target), let owner = sourceGroupOwners[target] {
+                     
+                     
+                     
+                    guard let resolved = try? dependencyGroups.resolve(target, source: owner) else {
+                        droppedRules.append(text)
+                        if type == "MATCH" {
+                            fields[index] = "DIRECT"
+                            return .string(fields.joined(separator: ","))
+                        }
+                        return nil
+                    }
+                    fields[index] = resolved
                 } else if !groupNames.contains(target), !sourceGroupNames.contains(target), !Self.builtins.contains(target) {
                      
                      
@@ -305,6 +333,9 @@ public enum ConfigurationComposer {
             result = result.settingTopLevel("sub-rules", to: .object(try subrules.map {
                 ($0.key, try rewriteRules($0.value))
             }))
+        }
+        if !dependencyGroups.output.isEmpty || rules.document.topLevelValue("proxy-groups") != nil {
+            result = result.settingTopLevel("proxy-groups", to: .array(outputGroups + dependencyGroups.output))
         }
         return ConfigurationComposition(document: result, sourceIDs: sources.map(\.id), droppedRules: droppedRules)
     }
