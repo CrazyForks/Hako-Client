@@ -2277,7 +2277,7 @@ private final class HakoMacSceneModel: ObservableObject {
                 throw ConfigurationLibraryError.missingDependency(id)
             }
             change(&profile)
-            profiles.update(profile)
+            profiles.updateRestagingIfActive(profile)
             return state()
         }
         return HakoMacCustomRulesActions(
@@ -2516,7 +2516,9 @@ private final class HakoMacSceneModel: ObservableObject {
         func write(_ change: (inout Profile) -> Void) throws -> HakoMacScriptsState {
             var profile = try appProfile(profileID)
             change(&profile)
-            profiles.update(profile)
+            profiles.updateRestagingIfActive(profile)
+             
+             
              
              
              

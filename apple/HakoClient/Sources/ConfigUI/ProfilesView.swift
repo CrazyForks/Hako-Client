@@ -1810,6 +1810,29 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
+     
+     
+    func updateRestagingIfActive(_ profile: Profile) {
+        update(profile)
+        guard profile.id == activeProfileID,
+              let latest = profiles.first(where: { $0.id == profile.id }) else { return }
+        startActivation(
+            latest,
+            applyToTunnel: ProfileSelectionRuntimePolicy.shouldApplyToTunnel(vpnStatus: vpn.status),
+            preferCachedSource: true,
+            because: HakoPerf.Reason.profileEdited
+        )
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
     func renameProxyNode(profileID: String, from old: String, to new: String) throws {
         guard let profileStore,
               var latest = profileStore.load().first(where: { $0.id == profileID })
