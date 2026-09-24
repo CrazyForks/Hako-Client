@@ -168,6 +168,7 @@ final class ProfilesViewModel: ObservableObject {
     private var pendingActivation: ActivationRequest?
     private var batchTask: Task<Void, Never>?
     private var batchRunID: UUID?
+    private let downloader: HTTPFetching
     private(set) var storeReplacementObserver: NSObjectProtocol?
     private var selectionObserver: NSObjectProtocol?
      
@@ -195,12 +196,17 @@ final class ProfilesViewModel: ObservableObject {
         container: URL? = HakoAppIdentifiers.appGroupContainer,
         credentials: CredentialStore = CredentialStore(),
         sourceWriter: ((String, Profile, URL) throws -> Void)? = nil,
+         
+         
+         
+        downloader: HTTPFetching = ResourceDownloader(),
         makeProfileID: @escaping () -> String = { UUID().uuidString.lowercased() }
     ) {
         self.vpn = vpn
         self.container = container
         self.runtimeDefaults = vpn.clientPreferences
         self.credentials = credentials
+        self.downloader = downloader
         self.sourceWriter = sourceWriter ?? Self.writeSourceYAML
         self.makeProfileID = makeProfileID
          
@@ -520,7 +526,8 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func fetchConfigurationSource(url: String, label: String) async throws -> ConfigurationSourcePayload {
-        try await ConfigurationCenterSourceBridge.fetch(url: url, label: label, credentials: credentials)
+        try await ConfigurationCenterSourceBridge.fetch(url: url, label: label, credentials: credentials,
+                                                        downloader: downloader)
     }
 
     private var hasAttemptedConfigurationRecovery = false
@@ -698,9 +705,21 @@ final class ProfilesViewModel: ObservableObject {
     func setUsesOriginalConfiguration(_ id: String, enabled: Bool) async throws {
         guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
         guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+         
+         
+         
+         
+         
+         
+        let existing = try await Task.detached { try library.snapshot() }.value
+        if !existing.recipes.contains(where: { $0.id == id }) {
+            guard !enabled else { return }
+            try await composeLegacyConfiguration(id)
+            return
+        }
         changingConfigurationLibrary = true
         defer { changingConfigurationLibrary = false }
-        let generation = try await Task.detached { try library.snapshot().generation }.value
+        let generation = existing.generation
         let prepared = try await Task.detached(priority: .userInitiated) {
             let value = try library.prepareOriginalUse(id, uses: enabled, expectedGeneration: generation,
                 resolveInput: ConfigurationCenterSourceBridge.boundInput)
@@ -709,6 +728,44 @@ final class ProfilesViewModel: ObservableObject {
         }.value
         try await saveConfigurationPlan(candidate: prepared.candidate, payloads: prepared.payloads,
             compositions: [id: prepared.composition], generation: generation)
+    }
+
+     
+     
+     
+     
+     
+     
+    private func composeLegacyConfiguration(_ id: String) async throws {
+        guard let profile = profiles.first(where: { $0.id == id }),
+              let library = configurationLibraryStore else {
+            throw ConfigurationLibraryError.missingDependency(id)
+        }
+         
+         
+         
+         
+         
+         
+        try await registerLegacyConfigurationSources()
+        try await recoverConfigurationPublications()
+        let snapshot = try await Task.detached { try library.snapshot() }.value
+        let source = try await configurationSourceFromLegacy(id)
+        let ownRules = "rules-" + source.record.id
+         
+         
+         
+        let registered = snapshot.rules.contains { $0.id == ownRules }
+        let hasRules = registered || (source.record.hasRules && source.record.registersSuppliedRules != false)
+        var draft = ConfigurationCreationDraft()
+        draft.add(source, rule: hasRules && !registered
+            ? ConfigurationRuleScheme(id: ownRules, label: source.record.label, kind: .supplied, sourceID: source.record.id)
+            : nil)
+        draft.selectedRuleID = hasRules ? ownRules : ConfigurationBuiltins.basicRuleID
+        draft.label = profile.label
+        draft.dnsMode = .source
+        draft.connectAfterCreation = false
+        try await editConfiguration(draft, id: id, generation: snapshot.generation)
     }
 
     func saveConfigurationRuleCustomization(_ draft: ConfigurationRuleDraft, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
@@ -1001,7 +1058,7 @@ final class ProfilesViewModel: ObservableObject {
         }
         if let expectedVersion, source.version != expectedVersion { throw ConfigurationLibraryError.staleGeneration }
         let fetched = try await ConfigurationCenterSourceBridge.fetch(url: url, label: source.label,
-            credentials: credentials)
+            credentials: credentials, downloader: downloader)
         var record = ConfigurationSourceRecord(id: id, label: source.label, origin: source.origin,
             version: fetched.record.version, nodeCount: fetched.record.nodeCount,
             providerCount: fetched.record.providerCount, groupCount: fetched.record.groupCount,
@@ -3192,7 +3249,142 @@ final class ProfilesViewModel: ObservableObject {
      
      
      
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func configurationLibrarySources(for profile: Profile) -> [String]? {
+        guard let snapshot = try? configurationLibraryStore?.snapshot(),
+              let recipe = snapshot.recipes.first(where: { $0.id == profile.id }) else { return nil }
+        var seen = Set<String>()
+        return (recipe.sources + [recipe.ruleSource]).compactMap { reference -> String? in
+            guard seen.insert(reference.id).inserted,
+                  let record = snapshot.sources.first(where: { $0.id == reference.id }),
+                  case .subscription = record.origin, record.isRetainedSnapshot != true else { return nil }
+            return reference.id
+        }
+    }
+
+     
+     
+    struct ConfigurationSourceRefresh {
+        var changed: [String] = []
+         
+         
+         
+         
+         
+         
+         
+         
+        var failures: [ProviderDownloadFailure] = []
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func refreshConfigurationSources(_ references: [String]) async throws -> ConfigurationSourceRefresh {
+         
+         
+        let before = (try? configurationLibraryStore?.snapshot()) ?? nil
+        let records = Dictionary(uniqueKeysWithValues: (before?.sources ?? []).map { ($0.id, $0) })
+        let versions = records.mapValues(\.version)
+        var outcome = ConfigurationSourceRefresh()
+        for reference in references {
+            do {
+                try await refreshConfigurationSource(reference)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                let record = records[reference]
+                var link: String?
+                if case let .subscription(url)? = record?.origin { link = url }
+                outcome.failures.append(.init(provider: record?.label ?? reference, url: link, underlying: error))
+            }
+        }
+        let after = (try? configurationLibraryStore?.snapshot()) ?? nil
+        outcome.changed = references.filter { reference in
+            guard let now = after?.sources.first(where: { $0.id == reference })?.version else { return false }
+            return versions[reference] != now
+        }
+        return outcome
+    }
+
+     
+     
+     
+     
+    private func restageAfterSourceRefresh(_ profileID: String, changed: [String]) async {
+        guard !changed.isEmpty, profileID == activeProfileID, tunnelIsRunning,
+              let latest = profiles.first(where: { $0.id == profileID }) else { return }
+        startActivation(latest, applyToTunnel: true, preferCachedSource: true,
+                        because: HakoPerf.Reason.profileSync)
+        await waitForPendingActivation()
+    }
+
+     
+     
+     
     func sync(_ profile: Profile) {
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        if let references = configurationLibrarySources(for: profile) {
+             
+             
+             
+            guard !references.isEmpty else { return }
+            clearFailure()
+            statusMessage = .format("Syncing %@…", [profile.label])
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let outcome = try await self.refreshConfigurationSources(references)
+                     
+                     
+                    self.load()
+                    await self.restageAfterSourceRefresh(profile.id, changed: outcome.changed)
+                     
+                     
+                     
+                    if outcome.failures.isEmpty {
+                        self.statusMessage = .format("%@ synced", [profile.label])
+                        self.clearFailure()
+                    } else {
+                        self.recordFailure(ProviderDownloadFailuresError(failures: outcome.failures),
+                                           context: .subscription, operation: nil, preservesLastKnownGood: true)
+                    }
+                } catch {
+                    self.recordFailure(error, context: .subscription, operation: nil, preservesLastKnownGood: true)
+                }
+            }
+            return
+        }
         if profile.id == activeProfileID {
              
              
@@ -3204,34 +3396,12 @@ final class ProfilesViewModel: ObservableObject {
             return
         }
         guard case .url = profile.source else { return }
-         
-         
-         
-         
-         
-        if let recipe = try? configurationLibraryStore?.snapshot().recipes.first(where: { $0.id == profile.id }),
-           let reference = recipe.sources.first {
-            clearFailure()
-            statusMessage = .format("Syncing %@…", [profile.label])
-            Task { [weak self] in
-                guard let self else { return }
-                do {
-                    try await self.refreshConfigurationSource(reference.id)
-                    self.load()
-                    self.statusMessage = .format("%@ synced", [profile.label])
-                    self.clearFailure()
-                } catch {
-                    self.recordFailure(error, context: .subscription, operation: nil, preservesLastKnownGood: true)
-                }
-            }
-            return
-        }
         clearFailure()
         statusMessage = .format("Syncing %@…", [profile.label])
         Task { [weak self] in
             guard let self else { return }
             let subscriptions = SubscriptionManager(
-                downloader: ResourceDownloader(), credentials: self.credentials)
+                downloader: self.downloader, credentials: self.credentials)
             do {
                 guard let profileStore = self.profileStore,
                       let workingDir = self.workingDir else {
@@ -3466,8 +3636,27 @@ final class ProfilesViewModel: ObservableObject {
     private func performBatchSync(_ profile: Profile) async throws -> BatchUpdateState {
         try Task.checkCancellation()
 
+         
+         
+         
+         
+         
+        if let references = configurationLibrarySources(for: profile) {
+            guard !references.isEmpty else { return .unchanged }
+            let outcome = try await refreshConfigurationSources(references)
+             
+             
+             
+            load()
+            await restageAfterSourceRefresh(profile.id, changed: outcome.changed)
+            guard outcome.failures.isEmpty else {
+                throw ProviderDownloadFailuresError(failures: outcome.failures)
+            }
+            return outcome.changed.isEmpty ? .unchanged : .updated
+        }
+
         let subscriptions = SubscriptionManager(
-            downloader: ResourceDownloader(),
+            downloader: downloader,
             credentials: credentials
         )
         guard let profileStore, let workingDir else {

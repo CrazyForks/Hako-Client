@@ -16,6 +16,14 @@ struct ConfigurationCreationAdapter: View {
     var changed: ((ConfigurationLibrarySnapshot) -> Void)? = nil
     var editingProfileID: String? = nil
     var editingStep: ConfigurationCreationDraft.Step? = nil
+
+     
+     
+    struct FirstStepImport: Equatable {
+        var kind: HakoConfigurationSourceKind
+        var isOriginal: Bool
+    }
+
     @State private var draft = ConfigurationCreationDraft()
     @State private var library = ConfigurationLibrarySnapshot()
     @State private var baseline = ConfigurationCreationDraft()
@@ -26,9 +34,13 @@ struct ConfigurationCreationAdapter: View {
     @State private var busy = false
     @State private var errorMessage: String?
     @State private var importKind: HakoConfigurationSourceKind?
-    @State private var firstStepImportKind: HakoConfigurationSourceKind?
      
-    @State private var importsOriginal = false
+     
+     
+     
+     
+     
+    @State private var firstStepImport: FirstStepImport?
     @State private var showsSourceLibrary = false
     @State private var showsRuleLibrary = false
     @State private var dismiss = HakoDismissHandle()
@@ -73,24 +85,18 @@ struct ConfigurationCreationAdapter: View {
 
     @ViewBuilder
     private var creationContent: some View {
-        if ready && (firstStepImportKind != nil || draft.needsInitialNodeImport(in: library,
+        if ready && (firstStepImport != nil || draft.needsInitialNodeImport(in: library,
             hasLegacyNodes: legacyPayloads.values.contains { $0.record.nodeCount > 0 || $0.record.providerCount > 0 },
             isEditing: editingProfileID != nil)) {
              
              
-            ConfigurationSourceImportAdapter(model: model, kind: firstStepImportKind ?? .subscription, choosesKind: true,
+            ConfigurationSourceImportAdapter(model: model, kind: firstStepImport?.kind ?? .subscription, choosesKind: true,
                 isFirstConfigurationStep: true, finishImport: {
-                    if firstStepImportKind != nil { firstStepImportKind = nil }
+                    if firstStepImport != nil { firstStepImport = nil }
                     else { close() }
                 }) { payload in
-                     
-                     
-                     
-                     
-                    if importsOriginal { draft.useOriginal(payload) }
-                    else { try Self.acceptImportedSource(payload, into: &draft, isEditing: false) }
-                    importsOriginal = false
-                    firstStepImportKind = nil
+                    try Self.applyFirstStepImport(payload, into: &draft, request: firstStepImport)
+                    firstStepImport = nil
                 }
         } else {
             HakoConfigurationCreationView(draft:$draft,library:library,
@@ -104,15 +110,14 @@ struct ConfigurationCreationAdapter: View {
                 isBusy:busy,isReady:ready,error:errorMessage,
                 reload: { Task { await loadLibrary() } },
                 addSource: { kind in
-                    if editingProfileID == nil { firstStepImportKind = kind }
+                    if editingProfileID == nil { firstStepImport = .init(kind: kind, isOriginal: false) }
                     else { importKind = kind }
                 },
                 selectLegacy: { id in
                     if let payload = legacyPayloads[id] { accept(payload) }
                 },
                 importWholeConfiguration: {
-                    importsOriginal = true
-                    firstStepImportKind = .subscription
+                    firstStepImport = .init(kind: .subscription, isOriginal: true)
                 },
                 finish:finish,
                 cancel:close, isEditing: editingProfileID != nil, baseline: baseline, editingStep: editingStep,
@@ -183,6 +188,21 @@ struct ConfigurationCreationAdapter: View {
 
      
      
+     
+     
+     
+     
+     
+     
+     
+     
+    static func applyFirstStepImport(_ payload: ConfigurationSourcePayload,
+                                     into draft: inout ConfigurationCreationDraft,
+                                     request: FirstStepImport?) throws {
+        if request?.isOriginal == true { draft.useOriginal(payload) }
+        else { try acceptImportedSource(payload, into: &draft, isEditing: false) }
+    }
+
     static func acceptImportedSource(_ payload: ConfigurationSourcePayload,
                                      into draft: inout ConfigurationCreationDraft, isEditing: Bool) throws {
         if isEditing { draft.add(payload, rule: nil) }

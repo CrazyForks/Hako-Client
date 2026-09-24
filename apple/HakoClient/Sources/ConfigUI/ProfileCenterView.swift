@@ -361,8 +361,15 @@ struct ProfileCenterAdapter: View {
                 )
             },
             isComposed: composedProfileIDs.contains(profile.id),
+             
+             
+             
+             
+             
             canUseOriginalConfiguration: configurationLibrary.recipes
-                .first(where: { $0.id == profile.id })?.sources.count == 1,
+                .first(where: { $0.id == profile.id })
+                .map { $0.sources.count == 1 }
+                ?? (profile.id != LocalDefaultProfileProvisioner.profileID),
             configurationSourceNames: configurationLibrary.recipes.first(where: { $0.id == profile.id }).map { recipe in
                 recipe.sources.map { pin in configurationLibrary.sources.first(where: { $0.id == pin.id })?.label ?? pin.id }
             },

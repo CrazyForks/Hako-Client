@@ -33,9 +33,21 @@ extension ConfigurationLibraryStore {
             throw ConfigurationCompositionError.invalidDocument(sourceID)
         }
         source.record.registersSuppliedRules = true
-        let reference = ConfigurationSourceVersion(source.record)
         var candidate = starting
-        candidate.sources.removeAll { $0.id == sourceID }; candidate.sources.append(source.record)
+        if let index = candidate.sources.firstIndex(where: { $0.id == sourceID }) {
+             
+             
+             
+             
+             
+             
+             
+            candidate.sources[index].registersSuppliedRules = true
+            source.record = candidate.sources[index]
+        } else {
+            candidate.sources.append(source.record)
+        }
+        let reference = ConfigurationSourceVersion(source.record)
         let ruleID = "rules-" + sourceID
          
          
@@ -144,6 +156,17 @@ public extension ConfigurationLibraryStore {
         recipe.settingsJSON = existing.settingsJSON
         recipe.settingsSource = existing.settingsSource
         recipe.settingsRuleDependencies = existing.settingsRuleDependencies
+         
+         
+         
+         
+         
+         
+         
+         
+        recipe.dnsMode = existing.dnsMode
+        recipe.customDNSJSON = existing.customDNSJSON
+        recipe.nodeNameservers = existing.nodeNameservers
         var candidate = prepared.candidate
         candidate.recipes.removeAll { $0.id == profileID }; candidate.recipes.append(recipe)
         return .init(recipe: recipe, composition: prepared.composition, candidate: candidate, payloads: prepared.payloads)
