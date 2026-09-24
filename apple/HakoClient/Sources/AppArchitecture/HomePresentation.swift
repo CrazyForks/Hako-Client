@@ -3,7 +3,6 @@ import HakoClientUI
 
 typealias HomeSection = HakoClientUI.HakoHomeSection
 typealias HomeFavoriteCard = HakoClientUI.HakoHomeCard
-typealias HomeAdjustmentModule = HakoClientUI.HakoHomeAdjustmentModule
 
 typealias HakoCopy = HakoClientUI.HakoCopy
 

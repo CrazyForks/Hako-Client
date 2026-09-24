@@ -3243,7 +3243,6 @@
 "Traffic is routed through the Clash packet tunnel." = "Traffic is routed through the Clash packet tunnel.";
 "Traffic passes through the entry node, then the exit node. Referenced nodes follow source updates." = "Traffic passes through the entry node, then the exit node. Referenced nodes follow source updates.";
 "Traffic recognition, route coverage, and connection behavior" = "Traffic recognition, route coverage, and connection behavior";
-"Traffic recognition, time sync and trust for this configuration" = "Traffic recognition, time sync and trust for this configuration";
 "Traffic that goes out directly is resolved once more by the direct-connection nameserver below." = "Traffic that goes out directly is resolved once more by the direct-connection nameserver below.";
 "Traffic that matches nothing above." = "Traffic that matches nothing above.";
 "Traffic the outbound cannot carry leaves over DIRECT with your own address, and the connection shows no rule name. UDP applications are never interrupted." = "Traffic the outbound cannot carry leaves over DIRECT with your own address, and the connection shows no rule name. UDP applications are never interrupted.";

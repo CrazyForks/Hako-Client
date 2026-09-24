@@ -539,6 +539,25 @@ struct ProfileCenterAdapter: View {
             } else {
                 EmptyView()
             }
+        case .network(let id):
+            if let profile = appProfile(id) {
+                ProfileNetworkSettingsView(profile: profile, sourceYAML: model.baseYAML(for: profile)) { draft in
+                    try model.updateNetwork(draft)
+                }
+            } else {
+                EmptyView()
+            }
+        case .trust(let id):
+            if let profile = appProfile(id) {
+                ProfileTrustPage(profile: profile, sourceYAML: model.sourceYAML(for: profile),
+                    patchJSON: profile.override.patchJSON) { patchJSON in
+                    var draft = ProfileAdvancedOverridesDraft(profile: profile)
+                    draft.rawPatchJSON = patchJSON
+                    try model.updateAdvancedOverrides(draft)
+                }
+            } else {
+                EmptyView()
+            }
         case .configurationSources(let id):
             ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
                 editingProfileID: id.rawValue, editingStep: .sources)

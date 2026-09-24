@@ -315,7 +315,7 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
             unavailableProfileCard
         } else {
             commonContent
-            adjustmentContent
+            runtimeConfigurationContent
         }
     }
 
@@ -859,19 +859,8 @@ public struct HakoHomeView<Icon: View>: View, Equatable {
         }
     }
 
-    private var adjustmentContent: some View {
+    private var runtimeConfigurationContent: some View {
         Group {
-            ForEach(snapshot.home.adjustments, id: \.module) { item in
-                HakoHomeAdjustmentCard(
-                    snapshot: item,
-                    palette: palette,
-                    icon: icon
-                ) { action in
-                    send(.openAdjustment(action))
-                }
-                .equatable()
-            }
-
             Button {
                 send(.openRuntimeConfiguration)
             } label: {
@@ -1927,64 +1916,6 @@ private struct HakoHomeDomainCountCard<Icon: View>: View {
     }
 }
 
-private struct HakoHomeAdjustmentCard<Icon: View>: View {
-    let snapshot: HakoHomeAdjustmentSnapshot
-    let palette: HakoProductPalette
-    let icon: (HakoSymbol) -> Icon
-    let perform: (HakoHomeAdjustmentAction) -> Void
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        HakoHomePrimaryPageCard(palette: palette) {
-            VStack(
-                alignment: .leading,
-                spacing: HakoTheme.Spacing.standard
-            ) {
-                HakoHomeCardTitle(
-                    cardTitle: snapshot.module.title,
-                    symbol: snapshot.module.symbol,
-                    icon: icon
-                )
-                Text(HakoCopy.key(snapshot.summary))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if !snapshot.module.actions.isEmpty {
-                    actions
-                }
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(
-            "home.card.adjust.\(snapshot.module.id)"
-        )
-    }
-
-    private var actions: some View {
-         
-         
-         
-         
-        HakoModuleEntries(
-            entries: snapshot.module.actions.map { action in
-                HakoModuleEntry(
-                    id: action.rawValue,
-                    title: action.title
-                ) {
-                    perform(action)
-                }
-            },
-            palette: palette,
-            stacked: dynamicTypeSize.isAccessibilitySize,
-            identifier: { "home.modify.\(snapshot.module.id).\($0.id)" }
-        )
-    }
-
-}
-
-
 private struct HakoHomeCardCustomizationView<Icon: View>: View {
     @Binding var cards: [HakoHomeCard]
     let palette: HakoProductPalette
@@ -2225,8 +2156,3 @@ extension HakoHomeDomainCountCard: @MainActor Equatable {
     }
 }
 
-extension HakoHomeAdjustmentCard: @MainActor Equatable {
-    static func == (a: Self, b: Self) -> Bool {
-        a.snapshot == b.snapshot && a.palette == b.palette
-    }
-}

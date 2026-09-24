@@ -533,15 +533,6 @@ struct GoldenFlowHomeAdapter: View {
         _ destination: HomeProfileEditorDestination
     ) -> some View {
         switch destination {
-        case .network(let profile):
-            ProfileNetworkSettingsView(
-                profile: profile,
-                 
-                 
-                sourceYAML: profiles.baseYAML(for: profile)
-            ) { draft in
-                try profiles.updateNetwork(draft)
-            }
         case .rulesOverview(let profile):
             RulesOverviewHost(
                 command: command,
@@ -609,16 +600,6 @@ struct GoldenFlowHomeAdapter: View {
                     for: live,
                     generation: proxiesPreparationGeneration
                 )
-            }
-        case .trust(let profile):
-            ProfileTrustPage(
-                profile: profile,
-                sourceYAML: profiles.sourceYAML(for: profile),
-                patchJSON: profile.override.patchJSON
-            ) { patchJSON in
-                var draft = ProfileAdvancedOverridesDraft(profile: profile)
-                draft.rawPatchJSON = patchJSON
-                try profiles.updateAdvancedOverrides(draft)
             }
         }
     }
@@ -1238,14 +1219,6 @@ struct GoldenFlowHomeAdapter: View {
             rulesCardTargets
         }
         let timedEgress = HakoPerf.measure("home.s.egress") { egressSnapshot }
-        let timedAdjustments = HakoPerf.measure("home.s.adjustments") {
-            HomeAdjustmentModule.allCases.map {
-                HakoHomeAdjustmentSnapshot(
-                    module: $0,
-                    summary: adjustmentSummary($0)
-                )
-            }
-        }
         let timedTally = HakoPerf.measure("home.s.tally") { configTally }
         return AppleClientSnapshot(
             revision: UInt64(truncatingIfNeeded: profileRefreshToken),
@@ -1312,7 +1285,6 @@ struct GoldenFlowHomeAdapter: View {
                 ),
                 egress: timedEgress,
                 lanAddress: lanAddress,
-                adjustments: timedAdjustments,
                 isProfileActionInFlight:
                     profiles.isActivationInFlight
             ),
@@ -1418,8 +1390,6 @@ struct GoldenFlowHomeAdapter: View {
             } else {
                 presentRulesOverview()
             }
-        case .openAdjustment(let action):
-            presentEditor(for: action)
         case .openRuntimeConfiguration:
             presentRuntimeConfiguration()
         case .setCards(let cards):
@@ -1867,42 +1837,6 @@ struct GoldenFlowHomeAdapter: View {
         await command.setMode(Profile.OutboundMode.rule.rawValue)
     }
 
-    private func presentEditor(
-        for action: HakoHomeAdjustmentAction
-    ) {
-        HakoPushClock.tap()
-        guard let currentProfile else {
-            return
-        }
-        switch action {
-        case .connection:
-            editorDestination = .network(currentProfile)
-        case .trust:
-            editorDestination = .trust(currentProfile)
-        }
-    }
-
-    private func adjustmentSummary(
-        _ module: HomeAdjustmentModule
-    ) -> String {
-        guard let profile = currentProfile else {
-            return module.subtitle
-        }
-        switch module {
-        case .network:
-            let count =
-                ProfileNetworkDraft(profile: profile)
-                    .customizedProfileFieldCount
-            return count == 0
-                ? module.subtitle
-                : HakoCopy.format(
-                    "%d profile network settings",
-                    locale: locale,
-                    count
-                )
-        }
-    }
-
     private func performPrimaryAction(
         _ action: HomePrimaryAction
     ) {
@@ -2118,15 +2052,9 @@ struct GoldenFlowHomeAdapter: View {
 private enum HomeProfileEditorDestination: Identifiable {
     case rulesOverview(Profile)
     case proxiesOverview(Profile)
-    case network(Profile)
-    case trust(Profile)
 
     var id: String {
         switch self {
-        case .network(let profile):
-            "\(profile.id)|network"
-        case .trust(let profile):
-            "\(profile.id)|trust"
         case .rulesOverview(let profile):
             "\(profile.id)|rules-overview"
         case .proxiesOverview(let profile):

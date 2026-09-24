@@ -22,6 +22,8 @@ public enum HakoProfilesCapabilityDestination:
      
     case rules(Profile.ID)
     case override(Profile.ID)
+    case network(Profile.ID)
+    case trust(Profile.ID)
 
      
      
@@ -45,6 +47,10 @@ public enum HakoProfilesCapabilityDestination:
             "rules|\(id.rawValue)"
         case .override(let id):
             "override|\(id.rawValue)"
+        case .network(let id):
+            "network|\(id.rawValue)"
+        case .trust(let id):
+            "trust|\(id.rawValue)"
         case .sourceEditor(let id):
             "source|\(id.rawValue)"
         case .configurationSources(let id):
@@ -2065,6 +2071,23 @@ private struct HakoProfileDetailView<
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("profile.detail.override")
+             
+             
+             
+            HakoRowDivider()
+            Button { activeCapability = .network(profile.id) } label: {
+                HakoProfileActionRow(title: "Sniffer & NTP",
+                    symbol: .network, tint: .primary, icon: icon)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("profile.detail.network")
+            HakoRowDivider()
+            Button { activeCapability = .trust(profile.id) } label: {
+                HakoProfileActionRow(title: "Compatibility & Trust",
+                    symbol: .lockShield, tint: .primary, icon: icon)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("profile.detail.trust")
             if profile.canDuplicate || profile.canExport { HakoRowDivider() }
 
             if profile.canDuplicate {

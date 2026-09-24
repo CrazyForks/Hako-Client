@@ -53,16 +53,6 @@ public struct HakoHomeEgressSnapshot: Codable, Equatable, Sendable {
     public static let unavailable = HakoHomeEgressSnapshot()
 }
 
-public struct HakoHomeAdjustmentSnapshot: Codable, Equatable, Sendable {
-    public let module: HakoHomeAdjustmentModule
-    public let summary: String
-
-    public init(module: HakoHomeAdjustmentModule, summary: String? = nil) {
-        self.module = module
-        self.summary = String((summary ?? module.subtitle).prefix(256))
-    }
-}
-
 public enum HakoHomeRecoveryMode: String, Codable, Equatable, Sendable {
     case none
     case direct
@@ -425,7 +415,6 @@ public enum HakoHomeCommand: Codable, Equatable, Sendable {
     case showConnectionIssue
     case openProxies
     case openRules
-    case openAdjustment(HakoHomeAdjustmentAction)
     case openRuntimeConfiguration
     case setCards([HakoHomeCard])
     case setTrafficScope(HakoHomeTrafficScope)

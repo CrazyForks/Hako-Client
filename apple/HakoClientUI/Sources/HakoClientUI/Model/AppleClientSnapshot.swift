@@ -385,7 +385,6 @@ public struct AppleClientHomeSnapshot: Codable, Equatable, Sendable {
     public let rules: HakoHomeDomainSnapshot
     public let egress: HakoHomeEgressSnapshot
     public let lanAddress: String?
-    public let adjustments: [HakoHomeAdjustmentSnapshot]
     public let isProfileActionInFlight: Bool
 
     public init(
@@ -402,10 +401,6 @@ public struct AppleClientHomeSnapshot: Codable, Equatable, Sendable {
         rules: HakoHomeDomainSnapshot = .empty,
         egress: HakoHomeEgressSnapshot = .unavailable,
         lanAddress: String? = nil,
-        adjustments: [HakoHomeAdjustmentSnapshot] =
-            HakoHomeAdjustmentModule.allCases.map {
-                HakoHomeAdjustmentSnapshot(module: $0)
-            },
         isProfileActionInFlight: Bool = false
     ) {
         self.routing = routing
@@ -421,13 +416,6 @@ public struct AppleClientHomeSnapshot: Codable, Equatable, Sendable {
         self.rules = rules
         self.egress = egress
         self.lanAddress = lanAddress.map { String($0.prefix(128)) }
-        let summaries = Dictionary(
-            adjustments.map { ($0.module, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        self.adjustments = HakoHomeAdjustmentModule.allCases.map {
-            summaries[$0] ?? HakoHomeAdjustmentSnapshot(module: $0)
-        }
         self.isProfileActionInFlight = isProfileActionInFlight
     }
 }
