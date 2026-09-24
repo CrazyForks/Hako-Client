@@ -491,14 +491,23 @@ struct ScriptLibraryView: View {
  
  
  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 private struct ScriptEditorTitle: ViewModifier {
-    @Binding var label: String
+    let label: String
     func body(content: Content) -> some View {
-        if #available(iOS 16.0, macOS 13.0, *) {
-            content.navigationTitle($label)
-        } else {
-            content.hakoPageTitle(.verbatim(label), watchAs: "Script")
-        }
+#if os(iOS)
+        content
+            .hakoPageTitle(.verbatim(label), watchAs: "Script")
+            .navigationBarTitleDisplayMode(.inline)
+#else
+        content.hakoPageTitle(.verbatim(label), watchAs: "Script")
+#endif
     }
 }
 
@@ -579,7 +588,7 @@ struct ScriptEditorView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(HakoTheme.canvas.ignoresSafeArea())
                 .modifier(HakoBarFadesWhileTyping(typing: $typing))
-                .modifier(ScriptEditorTitle(label: $label))
+                .modifier(ScriptEditorTitle(label: label))
                 .fileImporter(
                     isPresented: $showsFileImporter,
                     allowedContentTypes: [.javaScript, .plainText, .text],
@@ -630,10 +639,6 @@ struct ScriptEditorView: View {
                         )
                     }
                 }
-                .hakoProductModal(isPresented: $importingFromLink, role: .form) {
-                    linkSheet
-                        .hakoModalPresentation(.form)
-                }
                 .alert("Rename…", isPresented: $renaming) {
                     TextField("Script name", text: $renameDraft)
                         .accessibilityIdentifier("scripts.editor.name")
@@ -653,10 +658,34 @@ struct ScriptEditorView: View {
                 } message: {
                     Text(verbatim: saveResult)
                 }
-                .alert("Import File…", isPresented: $showsImportError) {
+                .alert("Import Failed", isPresented: $showsImportError) {
                     Button("OK") {}
                 } message: {
                     Text(verbatim: importResult)
+                }
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                .alert("Import from Link…", isPresented: $importingFromLink) {
+                    TextField("Script URL", text: $importAddress)
+#if !os(macOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+#endif
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier("scripts.editor.import.address")
+                    Button("Import") {
+                        Task { @MainActor in
+                            await importFromAddress()
+                            if !importResult.isEmpty { showsImportError = true }
+                        }
+                    }
+                    .accessibilityIdentifier("scripts.editor.import.url")
+                    Button("Cancel", role: .cancel) {}
                 }
         }
         .hakoStackNavigationViewStyle()
@@ -765,47 +794,6 @@ struct ScriptEditorView: View {
      
      
      
-    private var linkSheet: some View {
-        HakoFeatureNavigationContainer {
-            Form {
-                Section {
-                    TextField(
-                        HakoCopy.key("Script URL"),
-                        text: $importAddress,
-                        prompt: Text(verbatim: "https://example.com/script.js")
-                    )
-                        .textContentType(.URL)
-#if !os(macOS)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-#endif
-                        .autocorrectionDisabled()
-                        .accessibilityIdentifier("scripts.editor.import.address")
-                    if !importResult.isEmpty {
-                        HakoStatusMessage(text: .copy(importResult), kind: .error)
-                            .accessibilityIdentifier("scripts.editor.import.result")
-                    }
-                }
-            }
-            .hakoPageTitle("Import from Link…")
-            .hakoToolbarUnlessInPanel {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { importingFromLink = false }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(importing ? "Importing…" : "Import") {
-                        Task { @MainActor in
-                            await importFromAddress()
-                            if importResult.isEmpty { importingFromLink = false }
-                        }
-                    }
-                    .disabled(importing || importAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .accessibilityIdentifier("scripts.editor.import.url")
-                }
-            }
-        }
-    }
-
      
      
      
