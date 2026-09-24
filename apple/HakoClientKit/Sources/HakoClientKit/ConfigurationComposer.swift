@@ -228,7 +228,7 @@ public enum ConfigurationComposer {
          
         func rewriteRules(_ value: OrderedJSON) throws -> OrderedJSON {
             guard let rows = value.compositionArray else { return value }
-            return .array(try rows.map { rule in
+            return .array(try rows.compactMap { rule -> OrderedJSON? in
                 guard let text = rule.compositionString else { return rule }
                 var fields = text.components(separatedBy: ",")
                 let type = fields[0].trimmingCharacters(in: .whitespaces).uppercased()
@@ -246,6 +246,19 @@ public enum ConfigurationComposer {
                 let target = fields[index].trimmingCharacters(in: .whitespaces)
                 if originalNodes.contains(target) {
                     fields[index] = try dependency(target, source: rules.id, nodes: nodeNames, groups: groupNames)
+                } else if !groupNames.contains(target), !sourceGroupNames.contains(target), !Self.builtins.contains(target) {
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                    guard let mapped = sources.lazy.compactMap({ nodeNames[$0.id]?[target] }).first else { return nil }
+                    fields[index] = mapped
                 }
                 return .string(fields.joined(separator: ","))
             })

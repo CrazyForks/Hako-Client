@@ -2058,6 +2058,9 @@ public struct HakoRuleEditorView<Icon: View>: View {
     private let showsTarget: Bool
     private let rule: HakoPersonalRuleSnapshot
     private let options: HakoRulePolicyOptions
+     
+     
+    private let createGroup: ((@escaping (String?) -> Void) -> AnyView)?
     private let initialRoute: HakoRuleBuilderRoute?
     private let runtimeProfile: HakoAppleRuntimeProfile
     private let palette: HakoProductPalette
@@ -2071,6 +2074,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
         options: HakoRulePolicyOptions = .empty,
         showsPersonalMetadata: Bool = true,
         showsTarget: Bool = true,
+        createGroup: ((@escaping (String?) -> Void) -> AnyView)? = nil,
         delete: (() -> Void)? = nil,
         initialRoute: HakoRuleBuilderRoute? = nil,
         pageTitle: String = "Rule",
@@ -2084,6 +2088,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
         self.delete = delete
         self.showsPersonalMetadata = showsPersonalMetadata
         self.showsTarget = showsTarget
+        self.createGroup = createGroup
         self.rule = rule
         self.options = options
         self.initialRoute = initialRoute
@@ -2105,6 +2110,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
             options: options,
             showsPersonalMetadata: showsPersonalMetadata,
             showsTarget: showsTarget,
+            createGroup: createGroup,
             delete: delete,
             initialRoute: initialRoute,
             pageTitle: pageTitle,
@@ -2121,6 +2127,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
     let delete: (() -> Void)?
     let showsPersonalMetadata: Bool
     let showsTarget: Bool
+    let createGroup: ((@escaping (String?) -> Void) -> AnyView)?
     let pageTitle: String
     let options: HakoRulePolicyOptions
     let initialRoute: HakoRuleBuilderRoute?
@@ -2168,6 +2175,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         options: HakoRulePolicyOptions,
         showsPersonalMetadata: Bool = true,
         showsTarget: Bool = true,
+        createGroup: ((@escaping (String?) -> Void) -> AnyView)? = nil,
         delete: (() -> Void)? = nil,
         initialRoute: HakoRuleBuilderRoute?,
         pageTitle: String = "Rule",
@@ -2181,6 +2189,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         self.delete = delete
         self.showsPersonalMetadata = showsPersonalMetadata
         self.showsTarget = showsTarget
+        self.createGroup = createGroup
         self.pageTitle = pageTitle
         self.options = options
         self.initialRoute = initialRoute
@@ -2472,6 +2481,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
                     HakoRulePolicyPickerView(
                         options: options,
                         current: target,
+                        createGroup: createGroup,
                         icon: icon
                     ) {
                         target = $0
@@ -3581,8 +3591,14 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
     let offersGlobal: Bool
     let options: HakoRulePolicyOptions
     let current: String
+     
+     
+     
+     
+    let createGroup: ((@escaping (String?) -> Void) -> AnyView)?
     let icon: (HakoSymbol) -> Icon
     let pick: (String) -> Void
+    @State private var creatingGroup = false
 
     private static var ruleBuiltIns: [(name: String, caption: String)] {
         HakoRulePolicyBuiltIns.rule
@@ -3596,6 +3612,7 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
         offersGlobal: Bool = true,
         options: HakoRulePolicyOptions,
         current: String,
+        createGroup: ((@escaping (String?) -> Void) -> AnyView)? = nil,
         icon: @escaping (HakoSymbol) -> Icon,
         pick: @escaping (String) -> Void
     ) {
@@ -3606,6 +3623,7 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
         self.offersGlobal = offersGlobal
         self.options = options
         self.current = current
+        self.createGroup = createGroup
         self.icon = icon
         self.pick = pick
     }
@@ -3631,6 +3649,23 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
                 searchText: $query
             )
             .hakoCapturesDismiss(dismiss)
+            .background {
+                if let createGroup {
+                     
+                     
+                     
+                    HakoRoutedViewDestination(isPresented: $creatingGroup) {
+                        createGroup { name in
+                            creatingGroup = false
+                            if let name, !name.isEmpty {
+                                pick(name)
+                                dismissRoute()
+                            }
+                        }
+                        .hakoPushedDetailPage()
+                    }
+                }
+            }
     }
 
      
@@ -3685,6 +3720,12 @@ public struct HakoRulePolicyPickerView<Icon: View>: View {
                         "GLOBAL",
                         caption: "Kernel built-in group"
                     )
+                }
+                if createGroup != nil, query.isEmpty {
+                     
+                     
+                    HakoAddRow(Text(hako: .copy("Add Policy Group"))) { creatingGroup = true }
+                        .accessibilityIdentifier("\(axPrefix).group.add")
                 }
             }
         }

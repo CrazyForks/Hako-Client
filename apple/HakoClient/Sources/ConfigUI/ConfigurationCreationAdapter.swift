@@ -848,13 +848,19 @@ private struct ConfigurationTowerRuleCustomizationAdapter: View {
                         manualEditor: { draft, accept in AnyView(ConfigurationTowerManualRuleEditor(draft: draft, accept: accept)) },
                          
                          
-                        ruleEditor: { raw, draft, showsTarget, accept in
+                        ruleEditor: { request, accept in
                              
                              
                              
                              
-                            AnyView(RuleBuilderAdapter(raw: raw ?? "", options: ConfigurationGroupEditorBridge.ruleOptions(draft),
-                                showsPersonalMetadata: showsTarget, showsTarget: showsTarget, pageTitle: "Add Rule",
+                             
+                             
+                             
+                            AnyView(RuleBuilderAdapter(raw: request.editing?.raw ?? "", options: RulePolicyOptions(shared: request.options),
+                                showsPersonalMetadata: request.showsTarget, showsTarget: request.showsTarget,
+                                createGroup: request.createGroup,
+                                enabled: request.editing?.isEnabled ?? true, comment: request.editing?.note ?? "",
+                                pageTitle: request.editing == nil ? "Add Rule" : "Rule",
                                 saveDetails: { raw, enabled, comment in accept(raw, enabled, comment) },
                                 save: { raw in accept(raw, true, "") }))
                         },

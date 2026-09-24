@@ -179,6 +179,35 @@ public struct HakoTowerRulesLibraryView: View {
 
 }
 
+ 
+ 
+ 
+ 
+public struct HakoTowerRuleEditing: Equatable, Sendable {
+    public let raw: String
+    public let isEnabled: Bool
+    public let note: String
+    public init(raw: String, isEnabled: Bool, note: String) { self.raw = raw; self.isEnabled = isEnabled; self.note = note }
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
+public struct HakoTowerRuleEditorRequest {
+    public let editing: HakoTowerRuleEditing?
+    public let draft: ConfigurationRuleDraft
+    public let options: HakoRulePolicyOptions
+    public let showsTarget: Bool
+    public let createGroup: ((@escaping (String?) -> Void) -> AnyView)?
+    public init(editing: HakoTowerRuleEditing?, draft: ConfigurationRuleDraft, options: HakoRulePolicyOptions,
+        showsTarget: Bool, createGroup: ((@escaping (String?) -> Void) -> AnyView)?) {
+        self.editing = editing; self.draft = draft; self.options = options; self.showsTarget = showsTarget; self.createGroup = createGroup
+    }
+}
+
 public struct HakoTowerRuleCustomizationView: View {
     @State private var draft: ConfigurationRuleDraft
     @State private var baseline: ConfigurationRuleDraft
@@ -214,7 +243,9 @@ public struct HakoTowerRuleCustomizationView: View {
      
      
      
-    private let ruleEditor: (String?, ConfigurationRuleDraft, Bool, @escaping (String, Bool, String) -> Void) -> AnyView
+     
+     
+    private let ruleEditor: (HakoTowerRuleEditorRequest, @escaping (String, Bool, String) -> Void) -> AnyView
      
      
     private let nodeCandidates: (() async -> [ConfigurationRuleTargetCandidates.Section])?
@@ -222,6 +253,8 @@ public struct HakoTowerRuleCustomizationView: View {
     private enum Modal: String, Identifiable { case identity, group, local, copy, manual, order, rule; var id: String { rawValue } }
     @State private var groupID: UUID?
     @State private var localID: String?
+     
+    @State private var ruleID: UUID?
     @State private var ordered = HakoOrderedWork()
     @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     public init(draft: ConfigurationRuleDraft, localSets: [ConfigurationLocalRuleSet], resetDocument: String, palette: HakoProductPalette, pushed: Bool = false, ruleSetKeys: Set<String> = [],
@@ -229,7 +262,7 @@ public struct HakoTowerRuleCustomizationView: View {
         saveLocal: @escaping (ConfigurationLocalRuleSet) async throws -> (ConfigurationRuleDraft, [ConfigurationLocalRuleSet]), deleteLocal: @escaping (String) async throws -> (ConfigurationRuleDraft, [ConfigurationLocalRuleSet]),
         copy: @escaping (ConfigurationRuleDraft, String) async throws -> Void, close: @escaping () -> Void,
         manualEditor: @escaping (ConfigurationRuleDraft, @escaping (ConfigurationRuleDraft) async throws -> Void) -> AnyView,
-        ruleEditor: @escaping (String?, ConfigurationRuleDraft, Bool, @escaping (String, Bool, String) -> Void) -> AnyView,
+        ruleEditor: @escaping (HakoTowerRuleEditorRequest, @escaping (String, Bool, String) -> Void) -> AnyView,
         nodeCandidates: (() async -> [ConfigurationRuleTargetCandidates.Section])? = nil) {
         self.nodeCandidates = nodeCandidates
         self.ruleEditor = ruleEditor
@@ -238,6 +271,50 @@ public struct HakoTowerRuleCustomizationView: View {
         self.pushed = pushed
         self.resetDocument = resetDocument; self.save = save; self.download = download; self.saveLocal = saveLocal
         self.deleteLocal = deleteLocal; self.copy = copy; self.close = close; self.manualEditor = manualEditor
+    }
+     
+     
+     
+     
+     
+     
+     
+    private var policyOptions: HakoRulePolicyOptions {
+        let document = draft.currentDocument()
+        var seen = Set<String>()
+        var nodes: [HakoRulePolicySnapshot] = []
+        if case .array(let entries) = document.topLevelValue("proxies") {
+            for entry in entries {
+                guard case .string(let name) = entry.topLevelValue("name"), !name.isEmpty, seen.insert(name).inserted else { continue }
+                var type = ""
+                if case .string(let value) = entry.topLevelValue("type") { type = value }
+                nodes.append(HakoRulePolicySnapshot(name: name, type: type))
+            }
+        }
+        for section in nodeSections {
+            for name in section.names where seen.insert(name).inserted {
+                nodes.append(HakoRulePolicySnapshot(name: name, type: section.sourceLabel ?? ""))
+            }
+        }
+        var ruleSets: [String] = []
+        if case .object(let fields) = document.topLevelValue("rule-providers") { ruleSets = fields.map(\.key).sorted() }
+        var subRules: [String]?
+        if case .object(let fields) = document.topLevelValue("sub-rules") { subRules = fields.map(\.key).sorted() }
+        return HakoRulePolicyOptions(
+            groups: draft.groups.map { HakoRulePolicySnapshot(name: $0.name, type: $0.type) },
+            proxies: nodes, ruleSets: ruleSets, subRuleNames: subRules)
+    }
+     
+     
+     
+     
+    private func groupCreator(_ done: @escaping (String?) -> Void) -> AnyView {
+        AnyView(HakoTowerGroupEditor(group: HakoTowerGroupEditor.blankGroup, all: draft.groups, identityOnly: false, nodeSections: nodeSections, save: { value in
+            try await apply { snapshot in var changed = snapshot; try changed.setGroup(value, groupID: nil); return changed }
+            var name = ""
+            if case .string(let value) = value.topLevelValue("name") { name = value }
+            done(name.isEmpty ? nil : name)
+        }, close: { done(nil) }))
     }
     private var visibleGroups: [ConfigurationRuleDraft.Group] { draft.groups.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) || $0.type.localizedCaseInsensitiveContains(search) } }
     private var entries: [ConfigurationRuleCatalogEntry] { ConfigurationRuleCatalog.builtIn.entries.filter { (category == nil || $0.category == category) && $0.matches(search) } }
@@ -268,7 +345,7 @@ public struct HakoTowerRuleCustomizationView: View {
             } else {
                 HakoTowerInlineRules(rows: draft.rows, version: draft.version,
                     query: search, palette: palette, remove: { draft.remove([$0]) }, reorder: { modal = .order },
-                    ruleSetNames: ruleSetNames, addRule: { modal = .rule })
+                    ruleSetNames: ruleSetNames, addRule: { ruleID = nil; modal = .rule }, edit: { ruleID = $0; modal = .rule })
             }
             Section {
                 ForEach(visibleGroups) { group in
@@ -434,12 +511,10 @@ public struct HakoTowerRuleCustomizationView: View {
                     HakoTowerLocalRuleEditor(
                         value: localSets.first { $0.id == localID },
                         policy: localID.flatMap { draft.ruleSetPolicy("local-" + $0) } ?? draft.groups.first?.name ?? "DIRECT",
-                        options: HakoRulePolicyOptions(
-                            groups: draft.groups.map { HakoRulePolicySnapshot(name: $0.name, type: $0.type) },
-                            proxies: nodeSections.flatMap { section in section.names.map { HakoRulePolicySnapshot(name: $0, type: "") } }
-                        ),
+                        options: policyOptions,
                         palette: palette,
-                        buildRule: { accept in ruleEditor(nil, draft, false) { raw, _, _ in accept(raw) } },
+                        buildRule: { accept in ruleEditor(.init(editing: nil, draft: draft, options: policyOptions, showsTarget: false, createGroup: nil)) { raw, _, _ in accept(raw) } },
+                        createGroup: groupCreator,
                         save: { name, input, policy in
                             let rules = try await download(input)
                             let id = localID ?? UUID().uuidString.lowercased()
@@ -465,14 +540,29 @@ public struct HakoTowerRuleCustomizationView: View {
                 case .order:
                     HakoTowerRulesOrderView(draft: $draft, palette: palette, ruleSetNames: ruleSetNames, markChanged: { hasUnsavedChanges = true }, close: { modal = nil })
                 case .rule:
-                     
-                     
-                    ruleEditor(nil, draft, true) { raw, enabled, note in
-                        mutate { snapshot in
-                            var changed = snapshot
-                            changed.insertRuleFirst(raw)
-                            if let first = changed.rows.first { changed.setRule(raw, enabled: enabled, note: note, rowID: first.id) }
-                            return changed
+                    if let id = ruleID, let row = draft.rows.first(where: { $0.id == id }) {
+                         
+                         
+                         
+                         
+                        ruleEditor(.init(editing: .init(raw: row.raw, isEnabled: draft.isEnabled(row.raw), note: draft.note(for: row.raw)),
+                            draft: draft, options: policyOptions, showsTarget: true, createGroup: groupCreator)) { raw, enabled, note in
+                            mutate { snapshot in
+                                var changed = snapshot
+                                changed.setRule(raw, enabled: enabled, note: note, rowID: id)
+                                return changed
+                            }
+                        }
+                    } else {
+                         
+                         
+                        ruleEditor(.init(editing: nil, draft: draft, options: policyOptions, showsTarget: true, createGroup: groupCreator)) { raw, enabled, note in
+                            mutate { snapshot in
+                                var changed = snapshot
+                                changed.insertRuleFirst(raw)
+                                if let first = changed.rows.first { changed.setRule(raw, enabled: enabled, note: note, rowID: first.id) }
+                                return changed
+                            }
                         }
                     }
                 }
@@ -710,6 +800,10 @@ private struct HakoTowerLocalRuleEditor: View {
     let palette: HakoProductPalette
      
     let buildRule: (@escaping (String) -> Void) -> AnyView
+     
+     
+     
+    let createGroup: ((@escaping (String?) -> Void) -> AnyView)?
     let save: (String, String, String) async throws -> Void
     let close: () -> Void
     @State private var name: String
@@ -727,8 +821,9 @@ private struct HakoTowerLocalRuleEditor: View {
     private let initialPolicy: String
     init(value: ConfigurationLocalRuleSet?, policy: String, options: HakoRulePolicyOptions, palette: HakoProductPalette,
          buildRule: @escaping (@escaping (String) -> Void) -> AnyView,
+         createGroup: ((@escaping (String?) -> Void) -> AnyView)? = nil,
          save: @escaping (String, String, String) async throws -> Void, close: @escaping () -> Void) {
-        self.value = value; self.options = options; self.palette = palette; self.buildRule = buildRule; self.save = save; self.close = close
+        self.value = value; self.options = options; self.palette = palette; self.buildRule = buildRule; self.createGroup = createGroup; self.save = save; self.close = close
         self.initialPolicy = policy
         let stored = value?.input ?? ""
         let link = Self.looksLikeLink(stored)
@@ -826,6 +921,7 @@ private struct HakoTowerLocalRuleEditor: View {
                         offersGlobal: false,
                         options: options,
                         current: policy,
+                        createGroup: createGroup,
                         icon: { symbol in Image(systemName: symbol.rawValue) }
                     ) { policy = $0; pickingPolicy = false }
                     .hakoPushedDetailPage()
@@ -1247,6 +1343,9 @@ private struct HakoTowerInlineRules: View {
     var ruleSetNames: [String: String] = [:]
      
     var addRule: (() -> Void)? = nil
+     
+     
+    var edit: ((UUID) -> Void)? = nil
     @State private var results = HakoTowerRuleSearchSnapshot()
     @State private var completedRequest: SearchRequest?
 
@@ -1265,8 +1364,20 @@ private struct HakoTowerInlineRules: View {
         let visible = current.query.isEmpty ? rows : results.visible(for: current.query, refreshing: searching)
         Section {
             ForEach(visible) { row in
-                HakoTowerRuleSummary(row: row, palette: palette, ruleSetNames: ruleSetNames)
+                if let edit {
+                    Button { edit(row.id) } label: {
+                        HStack(spacing: 8) {
+                            HakoTowerRuleSummary(row: row, palette: palette, ruleSetNames: ruleSetNames)
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                        }.contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("configuration.rules.rule.row")
                     .deleteDisabled(row.isFinal)
+                } else {
+                    HakoTowerRuleSummary(row: row, palette: palette, ruleSetNames: ruleSetNames)
+                        .deleteDisabled(row.isFinal)
+                }
             }
             .onDelete { offsets in
                 guard let remove else { return }

@@ -102,6 +102,20 @@ struct RulePolicyOptions {
 typealias RuleTargetVerdict = HakoRuleTargetVerdict
 
 extension RulePolicyOptions {
+     
+     
+     
+    init(shared: HakoRulePolicyOptions) {
+        self.init(
+            groups: shared.groups.map { ($0.name, $0.type) },
+            proxies: shared.proxies.map { ($0.name, $0.type) },
+            ruleSets: shared.ruleSets,
+            subRuleNames: shared.subRuleNames
+        )
+    }
+}
+
+extension RulePolicyOptions {
     static let builtinPolicies =
         HakoRulePolicyOptions.builtinPolicies
 
@@ -123,6 +137,7 @@ struct RuleBuilderAdapter: View {
     private let delete: (() -> Void)?
     private let showsPersonalMetadata: Bool
     private let showsTarget: Bool
+    private let createGroup: ((@escaping (String?) -> Void) -> AnyView)?
     private let pageTitle: String
     private let raw: String
     private let options: RulePolicyOptions
@@ -137,6 +152,7 @@ struct RuleBuilderAdapter: View {
         options: RulePolicyOptions = .empty,
         showsPersonalMetadata: Bool = true,
         showsTarget: Bool = true,
+        createGroup: ((@escaping (String?) -> Void) -> AnyView)? = nil,
         delete: (() -> Void)? = nil,
         enabled: Bool = true,
         comment: String = "",
@@ -150,6 +166,7 @@ struct RuleBuilderAdapter: View {
         self.delete = delete
         self.showsPersonalMetadata = showsPersonalMetadata
         self.showsTarget = showsTarget
+        self.createGroup = createGroup
         self.raw = raw
         self.options = options
         self.enabled = enabled
@@ -168,6 +185,7 @@ struct RuleBuilderAdapter: View {
             options: options.shared,
             showsPersonalMetadata: showsPersonalMetadata,
             showsTarget: showsTarget,
+            createGroup: createGroup,
             delete: delete,
             initialRoute: initialRoute,
             pageTitle: pageTitle,
