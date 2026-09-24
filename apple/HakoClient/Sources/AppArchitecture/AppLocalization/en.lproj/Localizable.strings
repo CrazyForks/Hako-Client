@@ -626,6 +626,8 @@
 "Closing the tunnel" = "Closing the tunnel";
 "Code Editor" = "Code Editor";
 "Collapse All Groups" = "Collapse All Groups";
+"Collection Entries" = "Collection Entries";
+"Collection Management" = "Collection Management";
 "Comment" = "Comment";
 "Common" = "Common";
 "Community" = "Community";
@@ -1332,6 +1334,7 @@
 "IN-USER and SOURCE-APP-* rules need inbound authentication or flow audit-token metadata the macOS packet tunnel cannot resolve. PROCESS-* and UID rules are available." = "IN-USER and SOURCE-APP-* rules need inbound authentication or flow audit-token metadata the macOS packet tunnel cannot resolve. PROCESS-* and UID rules are available.";
 "INFO [TCP] connected api.example.com:443 via PROXY[Singapore 01]" = "INFO [TCP] connected api.example.com:443 via PROXY[Singapore 01]";
 "INFO logs cleared" = "INFO logs cleared";
+"IP CIDR" = "IP CIDR";
 "IP Preference" = "IP Preference";
 "IP Query Mode" = "IP Query Mode";
 "IP Stack" = "IP Stack";
@@ -1601,6 +1604,7 @@
 "MASQUE Demo" = "MASQUE Demo";
 "MASQUE needs a local address. Give it an IPv4 address or an IPv6 address." = "MASQUE needs a local address. Give it an IPv4 address or an IPv6 address.";
 "MATCH, RULE-SET, and SUB-RULE are not valid inside a classical rule-provider. Remove them, or use them in the main rules list instead." = "MATCH, RULE-SET, and SUB-RULE are not valid inside a classical rule-provider. Remove them, or use them in the main rules list instead.";
+"MRS 格式，不提供逐条浏览。" = "MRS 格式，不提供逐条浏览。";
 "MTU Discovery" = "MTU Discovery";
 "Mac UI Review" = "Mac UI Review";
 "Manage" = "Manage";
@@ -2444,6 +2448,7 @@
 "Routing fixture backup is not UTF-8" = "Routing fixture backup is not UTF-8";
 "Routing mark" = "Routing mark";
 "Rule" = "Rule";
+"Rule Collection" = "Rule Collection";
 "Rule Collections" = "Rule Collections";
 "Rule Library" = "Rules";
 "Rule Priority" = "Rule Priority";
@@ -2648,6 +2653,7 @@
 "Source GeoIP" = "Source GeoIP";
 "Source IP network" = "Source IP network";
 "Source IP suffix" = "Source IP suffix";
+"Source Nodes" = "Source Nodes";
 "Source Repository" = "Source Repository";
 "Source Revision" = "Source Revision";
 "Source app signing ID" = "Source app signing ID";

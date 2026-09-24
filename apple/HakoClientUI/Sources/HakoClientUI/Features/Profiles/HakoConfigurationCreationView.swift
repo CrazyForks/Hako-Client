@@ -306,7 +306,7 @@ public struct HakoConfigurationCreationView: View {
                     HStack {
                         selectionLabel(source.label, detail: sourceSummary(source))
                         Button { sourceDetails(source.id) } label: {
-                            Image(systemName: "info.circle").foregroundStyle(Color.blue)
+                            Image(systemName: "info.circle").foregroundStyle(.tint)
                                 .frame(minWidth: 44, minHeight: 44)
                         }.buttonStyle(.borderless).accessibilityLabel("Source Details")
                             .accessibilityIdentifier("configuration.create.info.\(source.id)")
@@ -498,7 +498,7 @@ struct HakoConfigurationUpdateButton: View {
                     Image(systemName: "arrow.clockwise").transition(.identity)
                 }
                 Text(HakoCopy.key(isUpdating ? "Updating Sources…" : title))
-                    .foregroundStyle(isUpdating ? Color.primary : Color.accentColor)
+                    .foregroundStyle(isUpdating ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
                 Spacer(minLength: 0)
             }
             .frame(minHeight: 32)
@@ -1691,7 +1691,7 @@ struct HakoConfigurationLibraryRow: View {
             }
             Spacer(minLength: 8)
             Image(systemName: HakoSymbol.infoCircle.rawValue)
-                .font(.title3).foregroundStyle(Color.blue)
+                .font(.title3).foregroundStyle(.tint)
                 .frame(width: 44, height: 44)
                 .accessibilityHidden(true)
         }
@@ -1840,7 +1840,7 @@ public struct HakoConfigurationCollectionView: View {
                     HStack { Text("Entries"); Spacer(); Text(verbatim: String(count)) }
                 } header: { Text("Content") }
             }
-        }.hakoPageTitle(.verbatim(collection.name))
+        }.hakoPageTitle(.verbatim(collection.name), watchAs: "Rule Collection")
     }
 }
 
@@ -1915,7 +1915,7 @@ public struct HakoConfigurationNodeScopeView: View {
         .hakoAlwaysEditing()
         .hakoConfigurationFormSpacing()
         .hakoProductModalSearchable(text: $search, prompt: Text("Search Nodes"))
-        .hakoPageTitle(.verbatim(source.label))
+        .hakoPageTitle(.verbatim(source.label), watchAs: "Source Nodes")
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { if dirty { confirmsDiscard = true } else { close() } }
@@ -2033,7 +2033,7 @@ public struct HakoConfigurationCollectionContentsView: View {
             }
         }.hakoConfigurationFormSpacing()
             .hakoProductModalSearchable(text: $query)
-            .hakoPageTitle(.verbatim(title))
+            .hakoPageTitle(.verbatim(title), watchAs: "Collection Entries")
             .hakoToolbarUnlessInPanel {
                 ToolbarItem(placement: .cancellationAction) { HakoSheetCloseButton(dismiss: close) }
                 ToolbarItem(placement: .primaryAction) {

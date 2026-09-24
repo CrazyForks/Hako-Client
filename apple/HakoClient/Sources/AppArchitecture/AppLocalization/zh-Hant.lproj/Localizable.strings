@@ -626,6 +626,8 @@
 "Closing the tunnel" = "正在關閉通道";
 "Code Editor" = "程式碼編輯器";
 "Collapse All Groups" = "收起所有群組";
+"Collection Entries" = "集合項目";
+"Collection Management" = "集合管理";
 "Comment" = "備註";
 "Common" = "常用";
 "Community" = "社群";
@@ -1332,6 +1334,7 @@
 "IN-USER and SOURCE-APP-* rules need inbound authentication or flow audit-token metadata the macOS packet tunnel cannot resolve. PROCESS-* and UID rules are available." = "IN-USER 與 SOURCE-APP-* 規則需要入站認證或 flow audit token 元資料，macOS Packet Tunnel 無法解析；PROCESS-* 與 UID 規則可用。";
 "INFO [TCP] connected api.example.com:443 via PROXY[Singapore 01]" = "INFO [TCP] connected api.example.com:443 via PROXY[Singapore 01]";
 "INFO logs cleared" = "INFO logs cleared";
+"IP CIDR" = "IP 網段";
 "IP Preference" = "IP 偏好";
 "IP Query Mode" = "IP 查詢模式";
 "IP Stack" = "IP 堆疊";
@@ -1601,6 +1604,7 @@
 "MASQUE Demo" = "MASQUE Demo";
 "MASQUE needs a local address. Give it an IPv4 address or an IPv6 address." = "MASQUE 需要本機網址，填一個 IPv4 或 IPv6 網址。";
 "MATCH, RULE-SET, and SUB-RULE are not valid inside a classical rule-provider. Remove them, or use them in the main rules list instead." = "MATCH、RULE-SET 與 SUB-RULE 不能出現在 classical 規則集合中。請移除它們，或改寫到主規則列表裡。";
+"MRS 格式，不提供逐条浏览。" = "MRS 格式，不提供逐條瀏覽。";
 "MTU Discovery" = "MTU 探測";
 "Mac UI Review" = "Mac 介面評審";
 "Manage" = "管理";
@@ -2444,6 +2448,7 @@
 "Routing fixture backup is not UTF-8" = "Routing fixture backup is not UTF-8";
 "Routing mark" = "routing-mark";
 "Rule" = "規則";
+"Rule Collection" = "規則集合";
 "Rule Collections" = "規則集合";
 "Rule Library" = "規則庫";
 "Rule Priority" = "規則優先順序";
@@ -2648,6 +2653,7 @@
 "Source GeoIP" = "來源 GeoIP";
 "Source IP network" = "來源 IP 網段";
 "Source IP suffix" = "來源 IP 後綴";
+"Source Nodes" = "來源節點";
 "Source Repository" = "原始碼倉庫";
 "Source Revision" = "原始碼版本";
 "Source app signing ID" = "來源 App 簽署 ID";

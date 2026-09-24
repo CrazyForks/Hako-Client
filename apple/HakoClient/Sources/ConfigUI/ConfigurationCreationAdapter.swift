@@ -1997,7 +1997,7 @@ struct ConfigurationCollectionAdapter: View {
                 .hakoProductModal(isPresented: $management, role: .page) {
                     HakoFeatureNavigationContainer {
                         Form { identitySections; managementActions }
-                            .hakoPageTitle(.verbatim(entry.collection.name))
+                            .hakoPageTitle(.verbatim(entry.collection.name), watchAs: "Collection Management")
                             .hakoToolbarUnlessInPanel {
                                 ToolbarItem(placement: .cancellationAction) { HakoSheetCloseButton(dismiss: { management = false }) }
                             }
@@ -2109,19 +2109,23 @@ private struct ConfigurationCollectionImportAdapter: View {
             Form {
                 Section {
                     TextField("名称", text: $name)
+                        .accessibilityIdentifier("configuration.rules.import.name")
                     TextField("URL", text: $link).autocorrectionDisabled().textInputAutocapitalization(.never)
                         .disabled(fileData != nil)
+                        .accessibilityIdentifier("configuration.rules.import.url")
                     Button(fileName ?? "选择集合文件") { pickingFile = true }.buttonStyle(.plain).foregroundStyle(.primary)
                     if fileData != nil { Button("移除文件") { fileData = nil; fileName = nil } }
                 }
                 Section {
                     Picker("规则类型", selection: $behavior) {
-                        Text("域名").tag("domain"); Text("IP 网段").tag("ipcidr"); Text("完整规则").tag("classical")
+                        Text("域名").tag("domain"); Text("IP CIDR").tag("ipcidr"); Text("完整规则").tag("classical")
                     }
+                    .accessibilityIdentifier("configuration.rules.import.behavior")
                     Picker("文件格式", selection: $format) {
                         Text("YAML").tag("yaml"); Text("Text").tag("text")
                         if behavior != "classical" { Text("MRS").tag("mrs") }
                     }
+                    .accessibilityIdentifier("configuration.rules.import.format")
                 }
                 if let error { Text(verbatim: error).foregroundStyle(.red) }
             }.disabled(busy)

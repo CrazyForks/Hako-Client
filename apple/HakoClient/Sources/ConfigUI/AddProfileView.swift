@@ -111,6 +111,7 @@ struct AddProfileView: View {
                             Text("链接").tag(AddProfileDraft.Tab.link)
                             Text("文件").tag(AddProfileDraft.Tab.file)
                         }.pickerStyle(.menu)
+                            .accessibilityIdentifier("configuration.rules.add.method")
                     }
                 }
                 switch draft.tab {
