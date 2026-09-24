@@ -584,6 +584,28 @@ final class ProfilesViewModel: ObservableObject {
         return activeProfileID == profile.id && lastFailure == nil
     }
 
+    private var activationCancellationGeneration: UInt64 = 0
+
+     
+     
+     
+     
+    @discardableResult
+    func connectFromHome(
+        _ profile: Profile, forceReactivation: Bool = true
+    ) async -> Bool {
+        let cancellationGeneration = activationCancellationGeneration
+         
+         
+        guard await selectAndWait(profile, force: forceReactivation),
+              activeProfileID == profile.id,
+              busyProfileID == nil, pendingActivation == nil, !isActivating,
+              !Task.isCancelled,
+              activationCancellationGeneration == cancellationGeneration
+        else { return false }
+        return await vpn.start()
+    }
+
      
      
      
@@ -3282,6 +3304,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func cancelActivation() {
+        activationCancellationGeneration &+= 1
         pendingActivation = nil
         activationTask?.cancel()
     }

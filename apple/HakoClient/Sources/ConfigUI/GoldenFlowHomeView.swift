@@ -2250,21 +2250,9 @@ struct GoldenFlowHomeAdapter: View {
             openProfiles()
             return
         }
-        if profiles.activeProfileID == profile.id {
-            Task {
-                 
-                 
-                 
-                 
-                 
-                 
-                guard await profiles.selectAndWait(profile, force: true)
-                else { return }
-                await vpn.start()
-                rebind()
-            }
-        } else {
-            profiles.select(profile)
+        Task {
+            await profiles.connectFromHome(profile)
+            rebind()
         }
     }
 }

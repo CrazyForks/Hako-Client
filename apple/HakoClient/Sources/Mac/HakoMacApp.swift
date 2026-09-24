@@ -1560,11 +1560,10 @@ private final class HakoMacSceneModel: ObservableObject {
             await vpn.stop()
         case .connect, .activateSystemExtension,
              .updateSystemExtension, .installConfiguration:
-            if let currentProfile,
-               profiles.activeProfileID != currentProfile.id
-            {
-                guard await profiles.selectAndWait(currentProfile)
-                else { return }
+            if let currentProfile {
+                _ = await profiles.connectFromHome(
+                    currentProfile, forceReactivation: false
+                )
             } else {
                 _ = await vpn.start()
             }
