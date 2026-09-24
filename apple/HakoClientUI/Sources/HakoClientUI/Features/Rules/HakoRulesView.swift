@@ -2065,6 +2065,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
         showsPersonalMetadata: Bool = true,
         delete: (() -> Void)? = nil,
         initialRoute: HakoRuleBuilderRoute? = nil,
+        pageTitle: String = "Rule",
         runtimeProfile: HakoAppleRuntimeProfile,
         palette: HakoProductPalette,
         loadGeoValues: @escaping
@@ -2077,12 +2078,17 @@ public struct HakoRuleEditorView<Icon: View>: View {
         self.rule = rule
         self.options = options
         self.initialRoute = initialRoute
+        self.pageTitle = pageTitle
         self.runtimeProfile = runtimeProfile
         self.palette = palette
         self.loadGeoValues = loadGeoValues
         self.icon = icon
         self.save = save
     }
+     
+     
+     
+    private let pageTitle: String
 
     public var body: some View {
         HakoRuleBuilderView(
@@ -2091,6 +2097,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
             showsPersonalMetadata: showsPersonalMetadata,
             delete: delete,
             initialRoute: initialRoute,
+            pageTitle: pageTitle,
             runtimeProfile: runtimeProfile,
             palette: palette,
             loadGeoValues: loadGeoValues,
@@ -2103,6 +2110,7 @@ public struct HakoRuleEditorView<Icon: View>: View {
 private struct HakoRuleBuilderView<Icon: View>: View {
     let delete: (() -> Void)?
     let showsPersonalMetadata: Bool
+    let pageTitle: String
     let options: HakoRulePolicyOptions
     let initialRoute: HakoRuleBuilderRoute?
     let runtimeProfile: HakoAppleRuntimeProfile
@@ -2150,6 +2158,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
         showsPersonalMetadata: Bool = true,
         delete: (() -> Void)? = nil,
         initialRoute: HakoRuleBuilderRoute?,
+        pageTitle: String = "Rule",
         runtimeProfile: HakoAppleRuntimeProfile,
         palette: HakoProductPalette,
         loadGeoValues: @escaping
@@ -2159,6 +2168,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
     ) {
         self.delete = delete
         self.showsPersonalMetadata = showsPersonalMetadata
+        self.pageTitle = pageTitle
         self.options = options
         self.initialRoute = initialRoute
         self.runtimeProfile = runtimeProfile
@@ -2229,7 +2239,7 @@ private struct HakoRuleBuilderView<Icon: View>: View {
             .onAppear {
                 autoRoute = initialRoute
             }
-            .hakoPageTitle("Rule")
+            .hakoPageTitle(.copy(pageTitle))
             .hakoRegistersDeparture(
             isDirty: !openedWith.isEmpty && currentFingerprint != openedWith,
             save: { completion in

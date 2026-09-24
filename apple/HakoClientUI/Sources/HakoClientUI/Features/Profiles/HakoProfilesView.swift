@@ -2096,6 +2096,7 @@ private struct HakoProfileDetailView<
             Button { activeCapability = .override(profile.id) } label: {
                 HakoProfileActionRow(title: "Overrides and Scripts",
                     subtitle: profile.configurationAdvancedSummary.map { .copy($0) },
+                    value: profile.overrideScriptName.map { .verbatim($0) },
                     symbol: .sliderHorizontal3, tint: .primary, icon: icon)
             }
             .buttonStyle(.plain)
@@ -2815,6 +2816,9 @@ struct HakoProfileGroup<
 struct HakoProfileActionRow<Icon: View>: View {
     let title: HakoDisplayText
     var subtitle: HakoDisplayText? = nil
+     
+     
+    var value: HakoDisplayText? = nil
     let symbol: HakoSymbol
     let tint: Color
     var titleColor: Color = .primary
@@ -2832,6 +2836,13 @@ struct HakoProfileActionRow<Icon: View>: View {
                     leadingIcon
                     actionCopy
                     Spacer(minLength: HakoTheme.Spacing.compact)
+                    if let value {
+                        Text(hako: value)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
                     if showsDisclosure {
                         disclosureIcon
                     }

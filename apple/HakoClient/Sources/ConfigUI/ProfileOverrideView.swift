@@ -565,12 +565,30 @@ struct ProfileOverrideView: View {
      
     @ViewBuilder
     private var scriptSections: some View {
-        Section {
-            ForEach(scripts) { script in
-                scriptRow(script)
+         
+         
+         
+        let chosen = scripts.first { $0.id == selectedScriptID }
+        let others = scripts.filter { $0.id != selectedScriptID }
+        if let chosen {
+            Section {
+                scriptRow(chosen)
+            } header: {
+                Text("Script").accessibilityIdentifier("profile.override.scripts.selected")
             }
-        } header: {
-            Text("Script")
+        }
+        if !others.isEmpty {
+            Section {
+                ForEach(others) { script in
+                    scriptRow(script)
+                }
+            } header: {
+                if chosen == nil {
+                    Text("Script")
+                } else {
+                    Text("Other Scripts").accessibilityIdentifier("profile.override.scripts.other")
+                }
+            }
         }
         HakoConfigurationLibraryAddCard(kind: .scripts, palette: HakoClientUI.HakoProductPalette.hakoProduct,
             nativeList: true, showsHeader: false) {

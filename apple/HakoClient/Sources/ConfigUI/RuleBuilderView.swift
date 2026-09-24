@@ -122,6 +122,7 @@ extension RulePolicyOptions {
 struct RuleBuilderAdapter: View {
     private let delete: (() -> Void)?
     private let showsPersonalMetadata: Bool
+    private let pageTitle: String
     private let raw: String
     private let options: RulePolicyOptions
     private let enabled: Bool
@@ -137,11 +138,13 @@ struct RuleBuilderAdapter: View {
         delete: (() -> Void)? = nil,
         enabled: Bool = true,
         comment: String = "",
+        pageTitle: String = "Rule",
         saveDetails: (
             (_ raw: String, _ enabled: Bool, _ comment: String) -> Void
         )? = nil,
         save: @escaping (String) -> Void
     ) {
+        self.pageTitle = pageTitle
         self.delete = delete
         self.showsPersonalMetadata = showsPersonalMetadata
         self.raw = raw
@@ -163,6 +166,7 @@ struct RuleBuilderAdapter: View {
             showsPersonalMetadata: showsPersonalMetadata,
             delete: delete,
             initialRoute: initialRoute,
+            pageTitle: pageTitle,
             runtimeProfile: hakoAppleRuntimeProfile,
             palette: HakoClientUI.HakoProductPalette.hakoProduct,
             loadGeoValues: { resource in

@@ -337,7 +337,9 @@ struct ProfileCenterAdapter: View {
                 (configurationLibrary.rules + ConfigurationBuiltins.schemes).first(where: { $0.id == recipe.ruleSchemeID })?.displayLabel
             },
             followsConfigurationSourceUpdates: configurationLibrary.recipes.first(where: { $0.id == profile.id })?.followsUpdates,
-            configurationAdvancedSummary: hasAdvancedConfiguration(profile) ? "Contains existing customizations" : nil
+            configurationAdvancedSummary: hasAdvancedConfiguration(profile) ? "Contains existing customizations" : nil,
+            overrideScriptName: profile.overwriteMode == .script
+                ? ScriptLibrary.load().first { $0.id == profile.selectedScriptID }?.label : nil
         )
     }
 

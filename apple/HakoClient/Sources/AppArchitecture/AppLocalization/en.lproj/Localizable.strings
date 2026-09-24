@@ -2003,6 +2003,7 @@
 "Original Configuration" = "Original Configuration";
 "Other" = "Other";
 "Other Providers" = "Other Providers";
+"Other Scripts" = "Other Scripts";
 "Outbound" = "Outbound";
 "Outbound Mode" = "Outbound Mode";
 "Outbound Mode, Proxies, and Rules always stay on Home." = "Outbound Mode, Proxies, and Rules always stay on Home.";
@@ -2021,7 +2022,7 @@
 "Override Script" = "Override Script";
 "Override Trusted Certificates" = "Override Trusted Certificates";
 "Override with an empty list to clear exclusions supplied by the profile." = "Override with an empty list to clear exclusions supplied by the profile.";
-"Overrides and Scripts" = "Overrides and Scripts";
+"Overrides and Scripts" = "Scripts";
 "Overrides and scripts for this configuration" = "Overrides and scripts for this configuration";
 "Overrides the client setting for this profile only. Useful when every line in one subscription carries UDP." = "Overrides the client setting for this profile only. Useful when every line in one subscription carries UDP.";
 "Overview" = "Overview";

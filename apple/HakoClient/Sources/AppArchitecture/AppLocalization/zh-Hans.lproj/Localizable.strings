@@ -2003,6 +2003,7 @@
 "Original Configuration" = "原配置";
 "Other" = "其他";
 "Other Providers" = "其他外部资源";
+"Other Scripts" = "其他脚本";
 "Outbound" = "出站";
 "Outbound Mode" = "出站模式";
 "Outbound Mode, Proxies, and Rules always stay on Home." = "出站模式、代理、规则始终留在首页。";
@@ -2021,7 +2022,7 @@
 "Override Script" = "覆写脚本";
 "Override Trusted Certificates" = "覆写受信任证书";
 "Override with an empty list to clear exclusions supplied by the profile." = "用空列表覆写，即可清除配置提供的排除项。";
-"Overrides and Scripts" = "覆写与脚本";
+"Overrides and Scripts" = "覆写脚本";
 "Overrides and scripts for this configuration" = "本配置的覆写与脚本";
 "Overrides the client setting for this profile only. Useful when every line in one subscription carries UDP." = "仅对本档案覆盖客户端设置。当某个订阅的线路全部支持 UDP 时有用。";
 "Overview" = "概览";

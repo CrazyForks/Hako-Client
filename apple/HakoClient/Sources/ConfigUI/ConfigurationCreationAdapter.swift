@@ -1294,15 +1294,24 @@ private struct ConfigurationChainDetail: View {
     @State private var deleting = false
     @State private var busy = false
     @State private var errorMessage: String?
+    private func chainHopLine(_ name: String) -> some View {
+        HStack {
+            Image(systemName: HakoSymbol.arrowDown.name).foregroundStyle(.secondary)
+            Text(verbatim: name).lineLimit(1).truncationMode(.middle)
+        }
+    }
     var body: some View {
         HakoFeatureNavigationContainer {
             Form {
                 if let chain = source.nodeChain {
                     Section {
+                         
+                         
+                         
                         Text("This Device")
-                        Label { Text(verbatim: chain.entry.nodeName) } icon: { Image(systemName: HakoSymbol.arrowDown.name) }
-                        Label { Text(verbatim: chain.exit.nodeName) } icon: { Image(systemName: HakoSymbol.arrowDown.name) }
-                        Label("Destination Website", systemImage: HakoSymbol.arrowDown.name)
+                        chainHopLine(chain.entry.nodeName)
+                        chainHopLine(chain.exit.nodeName)
+                        Text("Destination Website")
                     } header: { Text("Connection Order") }
                 }
                 Section { Button("Delete Proxy Chain", role: .destructive) { deleting = true } }
@@ -1563,6 +1572,7 @@ private struct ConfigurationNewRuleAdapter: View {
     var body: some View {
         HakoFeatureNavigationContainer {
             RuleBuilderAdapter(raw: "", options: options, showsPersonalMetadata: true,
+                pageTitle: HakoConfigurationAddition.rules.title,
                 saveDetails: { raw, enabled, note in submit(raw, enabled: enabled, note: note) },
                 save: { raw in submit(raw, enabled: true, note: "") })
             .disabled(busy)
