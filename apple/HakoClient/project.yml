@@ -234,6 +234,8 @@ targets:
     - path: Shared/HakoAppIdentifiers.swift
     - path: Shared/HakoDeviceModel.swift
       group: Sources/SystemIntegration
+    - path: Shared/HakoWidgetPlatform.swift
+      group: Sources/SystemIntegration
     - path: ../HakoClientUI/Sources/HakoClientUI/Features/Widgets/HakoWidgetSnapshot.swift
       group: Shared
     - path: ../HakoClientUI/Sources/HakoClientUI/Features/Widgets/HakoWidgetMailbox.swift
@@ -478,6 +480,8 @@ targets:
       group: Sources/SystemIntegration
     - path: Shared/HakoAppIdentifiers.swift
     - path: Shared/HakoDeviceModel.swift
+      group: Sources/SystemIntegration
+    - path: Shared/HakoWidgetPlatform.swift
       group: Sources/SystemIntegration
     - path: ../HakoClientUI/Sources/HakoClientUI/Features/Widgets/HakoWidgetSnapshot.swift
       group: Shared

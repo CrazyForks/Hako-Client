@@ -1288,7 +1288,7 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
             icon: icon,
             onToggle: { toggle(group) },
             onTestGroup: { send(.testGroup(name: group.name)) },
-            onUnpin: { send(.unpin(group: group.name)) }
+            onUnpin: { unpin(group) }
         )
         .equatable()
         .id("group.\(group.name)")
@@ -1457,7 +1457,7 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
                      
                     if snapshot.proxies.offersUnpin(for: group), selection != nil {
                         Button("Unfix") {
-                            send(.unpin(group: group.name))
+                            unpin(group)
                         }
                         .font(.caption)
                         .buttonStyle(.borderless)
@@ -2200,6 +2200,16 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
                 change()
             }
         }
+    }
+
+     
+     
+     
+     
+     
+    private func unpin(_ group: HakoProxyGroupSnapshot) {
+        offlineSelections[group.name] = nil
+        send(.unpin(group: group.name))
     }
 
     private func visibleSelection(

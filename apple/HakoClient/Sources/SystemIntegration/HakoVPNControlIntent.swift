@@ -66,6 +66,9 @@ struct HakoVPNControlIntent: SetValueIntent {
 protocol HakoTunnelHandle: AnyObject {
     var isEnabled: Bool { get }
     var status: NEVPNStatus { get }
+     
+     
+    var providerBundleIdentifier: String? { get }
     func start() throws
     func stop()
      
@@ -79,6 +82,9 @@ protocol HakoTunnelHandle: AnyObject {
 @available(iOS 16.0, *)
 extension NETunnelProviderManager: HakoTunnelHandle {
     var status: NEVPNStatus { connection.status }
+    var providerBundleIdentifier: String? {
+        (protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier
+    }
     func start() throws { try connection.startVPNTunnel() }
     func stop() { connection.stopVPNTunnel() }
     func enable() async throws {
@@ -199,6 +205,9 @@ enum HakoVPNControlDriver {
      
      
      
+     
+     
+     
     private static func installed(_ step: String, journal: Bool = true) async -> (any HakoTunnelHandle)? {
         let handles: [any HakoTunnelHandle]
         do {
@@ -207,9 +216,12 @@ enum HakoVPNControlDriver {
             log("\(step): load failed  \(describe(error))")
             return nil
         }
-        let chosen = handles.first(where: { $0.isEnabled }) ?? handles.first
+        let ours = handles.filter { handle in
+            handle.providerBundleIdentifier.map(HakoAppIdentifiers.packetTunnelProviderBundleIDs.contains) ?? false
+        }
+        let chosen = ours.first(where: { $0.isEnabled }) ?? ours.first
         if journal {
-            var line = "\(step): managers=\(handles.count) enabled=\(handles.filter(\.isEnabled).count)"
+            var line = "\(step): managers=\(handles.count) ours=\(ours.count) enabled=\(ours.filter(\.isEnabled).count)"
             if let chosen { line += " status=\(word(chosen.status))" }
             log(line)
         }

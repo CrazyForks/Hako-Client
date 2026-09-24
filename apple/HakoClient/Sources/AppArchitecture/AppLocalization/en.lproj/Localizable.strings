@@ -1322,7 +1322,7 @@
 "Group name is already in use: %@" = "Group name is already in use: %@";
 "Group name is required." = "Group name is required.";
 "Group names must be unique." = "Group names must be unique.";
-"Grouped by destination. Updates from the profile URL replace these rules." = "Grouped by destination. Updates from the profile URL replace these rules.";
+"Grouped by destination. What the tunnel runs: the profile's rules with your custom rules and the override script applied." = "Grouped by destination. What the tunnel runs: the profile's rules with your custom rules and the override script applied.";
 "Groups" = "Groups";
 "Groups (%@)" = "Groups (%@)";
 "Groups cannot refer back to themselves: %@" = "Groups cannot refer back to themselves: %@";
@@ -2047,7 +2047,6 @@
 "OpenVPN takes tls-crypt-v2 on its own. Clear tls-auth and tls-crypt." = "OpenVPN takes tls-crypt-v2 on its own. Clear tls-auth and tls-crypt.";
 "Opening Clash to start." = "Opening Clash to start.";
 "Opening Clash to stop." = "Opening Clash to stop.";
-"Opening Clash to switch routing mode." = "Opening Clash to switch routing mode.";
 "Opening Clash to toggle the VPN." = "Opening Clash to toggle the VPN.";
 "Opening Clash to validate and import the configuration." = "Opening Clash to validate and import the configuration.";
 "Opening Configuration" = "Opening Configuration";
@@ -2212,7 +2211,6 @@
 "Profile Sync" = "Profile Sync";
 "Profile URL" = "Profile URL";
 "Profile URL Compatibility" = "Profile URL Compatibility";
-"Profile URL Rules (%@)" = "Profile URL Rules (%@)";
 "Profile URL Settings" = "Profile URL Settings";
 "Profile URL Source" = "Profile URL Source";
 "Profile URL already exists; syncing %@…" = "Profile URL already exists; syncing %@…";
@@ -2565,6 +2563,7 @@
 "Rule-set provider" = "Rule-set provider";
 "Rule-set routes must reference a non-empty IP-CIDR rule provider name." = "Rule-set routes must reference a non-empty IP-CIDR rule provider name.";
 "Rules" = "Rules";
+"Rules (%@)" = "Rules (%@)";
 "Rules Changed" = "Rules Changed";
 "Rules From" = "Rules From";
 "Rules Not in Effect as Written" = "Rules Not in Effect as Written";

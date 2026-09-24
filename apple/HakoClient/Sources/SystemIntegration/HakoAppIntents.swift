@@ -156,9 +156,12 @@ struct SetHakoRoutingModeIntent: AppIntent {
         Summary("Set Clash to \(\.$mode)")
     }
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+     
+     
+     
+    func perform() async throws -> some IntentResult {
         HakoSystemActionDispatch.enqueue(mode.route)
-        return .result(dialog: "Opening Clash to switch routing mode.")
+        return .result()
     }
 }
 

@@ -4,6 +4,7 @@ import HakoClientKit
 import HakoClientUI
 import HakoMacClient
 import SwiftUI
+import WidgetKit
 import os
 
 @MainActor
@@ -249,7 +250,22 @@ struct HakoMacApp: App {
                 await model.prepare()
             }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-                Task { await model.refreshVPNInstallation() }
+                Task {
+                    await model.refreshVPNInstallation()
+                     
+                     
+                     
+                    await model.takeModesChosenOnCardsNow()
+                     
+                     
+                     
+                    model.handlePendingSystemAction()
+                }
+            }
+             
+             
+            .onReceive(NotificationCenter.default.publisher(for: .hakoSystemActionQueued)) { _ in
+                model.handlePendingSystemAction()
             }
             .onOpenURL { url in
                 model.open(url)
@@ -815,6 +831,10 @@ private final class HakoMacSceneModel: ObservableObject {
      
     private var automaticRefreshDriver: Task<Void, Never>?
     private var wakeObserver: NSObjectProtocol?
+     
+     
+     
+    private var cardModeWatcher: HakoWidgetModeChoiceWatcher?
 
     @Published private(set) var snapshot: AppleClientSnapshot = .empty
      
@@ -2965,6 +2985,15 @@ private final class HakoMacSceneModel: ObservableObject {
             await proxyShare.refresh()
         }
         startAutomaticResourceRefresh()
+        startTakingModesChosenOnCards()
+        handlePendingSystemAction()
+         
+         
+         
+         
+         
+         
+        profiles.publishWidgetFacts()
          
          
          
@@ -3000,6 +3029,89 @@ private final class HakoMacSceneModel: ObservableObject {
                 await BackgroundRefresh.scanOnForegroundIfDue()
             }
         }
+    }
+
+     
+     
+     
+     
+     
+     
+     
+    private func startTakingModesChosenOnCards() {
+        if cardModeWatcher == nil {
+            cardModeWatcher = HakoWidgetModeChoiceWatcher(store: HakoWidgetFactsPublisher.store) { [weak self] in
+                Task { await self?.adoptModeChosenOnACard() }
+            }
+        }
+        guard let watcher = cardModeWatcher else { return }
+        if !watcher.start() {
+             
+             
+             
+             
+            let root = HakoWidgetFactsPublisher.store.root.path
+            HakoLogStore.shared.append(
+                "widget mode watcher: not listening on \(root); a card's mode is taken on the next activation",
+                stream: .app, level: .warning)
+        }
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func adoptModeChosenOnACard() async {
+        guard !false, currentProfile != nil,
+              let raw = HakoWidgetFactsPublisher.takeModeChosenOnACard(),
+              let mode = AppleClientOutboundMode(rawValue: raw) else { return }
+        let refusalBefore = modeRefusalMessage
+        await setOutboundMode(mode)
+        if modeRefusalMessage != refusalBefore {
+            HakoLogStore.shared.append(
+                "widget mode \(raw) not applied  \(modeRefusalMessage)",
+                stream: .app, level: .warning)
+            modeRefusalMessage = refusalBefore
+        }
+    }
+
+     
+     
+     
+     
+     
+     
+     
+     
+    private let systemHandoff = HakoSystemHandoff()
+
+    func handlePendingSystemAction() {
+        guard !false,
+              let route = systemHandoff.consume() else { return }
+        HakoLogStore.shared.append(
+            "system handoff consumed -> \(String(describing: route))", stream: .app, level: .warning)
+        handleSystemRoute(route)
+    }
+
+     
+     
+    func takeModesChosenOnCardsNow() async {
+        startTakingModesChosenOnCards()
+        await adoptModeChosenOnACard()
     }
 
     deinit {
@@ -3626,8 +3738,26 @@ private final class HakoMacSceneModel: ObservableObject {
             groups: nodes.groups,
             mode: ProxyBrowsingVisibility.Mode(coreValue: outboundMode.rawValue),
             delays: nodes.delays,
-            testing: nodes.testingNames
+            testing: nodes.testingNames,
+            isConnected: command.isConnected,
+            configuredSelections: menuBarConfiguredSelections
         )
+    }
+
+     
+     
+     
+     
+     
+     
+    private var menuBarConfiguredSelections: [String: String] {
+        guard !command.isConnected, let profile = currentProfile else { return [:] }
+        let model = ProxiesOverviewModel
+            .cached(sourceYAML: profiles.sourceYAML(for: profile))
+            .applying(selectedMap: profile.selectedMap)
+        return model.groups.reduce(into: [:]) { all, group in
+            if let selection = group.configuredSelection { all[group.name] = selection }
+        }
     }
 
      
@@ -3733,9 +3863,9 @@ private final class HakoMacSceneModel: ObservableObject {
                         ) ?? .rule
                 ),
                 traffic: trafficSnapshot(command.traffic),
-                proxyGroupCount: nodes.groups.count,
-                proxyCount: nodes.nodeCatalog.count,
-                ruleCount: homeRuleTally?.count ?? command.rules.count,
+                proxyGroupCount: homeConfigTally?.proxyGroups ?? 0,
+                proxyCount: homeProxyCount ?? 0,
+                ruleCount: homeConfigTally?.rules ?? command.rules.count,
                 connection:
                     HakoHomeConnectionPresenter.presentation(
                         for: HakoHomeConnectionFacts(
@@ -3757,15 +3887,28 @@ private final class HakoMacSceneModel: ObservableObject {
                 trafficScope: TrafficStatisticsSettings.onlyProxy()
                     ? .proxiedOnly
                     : .allTraffic,
-                proxies: HakoHomeDomainSnapshot(
-                    count: nodes.nodeCatalog.count,
-                    countUnit: "proxies",
-                    names: nodes.groups.map(\.name)
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                proxies: HomeProxiesCardPolicy.domainSnapshot(
+                    mode: outboundMode,
+                    standard: HakoHomeDomainSnapshot(
+                        count: homeProxyCount,
+                        countUnit: "proxies",
+                        names: homeConfigTally?.groupNames ?? []
+                    ),
+                    globalNode: globalGroupNode
                 ),
                 rules: HakoHomeDomainSnapshot(
-                    count: homeRuleTally?.count,
+                    count: homeConfigTally?.rules,
                     countUnit: "rules",
-                    names: homeRuleTally?.targets ?? []
+                    names: homeRuleTargets
                 ),
                  
                  
@@ -4254,7 +4397,35 @@ private final class HakoMacSceneModel: ObservableObject {
      
      
      
-    private var homeRuleTally: (count: Int, targets: [String])?
+     
+     
+     
+    private var homeConfigTally: ProfileConfigTally?
+    private var homeRuleTargets: [String] = []
+
+     
+     
+     
+     
+    private var homeProxyCount: Int? {
+        let inline = homeConfigTally?.proxies
+        let fromRuntime = nodes.runtimeProviderCatalog.proxyProviders.values
+            .filter { !$0.isKernelInternal }
+            .reduce(0) { $0 + $1.proxies.count }
+        let subscription = command.isConnected ? fromRuntime : (nodes.cachedProviderNodeCount ?? 0)
+        guard subscription > 0 else { return inline }
+        return (inline ?? 0) + subscription
+    }
+
+     
+     
+    private var globalGroupNode: String? {
+        let name = ProxyBrowsingVisibility.kernelGlobalGroupName
+        if let running = nodes.groups.first(where: { $0.name == name })?.now, !running.isEmpty {
+            return running
+        }
+        return currentProfile?.selectedMap[name]
+    }
 
     private func recomputeHomeRuleTally() {
         let profile = currentProfile
@@ -4274,7 +4445,8 @@ private final class HakoMacSceneModel: ObservableObject {
             }
             await MainActor.run {
                 guard let self else { return }
-                self.homeRuleTally = tally.map { ($0.rules, Array(targets)) }
+                self.homeConfigTally = tally
+                self.homeRuleTargets = Array(targets)
                 self.refreshSnapshot()
             }
         }
@@ -4350,6 +4522,14 @@ private final class HakoMacSceneModel: ObservableObject {
             .sink { [weak self] status in
                 guard let self else { return }
                 command.sync(vpnStatus: status)
+                 
+                 
+                 
+                 
+                 
+                 
+                 
+                WidgetCenter.shared.reloadAllTimelines()
             }
             .store(in: &cancellables)
 

@@ -315,11 +315,11 @@ public struct HakoRulesOverviewView<
         if !overview.buckets.isEmpty {
             HakoProductGroup(
                 .format(
-                    "Profile URL Rules (%@)",
+                    "Rules (%@)",
                     [String(overview.inlineCount)]
                 ),
                 footer:
-                    "Grouped by destination. Updates from the profile URL replace these rules.",
+                    "Grouped by destination. What the tunnel runs: the profile's rules with your custom rules and the override script applied.",
                 palette: palette
             ) {
                  

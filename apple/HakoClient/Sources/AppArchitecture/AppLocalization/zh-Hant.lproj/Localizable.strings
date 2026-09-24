@@ -1322,7 +1322,7 @@
 "Group name is already in use: %@" = "組名已被使用：%@";
 "Group name is required." = "必須填寫群組名稱。";
 "Group names must be unique." = "群組名稱必須唯一。";
-"Grouped by destination. Updates from the profile URL replace these rules." = "按目標群組；連結更新會取代這些規則。";
+"Grouped by destination. What the tunnel runs: the profile's rules with your custom rules and the override script applied." = "按目標分組；這是通道實際執行的規則：設定檔規則疊加你的自訂規則與覆寫指令碼。";
 "Groups" = "群組";
 "Groups (%@)" = "群組（%@）";
 "Groups cannot refer back to themselves: %@" = "策略組不能循環參照：%@";
@@ -2047,7 +2047,6 @@
 "OpenVPN takes tls-crypt-v2 on its own. Clear tls-auth and tls-crypt." = "OpenVPN 的 tls-crypt-v2 只能單獨用。請清空 tls-auth 與 tls-crypt。";
 "Opening Clash to start." = "正在開啟 Clash 以啟動。";
 "Opening Clash to stop." = "正在開啟 Clash 以停止。";
-"Opening Clash to switch routing mode." = "正在開啟 Clash 以切換分流模式。";
 "Opening Clash to toggle the VPN." = "正在開啟 Clash 以切換 VPN。";
 "Opening Clash to validate and import the configuration." = "正在開啟 Clash 以驗證並匯入設定。";
 "Opening Configuration" = "正在開啟設定";
@@ -2212,7 +2211,6 @@
 "Profile Sync" = "設定檔同步";
 "Profile URL" = "設定檔網址";
 "Profile URL Compatibility" = "連結相容性";
-"Profile URL Rules (%@)" = "連結規則（%@）";
 "Profile URL Settings" = "連結設定";
 "Profile URL Source" = "連結來源";
 "Profile URL already exists; syncing %@…" = "設定檔網址已存在，正在同步 %@…";
@@ -2565,6 +2563,7 @@
 "Rule-set provider" = "rule-set provider";
 "Rule-set routes must reference a non-empty IP-CIDR rule provider name." = "rule-set 路由必須引用非空的 IP-CIDR 規則集合名稱。";
 "Rules" = "規則";
+"Rules (%@)" = "規則（%@）";
 "Rules Changed" = "規則已變化";
 "Rules From" = "規則來源";
 "Rules Not in Effect as Written" = "未按原樣生效的規則";

@@ -145,7 +145,7 @@ enum HakoMacStatusMenuBuilder {
                 let item = NSMenuItem(title: group.name, action: nil, keyEquivalent: "")
                 item.setAccessibilityIdentifier("menu-bar.proxy-group")
                 item.attributedTitle = groupTitle(name: group.name, type: group.type)
-                setTrailing(group.now, on: item)
+                setTrailing(group.checked ?? "", on: item)
                 let submenu = plainMenu()
                 let lazy = HakoMacProxySubmenuController(
                     group: { group }, actions: actions, locale: locale

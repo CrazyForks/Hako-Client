@@ -15,6 +15,12 @@ import Foundation
  
 struct HakoWidgetPowerIntent: SetValueIntent {
     static let title: LocalizedStringResource = "Set Clash VPN From Widget"
+     
+     
+     
+     
+     
+    static var isDiscoverable: Bool { false }
     static var openAppWhenRun: Bool { false }
 
     @Parameter(title: "VPN Connected")
@@ -46,6 +52,7 @@ struct HakoWidgetPowerIntent: SetValueIntent {
  
 struct HakoWidgetRefreshIntent: AppIntent {
     static let title: LocalizedStringResource = "Refresh Clash Widget"
+    static var isDiscoverable: Bool { false }
     static var openAppWhenRun: Bool { false }
 
     func perform() async throws -> some IntentResult {
@@ -60,6 +67,7 @@ struct HakoWidgetRefreshIntent: AppIntent {
  
 struct HakoWidgetSetModeIntent: AppIntent {
     static let title: LocalizedStringResource = "Set Clash Mode"
+    static var isDiscoverable: Bool { false }
     static var openAppWhenRun: Bool { false }
 
     @Parameter(title: "Mode")
@@ -91,6 +99,7 @@ struct HakoWidgetSetModeIntent: AppIntent {
  
 struct HakoWidgetSelectIntent: AppIntent {
     static let title: LocalizedStringResource = "Select Clash Node"
+    static var isDiscoverable: Bool { false }
     static var openAppWhenRun: Bool { false }
 
     @Parameter(title: "Group")

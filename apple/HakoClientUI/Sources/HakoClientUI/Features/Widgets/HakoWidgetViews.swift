@@ -86,9 +86,13 @@ public struct HakoWidgetMainModel: Equatable {
 
      
      
+     
+     
+     
+     
     public init(
         snapshot: HakoWidgetSnapshot?, facts: HakoWidgetAppFacts?, now: Date, locale: Locale,
-        configuredMode: HakoWidgetMode? = nil
+        configuredMode: HakoWidgetMode? = nil, countsWiredByDefault: Bool = false
     ) {
         let fresh = snapshot.flatMap { $0.isFresh(now: now) ? $0 : nil }
         title = snapshot?.profile ?? facts?.profile ?? HakoCopy.string("No Profile", locale: locale)
@@ -118,7 +122,9 @@ public struct HakoWidgetMainModel: Equatable {
         connections = HakoWidgetFormat.count(idle ? 0 : fresh?.connections?.opened, locale: locale)
          
          
-        let wired = idle ? (facts?.countsWired ?? false) : (fresh?.cellular == nil && fresh?.wired != nil)
+        let wired = idle
+            ? (facts?.countsWired ?? countsWiredByDefault)
+            : (fresh?.cellular == nil && fresh?.wired != nil)
         cells = [
             .init(key: "Wi-Fi", symbol: "wifi", value: HakoWidgetFormat.bytes(idle ? 0 : sum(fresh?.wifi))),
             wired
@@ -361,9 +367,13 @@ public struct HakoWidgetMainView: View {
 
     public init(
         snapshot: HakoWidgetSnapshot?, facts: HakoWidgetAppFacts?, now: Date, locale: Locale,
-        size: HakoWidgetSize, slots: HakoWidgetSlots, configuredMode: HakoWidgetMode? = nil
+        size: HakoWidgetSize, slots: HakoWidgetSlots, configuredMode: HakoWidgetMode? = nil,
+        countsWiredByDefault: Bool = false
     ) {
-        model = HakoWidgetMainModel(snapshot: snapshot, facts: facts, now: now, locale: locale, configuredMode: configuredMode)
+        model = HakoWidgetMainModel(
+            snapshot: snapshot, facts: facts, now: now, locale: locale,
+            configuredMode: configuredMode, countsWiredByDefault: countsWiredByDefault
+        )
         stats = HakoWidgetStatsModel(snapshot: snapshot, now: now, locale: locale, extended: true)
         self.size = size
         self.slots = slots

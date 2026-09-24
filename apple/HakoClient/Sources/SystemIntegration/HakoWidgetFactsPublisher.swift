@@ -13,13 +13,8 @@ enum HakoWidgetFactsPublisher {
      
      
      
-    static var countsWired: Bool {
-        #if os(macOS)
-        return true
-        #else
-        return false
-        #endif
-    }
+     
+    static var countsWired: Bool { HakoWidgetPlatform.countsWired }
 
     static func facts(
         activeLabel: String?, sourceYAML: String?, mode: HakoWidgetMode? = nil, now: Date

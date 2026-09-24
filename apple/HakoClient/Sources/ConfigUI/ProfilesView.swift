@@ -231,18 +231,25 @@ final class ProfilesViewModel: ObservableObject {
         widgetFactsSubscription = Publishers.CombineLatest($activeProfileID, $profiles)
             .dropFirst()
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .sink { [weak self] activeID, profiles in
-                guard let self else { return }
-                let active = profiles.first { $0.id == activeID }
-                 
-                 
-                 
-                let mode = active.flatMap { HakoWidgetMode(rawValue: self.outboundMode(for: $0).rawValue) }
-                HakoWidgetFactsPublisher.publish(activeLabel: active?.label, mode: mode) { [weak self] in
-                    guard let self, let active else { return nil }
-                    return self.sourceYAML(for: active)
-                }
+            .sink { [weak self] _, _ in
+                self?.publishWidgetFacts()
             }
+    }
+
+     
+     
+     
+     
+    func publishWidgetFacts() {
+        let active = profiles.first { $0.id == activeProfileID }
+         
+         
+         
+        let mode = active.flatMap { HakoWidgetMode(rawValue: self.outboundMode(for: $0).rawValue) }
+        HakoWidgetFactsPublisher.publish(activeLabel: active?.label, mode: mode) { [weak self] in
+            guard let self, let active else { return nil }
+            return self.sourceYAML(for: active)
+        }
     }
 
     private var widgetFactsSubscription: AnyCancellable?

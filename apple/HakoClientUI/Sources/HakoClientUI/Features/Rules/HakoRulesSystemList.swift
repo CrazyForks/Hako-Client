@@ -97,9 +97,9 @@ struct HakoRulesSystemOverview<Icon: View>: View {
                         .equatable()
                 }
             } header: {
-                Text(hako: .format("Profile URL Rules (%@)", [String(overview.inlineCount)]))
+                Text(hako: .format("Rules (%@)", [String(overview.inlineCount)]))
             } footer: {
-                Text("Grouped by destination. Updates from the profile URL replace these rules.")
+                Text("Grouped by destination. What the tunnel runs: the profile's rules with your custom rules and the override script applied.")
             }
         }
         if !overview.ruleSets.isEmpty {

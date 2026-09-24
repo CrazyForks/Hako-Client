@@ -1322,7 +1322,7 @@
 "Group name is already in use: %@" = "组名已被使用：%@";
 "Group name is required." = "必须填写组名。";
 "Group names must be unique." = "组名必须唯一。";
-"Grouped by destination. Updates from the profile URL replace these rules." = "按目标分组；链接更新会替换这些规则。";
+"Grouped by destination. What the tunnel runs: the profile's rules with your custom rules and the override script applied." = "按目标分组；这是隧道实际运行的规则：配置规则叠加你的自定义规则与覆写脚本。";
 "Groups" = "分组";
 "Groups (%@)" = "分组（%@）";
 "Groups cannot refer back to themselves: %@" = "策略组不能循环引用：%@";
@@ -2047,7 +2047,6 @@
 "OpenVPN takes tls-crypt-v2 on its own. Clear tls-auth and tls-crypt." = "OpenVPN 的 tls-crypt-v2 只能单独用。请清空 tls-auth 与 tls-crypt。";
 "Opening Clash to start." = "正在打开 Clash 以启动。";
 "Opening Clash to stop." = "正在打开 Clash 以停止。";
-"Opening Clash to switch routing mode." = "正在打开 Clash 以切换分流模式。";
 "Opening Clash to toggle the VPN." = "正在打开 Clash 以切换 VPN。";
 "Opening Clash to validate and import the configuration." = "正在打开 Clash 以校验并导入配置。";
 "Opening Configuration" = "正在打开配置";
@@ -2212,7 +2211,6 @@
 "Profile Sync" = "配置同步";
 "Profile URL" = "配置链接";
 "Profile URL Compatibility" = "链接兼容性";
-"Profile URL Rules (%@)" = "链接规则（%@）";
 "Profile URL Settings" = "链接设置";
 "Profile URL Source" = "链接来源";
 "Profile URL already exists; syncing %@…" = "配置链接已存在，正在同步 %@…";
@@ -2565,6 +2563,7 @@
 "Rule-set provider" = "rule-set provider";
 "Rule-set routes must reference a non-empty IP-CIDR rule provider name." = "rule-set 路由必须引用非空的 IP-CIDR 规则集合名称。";
 "Rules" = "规则";
+"Rules (%@)" = "规则（%@）";
 "Rules Changed" = "规则已变化";
 "Rules From" = "规则来源";
 "Rules Not in Effect as Written" = "未按原样生效的规则";

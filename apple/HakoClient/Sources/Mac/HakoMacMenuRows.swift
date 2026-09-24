@@ -71,7 +71,10 @@ struct HakoMacMenuRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                  
-                .layoutPriority(1)
+                 
+                 
+                 
+                 
 
             Spacer(minLength: 8)
 
@@ -89,6 +92,8 @@ struct HakoMacMenuRow: View {
                 }
             case .member:
                 badge
+                    .fixedSize(horizontal: true, vertical: false)
+                    .layoutPriority(1)
             }
         }
         .padding(.trailing, 8)
@@ -323,7 +328,8 @@ final class HakoMacProxySubmenuController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         for member in group.members {
-            let isCurrent = member == group.now
+             
+            let isCurrent = member == group.checked
             let model = HakoMacMenuRowModel(
                 kind: .member,
                 name: member,

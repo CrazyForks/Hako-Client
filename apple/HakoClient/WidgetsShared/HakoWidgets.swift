@@ -83,7 +83,9 @@ struct HakoWidgetView: View {
             case .status:
                 HakoWidgetMainView(
                     snapshot: entry.snapshot, facts: entry.facts, now: entry.date, locale: locale,
-                    size: size, slots: slots, configuredMode: entry.storedMode
+                    size: size, slots: slots, configuredMode: entry.storedMode,
+                     
+                    countsWiredByDefault: HakoWidgetPlatform.countsWired
                 )
             case .group:
                 HakoWidgetGroupView(snapshot: entry.snapshot, facts: entry.facts, group: entry.group, now: entry.date, size: size, slots: slots)

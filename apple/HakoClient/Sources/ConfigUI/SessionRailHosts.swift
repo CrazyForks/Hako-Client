@@ -297,13 +297,21 @@ struct RulesOverviewHost: View {
      
      
     @State private var compileVerdicts = ProviderCompileVerdicts()
+     
+     
+     
+     
+     
+     
+     
+    @State private var presentedYAML: String?
 
     var body: some View {
          
          
          
         RulesOverviewAdapter(
-            sourceYAML: profiles.uiProjectedYAML(for: profile),
+            sourceYAML: presentedYAML ?? profiles.uiProjectedYAML(for: profile),
             canInspectActiveRules: canInspectActiveRules,
             compileVerdicts: compileVerdicts,
             openProxiesGroup: openProxiesGroup,
@@ -322,6 +330,9 @@ struct RulesOverviewHost: View {
          
          
          
+        .task(id: "\(profile.id)#\(profile.activeRevision ?? "")#\(profile.selectedScriptID ?? "")#presented") {
+            presentedYAML = await profiles.loadPresentedProxiesYAML(for: profile)
+        }
         .task(id: "\(profile.id)#\(profile.activeRevision ?? "")#\(canInspectActiveRules)") {
              
              
@@ -429,10 +440,14 @@ struct SessionProxiesRailRoot: View {
                 ),
                       let cached = ProxiesRailPreparationCache.shared.value(
                           for: profile.id
-                      ),
-                       
-                      cached.sourceYAML == profiles.cachedUIProjectedYAML(for: profile)
+                      )
                 else { return nil }
+                 
+                 
+                 
+                 
+                 
+                 
                 return (cached.model, cached.profileID)
             }
         if let restored {
@@ -497,6 +512,9 @@ struct SessionProxiesRailRoot: View {
                     in: profiles
                 )?.id,
                 refreshToken: profileRefreshToken,
+                scriptID: HomeProfileResolution.workingProfile(
+                    in: profiles
+                )?.selectedScriptID,
                 overrides: HomeProfileResolution.workingProfile(
                     in: profiles
                 )?.proxyNodeOverrides
@@ -557,6 +575,9 @@ struct SessionProxiesRailRoot: View {
         let refreshToken: Int
          
          
+        let scriptID: String?
+         
+         
          
          
          
@@ -577,10 +598,15 @@ struct SessionProxiesRailRoot: View {
         }
          
          
-        let cachedSource = profiles.cachedUIProjectedYAML(for: profile)
-        let projectionInputs = cachedSource == nil
-            ? profiles.uiProjectionInputs(for: profile)
-            : nil
+         
+         
+         
+         
+         
+         
+         
+         
+        let presentedSource = await profiles.loadPresentedProxiesYAML(for: profile)
         let selectedMap = profile.selectedMap
          
          
@@ -605,11 +631,7 @@ struct SessionProxiesRailRoot: View {
         let handle = Task.detached(
             priority: .userInitiated
         ) { () -> (ProxiesRailPreparation, String?)? in
-            let sourceYAML: String? = cachedSource ?? projectionInputs.flatMap {
-                CustomNodesGroupMaterializer.projectForUI(
-                    sourceYAML: $0.sourceYAML, profile: profile
-                )
-            }
+            let sourceYAML: String? = presentedSource
             var providersDir: URL?
             if !avoidsStore,
                let container = HakoAppIdentifiers.appGroupContainer,
@@ -681,11 +703,6 @@ struct SessionProxiesRailRoot: View {
         }
         guard !Task.isCancelled, let (outcome, sourceYAML) = result else {
             return
-        }
-        if cachedSource == nil, let projectionInputs {
-            profiles.rememberUIProjectedYAML(
-                sourceYAML, key: projectionInputs.key, for: profile
-            )
         }
         switch outcome {
         case .unchanged:

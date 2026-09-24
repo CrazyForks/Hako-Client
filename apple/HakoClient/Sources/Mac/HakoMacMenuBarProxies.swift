@@ -14,8 +14,17 @@ struct HakoMacMenuProxyCatalog: Equatable {
         let name: String
         let members: [String]
          
-         
         let now: String
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        var checked: String?
          
          
         var type: String = ""
@@ -54,11 +63,17 @@ struct HakoMacMenuProxyCatalog: Equatable {
      
      
      
+     
+     
+     
+     
     static func make(
         groups: [ProxyGroup],
         mode: ProxyBrowsingVisibility.Mode,
         delays: [String: Int] = [:],
-        testing: Set<String> = []
+        testing: Set<String> = [],
+        isConnected: Bool = true,
+        configuredSelections: [String: String] = [:]
     ) -> HakoMacMenuProxyCatalog {
         let visible = ProxyBrowsingVisibility.groups(
             groups,
@@ -101,6 +116,7 @@ struct HakoMacMenuProxyCatalog: Equatable {
                     name: group.name,
                     members: group.members,
                     now: group.now,
+                    checked: isConnected ? group.now : configuredSelections[group.name],
                     type: group.type,
                     latency: latency,
                     pinsOnRepick: ProxyGroupControlKind(rawType: group.type)
