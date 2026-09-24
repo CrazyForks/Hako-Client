@@ -163,6 +163,15 @@ struct ProfileCenterAdapter: View {
         }
     }
 
+     
+     
+    private func rereadCentreLibrary() async {
+        guard let store = model.configurationLibraryStore,
+              let updated = try? await Task.detached(operation: { try store.snapshot() }).value,
+              updated.generation >= configurationLibrary.generation else { return }
+        applyCenterLibrary(updated)
+    }
+
     private func applyCenterLibrary(_ snapshot: ConfigurationLibrarySnapshot) {
         configurationLibrary = snapshot
         composedProfileIDs = Set(snapshot.recipes.filter { $0.preservesOriginal != true }.map(\.id))
@@ -352,6 +361,8 @@ struct ProfileCenterAdapter: View {
                 )
             },
             isComposed: composedProfileIDs.contains(profile.id),
+            canUseOriginalConfiguration: configurationLibrary.recipes
+                .first(where: { $0.id == profile.id })?.sources.count == 1,
             configurationSourceNames: configurationLibrary.recipes.first(where: { $0.id == profile.id }).map { recipe in
                 recipe.sources.map { pin in configurationLibrary.sources.first(where: { $0.id == pin.id })?.label ?? pin.id }
             },
@@ -685,10 +696,12 @@ struct ProfileCenterAdapter: View {
 
         case let .setConfigurationSourceUpdates(id, enabled):
             try await model.setConfigurationSourceUpdates(id.rawValue, enabled: enabled)
-            if let store = model.configurationLibraryStore {
-                let updated = try await Task.detached { try store.snapshot() }.value
-                if updated.generation >= configurationLibrary.generation { configurationLibrary = updated }
-            }
+            await rereadCentreLibrary()
+            return .none
+
+        case let .setUsesOriginalConfiguration(id, enabled):
+            try await model.setUsesOriginalConfiguration(id.rawValue, enabled: enabled)
+            await rereadCentreLibrary()
             return .none
 
         case let .rename(id, label):

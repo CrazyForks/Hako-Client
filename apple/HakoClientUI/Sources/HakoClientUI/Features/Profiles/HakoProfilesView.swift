@@ -1525,6 +1525,7 @@ private struct HakoProfileDetailView<
      
     @State private var dismiss = HakoDismissHandle()
     @State private var isSavingSourceUpdates = false
+    @State private var isSavingOriginalConfiguration = false
     @State private var isDuplicating = false
      
      
@@ -1533,7 +1534,7 @@ private struct HakoProfileDetailView<
     @State private var showsActionFailure: ActionFailure?
 
     struct ActionFailure: Equatable {
-        enum Action { case duplicate, delete, sourceUpdates }
+        enum Action { case duplicate, delete, sourceUpdates, originalConfiguration }
         let action: Action
         let message: HakoDisplayText
     }
@@ -1615,7 +1616,8 @@ private struct HakoProfileDetailView<
              
              
             if isPastFirstFrame {
-                if profile.isComposed == true || (profile.isComposed == false && profile.canEditSource) { compositionSection(profile) }
+                if profile.isComposed == true || profile.canUseOriginalConfiguration
+                    || (profile.isComposed == false && profile.canEditSource) { compositionSection(profile) }
                 if profile.source == .remote,
                    profile.subscription != nil
                     || profile.canSync
@@ -2039,11 +2041,60 @@ private struct HakoProfileDetailView<
     }
 
     private func compositionSection(_ profile: HakoProfileSnapshot) -> some View {
-        HakoProfileGroup(title: "Configuration", palette: palette, presentationClass: presentationClass) {
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        let usesOriginal = profile.isComposed == false && profile.canUseOriginalConfiguration
+        return HakoProfileGroup(title: "Configuration", palette: palette, presentationClass: presentationClass) {
+            if profile.canUseOriginalConfiguration {
+                VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
+                    Toggle(isOn: Binding(get: { usesOriginal }, set: { value in
+                        guard !isSavingOriginalConfiguration else { return }
+                        isSavingOriginalConfiguration = true
+                        showsActionFailure = nil
+                        Task { @MainActor in
+                            defer { isSavingOriginalConfiguration = false }
+                            do {
+                                _ = try await actions.perform(.profiles(.setUsesOriginalConfiguration(id: profile.id, enabled: value)), allowedBy: snapshot)
+                            } catch {
+                                showsActionFailure = ActionFailure(action: .originalConfiguration, message: .copy(error.localizedDescription))
+                            }
+                        }
+                    })) {
+                         
+                         
+                         
+                         
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Use Original Configuration")
+                            if let name = profile.configurationSourceNames?.first, !name.isEmpty {
+                                Text(verbatim: name).font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .disabled(isSavingOriginalConfiguration || profile.isBusy)
+                    .accessibilityIdentifier("profile-detail.uses-original-configuration")
+                    Text(usesOriginal
+                        ? "Runs the configuration as received, with its own proxy groups, rules and DNS."
+                        : "Nodes come from the chosen node sources; routing follows the rule scheme.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                    actionFailureLine(for: .originalConfiguration)
+                }
+                .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.row))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if !usesOriginal { HakoRowDivider() }
+            }
+            if !usesOriginal {
             if profile.isComposed == true {
             Button { present(.configurationSources(profile.id)) } label: {
                 HakoProfileActionRow(title: "Node Sources",
-                    subtitle: profile.configurationSourceNames.flatMap { $0.isEmpty ? nil : HakoDisplayText.verbatim($0.joined(separator: " · ")) } ?? .copy("Choose node sources"),
+                    subtitle: HakoProfileSourcesSummary.value(profile.configurationSourceNames),
                     symbol: .serverRack, tint: .primary, icon: icon)
             }
             .buttonStyle(.plain)
@@ -2057,6 +2108,7 @@ private struct HakoProfileDetailView<
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("profile-detail.configuration-rules")
+            }
             if let follows = profile.followsConfigurationSourceUpdates {
                 HakoRowDivider()
                 VStack(alignment: .leading, spacing: HakoTheme.Spacing.tight) {
@@ -3153,5 +3205,22 @@ private struct HakoSubscriptionUsageView: View {
             return .orange
         }
         return .secondary
+    }
+}
+
+ 
+enum HakoProfileSourcesSummary {
+     
+     
+     
+     
+     
+     
+    static func value(_ names: [String]?) -> HakoDisplayText {
+        let present = (names ?? []).filter { !$0.isEmpty }
+        guard !present.isEmpty else { return .copy("Choose node sources") }
+        guard present.count > 2 else { return .verbatim(present.joined(separator: " · ")) }
+         
+        return .format("%@ sources", [String(present.count)])
     }
 }

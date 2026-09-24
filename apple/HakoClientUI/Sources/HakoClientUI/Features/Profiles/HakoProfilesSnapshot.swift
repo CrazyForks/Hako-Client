@@ -110,6 +110,10 @@ public struct HakoProfileSnapshot:
      
     public let overrideScriptName: String?
     public let isComposed: Bool?
+     
+     
+     
+    public let canUseOriginalConfiguration: Bool
     public let configurationSourceNames: [String]?
     public let configurationRuleName: String?
     public let canDelete: Bool
@@ -142,6 +146,7 @@ public struct HakoProfileSnapshot:
             HakoProfileFeatureAvailabilitySnapshot? = nil,
         heldBackUpdates: [HakoProfileHeldBackUpdate] = [],
         isComposed: Bool? = nil,
+        canUseOriginalConfiguration: Bool = false,
         configurationSourceNames: [String]? = nil, configurationRuleName: String? = nil,
         followsConfigurationSourceUpdates: Bool? = nil,
         overrideScriptName: String? = nil
@@ -150,6 +155,7 @@ public struct HakoProfileSnapshot:
         self.overrideScriptName = overrideScriptName
         self.followsConfigurationSourceUpdates = followsConfigurationSourceUpdates
         self.isComposed = isComposed
+        self.canUseOriginalConfiguration = canUseOriginalConfiguration
         self.configurationSourceNames = configurationSourceNames
         self.configurationRuleName = configurationRuleName
         self.heldBackUpdates = heldBackUpdates

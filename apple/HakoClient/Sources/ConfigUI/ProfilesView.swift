@@ -580,7 +580,14 @@ final class ProfilesViewModel: ObservableObject {
                 resolveInput:ConfigurationCenterSourceBridge.boundInput)
         }.value
         let label = ProfileLabelPolicy.deduplicate(prepared.recipe.label,existing:profileStore.load().map(\.label))
-        let profile = Profile(id:id,label:label,labelIsUserAssigned:true,source:.clipboard,autoUpdate:false,
+         
+         
+         
+         
+         
+         
+        let profileSource = Self.profileSource(for: prepared)
+        let profile = Profile(id:id,label:label,labelIsUserAssigned:true,source:profileSource,autoUpdate:false,
             updateIntervalHours:12,subscriptionInfo:nil,selectedMap:[:],override:OverrideSpec(),
             activeRevision:nil,order:(profiles.map(\.order).min() ?? 0) - 1,lastUpdatedAt:nil)
         let check = coreAcceptsDocument
@@ -673,6 +680,35 @@ final class ProfilesViewModel: ObservableObject {
             return try library.commit(candidate, payloads: [], expectedGeneration: candidate.generation)
         }.value
         load()
+    }
+
+     
+     
+     
+     
+    static func profileSource(for prepared: PreparedConfigurationCreation) -> Profile.Source {
+        guard prepared.recipe.sources.count == 1,
+              let reference = prepared.recipe.sources.first,
+              let record = prepared.candidate.sources.first(where: { $0.id == reference.id }),
+              case let .subscription(link) = record.origin,
+              !link.isEmpty else { return .clipboard }
+        return .url(link)
+    }
+
+    func setUsesOriginalConfiguration(_ id: String, enabled: Bool) async throws {
+        guard !changingConfigurationLibrary else { throw ConfigurationLibraryError.busy }
+        guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
+        changingConfigurationLibrary = true
+        defer { changingConfigurationLibrary = false }
+        let generation = try await Task.detached { try library.snapshot().generation }.value
+        let prepared = try await Task.detached(priority: .userInitiated) {
+            let value = try library.prepareOriginalUse(id, uses: enabled, expectedGeneration: generation,
+                resolveInput: ConfigurationCenterSourceBridge.boundInput)
+            for payload in value.payloads { try ConfigTransforms.validateSource(payload.documentJSON) }
+            return value
+        }.value
+        try await saveConfigurationPlan(candidate: prepared.candidate, payloads: prepared.payloads,
+            compositions: [id: prepared.composition], generation: generation)
     }
 
     func saveConfigurationRuleCustomization(_ draft: ConfigurationRuleDraft, generation: UInt64) async throws -> ConfigurationLibrarySnapshot {
