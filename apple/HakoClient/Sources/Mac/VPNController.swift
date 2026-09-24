@@ -2,6 +2,7 @@
 import Combine
 import Foundation
 import Hako
+import HakoClientUI
 
 enum NETimeoutError: LocalizedError, Equatable {
     case nePreferencesTimeout
@@ -89,7 +90,18 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
      
     @Published var legacySettingsMigration: LegacyClientSettingsMigrationResult?
     @Published private(set) var status = "idle"
-    @Published private(set) var lastError = ""
+    @Published private(set) var lastError = "" {
+        didSet { installationReadError = nil }
+    }
+    @Published private(set) var vpnAuthorization: HakoVPNAuthorizationState?
+    private var installationReadError: String?
+    private var installationReadGeneration: UInt64 = 0
+    private var systemVPNInstallationKnown = false
+    private let startRequests = TunnelRequestCoalescer()
+    var isStarting: Bool { startRequestsInFlight > 0 }
+    var systemVPNAuthorization: HakoVPNAuthorizationState? {
+        vpnAuthorization ?? (systemVPNInstallationKnown && manager == nil ? .required : nil)
+    }
      
      
     @Published private(set) var tunnelSettings = VPNTunnelSettings()
@@ -99,6 +111,8 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     @Published private(set) var configurationStrictRoute = false
 
     private let preferences: UserDefaults
+    private let preferencesReadTimeout: Double
+    private let systemVPNManagers: @MainActor () async throws -> [NETunnelProviderManager]
     private var manager: NETunnelProviderManager?
      
      
@@ -203,9 +217,13 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     init(
         preferences: UserDefaults? = UserDefaults(
             suiteName: HakoAppIdentifiers.appGroup
-        )
+        ),
+        systemVPNManagers: (@MainActor () async throws -> [NETunnelProviderManager])? = nil,
+        preferencesReadTimeout: Double = 15
     ) {
         self.preferences = preferences ?? .standard
+        self.preferencesReadTimeout = preferencesReadTimeout
+        self.systemVPNManagers = systemVPNManagers ?? { try await Self.loadSystemManagers() }
         tunnelSettings = VPNTunnelSettings.load(from: self.preferences)
         statusObserver = NotificationCenter.default.addObserver(
             forName: .NEVPNStatusDidChange,
@@ -237,18 +255,16 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                      
                      
                     let now = ContinuousClock.now
-                    guard !managerReloadInFlight,
+                    guard !isStarting, !profileWriter.isBusy, !managerReloadInFlight,
                           now >= managerReloadCooldownUntil else { return }
                     managerReloadInFlight = true
-                    let reloaded = try? await loadManager()
+                    await refreshSystemVPNInstallation()
                     managerReloadInFlight = false
                     managerReloadCooldownUntil =
                         ContinuousClock.now.advanced(by: .seconds(2))
-                    if let reloaded {
-                        manager = reloaded
-                    } else {
-                        return
-                    }
+                     
+                     
+                    guard manager != nil else { return }
                 }
                 let status = manager?.connection.status ?? connection.status
                 updateStatus(status)
@@ -287,13 +303,43 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         }
     }
 
-    func refresh() async {
-        do {
-            manager = try await loadManager()
-            updateStatus(manager?.connection.status ?? .invalid)
-        } catch {
-            fail(error)
+     
+     
+    func refreshSystemVPNInstallation() async {
+        guard !isStarting, !profileWriter.isBusy else { return }
+        let intent = profileWriteIntentGeneration
+        let revision = profileWriter.revision
+        installationReadGeneration &+= 1
+        let read = installationReadGeneration
+        func isCurrent() -> Bool {
+            !Task.isCancelled && intent == profileWriteIntentGeneration
+                && revision == profileWriter.revision && read == installationReadGeneration
+                && !isStarting && !profileWriter.isBusy
         }
+        do {
+            let installed = try await loadManager()
+            guard isCurrent() else { return }
+            adoptInstalledManager(installed)
+            if installationReadError != nil { lastError = "" }
+        } catch {
+            guard isCurrent() else { return }
+            systemVPNInstallationKnown = false
+            vpnAuthorization = nil
+            fail(error)
+            installationReadError = lastError
+        }
+    }
+
+    private func adoptInstalledManager(_ installed: NETunnelProviderManager?) {
+        let wasInstalled = manager != nil
+        manager = installed
+        systemVPNInstallationKnown = true
+        if installed != nil || wasInstalled { vpnAuthorization = nil }
+        updateStatus(installed?.connection.status ?? .invalid)
+    }
+
+    func refresh() async {
+        await refreshSystemVPNInstallation()
          
          
          
@@ -351,7 +397,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
                 return false
             }
             let wanted = routingPolicy
-            if VPNRoutingPolicy.installed(from: tunnelProtocol) != wanted {
+            if self.manager == nil || VPNRoutingPolicy.installed(from: tunnelProtocol) != wanted {
                 wanted.apply(to: tunnelProtocol)
                 manager.protocolConfiguration = tunnelProtocol
                 try await saveToPreferences(manager)
@@ -371,65 +417,118 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
     func start() async -> Bool {
         do { try profileWriter.requireStartReady() }
         catch { lastError = error.localizedDescription; return false }
+        let cancellation = VPNStartCancellation()
+        return await withTaskCancellationHandler {
+            await startRequests.run(origin: .programmatic) { [weak self] in
+                guard let self, !cancellation.isCancelled else { return false }
+                return await self.performStart(cancellation: cancellation)
+            }
+        } onCancel: {
+            cancellation.cancel()
+        }
+    }
+
+    private func performStart(cancellation: VPNStartCancellation) async -> Bool {
         profileWriteIntentGeneration &+= 1
-        let writeIntent = profileWriteIntentGeneration
+        let intent = profileWriteIntentGeneration
         startRequestsInFlight += 1
-        defer { startRequestsInFlight -= 1 }
-        let startGeneration = stopGeneration
-        let ipStack: IPStackSettings
-        do {
-            ipStack = try IPStackSettings.load(from: preferences)
+        var phase = "prepare"
+        var needsAuthorization = false
+        lastError = ""
+        vpnAuthorization = nil
+        defer {
+            startRequestsInFlight -= 1
+            if vpnAuthorization == .waiting { vpnAuthorization = nil }
+        }
+        func isCurrent() -> Bool {
+            intent == profileWriteIntentGeneration && !cancellation.isCancelled
+        }
+        func checkIntent() throws {
             try Task.checkCancellation()
-             
-             
-             
-             
+            guard isCurrent() else { throw CancellationError() }
+        }
+        do {
+            try checkIntent()
+            let ipStack = try IPStackSettings.load(from: preferences)
             if let container = HakoMacAppGroupAccess.readableContainer() {
                 try Self.ensureCoreSetup(container: container, settings: ipStack)
-                try await ProviderFirstLoadRetry.recoverCoreOwnedRoutesBeforeStart(
-                    container: container
-                )
+                try await ProviderFirstLoadRetry.recoverCoreOwnedRoutesBeforeStart(container: container)
             }
-            try Task.checkCancellation()
+            try checkIntent()
+            let manager = try await currentOrNewManager()
+            try checkIntent()
+            needsAuthorization = self.manager == nil
+            if needsAuthorization { vpnAuthorization = .waiting }
+            let proto = (manager.protocolConfiguration?.copy() as? NETunnelProviderProtocol)
+                ?? NETunnelProviderProtocol()
+            proto.providerBundleIdentifier = Self.packetTunnelExtensionBundleID
+            proto.serverAddress = Self.vpnProfileDescription
+            proto.providerConfiguration = try ipStack.applying(to: proto.providerConfiguration)
+            routingPolicy.apply(to: proto)
+            manager.protocolConfiguration = proto
+            manager.localizedDescription = Self.vpnProfileDescription
+            manager.isEnabled = true
+            try Self.armOnDemand(manager, configuration: OnDemandSettings.configuration())
+            let frozen = IPStackSystemProfileSnapshot(manager)
+            try await VPNStartAuthorization.perform(
+                save: { [self] in
+                    phase = "save"
+                    try await profileWriter.run { [self] in
+                        try checkIntent()
+                        frozen.apply(to: manager)
+                        try await rawSaveToPreferences(manager)
+                    }
+                },
+                reload: { [self] in
+                    phase = "reload"
+                    try await loadFromPreferences(manager)
+                },
+                start: { [self] in
+                    phase = "start"
+                    try manager.connection.startVPNTunnel()
+                    adoptInstalledManager(manager)
+                    lastError = ""
+                },
+                abort: { [self] in
+                     
+                     
+                    await Task { @MainActor in
+                        do {
+                            try await self.profileWriter.run {
+                                if manager.isOnDemandEnabled {
+                                    try await self.rawSaveToPreferences(manager, disarmOnly: true)
+                                }
+                            }
+                        } catch {
+                            HakoLogStore.shared.append("vpn cancelled-start disarm failed: \(error)",
+                                stream: .app, level: .warning)
+                        }
+                        manager.connection.stopVPNTunnel()
+                        self.adoptInstalledManager(manager)
+                    }.value
+                },
+                isCurrent: isCurrent,
+                onWaiting: { [weak self] in
+                    guard isCurrent() else { return }
+                    if needsAuthorization { self?.vpnAuthorization = .waiting }
+                })
+            return true
         } catch is CancellationError {
             return false
         } catch {
-            fail(error)
+            guard isCurrent(), !Task.isCancelled else { return false }
+            presentSystemVPNStartFailure(error, phase: phase, needsAuthorization: needsAuthorization)
             return false
         }
-        guard stopGeneration == startGeneration else { return false }
-         
-         
-         
-        guard await installRoutingPolicy(reconnectIfNeeded: false) else {
-            return false
-        }
-        do {
-            let manager = try await currentOrNewManager()
-            guard let proto = manager.protocolConfiguration as? NETunnelProviderProtocol else {
-                throw IPStackSettingsError.invalidSnapshot
-            }
-            proto.providerConfiguration = try ipStack.applying(to: proto.providerConfiguration)
-            manager.protocolConfiguration = proto
-             
-             
-             
-            try Self.armOnDemand(
-                manager,
-                configuration: OnDemandSettings.configuration()
-            )
-            try await saveToPreferences(manager, whileIntent: writeIntent)
-            try await loadFromPreferences(manager)
-            try Task.checkCancellation()
-            guard stopGeneration == startGeneration else { return false }
-            try manager.connection.startVPNTunnel()
-            self.manager = manager
-            updateStatus(manager.connection.status)
+    }
+
+    func presentSystemVPNStartFailure(_ error: Error, phase: String, needsAuthorization: Bool) {
+        if needsAuthorization, phase == "save", VPNStartAuthorization.isPermissionDenial(error as NSError) {
+            vpnAuthorization = .notCompleted
             lastError = ""
-            return true
-        } catch {
+        } else {
+            vpnAuthorization = nil
             fail(error)
-            return false
         }
     }
 
@@ -442,6 +541,7 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         profileWriteIntentGeneration &+= 1
         let writeIntent = profileWriteIntentGeneration
         stopGeneration &+= 1
+        vpnAuthorization = nil
         if applyingIPStackSettings { manager?.connection.stopVPNTunnel() }
         userStopInFlight = true
         if let manager, Self.disarmOnDemandForUserStop(manager) || applyingIPStackSettings {
@@ -1037,14 +1137,21 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         }
     }
 
-    private func currentOrNewManager() async throws
+    func currentOrNewManager() async throws
         -> NETunnelProviderManager
     {
-        if let manager { return manager }
-        if let saved = try await loadManager() {
-            manager = saved
-            return saved
+        let intent = profileWriteIntentGeneration
+        let saved: NETunnelProviderManager?
+        do { saved = try await loadManager() }
+        catch {
+            guard intent == profileWriteIntentGeneration, !Task.isCancelled else { throw CancellationError() }
+            systemVPNInstallationKnown = false
+            throw error
         }
+        try Task.checkCancellation()
+        guard intent == profileWriteIntentGeneration else { throw CancellationError() }
+        adoptInstalledManager(saved)
+        if let saved { return saved }
 
         let created = NETunnelProviderManager()
         let tunnelProtocol = NETunnelProviderProtocol()
@@ -1062,13 +1169,10 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         created.protocolConfiguration = tunnelProtocol
         created.localizedDescription = Self.vpnProfileDescription
         created.isEnabled = true
-        try await saveToPreferences(created)
-        try await loadFromPreferences(created)
-        manager = created
         return created
     }
 
-    private func loadManager() async throws -> NETunnelProviderManager? {
+    private static func loadSystemManagers() async throws -> [NETunnelProviderManager] {
         let result = await withCheckedContinuation {
             (continuation:
                 CheckedContinuation<HakoMacManagerLoadResult, Never>) in
@@ -1081,7 +1185,14 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
             }
         }
         if let error = result.error { throw error }
-        return result.managers.first {
+        return result.managers
+    }
+
+    private func loadManager() async throws -> NETunnelProviderManager? {
+        let managers = try await Self.withNETimeout(seconds: preferencesReadTimeout, .nePreferencesTimeout) { [self] in
+            try await systemVPNManagers()
+        }
+        return managers.first {
             ($0.protocolConfiguration as? NETunnelProviderProtocol)?
                 .providerBundleIdentifier
                 == Self.packetTunnelExtensionBundleID
@@ -1115,16 +1226,13 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         }
     }
 
-    private func loadFromPreferences(
-        _ manager: NETunnelProviderManager
-    ) async throws {
-        try await withCheckedThrowingContinuation {
-            (continuation: CheckedContinuation<Void, Error>) in
-            manager.loadFromPreferences { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
+    private func loadFromPreferences(_ manager: NETunnelProviderManager) async throws {
+        try await Self.withNETimeout(seconds: preferencesReadTimeout, .nePreferencesTimeout) {
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
+                manager.loadFromPreferences { error in
+                    if let error { continuation.resume(throwing: error) }
+                    else { continuation.resume() }
                 }
             }
         }

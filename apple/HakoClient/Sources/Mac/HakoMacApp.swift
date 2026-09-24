@@ -248,6 +248,9 @@ struct HakoMacApp: App {
             .task {
                 await model.prepare()
             }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                Task { await model.refreshVPNInstallation() }
+            }
             .onOpenURL { url in
                 model.open(url)
             }
@@ -1024,7 +1027,7 @@ private final class HakoMacSceneModel: ObservableObject {
          
         isSettling: { [weak self] in
             guard let status = self?.vpn.status.lowercased() else { return false }
-            return status == "connecting" || status == "disconnecting"
+            return self?.vpn.isStarting == true || status == "connecting" || status == "disconnecting"
         }
     )
 
@@ -1208,6 +1211,12 @@ private final class HakoMacSceneModel: ObservableObject {
             utilities,
             more,
         ])) ?? .unavailable
+    }
+
+    func refreshVPNInstallation() async {
+        await vpn.refreshSystemVPNInstallation()
+        rebind()
+        refreshSnapshot()
     }
 
     func prepare() async {
@@ -1545,7 +1554,7 @@ private final class HakoMacSceneModel: ObservableObject {
         _ intent: AppleClientConnectionIntent,
         beforeRun: (@MainActor @Sendable () -> Void)? = nil
     ) async {
-        await connectionRequests.run { [weak self] in
+        await connectionRequests.run(interruptInFlight: intent == .disconnect && vpn.isStarting) { [weak self] in
             await beforeRun?()
             await self?.performConnectionUncoalesced(intent)
             return true
@@ -2200,6 +2209,7 @@ private final class HakoMacSceneModel: ObservableObject {
                             activeProfileName: profile?.label,
                             vpnStatus: vpn.status,
                             errorMessage: vpn.reportableLastError,
+                            vpnAuthorization: vpn.systemVPNAuthorization,
                             allowsSystemVPNProfileReset:
                                 vpn.systemVPNProfileResetAvailable,
                             isSwitchingProxy:

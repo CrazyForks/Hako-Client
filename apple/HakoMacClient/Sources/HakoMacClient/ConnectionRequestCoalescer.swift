@@ -68,7 +68,7 @@ public final class ConnectionRequestCoalescer {
      
      
     @discardableResult
-    public func run(_ work: @escaping @Sendable () async -> Bool) async -> Bool {
+    public func run(interruptInFlight: Bool = false, _ work: @escaping @Sendable () async -> Bool) async -> Bool {
         let pressedAt = now()
         let insideGesture = lastPress.map {
             pressedAt.timeIntervalSince($0) < gestureWindow()
@@ -76,6 +76,10 @@ public final class ConnectionRequestCoalescer {
         lastPress = pressedAt
 
         if let existing = inFlight {
+             
+             
+             
+            if interruptInFlight && !insideGesture { return await work() }
             let result = await existing.value
              
              
