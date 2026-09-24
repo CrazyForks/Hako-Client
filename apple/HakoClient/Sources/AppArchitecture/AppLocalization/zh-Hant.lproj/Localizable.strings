@@ -2877,7 +2877,7 @@
 "TUN IPv6: On" = "開啟";
 "Tabs" = "標籤頁";
 "Tailscale Demo" = "Tailscale Demo";
-"Taken over by the override script" = "由覆寫腳本接管";
+"Taken over by the override script" = "由覆寫指令碼接管";
 "Tap Retry, then allow VPN setup." = "點重試，並允許加入 VPN 設定";
 "Tap START, then allow VPN setup." = "點啟動，並允許加入 VPN 設定";
 "Tap any backup or prior version to preview it. Swipe a current backup left to delete it; swipe a conflict copy right to keep it as the iCloud version." = "點一下任一備份或歷史版本即可預覽。左滑目前備份可刪除；右滑衝突副本可將其保留為 iCloud 版本。";
