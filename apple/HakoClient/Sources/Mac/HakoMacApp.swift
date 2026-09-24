@@ -1079,6 +1079,8 @@ private final class HakoMacSceneModel: ObservableObject {
 
         observeMenuTracking()
         refreshSnapshot()
+
+
         Self.current = self
          
          
