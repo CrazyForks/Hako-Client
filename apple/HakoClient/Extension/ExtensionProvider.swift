@@ -83,7 +83,10 @@ final class ExtensionProvider: NSObject {
     private var offeredSettingsRevision: UInt64 = 0
     private var appliedSettingsRevision: UInt64?
     private var desiredPathHasIPv6 = false
-    private var ipv6ReapplyTask: Task<Void, Never>?
+     
+     
+    private var pathReapplyOwed = false
+    private var pathReapplyTask: Task<Void, Never>?
     private var tunStrictRouteRequested = false
      
      
@@ -141,6 +144,7 @@ final class ExtensionProvider: NSObject {
     private var defaultPathSupportsIPv4 = false
     private var defaultPathSupportsIPv6 = false
     private var physicalPathAvailableInterfaces: [PhysicalInterfaceInventory.PathInterface] = []
+    private var physicalInterfaceIdentity = PhysicalInterfaceIdentity()
     private var physicalPathUpdateCount: UInt64 = 0
     private var physicalPathHistory: [PhysicalPathEvent] = []
     private var providerSleepCount: UInt64 = 0
@@ -181,6 +185,7 @@ final class ExtensionProvider: NSObject {
         defaultPathIsExpensive = false
         defaultPathIsConstrained = false
         physicalPathUpdateCount = 0
+        physicalInterfaceIdentity = PhysicalInterfaceIdentity()
         physicalPathHistory.removeAll(keepingCapacity: true)
         providerSleepCount = 0
         providerWakeCount = 0
@@ -195,6 +200,9 @@ final class ExtensionProvider: NSObject {
             pathLock.lock()
             let ipv6SupportChanged = (defaultPathIsSatisfied && defaultPathSupportsIPv6)
                 != (snapshot.isReady && snapshot.supportsIPv6)
+            let interfaceChanged = physicalInterfaceIdentity.observe(
+                ready: snapshot.isReady, name: snapshot.interfaceName
+            )
             defaultInterfaceIndex = snapshot.interfaceIndex
             defaultInterfaceName = snapshot.interfaceName
             defaultInterfaceType = snapshot.interfaceType
@@ -222,9 +230,10 @@ final class ExtensionProvider: NSObject {
             }
             let listener = interfaceListener
             pathLock.unlock()
-            if ipv6SupportChanged, ipStack.tunIPv6Mode.followsPath {
-                self.scheduleIPv6DeclarationFollowingPath(
+            if interfaceChanged || (ipv6SupportChanged && ipStack.tunIPv6Mode.followsPath) {
+                self.scheduleTunnelSettingsFollowingPath(
                     hasIPv6: snapshot.isReady && snapshot.supportsIPv6,
+                    interfaceChanged: interfaceChanged,
                     generation: settingsGeneration
                 )
             }
@@ -246,14 +255,36 @@ final class ExtensionProvider: NSObject {
         }
     }
 
-    private func scheduleIPv6DeclarationFollowingPath(
-        hasIPv6: Bool, generation: TunnelNetworkSettingsWriter.Generation
+     
+     
+     
+     
+     
+    struct PhysicalInterfaceIdentity {
+        private var lastName: String?
+
+        mutating func observe(ready: Bool, name: String) -> Bool {
+            guard ready, !name.isEmpty else {
+                if lastName != nil { lastName = "" }
+                return false
+            }
+            defer { lastName = name }
+            return lastName.map { $0 != name } ?? false
+        }
+    }
+
+     
+     
+     
+    private func scheduleTunnelSettingsFollowingPath(
+        hasIPv6: Bool, interfaceChanged: Bool, generation: TunnelNetworkSettingsWriter.Generation
     ) {
         settingsWriter.updateDesired(in: generation) {
             withStateLock {
                 desiredPathHasIPv6 = hasIPv6
-                ipv6ReapplyTask?.cancel()
-                ipv6ReapplyTask = Task { [weak self] in
+                if interfaceChanged { pathReapplyOwed = true }
+                pathReapplyTask?.cancel()
+                pathReapplyTask = Task { [weak self] in
                     do {
                         try await Task.sleep(nanoseconds: 1_000_000_000)
                         guard let self else { return }
@@ -263,7 +294,7 @@ final class ExtensionProvider: NSObject {
                     } catch {
                         guard let self, self.settingsWriter.isCurrent(generation) else { return }
                         HakoLogStore.shared.append(
-                            "tun: IPv6 re-declaration failed: \(error.localizedDescription)", stream: .app
+                            "tun: path re-apply failed: \(error.localizedDescription)", stream: .app
                         )
                     }
                 }
@@ -275,6 +306,7 @@ final class ExtensionProvider: NSObject {
         let settings: NEPacketTunnelNetworkSettings
         let revision: UInt64
         let session: ProviderTunnelSessionLease.Session?
+        let followsInterfaceChange: Bool
     }
 
      
@@ -308,18 +340,20 @@ final class ExtensionProvider: NSObject {
         while true {
             try Task.checkCancellation()
             var appliedIPv6: Bool?
+            var appliedAfterInterfaceChange = false
             let outcome = try await settingsWriter.perform(in: generation, prepare: { dirty -> SettingsPlan? in
                 let session = self.withStateLock { self.offeredTunnelSession }
                 guard self.isTunnelSessionCurrent(session) else { return nil }
                 return self.withStateLock {
                     guard let offered = self.offeredNetworkSettings else { return nil }
                     let declares = self.desiredIPv6Declaration
-                    if !dirty, self.appliedSettingsRevision == self.offeredSettingsRevision,
+                    if !dirty, !self.pathReapplyOwed, self.appliedSettingsRevision == self.offeredSettingsRevision,
                        let current = self.networkSettings,
                        (current.ipv6Settings != nil) == declares { return nil }
                     let settings = offered.copy() as! NEPacketTunnelNetworkSettings
                     if !declares { settings.ipv6Settings = nil }
-                    return SettingsPlan(settings: settings, revision: self.offeredSettingsRevision, session: session)
+                    return SettingsPlan(settings: settings, revision: self.offeredSettingsRevision, session: session,
+                                        followsInterfaceChange: self.pathReapplyOwed)
                 }
             }, apply: { plan in
                 try await self.tunnelProvider.setTunnelNetworkSettings(plan.settings)
@@ -329,12 +363,15 @@ final class ExtensionProvider: NSObject {
                 self.withStateLock {
                     self.networkSettings = plan.settings
                     self.appliedSettingsRevision = plan.revision
+                    self.pathReapplyOwed = false
                     appliedIPv6 = plan.settings.ipv6Settings != nil
+                    appliedAfterInterfaceChange = plan.followsInterfaceChange
                 }
             })
             guard settingsWriter.isCurrent(generation) else { throw CancellationError() }
             if let appliedIPv6 {
-                HakoLogStore.shared.append("tun: IPv6 declaration applied=\(appliedIPv6)", stream: .app)
+                let reason = appliedAfterInterfaceChange ? " after interface change" : ""
+                HakoLogStore.shared.append("tun: IPv6 declaration applied=\(appliedIPv6)\(reason)", stream: .app)
             }
             if outcome != .superseded { return }
         }
@@ -462,6 +499,7 @@ final class ExtensionProvider: NSObject {
                 self.settingsGeneration = settingsGeneration
                 ipStackSettings = ipStack
                 desiredPathHasIPv6 = false
+                pathReapplyOwed = false
             }
         }
          
@@ -848,8 +886,8 @@ final class ExtensionProvider: NSObject {
             () -> (HakoBoxService?, PacketFlowBridge?) in
             let s = service
             let b = packetFlowBridge
-            ipv6ReapplyTask?.cancel()
-            ipv6ReapplyTask = nil
+            pathReapplyTask?.cancel()
+            pathReapplyTask = nil
             preappliedTunnel?.cancel()
             preappliedTunnel = nil
             preappliedDescriptor = nil
@@ -859,6 +897,7 @@ final class ExtensionProvider: NSObject {
             offeredTunnelSession = nil
             appliedSettingsRevision = nil
             desiredPathHasIPv6 = false
+            pathReapplyOwed = false
             service = nil
             packetFlowBridge = nil
             networkSettings = nil
