@@ -1875,6 +1875,7 @@ public struct HakoConfigurationNodeScopeView: View {
         initialChoices = choices
         _selectedChoices = State(initialValue: choices)
     }
+    @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
     private var dirty: Bool { selectedChoices != initialChoices }
     private var selection: ConfigurationNodeScope? {
         guard dirty else { return initial }
@@ -1913,6 +1914,13 @@ public struct HakoConfigurationNodeScopeView: View {
             ToolbarItem(placement: .confirmationAction) { Button("Done") { save(selection) } }
         }
         .interactiveDismissDisabled(dirty)
+         
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if insideProductModal {
+                HakoModalActionBar(primaryTitle: "Done", primaryDisabled: !dirty,
+                    primaryHint: dirty ? nil : "Change something to save it.", onPrimary: { save(selection) })
+            }
+        }
         .hakoUnsavedChangesAlert(isPresented: $confirmsDiscard, message: .copy("This selection has not been saved."),
             isBusy: false, save: { save(selection) }, discard: close)
     }
