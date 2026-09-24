@@ -56,43 +56,7 @@ struct ProxyShareView: View {
          
          
          
-        VStack(spacing: 0) {
-            tabPickerBar
-            HakoMacSettingsFormContainer {
-                switch tab {
-                case .core:
-                    coreSwitchSection
-                     
-                     
-                     
-                    if kernelShare.isOn, let listener = kernelShare.listener {
-                        coreListenerSection(listener)
-                        coreConnectSection(listener)
-                    }
-                    if model.terminalListener != nil {
-                        terminalSection
-                    }
-                    coreExposureSection
-                    listenerDeviationsSection
-                case .native:
-                     
-                     
-                     
-                     
-                     
-                     
-                    actionSection
-                    if model.status.enabled {
-                        connectSection
-                    }
-                    serverSection
-                    securitySection
-                    if model.terminalListener != nil {
-                        terminalSection
-                    }
-                }
-            }
-        }
+        listenerContent
         .hakoPageTitle("LAN Proxy Share")
         .hakoDetailPageInsets()
         .task {
@@ -319,64 +283,84 @@ struct ProxyShareView: View {
      
      
      
-     
-     
-    private var tabPickerBar: some View {
+    @ViewBuilder
+    private var listenerContent: some View {
 #if os(macOS)
-        HStack(spacing: 2) {
-            tabSegment(.core, "Core", identifier: "proxyShare.tab.core")
-            tabSegment(.native, "Native Share", identifier: "proxyShare.tab.native")
+        TabView(selection: $tab) {
+            HakoMacSettingsFormContainer { coreSections }
+                .tabItem {
+                    Text(HakoCopy.key("Core"))
+                        .accessibilityIdentifier("proxyShare.tab.core")
+                }
+                .tag(LANShareTab.core)
+            HakoMacSettingsFormContainer { nativeSections }
+                .tabItem {
+                    Text(HakoCopy.key("Native Share"))
+                        .accessibilityIdentifier("proxyShare.tab.native")
+                }
+                .tag(LANShareTab.native)
         }
-        .padding(2)
-        .background(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Color.primary.opacity(0.07))
-        )
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 2)
+        .padding(HakoTheme.Spacing.standard)
 #else
-        Picker(HakoCopy.key("Listener"), selection: $tab) {
-            Text(HakoCopy.key("Core")).tag(LANShareTab.core)
-            Text(HakoCopy.key("Native Share")).tag(LANShareTab.native)
+        if #available(iOS 17.0, *) {
+            touchListenerForm
+                .contentMargins(.top, HakoTheme.Spacing.row, for: .scrollContent)
+        } else {
+            touchListenerForm
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .accessibilityIdentifier("proxyShare.tab")
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 2)
 #endif
     }
 
-#if os(macOS)
-    private func tabSegment(
-        _ target: LANShareTab,
-        _ key: String,
-         
-         
-        identifier: String
-    ) -> some View {
-        Button {
-            tab = target
-        } label: {
-            Text(HakoCopy.key(key))
-                .font(.callout.weight(tab == target ? .semibold : .regular))
-                .frame(maxWidth: .infinity, minHeight: 26)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background {
-            if tab == target {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(Color(nsColor: .controlColor))
-                    .shadow(color: .black.opacity(0.18), radius: 1, y: 1)
+#if !os(macOS)
+    private var touchListenerForm: some View {
+        HakoMacSettingsFormContainer {
+            Section {
+                Picker(HakoCopy.key("Listener"), selection: $tab) {
+                    Text(HakoCopy.key("Core")).tag(LANShareTab.core)
+                    Text(HakoCopy.key("Native Share")).tag(LANShareTab.native)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityIdentifier("proxyShare.tab")
+                .frame(minHeight: 44)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+            switch tab {
+            case .core: coreSections
+            case .native: nativeSections
             }
         }
-        .accessibilityIdentifier(identifier)
-        .accessibilityAddTraits(tab == target ? .isSelected : [])
     }
 #endif
+
+    @ViewBuilder
+    private var coreSections: some View {
+        coreSwitchSection
+        if kernelShare.isOn, let listener = kernelShare.listener {
+            coreListenerSection(listener)
+            coreConnectSection(listener)
+        }
+        if model.terminalListener != nil {
+            terminalSection
+        }
+        coreExposureSection
+        listenerDeviationsSection
+    }
+
+    @ViewBuilder
+    private var nativeSections: some View {
+        actionSection
+        if model.status.enabled {
+            connectSection
+        }
+        serverSection
+        securitySection
+        if model.terminalListener != nil {
+            terminalSection
+        }
+    }
 
      
      
