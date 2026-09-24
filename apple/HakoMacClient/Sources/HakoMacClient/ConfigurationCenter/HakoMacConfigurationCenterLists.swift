@@ -240,10 +240,16 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
                     HakoMacRoutedRow {
                         detail(.configuration(profile.id))
                     } label: {
+                         
+                         
+                         
+                         
+                         
+                         
                         HakoMacSettingsRow(
                             title: .verbatim(profile.label),
-                            status: Self.statusLine(profile, locale: locale),
-                            statusTint: profile.isCurrent ? .green : nil,
+                            status: nil,
+                            statusTint: nil,
                             trailing: nil,
                             busy: profile.isBusy
                         )
@@ -506,17 +512,6 @@ public struct HakoMacConfigurationCenterListPage<Detail: View>: View {
         }
     }
 
-     
-     
-    private static func statusLine(_ profile: HakoProfileSnapshot, locale: Locale) -> HakoDisplayText {
-        var parts: [String] = []
-        if profile.isCurrent { parts.append(HakoCopy.string("Active", locale: locale)) }
-        parts.append(HakoCopy.string(for: profile.sourceSummary, locale: locale))
-        if let updated = profile.lastUpdatedAt {
-            parts.append(hakoMacListDateFormatters.formatter(for: locale).string(from: updated))
-        }
-        return .verbatim(parts.joined(separator: " · "))
-    }
 
      
 
