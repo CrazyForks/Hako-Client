@@ -178,6 +178,9 @@ struct HakoTVLaunchOverrides: Equatable, Sendable {
      
     let probeSpec: String?
      
+     
+    let switchWatch: String?
+     
     let dumpsDiagnostics: Bool
      
      
@@ -201,6 +204,7 @@ struct HakoTVLaunchOverrides: Equatable, Sendable {
         allowLAN = environment["HAKO_TV_ALLOW_LAN"].flatMap { $0 == "1" ? true : ($0 == "0" ? false : nil) }
         proxyShare = Self.proxyShareOverride(environment["HAKO_TV_PROXY_SHARE"])
         probeSpec = environment["HAKO_TV_PROBE"]
+        switchWatch = environment["HAKO_TV_SWITCH_WATCH"]
         dumpsDiagnostics = environment["HAKO_TV_DIAG"] == "1"
         opens = environment["HAKO_TV_OPEN"]
     }
