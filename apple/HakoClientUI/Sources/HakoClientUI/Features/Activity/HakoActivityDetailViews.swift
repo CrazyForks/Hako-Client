@@ -254,9 +254,10 @@ public struct HakoConnectionsView<Icon: View>: View {
                                     horizontal: false,
                                     vertical: true
                                 )
-                            Text(
-                                "\(summary.connectionCount) connections · ↑ \(HakoActivityByteFormatter.count(summary.upload)) · ↓ \(HakoActivityByteFormatter.count(summary.download))"
-                            )
+                             
+                             
+                            (Text(hako: .format(summary.connectionCount == 1 ? "%@ connection" : "%@ connections", [String(summary.connectionCount)]))
+                                + Text(verbatim: " · ↑ \(HakoActivityByteFormatter.count(summary.upload)) · ↓ \(HakoActivityByteFormatter.count(summary.download))"))
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                         }

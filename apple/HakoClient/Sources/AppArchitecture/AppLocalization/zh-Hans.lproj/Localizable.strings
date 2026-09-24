@@ -26,6 +26,8 @@
 "%@ chain overrides · %@ relay migrations" = "%@ 项链式覆写 · %@ 项 relay 迁移";
 "%@ collection" = "%@ 个集合";
 "%@ collections" = "%@ 个集合";
+"%@ connection" = "%@ 条连接";
+"%@ connections" = "%@ 条连接";
 "%@ could not be backed up completely: a saved credential is missing. Re-enter it, then back up again." = "%@ 无法完整备份：有已保存的凭据缺失。请重新填写后再备份。";
 "%@ could not be deleted" = "%@ 无法删除";
 "%@ created" = "%@ 已创建";
@@ -1360,7 +1362,7 @@
 "IP Version" = "IP 版本";
 "IP address families are controlled in More > IP Stack." = "IP 地址族请前往“更多 > IP Stack”设置。";
 "IP addresses only." = "仅填写 IP 地址。";
-"IP query mode and automatic tunnel IPv6" = "IP 查询模式与 TUN IPv6 自动配置";
+"IP query mode and tunnel IPv6" = "IP 查询模式与 TUN IPv6";
 "IPv4 & IPv6" = "IPv4 & IPv6";
 "IPv4 + IPv6" = "IPv4 + IPv6";
 "IPv4 Address" = "IPv4 地址";

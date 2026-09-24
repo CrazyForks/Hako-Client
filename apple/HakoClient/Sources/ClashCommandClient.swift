@@ -531,7 +531,12 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
     private var diagnosticPublication: HakoRuntimeDiagnostics?
     private var publishingDiagnostics = false
     private var logBatchTask: Task<Void, Never>?
-    private var logDisplayLevel = "warning"
+     
+     
+     
+     
+     
+    private var logDisplayLevel = "info"
     private var pendingLogs = HakoLogBuffer(maximumBytes: 256 * 1024, maximumCount: 1000)
     private var trafficReducer = ClashTrafficReducer()
     private let connectionRuntimeFeed: ConnectionRuntimeFeed
@@ -2562,7 +2567,6 @@ return
         else { return }
          
          
-        if let level = object["log-level"] as? String { logDisplayLevel = level.lowercased() }
          
          
          

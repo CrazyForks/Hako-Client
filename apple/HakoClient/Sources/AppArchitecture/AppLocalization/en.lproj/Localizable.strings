@@ -26,6 +26,8 @@
 "%@ chain overrides · %@ relay migrations" = "%@ chain overrides · %@ relay migrations";
 "%@ collection" = "%@ collection";
 "%@ collections" = "%@ collections";
+"%@ connection" = "%@ connection";
+"%@ connections" = "%@ connections";
 "%@ could not be backed up completely: a saved credential is missing. Re-enter it, then back up again." = "%@ could not be backed up completely: a saved credential is missing. Re-enter it, then back up again.";
 "%@ could not be deleted" = "%@ could not be deleted";
 "%@ created" = "%@ created";
@@ -1360,7 +1362,7 @@
 "IP Version" = "IP Version";
 "IP address families are controlled in More > IP Stack." = "IP address families are controlled in More > IP Stack.";
 "IP addresses only." = "IP addresses only.";
-"IP query mode and automatic tunnel IPv6" = "IP query mode and automatic tunnel IPv6";
+"IP query mode and tunnel IPv6" = "IP query mode and tunnel IPv6";
 "IPv4 & IPv6" = "IPv4 & IPv6";
 "IPv4 + IPv6" = "IPv4 + IPv6";
 "IPv4 Address" = "IPv4 Address";

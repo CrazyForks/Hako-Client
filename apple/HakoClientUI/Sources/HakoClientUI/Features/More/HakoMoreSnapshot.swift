@@ -133,7 +133,7 @@ public struct HakoMoreSnapshot: Codable, Equatable, Sendable {
         case .ipStack:
             return HakoProductDestinationPresentation(
                 title: .copy(destination.title),
-                subtitle: "IP query mode and automatic tunnel IPv6"
+                subtitle: "IP query mode and tunnel IPv6"
             )
         case .tunnel:
             return HakoProductDestinationPresentation(
