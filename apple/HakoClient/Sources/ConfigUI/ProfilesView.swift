@@ -553,30 +553,6 @@ final class ProfilesViewModel: ObservableObject {
         if !pending.isEmpty { load() }
     }
 
-    func previewConfigurationNodeDNS(_ draft: ConfigurationCreationDraft, generation: UInt64,
-                                     editingID: String?) async throws -> ConfigurationNodeDNSPreview {
-        guard let library = configurationLibraryStore else { throw ConfigurationLibraryError.unreadable }
-        let profile = editingID.flatMap { id in profiles.first { $0.id == id } }
-            ?? Profile(id: UUID().uuidString.lowercased(), label: "Preview", source: .clipboard, autoUpdate: false,
-                updateIntervalHours: 12, subscriptionInfo: nil, selectedMap: [:], override: OverrideSpec(),
-                activeRevision: nil, order: 0, lastUpdatedAt: nil)
-        let settings = FlClashRuntimeConfig.load()
-        return try await Task.detached(priority: .userInitiated) {
-            let prepared: PreparedConfigurationCreation
-            if let id = editingID, try library.snapshot().recipes.contains(where: { $0.id == id }) {
-                prepared = try library.prepareEditing(draft, profileID: id, expectedGeneration: generation,
-                    resolveInput: ConfigurationCenterSourceBridge.boundInput)
-            } else {
-                prepared = try library.prepare(draft, profileID: profile.id, expectedGeneration: generation,
-                    resolveInput: ConfigurationCenterSourceBridge.boundInput)
-            }
-            let yaml = try ConfigTransforms.jsonToYAML(prepared.composition.document.serialized())
-            let runtime = try ProfileRuntimeConfigBuilder.runtimePreview(raw: yaml, profile: profile, runtimeOverride: settings)
-            return .init(configuration: prepared.composition.document,
-                runtime: try OrderedJSON.parse(ConfigTransforms.yamlToJSON(runtime)))
-        }.value
-    }
-
     func createConfiguration(_ draft: ConfigurationCreationDraft, generation: UInt64,
                              id: String) async throws -> (id: String, connected: Bool?) {
          

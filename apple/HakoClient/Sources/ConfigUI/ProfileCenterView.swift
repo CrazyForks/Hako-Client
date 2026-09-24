@@ -567,9 +567,7 @@ struct ProfileCenterAdapter: View {
                 editingProfileID: id.rawValue, editingStep: .sources)
         case .configurationRules(let id):
             ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
-                editingProfileID: id.rawValue, editingStep: .rules)        case .configurationDNS(let id):
-            ConfigurationCreationAdapter(model: model, legacyImport: { _ in AnyView(EmptyView()) },
-                editingProfileID: id.rawValue, editingStep: .finish)
+                editingProfileID: id.rawValue, editingStep: .rules)
         case .sourceEditor(let id):
             if let profile = appProfile(id) {
                  

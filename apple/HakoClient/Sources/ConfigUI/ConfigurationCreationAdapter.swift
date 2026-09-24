@@ -11,7 +11,6 @@ struct ConfigurationCreationAdapter: View {
     let legacyImport: (@escaping () -> Void) -> AnyView
     var editingProfileID: String? = nil
     var editingStep: ConfigurationCreationDraft.Step? = nil
-    @State private var globalDNSOverride = false
     @State private var draft = ConfigurationCreationDraft()
     @State private var library = ConfigurationLibrarySnapshot()
     @State private var baseline = ConfigurationCreationDraft()
@@ -69,9 +68,7 @@ struct ConfigurationCreationAdapter: View {
 
     @ViewBuilder
     private var creationContent: some View {
-        if editingStep == .finish, ready {
-            dnsEditor(publishes: true)
-        } else if ready && (firstStepImportKind != nil || draft.needsInitialNodeImport(in: library,
+        if ready && (firstStepImportKind != nil || draft.needsInitialNodeImport(in: library,
             hasLegacyNodes: legacyPayloads.values.contains { $0.record.nodeCount > 0 || $0.record.providerCount > 0 },
             isEditing: editingProfileID != nil)) {
              
@@ -109,12 +106,7 @@ struct ConfigurationCreationAdapter: View {
                 manageSources: { showsSourceLibrary = true },
                 manageRules: { showsRuleLibrary = true },
                 completionNodes: { value in AnyView(completionContents(draft: value, nodes: true)) },
-                completionRules: { value in AnyView(completionContents(draft: value, nodes: false)) },
-                dnsDestination: { AnyView(dnsEditor(publishes: false)) }, globalDNSOverride: globalDNSOverride,
-                previewNodeDNS: { value in
-                    try await model.previewConfigurationNodeDNS(value, generation: library.generation,
-                        editingID: editingProfileID)
-                })
+                completionRules: { value in AnyView(completionContents(draft: value, nodes: false)) })
         }
     }
 
@@ -123,22 +115,7 @@ struct ConfigurationCreationAdapter: View {
             generation: library.generation, nodes: nodes)
     }
 
-    private func dnsEditor(publishes: Bool) -> some View {
-        ConfigurationDNSSettingsAdapter(initial: draft, preview: { value in
-            try await model.previewConfigurationNodeDNS(value, generation: library.generation, editingID: editingProfileID)
-        }, save: { value in
-            if publishes, let id = editingProfileID {
-                try await model.editConfiguration(value, id: id, generation: library.generation)
-            }
-            draft.dnsMode = value.dnsMode
-            draft.customDNSJSON = value.customDNSJSON
-            draft.nodeNameservers = value.nodeNameservers
-            globalDNSOverride = FlClashRuntimeConfig.load().dnsOverridesProfiles == true
-        }, close: publishes ? close : nil)
-    }
-
     private func loadLibrary() async {
-        globalDNSOverride = FlClashRuntimeConfig.load().dnsOverridesProfiles == true
         guard !ready, !busy else { return }
         errorMessage = nil
         busy = true
@@ -242,215 +219,6 @@ struct ConfigurationCreationAdapter: View {
     private func close() { (productModalDismiss ?? { dismiss() })() }
 }
 
- 
- 
-private struct ConfigurationDNSSettingsAdapter: View {
-    @Environment(\.hakoInsideProductModalPresentation) private var insideProductModal
-    let preview: (ConfigurationCreationDraft) async throws -> ConfigurationNodeDNSPreview
-    let save: (ConfigurationCreationDraft) async throws -> Void
-    let close: (() -> Void)?
-    @State private var value: ConfigurationCreationDraft
-    @State private var baseline: ConfigurationCreationDraft
-    @State private var sourceYAML: String?
-    @State private var result: ConfigurationNodeDNSPreview?
-    @State private var ready = false
-    @State private var busy = false
-    @State private var globalOverride = false
-    @State private var errorMessage: String?
-    @State private var showsSource = false
-    @State private var sourceText = ""
-    @State private var confirmsDiscard = false
-    @State private var dismiss = HakoDismissHandle()
-    @State private var identity = Profile(id: UUID().uuidString.lowercased(), label: "DNS", source: .clipboard,
-        autoUpdate: false, updateIntervalHours: 12, subscriptionInfo: nil, selectedMap: [:],
-        activeRevision: nil, order: 0, lastUpdatedAt: nil)
-
-    init(initial: ConfigurationCreationDraft,
-        preview: @escaping (ConfigurationCreationDraft) async throws -> ConfigurationNodeDNSPreview,
-        save: @escaping (ConfigurationCreationDraft) async throws -> Void, close: (() -> Void)? = nil) {
-        self.preview = preview; self.save = save; self.close = close
-        _value = State(initialValue: initial); _baseline = State(initialValue: initial)
-    }
-    private var dirty: Bool {
-        value.dnsMode != baseline.dnsMode || value.customDNSJSON != baseline.customDNSJSON
-            || value.nodeNameservers != baseline.nodeNameservers
-    }
-    private var canSave: Bool { ready && !busy }
-    private var editorProfile: Profile {
-        var profile = identity
-        let dns = (try? ConfigurationDNSSettings.custom(value.customDNSJSON)) ?? ConfigurationDNSSettings.automatic
-        profile.override.patchJSON = OrderedJSON.object([("dns", dns)]).serialized()
-        profile.override.dnsOverridesProfiles = true
-        return profile
-    }
-    var body: some View {
-        Form {
-            Section {
-                choice("System DNS", mode: .system)
-                choice("Custom", mode: .custom)
-            } footer: { Text("Uses your current network's DNS. Profile URL DNS is not used.") }
-            if globalOverride {
-                Section { Text("Global DNS override is enabled and can change this selection.").foregroundStyle(.secondary) }
-            }
-            if value.dnsMode == .custom {
-                Section {
-                    HakoRoutedViewLink {
-                        ProfileDNSSettingsAdapter(profile: editorProfile, sourceYAML: sourceYAML,
-                            ownsNavigationContainer: false, configurationDraft: true) { changed in
-                            let root = try OrderedJSON.parse(changed.patchJSON)
-                            guard let dns = root.topLevelValue("dns"), case .object = dns else {
-                                throw ConfigurationCompositionError.invalidDocument("DNS")
-                            }
-                            value.customDNSJSON = dns.serialized()
-                            value.nodeNameservers = nil
-                            result = nil
-                        }
-                    } label: { Label("DNS Settings", systemImage: HakoSymbol.sliderHorizontal3.name) }
-                    Button {
-                        do {
-                            sourceText = try ConfigTransforms.jsonToYAML(editorProfile.override.patchJSON)
-                            showsSource = true
-                        } catch { errorMessage = error.localizedDescription }
-                    } label: { Label("Edit DNS Source", systemImage: HakoSymbol.curlybraces.name) }
-                }
-            }
-            if ready {
-                Section {
-                    Button("View Effective DNS") { Task { await refreshPreview() } }
-                    if let result {
-                        if result.dnsDiffers {
-                            Text("Saved DNS").font(.subheadline)
-                            Text(verbatim: result.configurationDNSJSON ?? "{}")
-                                .font(.caption.monospaced()).textSelection(.enabled)
-                            Text("Changed Fields").font(.subheadline)
-                            Text(verbatim: result.changedDNSFields.joined(separator: ", "))
-                                .font(.caption.monospaced()).textSelection(.enabled)
-                        }
-                        Text("Calculated DNS").font(.subheadline)
-                        Text(verbatim: result.runtimeDNSJSON ?? "{}")
-                            .font(.caption.monospaced()).textSelection(.enabled)
-                    }
-                }
-            }
-            if !ready { Section { ProgressView() } }
-            if let errorMessage {
-                Section {
-                    Text(verbatim: errorMessage).foregroundStyle(.orange)
-                    if !ready { Button("Retry") { Task { await load() } } }
-                }
-            }
-        }
-        .disabled(busy)
-        .hakoConfigurationFormSpacing()
-        .hakoPageTitle("DNS")
-        .hakoProductModalRoot(title: "DNS")
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if insideProductModal { HakoModalActionBar(primaryTitle: "Save", primaryDisabled: !canSave, isBusy: busy) { persist() } }
-        }
-        .hakoToolbarUnlessInPanel {
-            ToolbarItem(placement: .cancellationAction) {
-                if close != nil || dirty {
-                    Button("Cancel") { if dirty { confirmsDiscard = true } else { leave() } }.disabled(busy)
-                }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button { persist() } label: { HakoActionProgressLabel(.copy("Save"), isBusy: busy) }.disabled(!canSave)
-            }
-        }
-        .hakoCapturesDismiss(dismiss)
-        .hakoBackButtonHidden(dirty)
-        .interactiveDismissDisabled(dirty || busy)
-        .hakoRegistersDeparture(isDirty: dirty, isBusy: busy, save: { persist($0) }, discard: { value = baseline })
-        .hakoUnsavedChangesAlert(isPresented: $confirmsDiscard,
-            message: "These DNS changes have not been saved.", isBusy: busy, saveDisabled: !canSave,
-            save: { persist() }, discard: { value = baseline; leave() })
-        .hakoProductModal(isPresented: $showsSource, role: .page) {
-            ProfileEditView(profile: editorProfile, rawYAML: sourceText, editorTitle: "Edit DNS Source") { _, yaml, files, _ in
-                guard let yaml, files.isEmpty else { throw ConfigurationCompositionError.invalidDocument("DNS") }
-                try ConfigTransforms.validateSource(yaml)
-                let root = try OrderedJSON.parse(ConfigTransforms.yamlToJSON(yaml))
-                guard case .object(let entries) = root, entries.count == 1, entries[0].key == "dns",
-                    case .object = entries[0].value else {
-                    throw NSError(domain: "ConfigurationDNS", code: 1,
-                        userInfo: [NSLocalizedDescriptionKey: HakoCopy.string("Edit only the dns section here.", locale: .current)])
-                }
-                value.customDNSJSON = entries[0].value.serialized()
-                value.nodeNameservers = nil
-                result = nil
-            }
-        }
-        .task { if !ready { await load() } }
-    }
-    private func choice(_ title: String, mode: ConfigurationDNSMode) -> some View {
-        Button {
-            if mode == .custom, value.customDNSJSON == nil {
-                value.customDNSJSON = ConfigurationDNSSettings.automatic.serialized()
-            }
-            value.dnsMode = mode
-            value.nodeNameservers = nil
-            result = nil
-        } label: {
-            HStack {
-                Text(HakoCopy.key(title)).foregroundStyle(.primary)
-                Spacer()
-                Image(systemName: value.dnsMode == mode ? HakoSymbol.checkmarkCircleFill.name : HakoSymbol.circle.name)
-                    .foregroundStyle(.tint)
-            }.contentShape(Rectangle())
-        }.buttonStyle(.plain).disabled(!ready)
-    }
-    private func load() async {
-        guard !busy else { return }
-        busy = true; errorMessage = nil
-        defer { busy = false }
-        do {
-            globalOverride = FlClashRuntimeConfig.load().dnsOverridesProfiles == true
-            let context = try await preview(value)
-            let json = context.configurationJSON
-            sourceYAML = try await Task.detached {
-                 
-                 
-                try ConfigTransforms.jsonToYAML(OrderedJSON.parse(json).removingTopLevel("dns").serialized())
-            }.value
-            if value.dnsMode == .source || value.nodeNameservers != nil {
-                value.customDNSJSON = context.configurationDNSJSON ?? ConfigurationDNSSettings.automatic.serialized()
-                value.dnsMode = .custom
-                value.nodeNameservers = nil
-            }
-            if value.customDNSJSON == nil { value.customDNSJSON = ConfigurationDNSSettings.automatic.serialized() }
-            baseline = value
-            ready = true
-        } catch { errorMessage = error.localizedDescription }
-    }
-    private func refreshPreview() async {
-        guard !busy else { return }
-        busy = true; errorMessage = nil
-        defer { busy = false }
-        do {
-            globalOverride = FlClashRuntimeConfig.load().dnsOverridesProfiles == true
-            result = try await preview(value)
-        } catch { errorMessage = error.localizedDescription }
-    }
-    private func persist(_ completion: @escaping (Bool) -> Void = { _ in }) {
-        guard canSave else { completion(false); return }
-        busy = true; errorMessage = nil
-        let candidate = value
-        Task {
-            defer { busy = false }
-            do {
-                 
-                 
-                _ = try await preview(candidate)
-                try await save(candidate)
-                baseline = candidate
-                completion(true); leave()
-            } catch { errorMessage = error.localizedDescription; completion(false) }
-        }
-    }
-    private func leave() { (close ?? { dismiss() })() }
-}
-
- 
- 
 private struct ConfigurationNodeSourceAdapter: View {
     var editorState: CustomNodesEditorState? = nil
     var isFirstConfigurationStep = false

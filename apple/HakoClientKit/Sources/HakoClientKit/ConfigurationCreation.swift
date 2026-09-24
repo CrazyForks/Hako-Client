@@ -1,41 +1,5 @@
 import Foundation
 
- 
- 
-public struct ConfigurationNodeDNSPreview: Equatable, Sendable {
-    public let configurationJSON: String
-    public let configurationDNSJSON: String?
-    public let runtimeDNSJSON: String?
-    public var dnsDiffers: Bool { configurationDNSJSON != runtimeDNSJSON }
-    public let changedDNSFields: [String]
-    public let configurationServers: [String]
-    public let runtimeServers: [String]
-    public let runtimePolicyJSON: String?
-    public var differs: Bool { configurationServers != runtimeServers }
-    public init(configuration: OrderedJSON, runtime: OrderedJSON) {
-        configurationJSON = configuration.serialized()
-        configurationDNSJSON = configuration.topLevelValue("dns")?.serialized()
-        runtimeDNSJSON = runtime.topLevelValue("dns")?.serialized()
-        let before = configuration.topLevelValue("dns")
-        let after = runtime.topLevelValue("dns")
-        func keys(_ value: OrderedJSON?) -> [String] {
-            guard case .object(let entries) = value else { return [] }
-            return entries.map(\.key)
-        }
-        changedDNSFields = Set(keys(before) + keys(after)).filter {
-            before?.topLevelValue($0) != after?.topLevelValue($0)
-        }.sorted()
-        func servers(_ root: OrderedJSON) -> [String] {
-            root.topLevelValue("dns")?.topLevelValue("proxy-server-nameserver")?.foundationValue as? [String] ?? []
-        }
-        configurationServers = servers(configuration)
-        runtimeServers = servers(runtime)
-        let policy = runtime.topLevelValue("dns")?.topLevelValue("proxy-server-nameserver-policy")
-        if case .object(let entries) = policy, !entries.isEmpty { runtimePolicyJSON = policy?.serialized() }
-        else { runtimePolicyJSON = nil }
-    }
-}
-
 public struct PreparedConfigurationCreation: Sendable {
     public let recipe: ConfigurationRecipe
     public let composition: ConfigurationComposition

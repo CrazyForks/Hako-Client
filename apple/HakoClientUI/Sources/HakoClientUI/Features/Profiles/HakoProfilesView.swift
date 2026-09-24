@@ -13,7 +13,6 @@ public enum HakoProfilesCapabilityDestination:
     case sourceEditor(Profile.ID)
     case configurationSources(Profile.ID)
     case configurationRules(Profile.ID)
-    case configurationDNS(Profile.ID)
     case runtimePreview(Profile.ID)
      
      
@@ -57,8 +56,6 @@ public enum HakoProfilesCapabilityDestination:
             "configuration-sources|\(id.rawValue)"
         case .configurationRules(let id):
             "configuration-rules|\(id.rawValue)"
-        case .configurationDNS(let id):
-            "configuration-dns|\(id.rawValue)"
         case .runtimePreview(let id):
             "runtime|\(id.rawValue)"
         }

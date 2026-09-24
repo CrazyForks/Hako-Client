@@ -78,16 +78,10 @@ public struct HakoConfigurationCreationView: View {
     private let sourceDetails: (String) -> Void
     private let manageSources: () -> Void
     private let manageRules: () -> Void
-    private let dnsDestination: (() -> AnyView)?
      
      
     private let completionNodes: ((ConfigurationCreationDraft) -> AnyView)?
     private let completionRules: ((ConfigurationCreationDraft) -> AnyView)?
-    private let globalDNSOverride: Bool
-    private let previewNodeDNS: ((ConfigurationCreationDraft) async throws -> ConfigurationNodeDNSPreview)?
-    @State private var nodeDNSPreview: ConfigurationNodeDNSPreview?
-    @State private var previewError: String?
-    @State private var previewing = false
     @State private var confirmsDiscard = false
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -107,14 +101,10 @@ public struct HakoConfigurationCreationView: View {
                 sourceDetails: @escaping (String) -> Void = { _ in },
                 manageSources: @escaping () -> Void = {},
                 manageRules: @escaping () -> Void = {},
-                completionNodes: ((ConfigurationCreationDraft) -> AnyView)? = nil, completionRules: ((ConfigurationCreationDraft) -> AnyView)? = nil,
-                dnsDestination: (() -> AnyView)? = nil, globalDNSOverride: Bool = false,
-                previewNodeDNS: ((ConfigurationCreationDraft) async throws -> ConfigurationNodeDNSPreview)? = nil) {
+                completionNodes: ((ConfigurationCreationDraft) -> AnyView)? = nil, completionRules: ((ConfigurationCreationDraft) -> AnyView)? = nil) {
         self.palette = palette; self.presentationClass = presentationClass; self.icon = icon
         self.completionNodes = completionNodes; self.completionRules = completionRules
-        self.dnsDestination = dnsDestination; self.globalDNSOverride = globalDNSOverride
         self.editingStep = editingStep
-        self.previewNodeDNS = previewNodeDNS
         self.isEditing = isEditing; self.baseline = baseline; self.sourceDetails = sourceDetails; self.manageSources = manageSources; self.manageRules = manageRules
         _draft = draft; self.library = library; self.legacy = legacy
         self.isBusy = isBusy; self.isReady = isReady; self.reload = reload; self.error = error; self.addSource = addSource
@@ -125,7 +115,6 @@ public struct HakoConfigurationCreationView: View {
     private var pageTitle: String {
         if editingStep == .sources { return "Node Sources" }
         if editingStep == .rules { return "Rule Scheme" }
-        if editingStep == .finish { return "DNS" }
         return switch draft.step {
         case .sources: "Select Nodes"
         case .rules: "Select Rules"
@@ -140,7 +129,7 @@ public struct HakoConfigurationCreationView: View {
         return switch draft.step {
         case .sources: !draft.selectedSourceIDs.isEmpty
         case .rules: draft.selectedRuleID != nil
-        case .finish: draft.originalSourceID != nil || (!draft.selectedSourceIDs.isEmpty && draft.selectedRuleID != nil && nodeDNSValid)
+        case .finish: draft.originalSourceID != nil || (!draft.selectedSourceIDs.isEmpty && draft.selectedRuleID != nil)
         }
     }
     private var dirty: Bool {
@@ -150,11 +139,6 @@ public struct HakoConfigurationCreationView: View {
     }
     private var usesWizard: Bool { editingStep == nil }
     private var isFinalStep: Bool { !usesWizard || draft.step == .finish }
-    private var nodeDNSValid: Bool {
-        if draft.dnsMode == .custom { return (try? ConfigurationDNSSettings.custom(draft.customDNSJSON)) != nil }
-        guard let servers = draft.nodeNameservers else { return true }
-        return !servers.isEmpty && servers.allSatisfy { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-    }
 
     public var body: some View {
         Group {
@@ -179,16 +163,13 @@ public struct HakoConfigurationCreationView: View {
             switch draft.step {
             case .sources: sourceSections
             case .rules: ruleSections
-            case .finish:
-                if editingStep == .finish { nodeDNSSection.disabled(isBusy || !isReady) }
-                else { finishSections }
+            case .finish: finishSections
             }
         }
         .hakoConfigurationFormSpacing()
             }
         }
         .id(draft.step)
-        .onChange(of: draft) { _ in nodeDNSPreview = nil; previewError = nil }
         .onChange(of: draft.selectedSourceIDs) { _ in selectDefaultRule() }
         .onChange(of: isReady) { ready in if ready { selectDefaultRule() } }
         .hakoPageTitle(usesWizard && draft.step != .finish ? .verbatim(HakoCopy.string(pageTitle, locale: locale) + (draft.step == .sources ? "  1/2" : "  2/2")) : .copy(pageTitle))
@@ -218,7 +199,7 @@ public struct HakoConfigurationCreationView: View {
             }
         }
         .hakoRegistersDeparture(isDirty:dirty,isBusy:isBusy,save: { completion in
-            guard isFinalStep, draft.originalSourceID != nil || (draft.selectedRuleID != nil && !draft.selectedSourceIDs.isEmpty && nodeDNSValid) else {
+            guard isFinalStep, draft.originalSourceID != nil || (draft.selectedRuleID != nil && !draft.selectedSourceIDs.isEmpty) else {
                 completion(false); return
             }
             finish(completion)
@@ -425,25 +406,6 @@ public struct HakoConfigurationCreationView: View {
             .hakoLabelsHiddenInSettingsIdiom()
             .submitLabel(.done)
             .accessibilityIdentifier("configuration.create.name")
-    }
-
-    private var nodeDNSSection: some View {
-        Section {
-            HakoRoutedViewLink {
-                if let dnsDestination { dnsDestination() }
-            } label: {
-                HStack {
-                    Text("DNS").foregroundStyle(.primary)
-                    Spacer()
-                    Text(HakoCopy.key(draft.dnsMode == .system && draft.nodeNameservers == nil ? "System DNS" : "Custom"))
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "chevron.right").font(.footnote).foregroundStyle(.tertiary)
-                }.contentShape(Rectangle())
-            }.disabled(dnsDestination == nil)
-                .accessibilityIdentifier("configuration.create.dns.summary")
-        } footer: {
-            if globalDNSOverride { Text("Global DNS override is enabled and can change this selection.") }
-        }
     }
 
     private var primaryTitle: String {
