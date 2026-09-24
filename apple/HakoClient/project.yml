@@ -47,6 +47,10 @@ targets:
       buildPhase: resources
     - path: Resources/BundledGeoData/geoip.metadb.xz
       buildPhase: resources
+    - path: Resources/BundledGeoData/GeoIP.dat.xz
+      buildPhase: resources
+    - path: Resources/BundledGeoData/ASN.mmdb.xz
+      buildPhase: resources
     - path: Resources/BundledGeoData/BundledGeoDataManifest.json
       buildPhase: resources
     - path: Resources/BundledGeoData/LICENSE.meta-rules-dat.txt
@@ -393,6 +397,10 @@ targets:
     - path: Resources/BundledGeoData/GeoSite.dat.xz
       buildPhase: resources
     - path: Resources/BundledGeoData/geoip.metadb.xz
+      buildPhase: resources
+    - path: Resources/BundledGeoData/GeoIP.dat.xz
+      buildPhase: resources
+    - path: Resources/BundledGeoData/ASN.mmdb.xz
       buildPhase: resources
     - path: Resources/BundledGeoData/BundledGeoDataManifest.json
       buildPhase: resources
