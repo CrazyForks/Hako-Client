@@ -113,23 +113,13 @@ enum HakoMacStatusMenuBuilder {
 
          
          
-        let pointSize = HakoMacMenuRowMetrics.pointSize
-        let hostedWidth = HakoMacMenuRowMetrics.groupRowWidth(
-            leading: [copy("Mode")] + snapshot.proxies.groups.map { "\($0.name) · \($0.type)" },
-            trailing: [copy(snapshot.outboundMode.menuTitle)] + snapshot.proxies.groups.map(\.now)
-        )
-
+         
          
          
          
         let mode = NSMenuItem(title: copy("Mode"), action: nil, keyEquivalent: "")
         mode.setAccessibilityIdentifier("menu-bar.outbound-mode")
-        mode.view = HakoMacMenuRowHost.make(
-            model: HakoMacMenuRowModel(
-                kind: .group, name: copy("Mode"), trailing: copy(snapshot.outboundMode.menuTitle)
-            ),
-            width: hostedWidth, pointSize: pointSize, closesMenuOnClick: false, onClick: {}
-        )
+        setTrailing(copy(snapshot.outboundMode.menuTitle), on: mode)
         let modes = plainMenu()
         for candidate in AppleClientOutboundMode.allCases {
             modes.addItem(row(
@@ -148,18 +138,14 @@ enum HakoMacStatusMenuBuilder {
          
          
          
+         
         if !snapshot.proxies.groups.isEmpty {
             menu.addItem(.separator())
-            let width = hostedWidth
             for group in snapshot.proxies.groups {
                 let item = NSMenuItem(title: group.name, action: nil, keyEquivalent: "")
                 item.setAccessibilityIdentifier("menu-bar.proxy-group")
-                let model = HakoMacMenuRowModel(
-                    kind: .group, name: group.name, detail: group.type, trailing: group.now
-                )
-                item.view = HakoMacMenuRowHost.make(
-                    model: model, width: width, pointSize: pointSize, closesMenuOnClick: false, onClick: {}
-                )
+                item.attributedTitle = groupTitle(name: group.name, type: group.type)
+                setTrailing(group.now, on: item)
                 let submenu = plainMenu()
                 let lazy = HakoMacProxySubmenuController(
                     group: { group }, actions: actions, locale: locale
@@ -237,6 +223,32 @@ enum HakoMacStatusMenuBuilder {
         let menu = NSMenu()
         menu.autoenablesItems = false
         return menu
+    }
+
+     
+     
+     
+     
+     
+    private static func setTrailing(_ text: String, on item: NSMenuItem) {
+        guard !text.isEmpty else { return }
+        if #available(macOS 14, *) {
+            item.badge = NSMenuItemBadge(string: text)
+        }
+    }
+
+     
+     
+     
+    static func groupTitle(name: String, type: String) -> NSAttributedString {
+        let font = HakoMacMenuRowMetrics.font
+        let title = NSMutableAttributedString(string: name, attributes: [.font: font])
+        guard !type.isEmpty else { return title }
+        title.append(NSAttributedString(string: " · \(type)", attributes: [
+            .font: NSFont.menuFont(ofSize: font.pointSize - 2),
+            .foregroundColor: NSColor.secondaryLabelColor,
+        ]))
+        return title
     }
 
      
@@ -416,15 +428,6 @@ final class HakoMacStatusMenuController: NSObject, NSMenuDelegate {
     func menuDidClose(_ menu: NSMenu) {
         listening.removeAll()
         menu.removeAllItems()
-    }
-
-     
-     
-     
-    func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
-        for candidate in menu.items {
-            (candidate.view as? HakoMacMenuRowHost)?.model.isHighlighted = candidate === item
-        }
     }
 
      

@@ -9,8 +9,6 @@ import SwiftUI
 final class HakoMacMenuRowModel: ObservableObject {
     enum Kind: Equatable {
          
-        case group
-         
         case member
          
         case test
@@ -18,10 +16,6 @@ final class HakoMacMenuRowModel: ObservableObject {
 
     let kind: Kind
     let name: String
-     
-    let detail: String?
-     
-    @Published var trailing: String?
     @Published var latency: HakoProxyLatencyState
     @Published var isCurrent: Bool
     @Published var isHighlighted = false
@@ -30,15 +24,11 @@ final class HakoMacMenuRowModel: ObservableObject {
     init(
         kind: Kind,
         name: String,
-        detail: String? = nil,
-        trailing: String? = nil,
         latency: HakoProxyLatencyState = .untested,
         isCurrent: Bool = false
     ) {
         self.kind = kind
         self.name = name
-        self.detail = detail
-        self.trailing = trailing
         self.latency = latency
         self.isCurrent = isCurrent
     }
@@ -58,13 +48,13 @@ final class HakoMacMenuRowModel: ObservableObject {
  
  
  
+ 
 struct HakoMacMenuRow: View {
     @ObservedObject var model: HakoMacMenuRowModel
     let pointSize: CGFloat
 
     var body: some View {
         HStack(spacing: 0) {
-             
              
             Group {
                 if model.isCurrent {
@@ -83,27 +73,7 @@ struct HakoMacMenuRow: View {
                  
                 .layoutPriority(1)
 
-            if let detail = model.detail, !detail.isEmpty {
-                 
-                Text(verbatim: "·")
-                    .font(.system(size: pointSize - 2))
-                    .foregroundStyle(model.isHighlighted ? .white.opacity(0.85) : .secondary)
-                    .padding(.horizontal, 6)
-                Text(verbatim: detail)
-                    .font(.system(size: pointSize - 2))
-                    .foregroundStyle(model.isHighlighted ? .white.opacity(0.85) : .secondary)
-            }
-
             Spacer(minLength: 8)
-
-            if let trailing = model.trailing, !trailing.isEmpty {
-                HakoRegionalFlag.label(trailing, pointSize: pointSize, relativeTo: .body)
-                    .font(.system(size: pointSize))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .foregroundStyle(model.isHighlighted ? .white.opacity(0.85) : .secondary)
-                    .padding(.trailing, 6)
-            }
 
             switch model.kind {
             case .test:
@@ -119,10 +89,6 @@ struct HakoMacMenuRow: View {
                 }
             case .member:
                 badge
-            case .group:
-                Image(systemName: HakoSymbol.chevronForward.rawValue)
-                    .font(.system(size: pointSize - 3, weight: .semibold))
-                    .foregroundStyle(model.isHighlighted ? .white : .secondary)
             }
         }
         .padding(.trailing, 8)
@@ -180,8 +146,6 @@ struct HakoMacMenuRow: View {
 
     private var accessibilityDescription: String {
         var parts = [model.name]
-        if let detail = model.detail, !detail.isEmpty { parts.append(detail) }
-        if let trailing = model.trailing, !trailing.isEmpty { parts.append(trailing) }
         if !model.badgeText.isEmpty { parts.append(model.badgeText) }
         if model.isCurrent { parts.append("selected") }
         return parts.joined(separator: ", ")
@@ -199,7 +163,22 @@ struct HakoMacMenuRow: View {
  
 @MainActor
 final class HakoMacMenuRowHost: NSHostingView<HakoMacMenuRow> {
-    static let rowHeight: CGFloat = 22
+     
+     
+     
+     
+     
+    static let rowHeight: CGFloat = {
+        func height(rows: Int) -> CGFloat {
+            let menu = NSMenu()
+            for _ in 0..<rows {
+                menu.addItem(NSMenuItem(title: "Sample", action: nil, keyEquivalent: ""))
+            }
+            return menu.size.height
+        }
+        let measured = height(rows: 2) - height(rows: 1)
+        return measured > 0 ? measured : 22
+    }()
 
     var model: HakoMacMenuRowModel { rootView.model }
      
@@ -249,6 +228,10 @@ final class HakoMacMenuRowHost: NSHostingView<HakoMacMenuRow> {
  
  
  
+ 
+ 
+ 
+ 
 @MainActor
 enum HakoMacMenuRowMetrics {
     static var font: NSFont { NSFont.menuFont(ofSize: 0) }
@@ -257,16 +240,10 @@ enum HakoMacMenuRowMetrics {
      
      
      
-     
-    static let cap: CGFloat = 340
-     
-     
     static let memberCap: CGFloat = 300
 
      
-     
     static let highlightInset: CGFloat = 5
-     
      
      
     static let leadingColumn: CGFloat = 19
@@ -279,13 +256,6 @@ enum HakoMacMenuRowMetrics {
     private static func widest(_ strings: [String]) -> CGFloat {
         let attributes: [NSAttributedString.Key: Any] = [.font: font]
         return (strings + [""]).map { ($0 as NSString).size(withAttributes: attributes).width }.max() ?? 0
-    }
-
-     
-     
-     
-    static func groupRowWidth(leading: [String], trailing: [String]) -> CGFloat {
-        min(cap, (chrome + widest(leading) + widest(trailing) + 6 + 10).rounded(.up))
     }
 
      
