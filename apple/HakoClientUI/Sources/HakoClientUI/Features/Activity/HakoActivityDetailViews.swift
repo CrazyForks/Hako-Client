@@ -932,7 +932,9 @@ public struct HakoLogsView<Icon: View>: View {
         projection.logs(
             snapshot.activity.logLines,
             query: query,
-            severities: severities
+            severities: HakoActivityLogSeverity.expandedSeverities(
+                from: severities
+            )
         )
     }
 
@@ -1058,7 +1060,7 @@ public struct HakoLogsView<Icon: View>: View {
                     followTitle,
                     systemImage: isFollowSelected
                         ? HakoSymbol.checkmark.rawValue
-                        : HakoSymbol.circle.rawValue
+                        : HakoSymbol.docText.rawValue
                 )
             }
 
@@ -1079,10 +1081,12 @@ public struct HakoLogsView<Icon: View>: View {
                         severity.title,
                         systemImage: isSelected
                             ? HakoSymbol.checkmark.rawValue
-                            : HakoSymbol.circle.rawValue
+                            : severity.symbol.rawValue
                     )
                 }
             }
+
+            Divider()
 
             Button {
                 if snapshot.activity.logLevelDirective == "silent" {
@@ -1097,18 +1101,25 @@ public struct HakoLogsView<Icon: View>: View {
                     "Silent",
                     systemImage: snapshot.activity.logLevelDirective == "silent"
                         ? HakoSymbol.checkmark.rawValue
-                        : HakoSymbol.circle.rawValue
+                        : HakoSymbol.eyeSlash.rawValue
                 )
             }
         } label: {
              
              
-            Label(
-                severities.isEmpty
-                    ? "Levels"
-                    : "Levels · \(severities.count)",
-                systemImage: HakoSymbol.line3HorizontalDecrease.rawValue
-            )
+            if snapshot.activity.logLevelDirective == "silent" {
+                Label(
+                    "Levels · Silent",
+                    systemImage: HakoSymbol.eyeSlash.rawValue
+                )
+            } else {
+                Label(
+                    severities.isEmpty
+                        ? "Levels"
+                        : "Levels · \(severities.count)",
+                    systemImage: HakoSymbol.line3HorizontalDecrease.rawValue
+                )
+            }
         }
     }
 

@@ -166,6 +166,7 @@ public enum HakoActivityLogSeverity:
     String,
     CaseIterable,
     Codable,
+    Comparable,
     Identifiable,
     Sendable
 {
@@ -180,6 +181,35 @@ public enum HakoActivityLogSeverity:
         rawValue.capitalized
     }
 
+    public var symbol: HakoSymbol {
+        switch self {
+        case .debug:
+            return .wrenchAndScrewdriver
+        case .info:
+            return .infoCircle
+        case .warning:
+            return .exclamationmarkTriangle
+        case .error:
+            return .exclamationmarkOctagon
+        }
+    }
+
+    private var sortOrder: Int {
+        switch self {
+        case .debug: return 0
+        case .info: return 1
+        case .warning: return 2
+        case .error: return 3
+        }
+    }
+
+    public static func < (
+        lhs: HakoActivityLogSeverity,
+        rhs: HakoActivityLogSeverity
+    ) -> Bool {
+        lhs.sortOrder < rhs.sortOrder
+    }
+
      
      
      
@@ -187,6 +217,18 @@ public enum HakoActivityLogSeverity:
         fromRawValues rawValues: [String]
     ) -> Set<HakoActivityLogSeverity> {
         Set(rawValues.compactMap(HakoActivityLogSeverity.init(rawValue:)))
+    }
+
+     
+     
+     
+    public static func expandedSeverities(
+        from severities: Set<HakoActivityLogSeverity>
+    ) -> Set<HakoActivityLogSeverity> {
+        guard severities.count == 1, let minSeverity = severities.first else {
+            return severities
+        }
+        return Set(allCases.filter { $0 >= minSeverity })
     }
 }
 

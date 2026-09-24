@@ -2944,6 +2944,24 @@ private final class HakoMacSceneModel: ObservableObject {
         let more = AppleClientActions(capability: .more) { action in
             guard case .openMore = action else { return }
         }
+        let activity = AppleClientActions(capability: .activity) { action in
+            guard case .activity(let command) = action else { return }
+            switch command {
+            case .setLogLevelDirective(let raw):
+                let directive = HakoLogSettings.LevelDirective(rawValue: raw)
+                HakoLogSettings.setLevelDirective(
+                    directive,
+                    in: GlobalConfig.appGroupDefaults
+                )
+            case .setLogSeverityFilter(let levels):
+                HakoLogSettings.setSeverityFilter(
+                    levels,
+                    in: GlobalConfig.appGroupDefaults
+                )
+            default:
+                break
+            }
+        }
         return (try? AppleClientActions.composing([
             home,
             connection,
@@ -2952,6 +2970,7 @@ private final class HakoMacSceneModel: ObservableObject {
             routing,
             utilities,
             more,
+            activity,
         ])) ?? .unavailable
     }
 

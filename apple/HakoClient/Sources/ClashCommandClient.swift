@@ -2409,7 +2409,7 @@ return
     }
 
     private func handleLog(_ payload: LogPayload, token: UInt64) {
-        guard token == generation else { return }
+        guard token == generation, logDisplayLevel != "silent" else { return }
         let levels = ["debug": 0, "info": 1, "warning": 2, "error": 3, "silent": 4]
         guard (levels[payload.type.lowercased()] ?? 3) >= (levels[logDisplayLevel] ?? 1) else { return }
          
