@@ -353,13 +353,10 @@ struct HakoMacApp: App {
         WindowGroup("Script", id: "script-editor", for: HakoMacScriptEditorRequest.self) { $request in
             if let request, let script = ScriptLibrary.load().first(where: { $0.id == request.scriptID }) {
                  
-                ScriptEditorView(script: script) { [weak model] saved in
-                    ScriptLibrary.upsert(saved)
-                     
-                     
-                    model?.profiles.restageForClientRuntimeSetting()
-                }
-                .frame(minWidth: 640, minHeight: 480)
+                 
+                 
+                ScriptEditorView(script: script) { ScriptLibrary.upsert($0) }
+                    .frame(minWidth: 640, minHeight: 480)
             }
         }
         .defaultSize(width: 920, height: 720)
@@ -2505,7 +2502,7 @@ private final class HakoMacSceneModel: ObservableObject {
              
              
              
-            profiles.restageForClientRuntimeSetting()
+             
             return try state()
         }
         func select(_ id: String?) throws -> HakoMacScriptsState {
@@ -2524,25 +2521,44 @@ private final class HakoMacSceneModel: ObservableObject {
             var candidate = label.trimmingCharacters(in: .whitespacesAndNewlines)
             if candidate.isEmpty { candidate = ScriptLibrary.defaultLabel }
             var attempt = 2
-            var script = ScriptLibrary.editedScript(id: id, label: candidate, body: body, existing: existing)
+            var script = ScriptLibrary.editedScript(id: id, label: candidate, body: body, sourceURL: link, existing: existing)
             while script == nil, attempt < 100 {
-                script = ScriptLibrary.editedScript(id: id, label: "\(candidate) \(attempt)", body: body, existing: existing)
+                script = ScriptLibrary.editedScript(id: id, label: "\(candidate) \(attempt)", body: body, sourceURL: link, existing: existing)
                 attempt += 1
             }
-            guard var script else { throw ScriptImportError.empty }
-            script.sourceURL = link
+            guard let script else { throw ScriptImportError.empty }
             ScriptLibrary.upsert(script)
             return script
         }
          
          
+         
         func refresh(_ id: String) async throws -> HakoMacScriptsState {
-            guard var script = ScriptLibrary.load().first(where: { $0.id == id }),
-                  let link = script.sourceURL else { throw ScriptImportError.emptyAddress }
-            script.body = try await ScriptImport.body(at: link)
-            ScriptLibrary.upsert(script)
-            profiles.restageForClientRuntimeSetting()
+            guard let script = ScriptLibrary.load().first(where: { $0.id == id }) else { throw ScriptImportError.emptyAddress }
+            ScriptLibrary.upsert(try await ScriptImport.refreshed(script))
             return try state()
+        }
+         
+         
+         
+        func updateAll() async throws -> (state: HakoMacScriptsState, message: String) {
+            let locale = preferences.language.locale
+            let linked = ScriptLibrary.load().filter { $0.sourceURL != nil }
+            guard !linked.isEmpty else {
+                return (try state(), HakoCopy.string("These scripts were imported before the app kept their link, so there is nothing to fetch yet. Import each from its link once more; Update works from then on.", locale: locale))
+            }
+            var updated = 0
+            var failed: [String] = []
+            for script in linked {
+                do {
+                    let refreshed = try await ScriptImport.refreshed(script)
+                    if refreshed.body != script.body { ScriptLibrary.upsert(refreshed); updated += 1 }
+                } catch { failed.append(script.label) }
+            }
+            let message = failed.isEmpty
+                ? String(format: HakoCopy.string("%lld scripts updated.", locale: locale), locale: locale, Int64(updated))
+                : String(format: HakoCopy.string("%lld scripts updated; these failed: %@", locale: locale), locale: locale, Int64(updated), failed.joined(separator: ", "))
+            return (try state(), message)
         }
         var actions = HakoMacScriptsActions(
             load: { (try? state()) ?? .empty },
@@ -2572,7 +2588,8 @@ private final class HakoMacSceneModel: ObservableObject {
                     }
                 }
             },
-            refresh: { id in try await refresh(id) }
+            refresh: { id in try await refresh(id) },
+            updateAll: { try await updateAll() }
         )
         actions.edit = { [weak self] id in self?.openWindowAction?(id: "script-editor", value: HakoMacScriptEditorRequest(scriptID: id)) }
         return actions

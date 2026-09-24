@@ -56,6 +56,11 @@ public struct HakoMacScriptsActions {
      
      
     public var refresh: (@MainActor (String) async throws -> HakoMacScriptsState)? = nil
+     
+     
+     
+     
+    public var updateAll: (@MainActor () async throws -> (state: HakoMacScriptsState, message: String))? = nil
     public var clearPatch: @MainActor () async throws -> HakoMacScriptsState
     public var removeException: @MainActor (Int) async throws -> HakoMacScriptsState
 
@@ -67,7 +72,8 @@ public struct HakoMacScriptsActions {
         remove: @escaping @MainActor (String) async throws -> HakoMacScriptsState,
         clearPatch: @escaping @MainActor () async throws -> HakoMacScriptsState,
         removeException: @escaping @MainActor (Int) async throws -> HakoMacScriptsState,
-        refresh: (@MainActor (String) async throws -> HakoMacScriptsState)? = nil
+        refresh: (@MainActor (String) async throws -> HakoMacScriptsState)? = nil,
+        updateAll: (@MainActor () async throws -> (state: HakoMacScriptsState, message: String))? = nil
     ) {
         self.load = load
         self.select = select
@@ -77,6 +83,7 @@ public struct HakoMacScriptsActions {
         self.clearPatch = clearPatch
         self.removeException = removeException
         self.refresh = refresh
+        self.updateAll = updateAll
     }
 
     public static var unavailable: HakoMacScriptsActions {
@@ -105,10 +112,41 @@ public struct HakoMacScriptsPage: View {
     @State private var error: String?
     @State private var adding = false
     @State private var deleting: HakoMacScriptEntry?
+     
+    @State private var updateMessage: String?
 
     public init(actions: HakoMacScriptsActions, initial: HakoMacScriptsState = .empty) {
         self.actions = actions
         _state = State(initialValue: initial)
+    }
+
+     
+     
+     
+     
+    @ViewBuilder
+    private func bandHeader(_ title: HakoDisplayText, leads: Bool) -> some View {
+        HStack {
+            Text(hako: title)
+            Spacer()
+            if leads, let updateAll = actions.updateAll {
+                Button {
+                    guard !busy else { return }
+                    busy = true
+                    error = nil
+                    Task { @MainActor in
+                        defer { busy = false }
+                        do {
+                            let result = try await updateAll()
+                            state = result.state
+                            updateMessage = result.message
+                        } catch { self.error = error.localizedDescription }
+                    }
+                } label: { Text(hako: .copy("Update All")) }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.scripts.update-all")
+            }
+        }
     }
 
      
@@ -152,7 +190,7 @@ public struct HakoMacScriptsPage: View {
                 Section {
                     scriptRow(chosen)
                 } header: {
-                    Text(hako: .copy("Script"))
+                    bandHeader(.copy("Script"), leads: true)
                         .accessibilityIdentifier("configuration-center.scripts.selected")
                 }
             }
@@ -163,9 +201,9 @@ public struct HakoMacScriptsPage: View {
                     }
                 } header: {
                     if chosen == nil {
-                        Text(hako: .copy("Scripts"))
+                        bandHeader(.copy("Scripts"), leads: true)
                     } else {
-                        Text(hako: .copy("Other Scripts"))
+                        bandHeader(.copy("Other Scripts"), leads: false)
                             .accessibilityIdentifier("configuration-center.scripts.other")
                     }
                 }
@@ -176,7 +214,7 @@ public struct HakoMacScriptsPage: View {
                     .accessibilityIdentifier("configuration-center.scripts.add")
             } header: {
                 if chosen == nil, others.isEmpty {
-                    Text(hako: .copy("Scripts"))
+                    bandHeader(.copy("Scripts"), leads: true)
                 }
             }
             if state.patchFieldCount > 0 {
@@ -229,6 +267,11 @@ public struct HakoMacScriptsPage: View {
                 close: { adding = false }
             )
             .hakoModalPresentation(.fitted)
+        }
+        .alert(Text(hako: .copy("Update Scripts")), isPresented: Binding(get: { updateMessage != nil }, set: { if !$0 { updateMessage = nil } })) {
+            Button { updateMessage = nil } label: { Text(hako: .copy("OK")) }
+        } message: {
+            Text(verbatim: updateMessage ?? "")
         }
         .alert(Text(hako: .verbatim(deleting?.label ?? "")), isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button(role: .destructive) {
