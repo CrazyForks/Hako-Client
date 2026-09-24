@@ -31,9 +31,9 @@ public struct HakoConfigurationCenterSections<Profiles: View, Nodes: View, Rules
             default: profiles()
             }
         }
-        .hakoPageTitle("Configuration Center")
+        .hakoPageTitle("Profile Center")
         .hakoToolbarUnlessInPanel {
-            ToolbarItem(placement: .principal) { Text("Configuration Center").font(.headline) }
+            ToolbarItem(placement: .principal) { Text("Profile Center").font(.headline) }
         }
     }
 }
@@ -226,7 +226,7 @@ public struct HakoConfigurationCreationView: View {
         .interactiveDismissDisabled(dirty || isBusy)
         .hakoUnsavedChangesAlert(
             isPresented: $confirmsDiscard,
-            message: .copy("This configuration has changes that have not been saved."),
+            message: .copy("This profile has changes that have not been saved."),
             isBusy: isBusy,
             saveTitle: primaryTitle,
             saveDisabled: !canAdvance,
@@ -266,7 +266,7 @@ public struct HakoConfigurationCreationView: View {
     private var sourceSections: some View {
         let sources = self.sources.filter { source in !selectableLegacy.contains { "legacy-" + $0.id == source.id } }
         return Group {
-            sourceSelectionSection("From Config URLs", items: sources.filter {
+            sourceSelectionSection("From Profile URLs", items: sources.filter {
                 if case .subscription = $0.origin { return $0.nodeChain == nil }; return false
             })
             sourceSelectionSection("From Files", items: sources.filter {
@@ -285,7 +285,7 @@ public struct HakoConfigurationCreationView: View {
                             .tag("legacy-" + item.id)
                             .accessibilityIdentifier("configuration.create.legacy.\(item.id)")
                     }
-                } header: { Text("Existing Configurations") }
+                } header: { Text("Existing Profiles") }
             }
             HakoConfigurationLibraryAddCard(kind: .nodes, palette: palette, nativeList: true,
                 showsHeader: false, disabled: isBusy, action: { addSource(.subscription) })
@@ -603,12 +603,12 @@ public struct HakoConfigurationSourceDetailView: View {
                         .accessibilityIdentifier("configuration.source.editSource")
                 } footer: {
                     if case .subscription = source.origin {
-                        Text("Config URL updates replace local node edits.")
+                        Text("Profile URL updates replace local node edits.")
                     }
                 }
             }
             if !configurations.isEmpty {
-                Section("Used by Configurations") {
+                Section("Used by Profiles") {
                     ForEach(Array(configurations.enumerated()), id: \.offset) { _, name in Text(verbatim: name) }
                 }
             }
@@ -660,7 +660,7 @@ public struct HakoConfigurationSourceDetailView: View {
         .interactiveDismissDisabled(dirty || isBusy)
         .hakoDeleteConfirmation(source.label, isPresented: $confirmsDeletion,
             actionTitle: .copy("Delete Source"),
-            message: .copy("Saved configurations keep their current content and stop following this source."),
+            message: .copy("Saved profiles keep their current content and stop following this source."),
             identifier: "configuration.source.delete.confirm") { deleteSource?() }
         .confirmationDialog("Discard Changes?", isPresented: $confirmsDiscard, titleVisibility: .visible) {
             Button("Discard Changes", role: .destructive) { restoreDraft(); close() }
@@ -750,7 +750,7 @@ public struct HakoConfigurationSourceLibraryView: View {
             if isReady && sources.isEmpty && !collections.contains(where: { $0.source.isRetainedSnapshot != true }) {
                 HakoConfigurationLibraryCard(palette: palette, nativeList: true) { Text("No Sources Yet").foregroundStyle(.secondary) }
             }
-            sourceSection("From Config URLs", sources: sources.filter {
+            sourceSection("From Profile URLs", sources: sources.filter {
                 if case .subscription = $0.origin { return true }; return false
             })
             sourceSection("From Files", sources: sources.filter {
@@ -776,8 +776,8 @@ public struct HakoConfigurationSourceLibraryView: View {
                     .accessibilityIdentifier("configuration.library.sources.add-card")
             }
         }
-        .hakoPageTitle(.copy(isCenterSection ? "Configuration Center" : "Manage Sources"))
-        .hakoProductModalRoot(title: isCenterSection ? "Configuration Center" : "Manage Sources")
+        .hakoPageTitle(.copy(isCenterSection ? "Profile Center" : "Manage Sources"))
+        .hakoProductModalRoot(title: isCenterSection ? "Profile Center" : "Manage Sources")
         .accessibilityIdentifier("configuration.library.sources")
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .primaryAction) { addButton.disabled(isBusy || !isReady) }
@@ -874,7 +874,7 @@ public struct HakoConfigurationRuleLibraryView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         if scheme.id == ConfigurationBuiltins.basicRuleID { Text("Default Configuration") }
                                         else { Text(verbatim: scheme.displayLabel) }
-                                        Text(hako: .format("Used by %@ configurations", [String(library.recipes.filter { $0.ruleSchemeID == scheme.id }.count)]))
+                                        Text(hako: .format("Used by %@ profiles", [String(library.recipes.filter { $0.ruleSchemeID == scheme.id }.count)]))
                                             .font(.footnote).foregroundStyle(.secondary)
                                     }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
                                 }.buttonStyle(.plain).accessibilityIdentifier("configuration.rules.item.\(scheme.id)")
@@ -886,8 +886,8 @@ public struct HakoConfigurationRuleLibraryView: View {
             }
         }
         .disabled(isBusy)
-        .hakoPageTitle(.copy(isCenterSection ? "Configuration Center" : "Manage Rule Schemes"))
-        .hakoProductModalRoot(title: isCenterSection ? "Configuration Center" : "Manage Rule Schemes")
+        .hakoPageTitle(.copy(isCenterSection ? "Profile Center" : "Manage Rule Schemes"))
+        .hakoProductModalRoot(title: isCenterSection ? "Profile Center" : "Manage Rule Schemes")
         .accessibilityIdentifier("configuration.rules.library")
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .primaryAction) { addMenu.disabled(isBusy || !isReady) }
@@ -957,7 +957,7 @@ public struct HakoConfigurationRuleSchemeDetailView: View {
                 if case .subscription(let url) = source.origin { Text(verbatim: url).font(.footnote).textSelection(.enabled) }
             }
             if !configurations.isEmpty {
-                Section("Used by Configurations") {
+                Section("Used by Profiles") {
                     ForEach(Array(configurations.enumerated()), id: \.offset) { _, name in Text(verbatim: name) }
                 }
             }
@@ -989,7 +989,7 @@ public struct HakoConfigurationRuleSchemeDetailView: View {
         .interactiveDismissDisabled(isBusy)
         .hakoDeleteConfirmation(name, isPresented: $confirmsDeletion,
             actionTitle: .copy("Delete Rule Scheme"),
-            message: .copy("Saved configurations keep their current rules and stop following this scheme."),
+            message: .copy("Saved profiles keep their current rules and stop following this scheme."),
             identifier: "configuration.rule.delete.confirm", action: delete)
     }
 }
@@ -1094,7 +1094,7 @@ public struct HakoConfigurationRuleEditingView: View {
         .hakoRegistersDeparture(isDirty: dirty, isBusy: isBusy, save: submit, discard: { draft = baseline })
         .interactiveDismissDisabled(dirty || isBusy)
         .hakoUnsavedChangesAlert(isPresented: $confirmsDiscard,
-            message: .copy("This configuration has changes that have not been saved."),
+            message: .copy("This profile has changes that have not been saved."),
             isBusy: isBusy, saveTitle: "Save", saveDisabled: !canSave,
             save: { submit { _ in } }, discard: { draft = baseline; close() })
         .hakoProductModal(item: $editing, role: .page) { target in
@@ -1213,7 +1213,7 @@ public struct HakoConfigurationNewRuleView: View {
         .hakoRegistersDeparture(isDirty: dirty, isBusy: isBusy, save: submit, discard: { draft = baseline })
         .interactiveDismissDisabled(dirty || isBusy)
         .hakoUnsavedChangesAlert(isPresented: $confirmsDiscard,
-            message: .copy("This configuration has changes that have not been saved."),
+            message: .copy("This profile has changes that have not been saved."),
             isBusy: isBusy, saveTitle: "Create", saveDisabled: !canCreate,
             save: { submit { _ in } }, discard: { draft = baseline; close() })
     }
@@ -1344,7 +1344,7 @@ public enum HakoConfigurationRuleGroupCopy {
 public enum HakoConfigurationUpdateCopy {
     public static func message(_ error: Error, locale: Locale) -> String {
         if error is ConfigurationRuleReplay.Conflict {
-            return HakoCopy.string("The config URL conflicts with your rule edits. Your current configuration was kept.", locale: locale)
+            return HakoCopy.string("The profile URL conflicts with your rule edits. Your current profile was kept.", locale: locale)
         }
         return error.localizedDescription
     }
@@ -1487,7 +1487,7 @@ private struct HakoConfigurationSubscriptionFields: View {
     @Binding var draft: ConfigurationSourceSettingsDraft
     var body: some View {
         Group {
-            Section("Config URL") { TextField("URL", text: $draft.url).accessibilityIdentifier("configuration.source.subscription.url").hakoConfigurationResolverInput() }
+            Section("Profile URL") { TextField("URL", text: $draft.url).accessibilityIdentifier("configuration.source.subscription.url").hakoConfigurationResolverInput() }
             Section {
                 Picker("Update Interval", selection: $draft.intervalHours) {
                     Text("Manually").tag(0)
@@ -1533,8 +1533,8 @@ public struct HakoConfigurationSourceSettingsView: View {
             if let error { Section { Text(verbatim: error).foregroundStyle(.red) } }
         }
         .disabled(isBusy)
-        .hakoPageTitle("Config URL Settings")
-        .hakoProductModalRoot(title: "Config URL Settings")
+        .hakoPageTitle("Profile URL Settings")
+        .hakoProductModalRoot(title: "Profile URL Settings")
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { if dirty { confirmsDiscard = true } else { close() } }.disabled(isBusy)
@@ -1549,7 +1549,7 @@ public struct HakoConfigurationSourceSettingsView: View {
         .hakoRegistersDeparture(isDirty: dirty, isBusy: isBusy, save: submit, discard: { draft = baseline })
         .interactiveDismissDisabled(dirty || isBusy)
         .hakoUnsavedChangesAlert(isPresented: $confirmsDiscard,
-            message: .copy("This configuration has changes that have not been saved."),
+            message: .copy("This profile has changes that have not been saved."),
             isBusy: isBusy, saveDisabled: !valid || !dirty,
             save: { submit { _ in } }, discard: { draft = baseline; close() })
     }
@@ -1586,7 +1586,7 @@ public struct HakoConfigurationSubscriptionImportView: View {
     public var body: some View {
         Form {
             Section {
-                TextField("Config URL or Share Link", text: $request.url).accessibilityIdentifier("configuration.subscription.import.url").hakoConfigurationResolverInput()
+                TextField("Profile URL or Share Link", text: $request.url).accessibilityIdentifier("configuration.subscription.import.url").hakoConfigurationResolverInput()
             } header: { Text("URL") } footer: {
                 Text("HTTP is not encrypted. Credentials in the address travel in the clear.")
             }
@@ -1609,8 +1609,8 @@ public struct HakoConfigurationSubscriptionImportView: View {
             }
         }
         .disabled(saving)
-        .hakoPageTitle("Add Config URL")
-        .hakoProductModalRoot(title: "Add Config URL")
+        .hakoPageTitle("Add Profile URL")
+        .hakoProductModalRoot(title: "Add Profile URL")
         .task(id: PreviewKey(request: request, retry: retry)) { await read() }
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .cancellationAction) {
@@ -1628,7 +1628,7 @@ public struct HakoConfigurationSubscriptionImportView: View {
         })
         .interactiveDismissDisabled(dirty || saving)
         .hakoUnsavedChangesAlert(isPresented: $confirmsDiscard,
-            message: .copy("This configuration has changes that have not been saved."),
+            message: .copy("This profile has changes that have not been saved."),
             isBusy: saving, saveTitle: "Add", saveDisabled: !canSave,
             save: { submit { _ in } }, discard: close)
     }
@@ -1753,7 +1753,7 @@ public enum HakoConfigurationAddition {
     case configuration, nodes, rules, scripts, certificates
     public var title: String {
         switch self {
-        case .configuration: "Create Configuration"
+        case .configuration: "Create Profile"
         case .nodes: "Create Nodes"
         case .rules: "Create Rules"
         case .scripts: "Add Script"
@@ -1763,9 +1763,9 @@ public enum HakoConfigurationAddition {
     public var entryTitle: String { title }
     var creationHint: String {
         switch self {
-        case .configuration: "Import from a config URL or Clash configuration file, or use custom nodes"
-        case .nodes: "Import from a config URL or Clash configuration file, or create nodes manually"
-        case .rules: "Import from a config URL or Clash configuration file, or edit rules manually"
+        case .configuration: "Import from a Profile URL or YAML file, or use custom nodes"
+        case .nodes: "Import from a Profile URL or YAML file, or create nodes manually"
+        case .rules: "Import from a Profile URL or YAML file, or edit rules manually"
         case .scripts: "Import from a URL or file, or write one by hand"
         case .certificates: "Import from a URL or file, or paste the PEM"
         }

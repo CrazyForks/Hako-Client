@@ -86,7 +86,7 @@ public struct HakoTowerRulesLibraryView: View {
         .overlay {
             if busy && schemes.isEmpty { ProgressView().allowsHitTesting(false) }
         }
-        .hakoPageTitle("Configuration Center")
+        .hakoPageTitle("Profile Center")
         .hakoToolbarUnlessInPanel {
             ToolbarItem(placement: .cancellationAction) { if showsClose { HakoSheetCloseButton(dismiss: close) } }
             ToolbarItem(placement: .primaryAction) {
@@ -103,7 +103,7 @@ public struct HakoTowerRulesLibraryView: View {
         .hakoRegistersDeparture(isDirty: false, isBusy: busy, save: { $0(false) }, discard: {})
         .hakoDeleteConfirmation(deleting.map(displayLabel) ?? "", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
             actionTitle: .copy("Delete Rule Scheme"),
-            message: .copy("Saved configurations keep their current rules and stop following this scheme."),
+            message: .copy("Saved profiles keep their current rules and stop following this scheme."),
             identifier: "configuration.rules.library.delete.confirm") { [deleting] in
                 if let deleting { delete(deleting.id) }
             }
@@ -354,7 +354,7 @@ public struct HakoTowerRuleCustomizationView: View {
             }
         }
         .hakoUnsavedChangesAlert(isPresented: $confirmsLeave,
-            message: .copy("This configuration has changes that have not been saved."), isBusy: busy,
+            message: .copy("This profile has changes that have not been saved."), isBusy: busy,
             save: { persist(draft, then: close) },
             discard: { draft = baseline; installedRuleSets = baselineRuleSets; hasUnsavedChanges = false; close() })
         .hakoRegistersDeparture(isDirty: hasUnsavedChanges, isBusy: busy, save: { completion in persist(draft, completion: completion) }, discard: { draft = baseline; installedRuleSets = baselineRuleSets; hasUnsavedChanges = false })
@@ -783,7 +783,7 @@ public enum HakoConfigurationRuleLibrarySection: CaseIterable {
         switch self {
         case .builtin: "Built-in Rules"
         case .custom: "My Rules"
-        case .subscription: "From Config URLs"
+        case .subscription: "From Profile URLs"
         case .file: "From Files"
         }
     }

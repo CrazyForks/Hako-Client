@@ -85,7 +85,7 @@ struct HakoProfilesRootTitleModifier: ViewModifier {
     func body(content: Content) -> some View {
         if showsDismissControl {
 #if os(iOS)
-            content.hakoPageTitle("Configuration Center")
+            content.hakoPageTitle("Profile Center")
 #else
             content.hakoPageTitle("Profiles")
 #endif

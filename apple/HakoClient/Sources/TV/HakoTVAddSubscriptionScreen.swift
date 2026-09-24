@@ -31,7 +31,7 @@ struct HakoTVAddSubscriptionScreen: View {
         String(localized: "The URL is what gets remembered. The configuration behind it is downloaded again whenever this Apple TV needs it.")
     }
     static var whatHappensDetail: String {
-        String(localized: "tvOS guarantees 500 KB of storage and may discard the rest. A config URL survives that; a file does not.")
+        String(localized: "tvOS guarantees 500 KB of storage and may discard the rest. A profile URL survives that; a file does not.")
     }
 
     var body: some View {

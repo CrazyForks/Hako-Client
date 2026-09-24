@@ -623,7 +623,7 @@ public struct HakoMacProfilesList: View {
             actionRow(
                 symbol: HakoSymbol.plusCircle.rawValue,
                 title: .copy("Add Profile"),
-                subtitle: .copy("Config URL · config file · from scratch"),
+                subtitle: .copy("Profile URL · YAML file · from scratch"),
                 showsChevron: false
             )
         }

@@ -170,7 +170,7 @@ enum AcknowledgementsCatalog {
         ),
         SystemFramework(
             name: "BackgroundTasks",
-            usage: "BGTaskScheduler, refreshing config URLs while the app is away."
+            usage: "BGTaskScheduler, refreshing profile URLs while the app is away."
         ),
         SystemFramework(
             name: "WidgetKit, AppIntents",
@@ -178,7 +178,7 @@ enum AcknowledgementsCatalog {
         ),
         SystemFramework(
             name: "AVFoundation, PhotosUI",
-            usage: "AVCaptureSession and PHPickerViewController, for reading a config URL QR code."
+            usage: "AVCaptureSession and PHPickerViewController, for reading a profile URL QR code."
         ),
         SystemFramework(
             name: "UniformTypeIdentifiers",

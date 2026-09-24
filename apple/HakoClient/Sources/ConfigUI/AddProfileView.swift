@@ -457,7 +457,7 @@ struct AddProfileView: View {
                  
                 HStack(alignment: .firstTextBaseline) {
                     HakoStatusMessage(
-                        text: .copy("That is a configuration, not a config URL."),
+                        text: .copy("That is YAML text, not a Profile URL."),
                         kind: .warning
                     )
                     Spacer(minLength: HakoTheme.Spacing.compact)
@@ -473,7 +473,7 @@ struct AddProfileView: View {
                  
                 HakoStatusMessage(
                     text: .copy(isSourceImport ? "That is a node share link. Use Add Custom Node in the source library."
-                        : "That is a node, not a config URL. Add it under a profile's Custom Nodes."),
+                        : "That is a node, not a profile URL. Add it under a profile's Custom Nodes."),
                     kind: .warning
                 )
                 .accessibilityIdentifier("profile.add.cross-reference")
@@ -506,7 +506,7 @@ struct AddProfileView: View {
                     .accessibilityIdentifier("profile.add.skipped")
             }
         } header: {
-            Text(HakoCopy.key("Paste Config URL"))
+            Text(HakoCopy.key("Paste Profile URL"))
         } footer: {
             if let linkFooterText {
                 Text(hako: linkFooterText)
@@ -594,7 +594,7 @@ struct AddProfileView: View {
                  
                 Label {
                     if draft.importedFileName.isEmpty {
-                        Text(HakoCopy.key("Choose Clash Configuration File"))
+                        Text(HakoCopy.key("Choose Clash YAML File"))
                     } else {
                         Text(verbatim: draft.importedFileName)
                     }
@@ -629,7 +629,7 @@ struct AddProfileView: View {
 
         Section {
             HStack {
-                Text(HakoCopy.key("Paste config text"))
+                Text(HakoCopy.key("Paste YAML text"))
                 Spacer()
                 HakoPasteControl { pasted in
                     draft.acceptConfigTextPaste(pasted)
@@ -669,7 +669,7 @@ struct AddProfileView: View {
                     HStack {
                         Text(hako: draft.pastedConfigSummary.map {
                             .format("Review all %@ lines", [$0])
-                        } ?? .copy("Review the configuration"))
+                        } ?? .copy("Review the profile"))
                         Spacer()
                         Image(systemName: HakoSymbol.chevronForward.name)
                             .font(.footnote.weight(.semibold))
@@ -679,7 +679,7 @@ struct AddProfileView: View {
                 .accessibilityIdentifier("profile.add.review-config")
             }
         } footer: {
-            Text(HakoCopy.key("Read a configuration from the clipboard."))
+            Text(HakoCopy.key("Read a profile from the clipboard."))
                 .addPanelMacLeadingFooter()
         }
     }
@@ -694,7 +694,7 @@ struct AddProfileView: View {
         } footer: {
             Text(HakoCopy.key(
                 isSourceImport ? "Create an empty source, then add nodes and rules."
-                    : "You can start without a config URL: everything goes direct, and you add nodes and rules yourself."
+                    : "You can start without a profile URL: everything goes direct, and you add nodes and rules yourself."
             ))
                 .addPanelMacLeadingFooter()
         }
@@ -759,14 +759,14 @@ struct AddProfileView: View {
         case .downloadsOverHTTPS:
             return .copy(
                 isSourceImport ? "The source is downloaded before it is saved."
-                    : "Clash downloads the config URL when the profile is activated."
+                    : "Clash downloads the profile URL when the profile is activated."
             )
         case .cleartextWarning:
             return .copy(
                 "HTTP is not encrypted. Credentials in the address travel in the clear."
             )
         case .unwrappedInstallLink(let host):
-            return .format("Install link. The config URL inside is %@.", [host])
+            return .format("Install link. The profile URL inside is %@.", [host])
         }
     }
 
@@ -924,7 +924,7 @@ struct AddProfileView: View {
             error,
             context: .localImport,
             preservesLastKnownGood: false
-        )?.localizedDescription ?? "The configuration could not be imported."
+        )?.localizedDescription ?? "The profile could not be imported."
     }
 }
 

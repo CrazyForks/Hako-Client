@@ -38,7 +38,7 @@
 "Bundled" = "Bundled";
 "Cancel" = "Cancel";
 "Changing this setting restarts the VPN." = "Changing this setting restarts the VPN.";
-"Check that the config URL is still reachable, then update it once from its own screen." = "Check that the config URL is still reachable, then update it once from its own screen.";
+"Check that the profile URL is still reachable, then update it once from its own screen." = "Check that the profile URL is still reachable, then update it once from its own screen.";
 "Checking…" = "Checking…";
 "Choice confirmed %@" = "Choice confirmed %@";
 "Choose different entry and exit nodes." = "Choose different entry and exit nodes.";
@@ -269,15 +269,10 @@
 "The active configuration changed while a replacement was being prepared" = "The active configuration changed while a replacement was being prepared";
 "The app version and build, for a support report." = "The app version and build, for a support report.";
 "The ceiling on this device has not been measured." = "The ceiling on this device has not been measured.";
-"The config URL could not be fetched: the request timed out." = "The config URL could not be fetched: the request timed out.";
 "The configuration could not be activated. Try again." = "The configuration could not be activated. Try again.";
 "The configuration could not be saved on this Apple TV: %@" = "The configuration could not be saved on this Apple TV: %@";
 "The configuration failed the tunnel's check: %@" = "The configuration failed the tunnel's check: %@";
 "The configuration is in use. Try again in a moment." = "The configuration is in use. Try again in a moment.";
-"The configuration library changed. Reopen it and try again." = "The configuration library changed. Reopen it and try again.";
-"The configuration library contains an invalid identifier." = "The configuration library contains an invalid identifier.";
-"The configuration library could not be read. Its contents were left unchanged." = "The configuration library could not be read. Its contents were left unchanged.";
-"The configuration library is busy. Try again." = "The configuration library is busy. Try again.";
 "The configuration was refused: %@" = "The configuration was refused: %@";
 "The connection changed while waiting." = "The connection changed while waiting.";
 "The connection list was incomplete." = "The connection list was incomplete.";
@@ -290,11 +285,16 @@
 "The new address replaces the old one. What was downloaded from the old address is no longer used, and the new address is downloaded as soon as you save." = "The new address replaces the old one. What was downloaded from the old address is no longer used, and the new address is downloaded as soon as you save.";
 "The node currently carrying proxied traffic. A url-test group may pick a different one for you. Press to see every group and node." = "The node currently carrying proxied traffic. A url-test group may pick a different one for you. Press to see every group and node.";
 "The nodes have different resource files with the same name." = "The nodes have different resource files with the same name.";
+"The profile URL could not be fetched: the request timed out." = "The profile URL could not be fetched: the request timed out.";
 "The profile could not be downloaded: %@" = "The profile could not be downloaded: %@";
 "The profile did not come back as text." = "The profile did not come back as text.";
 "The profile in use. Press to see its address or remove it." = "The profile in use. Press to see its address or remove it.";
 "The profile is larger than this Apple TV accepts." = "The profile is larger than this Apple TV accepts.";
 "The profile is not something the tunnel can read: %@" = "The profile is not something the tunnel can read: %@";
+"The profile library changed. Reopen it and try again." = "The profile library changed. Reopen it and try again.";
+"The profile library contains an invalid identifier." = "The profile library contains an invalid identifier.";
+"The profile library could not be read. Its contents were left unchanged." = "The profile library could not be read. Its contents were left unchanged.";
+"The profile library is busy. Try again." = "The profile library is busy. Try again.";
 "The profile this Apple TV is using. Press to see the others, switch to one, or remove one. The address is what gets remembered; what it points at is downloaded again when needed." = "The profile this Apple TV is using. Press to see the others, switch to one, or remove one. The address is what gets remembered; what it points at is downloaded again when needed.";
 "The profile's rule sets and node lists, of both kinds, and whether the tunnel can read each one. Press to see them by name." = "The profile's rule sets and node lists, of both kinds, and whether the tunnel can read each one. Press to see them by name.";
 "The provider “%@” is larger than this Apple TV accepts." = "The provider “%@” is larger than this Apple TV accepts.";
@@ -368,4 +368,4 @@
 "Which copy of the GeoIP and GeoSite databases the tunnel loaded." = "Which copy of the GeoIP and GeoSite databases the tunnel loaded.";
 "Your iPhone or Mac keeps profiles in iCloud: restore them here, or add one by its address." = "Your iPhone or Mac keeps profiles in iCloud: restore them here, or add one by its address.";
 "download failed: %@" = "download failed: %@";
-"tvOS guarantees 500 KB of storage and may discard the rest. A config URL survives that; a file does not." = "tvOS guarantees 500 KB of storage and may discard the rest. A config URL survives that; a file does not.";
+"tvOS guarantees 500 KB of storage and may discard the rest. A profile URL survives that; a file does not." = "tvOS guarantees 500 KB of storage and may discard the rest. A profile URL survives that; a file does not.";

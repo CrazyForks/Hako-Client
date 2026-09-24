@@ -288,7 +288,7 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
         .init(
             id: "client-resource-updates",
             title: "Resource Updates",
-            detail: "Clash downloads config URLs, providers and Geo data in the Client with conditional HTTP and last-known-good recovery; the packet-tunnel Core does not perform background downloads."
+            detail: "Clash downloads profile URLs, providers and Geo data in the Client with conditional HTTP and last-known-good recovery; the packet-tunnel Core does not perform background downloads."
         ),
          
          
@@ -354,7 +354,7 @@ struct ProfileFinalConfigurationSnapshot: Equatable, Sendable {
         .init(
             id: "client-resource-updates",
             title: "Resource Updates",
-            detail: "Clash downloads config URLs, providers and Geo data in the Client with conditional HTTP and last-known-good recovery; the packet-tunnel Core does not perform background downloads."
+            detail: "Clash downloads profile URLs, providers and Geo data in the Client with conditional HTTP and last-known-good recovery; the packet-tunnel Core does not perform background downloads."
         ),
         .init(
             id: "external-controller",

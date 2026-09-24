@@ -181,7 +181,7 @@ enum SubscriptionURLPresentation {
         locale: Locale
     ) -> String {
         guard let host = URLComponents(string: rawValue)?.host, !host.isEmpty else {
-            return HakoCopy.string("Config URL", locale: locale)
+            return HakoCopy.string("Profile URL", locale: locale)
         }
         return host
     }
@@ -191,7 +191,7 @@ enum SubscriptionURLPresentation {
      
      
     static func autoLabel(for rawValue: String) -> String {
-        guard let host = URLComponents(string: rawValue)?.host else { return "Config URL" }
+        guard let host = URLComponents(string: rawValue)?.host else { return "Profile URL" }
         let parts = host.split(separator: ".")
         guard parts.count >= 2 else { return host }
         return String(parts[parts.count - 2])
@@ -200,7 +200,7 @@ enum SubscriptionURLPresentation {
      
     static func safeDescription(_ rawValue: String) -> String {
         guard var components = URLComponents(string: rawValue) else {
-            return "Config URL"
+            return "Profile URL"
         }
         components.user = nil
         components.password = nil
@@ -218,6 +218,6 @@ enum SubscriptionURLPresentation {
         components.path = pathSegments.joined(separator: "/")
         return components.url?.absoluteString
             .replacingOccurrences(of: "%E2%80%A6", with: "…")
-            ?? "Config URL"
+            ?? "Profile URL"
     }
 }

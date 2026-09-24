@@ -97,9 +97,9 @@ struct HakoRulesSystemOverview<Icon: View>: View {
                         .equatable()
                 }
             } header: {
-                Text(hako: .format("Config URL Rules (%@)", [String(overview.inlineCount)]))
+                Text(hako: .format("Profile URL Rules (%@)", [String(overview.inlineCount)]))
             } footer: {
-                Text("Grouped by destination. Updates from the config URL replace these rules.")
+                Text("Grouped by destination. Updates from the profile URL replace these rules.")
             }
         }
         if !overview.ruleSets.isEmpty {

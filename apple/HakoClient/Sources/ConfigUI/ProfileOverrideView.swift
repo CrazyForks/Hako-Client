@@ -234,7 +234,7 @@ struct ProfileOverrideView: View {
                         .accessibilityIdentifier("profile.override.custom.remove")
                         .hakoMacFormActionChrome()
                     } header: {
-                        Text("Custom Configuration")
+                        Text("Custom Overrides")
                     }
                 }
 
@@ -392,7 +392,7 @@ struct ProfileOverrideView: View {
             }
             .hakoDeleteConfirmation(deletingScript?.label ?? "",
                 isPresented: Binding(get: { deletingScript != nil }, set: { if !$0 { deletingScript = nil } }),
-                message: .copy("These scripts will be deleted. Configurations using them must choose another script before starting."),
+                message: .copy("These scripts will be deleted. Profiles using them must choose another script before starting."),
                 identifier: "profile.override.script.delete.confirm") { [deletingScript] in
                     guard let deletingScript else { return }
                     ScriptLibrary.remove(id: deletingScript.id, in: scriptLibrary)
@@ -601,7 +601,7 @@ struct ProfileOverrideView: View {
                     HakoLazyView { exceptionsPage }
                 } label: {
                     HakoDestinationRow(
-                        title: "This Configuration's Exceptions",
+                        title: "This Profile's Exceptions",
                         subtitle: .format("%@ rules", [String(rules.count)]),
                         symbol: .listBulletRectangle,
                         tint: .gray
@@ -656,7 +656,7 @@ struct ProfileOverrideView: View {
                         } touchLabel: {
                             Label("Add Rule", systemImage: HakoSymbol.plus.name)
                         }
-                        Toggle("Insert before config URL rules", isOn: $prependRules)
+                        Toggle("Insert before profile URL rules", isOn: $prependRules)
                             .accessibilityIdentifier("profile.override.prepend-rules")
                     } header: {
                         Text("Added Rules")
@@ -665,7 +665,7 @@ struct ProfileOverrideView: View {
 
     private var exceptionsPage: some View {
         Form { addedRulesSection }
-            .hakoPageTitle("This Configuration's Exceptions")
+            .hakoPageTitle("This Profile's Exceptions")
     }
 
     private var patchFieldCount: Int {
@@ -968,7 +968,7 @@ struct ProfileProxyChainEditor: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Edit the profile or rebuild the affected proxies and group before using this configuration.")
+                Text("Edit the profile or rebuild the affected proxies and group before using this profile.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1221,7 +1221,7 @@ struct ProfileProxyChainEditor: View {
                 } header: {
                     Text("Needs Attention")
                 } footer: {
-                    Text("A config URL update or source edit renamed/deleted these proxies. Migrate the identity or remove its override before saving.")
+                    Text("A profile URL update or source edit renamed/deleted these proxies. Migrate the identity or remove its override before saving.")
                 }
             }
 

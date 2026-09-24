@@ -110,9 +110,9 @@ struct ProfileEditView: View {
     private var blockingRequirement: String? {
         guard !canSave else { return nil }
         if rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "The configuration cannot be empty."
+            return "The profile cannot be empty."
         }
-        return "Edit the configuration to save it."
+        return "Edit the profile to save it."
     }
 
      
@@ -197,7 +197,7 @@ struct ProfileEditView: View {
                 } else if hadRawSource || !rawText.isEmpty {
                     VStack(spacing: 0) {
                         if savesIndependentSource {
-                            Text("Saving creates an independent configuration that no longer follows source updates.")
+                            Text("Saving creates an independent profile that no longer follows source updates.")
                                 .font(.caption).foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, HakoTheme.Spacing.standard)
@@ -362,7 +362,7 @@ struct ProfileEditView: View {
             Button("Cancel", role: .cancel) { settleDeparture(false) }
         } message: {
             Text(
-                "This profile updates from its config URL. The next update overwrites what you edited here."
+                "This profile updates from its profile URL. The next update overwrites what you edited here."
             )
         }
         .hakoCapturesDismiss(dismiss)

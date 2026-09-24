@@ -65,7 +65,7 @@ struct IOSExternalResourceFinding: LocalizedError, Codable, Equatable, Hashable 
         case .localImportRequired:
             return "The local profile references a file for \(field). Import that resource with the configuration, or put its contents inline."
         case .subscriptionCannotReadFile:
-            return "This profile references a device file for \(field). Config URLs and pasted configurations cannot read arbitrary device paths; put the value inline or use a local file import."
+            return "This profile references a device file for \(field). Profile URLs and pasted configurations cannot read arbitrary device paths; put the value inline or use a local file import."
         case .managedRuntimeStateRequired:
             return "The \(field) value is runtime state. Hako must manage a private profile-scoped location instead of using an arbitrary path."
         case .fileProviderUnavailable:

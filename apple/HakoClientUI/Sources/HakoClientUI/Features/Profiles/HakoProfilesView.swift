@@ -665,7 +665,7 @@ public struct HakoProfilesView<Icon: View, CapabilityContent: View>: View {
                     HakoEmptyState(
                         title: "No Profiles",
                         message:
-                            "Add a configuration to choose its sources and rules."
+                            "Add a profile to choose its sources and rules."
                     ) {
                         icon(.listBulletRectangle)
                     }
@@ -1667,10 +1667,10 @@ private struct HakoProfileDetailView<
         }
         .hakoDeleteConfirmation(profile.label, isPresented: $showsDeleteConfirmation,
             actionTitle: .copy("Delete Profile"),
-            message: .copy("This configuration will be deleted. Sources and rule schemes in the library will remain."),
+            message: .copy("This profile will be deleted. Sources and rule schemes in the library will remain."),
             identifier: "profile-detail.delete.confirm") { delete(profile) }
         .alert(
-            "Export Configuration Text Only?",
+            "Export Profile Text Only?",
             isPresented: $showsPlaintextExportConfirmation
         ) {
             Button("Export Text") {
@@ -1889,9 +1889,9 @@ private struct HakoProfileDetailView<
     private func heldBackLine(_ item: HakoProfileHeldBackUpdate) -> HakoDisplayText {
         switch item.change {
         case .removed:
-            return .format("Removed by the config URL · yours: %@", [item.appValue])
+            return .format("Removed by the profile URL · yours: %@", [item.appValue])
         case .added, .changed:
-            return .format("Config URL now: %@ · yours: %@", [item.newValue ?? "", item.appValue])
+            return .format("Profile URL now: %@ · yours: %@", [item.newValue ?? "", item.appValue])
         }
     }
 
@@ -1899,7 +1899,7 @@ private struct HakoProfileDetailView<
         _ profile: HakoProfileSnapshot
     ) -> some View {
         HakoProfileGroup(
-            title: "Config URL",
+            title: "Profile URL",
             palette: palette,
             presentationClass: presentationClass
         ) {
@@ -1965,7 +1965,7 @@ private struct HakoProfileDetailView<
                         .subscriptionSettings(profile.id)
                 } label: {
                     HakoProfileActionRow(
-                        title: "Config URL Settings",
+                        title: "Profile URL Settings",
                         symbol: .link,
                         tint: .primary,
                         icon: icon
@@ -1988,7 +1988,7 @@ private struct HakoProfileDetailView<
                     send(.copySubscriptionLink(id: profile.id))
                 } label: {
                     HakoProfileActionRow(
-                        title: "Copy Config URL",
+                        title: "Copy Profile URL",
                         symbol: .docOnDoc,
                         tint: .primary,
                         showsDisclosure: false,

@@ -81,7 +81,7 @@ struct ProfilePreviewView: View {
 }
 
 private enum FinalConfigurationPreviewKind: String, CaseIterable, Identifiable {
-    case source = "Config URL Source"
+    case source = "Profile URL Source"
      
      
      

@@ -288,7 +288,7 @@ private struct ConfigurationDNSSettingsAdapter: View {
             Section {
                 choice("System DNS", mode: .system)
                 choice("Custom", mode: .custom)
-            } footer: { Text("Uses your current network's DNS. Config URL DNS is not used.") }
+            } footer: { Text("Uses your current network's DNS. Profile URL DNS is not used.") }
             if globalOverride {
                 Section { Text("Global DNS override is enabled and can change this selection.").foregroundStyle(.secondary) }
             }
@@ -528,11 +528,11 @@ private struct ConfigurationSourceDetailAdapter: View {
                     ConfigurationNodeSourceEditor(model: model, record: source, changed: changed)
                 }
                 .confirmationDialog("Update Conflict", isPresented: $confirmsRuleReplacement, titleVisibility: .visible) {
-                    Button("Use Config URL Rules", role: .destructive) {
+                    Button("Use Profile URL Rules", role: .destructive) {
                         refreshSource(replacingRules: true)
                     }
                     Button("Cancel", role: .cancel) {}
-                } message: { Text("Your rule edits conflict with this update. Use the config URL rules to replace your edits, or cancel to keep the current configuration. You can copy your rule scheme before updating.") }
+                } message: { Text("Your rule edits conflict with this update. Use the profile URL rules to replace your edits, or cancel to keep the current profile. You can copy your rule scheme before updating.") }
         }
     }
     private func refreshSource(replacingRules: Bool = false) {
@@ -1330,7 +1330,7 @@ private struct ConfigurationChainDetail: View {
             }
             .hakoDeleteConfirmation(source.label, isPresented: $deleting,
                 actionTitle: .copy("Delete Proxy Chain"),
-                message: .copy("Saved configurations keep this chain. Its original nodes remain in the library."),
+                message: .copy("Saved profiles keep this chain. Its original nodes remain in the library."),
                 identifier: "configuration.chain.delete.confirm") {
                     busy = true
                     Task {
@@ -1796,7 +1796,7 @@ private struct ConfigurationDocumentBrowserAdapter: View {
             .hakoDeleteConfirmation(deletingIndex.flatMap { index in sections.flatMap(\.rows).first(where: { $0.nodeIndex == index })?.title } ?? HakoCopy.string("Node", locale: .current),
                 isPresented: Binding(get: { deletingIndex != nil }, set: { if !$0 { deletingIndex = nil } }),
                 actionTitle: .copy("Delete Node"),
-                message: .copy("This node will be removed from the source and configurations that follow its updates."),
+                message: .copy("This node will be removed from the source and profiles that follow its updates."),
                 identifier: "configuration.node.delete.confirm") { [deletingIndex] in
                     if let index = deletingIndex { remove(index) }
                 }
@@ -2037,7 +2037,7 @@ struct ConfigurationCollectionAdapter: View {
         }
         .hakoDeleteConfirmation(entry.collection.name, isPresented: $deleting,
             actionTitle: .copy("Delete Collection"),
-            message: .copy("Remove this collection from its source. Configurations that reference it must choose another collection first."),
+            message: .copy("Remove this collection from its source. Profiles that reference it must choose another collection first."),
             identifier: "configuration.collection.delete.confirm") {
                 Task {
                     do { changed(try await model.saveConfigurationCollection(entry, definitionJSON: nil)); close() }

@@ -15,10 +15,10 @@ enum ConfigurationCenterSourceBridge {
          
         let manager = SubscriptionManager(downloader: downloader, credentials: credentials)
         guard let fetched = try await manager.fetch(profile:profile,useConditionalValidators:false) else {
-            throw PipelineError.sourceUnavailable("The config URL returned no configuration.")
+            throw PipelineError.sourceUnavailable("The profile URL returned no YAML.")
         }
         let proposed = label.trimmingCharacters(in:.whitespacesAndNewlines)
-        let resolvedLabel = proposed.isEmpty ? (fetched.suggestedName ?? URL(string:url)?.host ?? "Config URL") : proposed
+        let resolvedLabel = proposed.isEmpty ? (fetched.suggestedName ?? URL(string:url)?.host ?? "Profile URL") : proposed
         return try await Task.detached(priority:.userInitiated) {
             var result = try ConfigurationCenterSourceBridge.payload(label:resolvedLabel,origin:.subscription(url),
                 original:fetched.rawSource,yaml:fetched.yaml,id:id)

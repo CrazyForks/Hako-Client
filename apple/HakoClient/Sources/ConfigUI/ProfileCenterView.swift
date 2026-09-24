@@ -795,11 +795,11 @@ struct ProfileCenterAdapter: View {
     private func presentMacExportUnavailableAlert() {
         let alert = NSAlert()
         alert.messageText = HakoCopy.string(
-            "No Local Configuration",
+            "No Local Copy",
             locale: locale
         )
         alert.informativeText = HakoCopy.string(
-            "Sync or import this profile to cache its configuration on this device.",
+            "Sync or import this profile to keep a copy on this device.",
             locale: locale
         )
         alert.addButton(
@@ -892,7 +892,7 @@ struct ProfileCenterAdapter: View {
             model.add(
                 label:
                     label.isEmpty
-                        ? "Imported Configuration"
+                        ? "Imported Profile"
                         : label,
                 source: .file(fileName),
                 rawYAML: yaml
@@ -1053,7 +1053,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                         )
                     }
                 } header: {
-                    Text("Config URL")
+                    Text("Profile URL")
                 }
 
                 if ProfileMetadataUpdate.strippingSourceCredentials(
@@ -1080,13 +1080,13 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                     }
                 }
             }
-            .hakoPageTitle("Config URL Settings")
+            .hakoPageTitle("Profile URL Settings")
             .alert("Remove Stored URL Credentials", isPresented: $confirmsCredentialRemoval) {
                 Button("Remove Stored URL Credentials", role: .destructive) { stripStoredCredentials() }
                     .accessibilityIdentifier("profile-metadata.strip-credentials.confirm")
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("The saved config URL carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them.")
+                Text("The saved profile URL carries sign-in details or query values. Removing them keeps the scheme, host and path only, and may require re-importing if the provider needs them.")
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -1107,7 +1107,7 @@ private struct ProfileSubscriptionSettingsAdapter: View {
                     }
                 }
             }
-            .hakoProductModalRoot(title: "Config URL Settings")
+            .hakoProductModalRoot(title: "Profile URL Settings")
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if insideProductModal {
                      

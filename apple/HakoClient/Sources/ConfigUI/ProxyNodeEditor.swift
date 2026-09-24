@@ -978,17 +978,17 @@ struct ProxyNodeDetailsView: View {
      
     private var subscriptionSection: some View {
         Section {
-            Text(hako: .copy("Edited from the config URL"))
+            Text(hako: .copy("Edited from the profile URL"))
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("proxies.nodeEditor.overridden")
             Button(role: .destructive) {
                 confirmsSubscriptionReset = true
             } label: {
-                Text(hako: .copy("Reset to Config URL"))
+                Text(hako: .copy("Reset to Profile URL"))
             }
             .accessibilityIdentifier("proxies.nodeEditor.reset")
-            .alert("Reset to Config URL", isPresented: $confirmsSubscriptionReset) {
-                Button("Reset to Config URL", role: .destructive) {
+            .alert("Reset to Profile URL", isPresented: $confirmsSubscriptionReset) {
+                Button("Reset to Profile URL", role: .destructive) {
                     do {
                         try subscriptionReset?()
                          
@@ -1003,7 +1003,7 @@ struct ProxyNodeDetailsView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text(hako: .copy("The config URL's own values come back; the edit is discarded."))
+                Text(hako: .copy("The profile URL's own values come back; the edit is discarded."))
             }
         }
     }

@@ -455,7 +455,7 @@ struct ScriptLibraryView: View {
         .accessibilityIdentifier("scripts.screen")
         .hakoDeleteConfirmation(deletingScripts.map(\.label).joined(separator: ", "),
             isPresented: Binding(get: { !deletingScripts.isEmpty }, set: { if !$0 { deletingScripts = [] } }),
-            message: .copy("These scripts will be deleted. Configurations using them must choose another script before starting."),
+            message: .copy("These scripts will be deleted. Profiles using them must choose another script before starting."),
             identifier: "scripts.delete.confirm") { [deletingScripts] in
                 deletingScripts.forEach { ScriptLibrary.remove(id: $0.id) }
                 scripts = ScriptLibrary.load()

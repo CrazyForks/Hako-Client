@@ -37,12 +37,12 @@ enum ProfileLabelPolicy {
         switch source {
         case .url(let raw):
             if let host = URL(string: raw)?.host, !host.isEmpty { return host }
-            return "Config URL"
+            return "Profile URL"
         case .file(let name):
             let stem = (name as NSString).deletingPathExtension
             return stem.isEmpty ? "Profile" : stem
         case .clipboard:
-            return "Pasted Configuration"
+            return "Pasted Profile"
         }
     }
 
@@ -54,7 +54,7 @@ enum ProfileLabelPolicy {
      
      
     static func generatedNames(for source: Profile.Source) -> Set<String> {
-        var names: Set<String> = ["Profile", "Config URL"]
+        var names: Set<String> = ["Profile", "Profile URL"]
         names.insert(name(given: "", for: source))
         if case .url(let raw) = source {
             names.insert(SubscriptionURLPresentation.autoLabel(for: raw))
@@ -125,7 +125,7 @@ enum ProfileMetadataUpdate {
             case .emptyName:
                 return "Profile name cannot be empty."
             case .unusableSubscription:
-                return "Enter a config URL."
+                return "Enter a profile URL."
             case .invalidInterval:
                 return "Automatic update interval must be at least 1 hour."
             }

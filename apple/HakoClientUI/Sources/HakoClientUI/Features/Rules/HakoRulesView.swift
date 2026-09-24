@@ -315,11 +315,11 @@ public struct HakoRulesOverviewView<
         if !overview.buckets.isEmpty {
             HakoProductGroup(
                 .format(
-                    "Config URL Rules (%@)",
+                    "Profile URL Rules (%@)",
                     [String(overview.inlineCount)]
                 ),
                 footer:
-                    "Grouped by destination. Updates from the config URL replace these rules.",
+                    "Grouped by destination. Updates from the profile URL replace these rules.",
                 palette: palette
             ) {
                  

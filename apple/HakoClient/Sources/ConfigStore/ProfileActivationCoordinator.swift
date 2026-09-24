@@ -24,7 +24,7 @@ enum PipelineError: LocalizedError {
         case .sourceUnavailable(let reason):
             return reason
         case .notModifiedWithoutActive:
-            return "The config URL was not modified, but this profile has no active revision."
+            return "The profile URL was not modified, but this profile has no active revision."
         case .preflightFailed(let reason):
             return "Configuration validation failed: \(reason)"
         case .providerNotFound(let name):
@@ -835,7 +835,7 @@ final class ProfileActivationCoordinator {
         } else {
             guard case .url = profile.source else {
                 throw PipelineError.sourceUnavailable(
-                    "profile '\(profile.label)' has no stored YAML and no config URL")
+                    "profile '\(profile.label)' has no stored YAML and no profile URL")
             }
             if let fetched = try await subscriptions.fetch(
                 profile: profile,

@@ -702,7 +702,7 @@ struct CustomNodesView: View {
         do {
             let (nodes, notHonoured) = try ShareLinkNodeImport.imported(from: raw)
             guard nodes.count == 1, let node = nodes.first else {
-                errorMessage = "Paste one share link at a time. A whole panel's worth of links is a config URL — add it as a profile."
+                errorMessage = "Paste one share link at a time. A whole panel's worth of links is a profile URL — add it as a profile."
                 return
             }
             guard let record = Self.record(fromNodeJSON: node) else {

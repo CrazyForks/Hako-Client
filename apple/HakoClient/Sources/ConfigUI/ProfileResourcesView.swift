@@ -942,7 +942,7 @@ private struct ProfileProviderDefinitionEditorView: View {
             } header: {
                 Text("Inline Content")
             } footer: {
-                Text("Inline content belongs to this profile overlay and survives config URL refresh without changing the imported source.")
+                Text("Inline content belongs to this profile overlay and survives profile URL refresh without changing the imported source.")
             }
         }
     }

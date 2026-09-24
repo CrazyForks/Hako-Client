@@ -38,7 +38,7 @@
 "Bundled" = "內建";
 "Cancel" = "取消";
 "Changing this setting restarts the VPN." = "更改此設定會重新啟動 VPN。";
-"Check that the config URL is still reachable, then update it once from its own screen." = "先確認設定連結仍可連上，然後在它自己的頁面裡更新一次。";
+"Check that the profile URL is still reachable, then update it once from its own screen." = "先確認設定連結仍可連上，然後在它自己的頁面裡更新一次。";
 "Checking…" = "正在檢查…";
 "Choice confirmed %@" = "選擇確認於 %@";
 "Choose different entry and exit nodes." = "前置節點和出口節點要不同。";
@@ -269,15 +269,10 @@
 "The active configuration changed while a replacement was being prepared" = "正在準備新設定時，目前設定被改動了";
 "The app version and build, for a support report." = "App 版本與建置編號，供回報問題時使用。";
 "The ceiling on this device has not been measured." = "這台裝置上的上限還沒有量過。";
-"The config URL could not be fetched: the request timed out." = "無法取得設定連結：請求逾時。";
 "The configuration could not be activated. Try again." = "設定啟用失敗，請重試。";
 "The configuration could not be saved on this Apple TV: %@" = "設定無法儲存到這台 Apple TV：%@";
 "The configuration failed the tunnel's check: %@" = "設定沒有通過通道的檢查：%@";
 "The configuration is in use. Try again in a moment." = "設定正被佔用，請稍後重試。";
-"The configuration library changed. Reopen it and try again." = "設定庫已變更，請重新開啟再試。";
-"The configuration library contains an invalid identifier." = "設定庫裡有無效的識別碼。";
-"The configuration library could not be read. Its contents were left unchanged." = "設定庫讀取失敗，內容未變更。";
-"The configuration library is busy. Try again." = "設定庫忙碌中，請再試一次。";
 "The configuration was refused: %@" = "設定被拒絕：%@";
 "The connection changed while waiting." = "等待期間連線已發生變化。";
 "The connection list was incomplete." = "連線列表不完整。";
@@ -290,11 +285,16 @@
 "The new address replaces the old one. What was downloaded from the old address is no longer used, and the new address is downloaded as soon as you save." = "新網址會取代舊的。舊網址下載的內容不再使用，儲存後會立刻下載新網址。";
 "The node currently carrying proxied traffic. A url-test group may pick a different one for you. Press to see every group and node." = "目前承載代理流量的節點。url-test 群組可能會替你換一個。按下可檢視全部策略群組與節點。";
 "The nodes have different resource files with the same name." = "這些節點有同名但內容不同的資源檔案。";
+"The profile URL could not be fetched: the request timed out." = "無法取得設定連結：請求逾時。";
 "The profile could not be downloaded: %@" = "設定檔下載失敗：%@";
 "The profile did not come back as text." = "設定檔回傳的不是文字。";
 "The profile in use. Press to see its address or remove it." = "正在使用的設定檔。按下可檢視它的網址或將其移除。";
 "The profile is larger than this Apple TV accepts." = "設定檔內容超過了這台 Apple TV 接受的大小。";
 "The profile is not something the tunnel can read: %@" = "這份設定檔不是通道能讀取的內容：%@";
+"The profile library changed. Reopen it and try again." = "設定庫已變更，請重新開啟再試。";
+"The profile library contains an invalid identifier." = "設定庫裡有無效的識別碼。";
+"The profile library could not be read. Its contents were left unchanged." = "設定庫讀取失敗，內容未變更。";
+"The profile library is busy. Try again." = "設定庫忙碌中，請再試一次。";
 "The profile this Apple TV is using. Press to see the others, switch to one, or remove one. The address is what gets remembered; what it points at is downloaded again when needed." = "這台 Apple TV 正在使用的設定檔。按下可檢視其他設定檔、切換到某一個或移除某一個。記住的是網址；它指向的內容會在需要時重新下載。";
 "The profile's rule sets and node lists, of both kinds, and whether the tunnel can read each one. Press to see them by name." = "設定檔裡的規則集與節點列表，兩類都在，以及通道能不能讀到每一個。按下逐個看。";
 "The provider “%@” is larger than this Apple TV accepts." = "provider「%@」超過了這台 Apple TV 接受的大小。";
@@ -368,4 +368,4 @@
 "Which copy of the GeoIP and GeoSite databases the tunnel loaded." = "通道載入了哪一份 GeoIP 與 GeoSite 資料庫。";
 "Your iPhone or Mac keeps profiles in iCloud: restore them here, or add one by its address." = "你的 iPhone 或 Mac 在 iCloud 裡存著設定檔：在這裡回復，或按網址新增一份。";
 "download failed: %@" = "下載失敗：%@";
-"tvOS guarantees 500 KB of storage and may discard the rest. A config URL survives that; a file does not." = "tvOS 只保證 500 KB 的儲存空間，其餘隨時可能被清掉。連結能挺過去；檔案不能。";
+"tvOS guarantees 500 KB of storage and may discard the rest. A profile URL survives that; a file does not." = "tvOS 只保證 500 KB 的儲存空間，其餘隨時可能被清掉。連結能挺過去；檔案不能。";

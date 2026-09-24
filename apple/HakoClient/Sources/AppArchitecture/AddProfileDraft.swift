@@ -72,9 +72,9 @@ struct AddProfileDraft: Equatable {
         guard !canSubmit else { return nil }
         switch tab {
         case .link:
-            return "Paste a config URL or configuration text to continue."
+            return "Paste a Profile URL or YAML text to continue."
         case .file:
-            return "Choose a configuration file, or paste its text, to continue."
+            return "Choose a YAML file, or paste its text, to continue."
         case .blank:
             return nil
         }
@@ -205,7 +205,7 @@ struct AddProfileDraft: Equatable {
         importNotice = ""
         guard !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard raw.utf8.count <= Self.maximumPastedBytes else {
-            importError = "That configuration is too large to paste. Import it as a file instead."
+            importError = "That profile is too large to paste. Import it as a file instead."
             return
         }
         pastedConfigText = raw

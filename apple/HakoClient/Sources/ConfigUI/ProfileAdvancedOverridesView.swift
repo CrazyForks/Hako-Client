@@ -364,7 +364,7 @@ struct ProfileAdvancedOverridesView: View {
                 .accessibilityValue(isCopyingFromProfile ? "Loading" : "Ready")
                 .accessibilityIdentifier("profile-advanced.copy-source")
             } header: {
-                Text("Custom Configuration")
+                Text("Custom Overrides")
             } footer: {
                 Text("Custom mode uses only the proxy groups and rules you define here.")
             }

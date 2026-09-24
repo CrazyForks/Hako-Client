@@ -417,7 +417,7 @@ struct HomeConnectionIssueView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Reset VPN Profile")
                             Text(
-                                "Recreates Clash’s VPN entry in Settings. Your Clash profiles, config URLs, and credentials stay unchanged."
+                                "Recreates Clash’s VPN entry in Settings. Your Clash profiles, profile URLs, and credentials stay unchanged."
                             )
                             .font(.caption)
                             .foregroundStyle(.secondary)
