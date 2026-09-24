@@ -311,6 +311,29 @@ final class HakoTVTunnelController: ObservableObject {
         refreshTask = nil
     }
 
+     
+     
+     
+     
+     
+    func updateScript(subscription: HakoTVSubscription, isCurrent: Bool) async {
+        guard connectTask == nil, refreshTask == nil else { return }
+        guard let container else {
+            state.refresh = .failed(subscription.id, ControllerError.appGroupUnavailable.localizedDescription)
+            return
+        }
+        state.refresh = .updating(subscription.id, .downloading)
+        do {
+            _ = try await HakoTVConfigPipeline(container: container, session: session).updateScript(for: subscription)
+            state.refresh = nil
+        } catch {
+            state.refresh = .failed(subscription.id, error.localizedDescription)
+            HakoLogStore.shared.append("tv script update failed  reason=\(error.localizedDescription)", stream: .app, level: .warning)
+            return
+        }
+        if isCurrent { await refresh(subscription: subscription) }
+    }
+
     private func performRefresh(_ subscription: HakoTVSubscription) async {
         let generation = ipcGeneration
         state.refresh = .updating(subscription.id, .downloading)

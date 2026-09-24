@@ -32,6 +32,7 @@ struct HakoTVSubscriptionDetailScreen: View {
      
     enum Verb: Hashable, CaseIterable {
         case update
+        case updateScript
         case rules
         case edit
         case use
@@ -40,6 +41,7 @@ struct HakoTVSubscriptionDetailScreen: View {
         var title: String {
             switch self {
             case .update: String(localized: "Update now")
+            case .updateScript: String(localized: "Update Script")
             case .rules: String(localized: "Rules")
             case .edit: String(localized: "Edit")
             case .use: String(localized: "Use this profile")
@@ -50,6 +52,7 @@ struct HakoTVSubscriptionDetailScreen: View {
         var identifier: String {
             switch self {
             case .update: "update"
+            case .updateScript: "update-script"
             case .rules: "rules"
             case .edit: "edit"
             case .use: "use"
@@ -69,6 +72,9 @@ struct HakoTVSubscriptionDetailScreen: View {
      
      
     var onUpdate: (() -> Void)?
+     
+     
+    var onUpdateScript: (() -> Void)?
      
     var onEdit: () -> Void = {}
      
@@ -112,7 +118,7 @@ struct HakoTVSubscriptionDetailScreen: View {
     private var actions: some View {
         List {
             Section {
-                ForEach(Self.verbs(isCurrent: isCurrent, isFetchable: subscription?.hasFetchableAddress ?? false), id: \.self) { verb in
+                ForEach(Self.verbs(isCurrent: isCurrent, isFetchable: subscription?.hasFetchableAddress ?? false, hasScript: subscription?.scriptURL != nil), id: \.self) { verb in
                     Button(role: verb == .remove ? .destructive : nil) {
                         perform(verb)
                     } label: {
@@ -152,6 +158,8 @@ struct HakoTVSubscriptionDetailScreen: View {
             } else {
                 store.markUpdated(id, at: Date())
             }
+        case .updateScript:
+            onUpdateScript?()
         case .rules:
             onRules()
         case .edit:
@@ -224,9 +232,10 @@ struct HakoTVSubscriptionDetailScreen: View {
         return "\(String(localized: "Override script")) · \(value)"
     }
 
-    static func verbs(isCurrent: Bool, isFetchable: Bool = true) -> [Verb] {
-        var verbs: [Verb] = isCurrent ? [.update, .rules, .edit, .remove] : [.rules, .edit, .use, .remove]
+    static func verbs(isCurrent: Bool, isFetchable: Bool = true, hasScript: Bool = false) -> [Verb] {
+        var verbs: [Verb] = isCurrent ? [.update, .updateScript, .rules, .edit, .remove] : [.updateScript, .rules, .edit, .use, .remove]
         if !isFetchable { verbs.removeAll { $0 == .rules } }
+        if !hasScript { verbs.removeAll { $0 == .updateScript } }
         return verbs
     }
 

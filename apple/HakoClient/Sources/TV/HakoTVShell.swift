@@ -253,6 +253,11 @@ struct HakoTVShell: View {
                                 Task { await tunnel.refresh(subscription: subscription) }
                             }
                         } : nil,
+                        onUpdateScript: live ? {
+                            if let subscription = store.subscriptions.first(where: { $0.id == id }) {
+                                Task { await tunnel.updateScript(subscription: subscription, isCurrent: store.current?.id == id) }
+                            }
+                        } : nil,
                         onEdit: { editDoor = EditDoor(id: id) },
                         onRules: { rulesDoor = RulesDoor(id: id) }
                     )

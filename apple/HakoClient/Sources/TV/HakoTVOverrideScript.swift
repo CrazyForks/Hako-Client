@@ -7,6 +7,7 @@ import Foundation
  
 enum HakoTVOverrideScript {
     static let notText = "The script is not text."
+    static let noScript = "This profile has no override script to update."
 
     static func apply(script: String, toYAML yaml: String, profileName: String) throws -> String {
         let json = try ConfigTransforms.yamlToJSON(yaml)

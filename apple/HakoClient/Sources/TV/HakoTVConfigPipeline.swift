@@ -142,6 +142,30 @@ final class HakoTVConfigPipeline {
         try BundledGeodataProvisioner.seedAllMissing(into: working)
     }
 
+     
+     
+     
+    func updateScript(for subscription: HakoTVSubscription) async throws -> Int {
+        guard subscription.scriptURL != nil else {
+            throw PipelineError.invalidConfiguration(HakoTVOverrideScript.noScript)
+        }
+        let source = try await fetchScript(for: subscription, profileID: Self.profileID(for: subscription))
+        HakoLogStore.shared.append("tv override script updated  bytes=\(source.utf8.count)", stream: .app)
+        return source.utf8.count
+    }
+
+    private func fetchScript(for subscription: HakoTVSubscription, profileID: String) async throws -> String {
+        guard let scriptURL = subscription.scriptURL else {
+            throw PipelineError.invalidConfiguration(HakoTVOverrideScript.noScript)
+        }
+        let script = try await HakoTVSubscriptionFetcher.fetchBody(scriptURL, session: session, userAgent: userAgent)
+        guard let source = String(data: script.body, encoding: .utf8) else {
+            throw PipelineError.invalidConfiguration(HakoTVOverrideScript.notText)
+        }
+        try HakoTVOverrideScriptStore.write(source, container: container, profileID: profileID)
+        return source
+    }
+
     func activate(
         subscription: HakoTVSubscription,
         progress: @escaping (Phase) -> Void
@@ -184,17 +208,21 @@ final class HakoTVConfigPipeline {
              
              
              
-            if let scriptURL = subscription.scriptURL {
-                let script = try await HakoTVSubscriptionFetcher.fetchBody(scriptURL, session: session, userAgent: userAgent)
-                guard let source = String(data: script.body, encoding: .utf8) else {
-                    throw PipelineError.invalidConfiguration(HakoTVOverrideScript.notText)
+            if subscription.scriptURL != nil {
+                 
+                 
+                let source: String
+                if let kept = HakoTVOverrideScriptStore.read(container: container, profileID: profileID) {
+                    source = kept
+                } else {
+                    source = try await fetchScript(for: subscription, profileID: profileID)
                 }
                 do {
                     sourceYAML = try HakoTVOverrideScript.apply(script: source, toYAML: composed, profileName: subscription.title)
                 } catch {
                     throw PipelineError.invalidConfiguration(error.localizedDescription)
                 }
-                HakoLogStore.shared.append("tv override script applied  bytes=\(script.body.count)", stream: .app)
+                HakoLogStore.shared.append("tv override script applied  bytes=\(source.utf8.count)", stream: .app)
             } else {
                 sourceYAML = composed
             }
