@@ -18,17 +18,12 @@ enum HakoTunnelShortcut {
      
      
      
-    enum Outcome {
-        case start, stop, on, off
-    }
-
-    static func sentence(_ outcome: Outcome) -> LocalizedStringResource {
-        switch outcome {
-        case .start: return "Starting Clash VPN."
-        case .stop: return "Stopping Clash VPN."
-        case .on: return "Clash VPN is on."
-        case .off: return "Clash VPN is off."
-        }
+     
+     
+     
+     
+    static func sentence(on: Bool) -> LocalizedStringResource {
+        on ? "Clash VPN is on." : "Clash VPN is off."
     }
 
     static func drive(
@@ -59,11 +54,11 @@ struct ConnectHakoIntent: AppIntent {
     @available(iOS 26.0, macOS 26.0, *)
     static var supportedModes: IntentModes { .background }
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult {
         try await HakoTunnelShortcut.drive(.connect) {
             await HakoVPNControlDriver.apply(connect: true)
         }
-        return .result(dialog: IntentDialog(HakoTunnelShortcut.sentence(.start)))
+        return .result()
     }
 }
 
@@ -76,11 +71,11 @@ struct DisconnectHakoIntent: AppIntent {
     @available(iOS 26.0, macOS 26.0, *)
     static var supportedModes: IntentModes { .background }
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult {
         try await HakoTunnelShortcut.drive(.disconnect) {
             await HakoVPNControlDriver.apply(connect: false)
         }
-        return .result(dialog: IntentDialog(HakoTunnelShortcut.sentence(.stop)))
+        return .result()
     }
 }
 
@@ -94,17 +89,13 @@ struct ToggleHakoIntent: AppIntent {
     static var supportedModes: IntentModes { .background }
 
      
-    func perform() async throws -> some IntentResult & ReturnsValue<Bool> & ProvidesDialog {
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
         var applied: Bool?
         try await HakoTunnelShortcut.drive(.toggle) {
             applied = await HakoVPNControlDriver.toggle()
             return applied != nil
         }
-        let on = applied ?? false
-        return .result(
-            value: on,
-            dialog: IntentDialog(HakoTunnelShortcut.sentence(on ? .start : .stop))
-        )
+        return .result(value: applied ?? false)
     }
 }
 
@@ -124,7 +115,7 @@ struct GetHakoVPNStatusIntent: AppIntent {
         let on = live ?? HakoSystemActionDispatch.handoff.isVPNSnapshotActive
         return .result(
             value: on,
-            dialog: IntentDialog(HakoTunnelShortcut.sentence(on ? .on : .off))
+            dialog: IntentDialog(HakoTunnelShortcut.sentence(on: on))
         )
     }
 }

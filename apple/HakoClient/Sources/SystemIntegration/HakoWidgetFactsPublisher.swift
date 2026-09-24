@@ -10,9 +10,24 @@ import WidgetKit
  
  
 enum HakoWidgetFactsPublisher {
-    static func facts(activeLabel: String?, sourceYAML: String?, now: Date) -> HakoWidgetAppFacts {
+     
+     
+     
+    static var countsWired: Bool {
+        #if os(macOS)
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    static func facts(
+        activeLabel: String?, sourceYAML: String?, mode: HakoWidgetMode? = nil, now: Date
+    ) -> HakoWidgetAppFacts {
         guard let sourceYAML, !sourceYAML.isEmpty else {
-            return HakoWidgetAppFacts(profile: activeLabel, firstGroup: nil, groups: [], writtenAt: now)
+            return HakoWidgetAppFacts(
+                profile: activeLabel, firstGroup: nil, groups: [], mode: mode, countsWired: countsWired, writtenAt: now
+            )
         }
          
          
@@ -49,8 +64,32 @@ enum HakoWidgetFactsPublisher {
             groups: groups,
             members: members,
             selections: selections,
+            mode: mode,
+            countsWired: countsWired,
             writtenAt: now
         )
+    }
+
+    static var store: HakoWidgetMailboxStore {
+        HakoWidgetMailboxStore(root: HakoAppIdentifiers.appGroupContainer ?? FileManager.default.temporaryDirectory)
+    }
+
+     
+     
+    static func appChoseMode(store: HakoWidgetMailboxStore = store, reload: () -> Void = { WidgetCenter.shared.reloadAllTimelines() }) {
+        store.clearModeChoice()
+        reload()
+    }
+
+     
+     
+     
+     
+     
+    static func takeModeChosenOnACard(store: HakoWidgetMailboxStore = store) -> String? {
+        guard let choice = store.readModeChoice() else { return nil }
+        store.clearModeChoice()
+        return choice.mode.rawValue
     }
 
     static func write(_ facts: HakoWidgetAppFacts, to store: HakoWidgetMailboxStore) {
@@ -66,12 +105,10 @@ enum HakoWidgetFactsPublisher {
 
      
      
-    static func publish(activeLabel: String?, sourceYAML: @escaping () -> String?) {
+    static func publish(activeLabel: String?, mode: HakoWidgetMode? = nil, sourceYAML: @escaping () -> String?) {
         Task.detached(priority: .utility) {
-            let facts = facts(activeLabel: activeLabel, sourceYAML: sourceYAML(), now: Date())
-            write(facts, to: HakoWidgetMailboxStore(
-                root: HakoAppIdentifiers.appGroupContainer ?? FileManager.default.temporaryDirectory
-            ))
+            let facts = facts(activeLabel: activeLabel, sourceYAML: sourceYAML(), mode: mode, now: Date())
+            write(facts, to: store)
             WidgetCenter.shared.reloadAllTimelines()
         }
     }

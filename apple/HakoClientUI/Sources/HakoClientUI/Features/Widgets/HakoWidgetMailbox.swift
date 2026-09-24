@@ -16,6 +16,9 @@ public enum HakoWidgetMailbox {
     public static let snapshotFile = "widgets/snapshot.json"
      
     public static let appFile = "widgets/app.json"
+     
+     
+    public static let modeFile = "widgets/mode.json"
     public static let requestNotification = "org.example.hako.widget.request"
      
     public static let updatedNotification = "org.example.hako.widget.updated"
@@ -66,6 +69,22 @@ public struct HakoWidgetRequest: Codable, Equatable, Sendable {
  
  
  
+ 
+ 
+ 
+public struct HakoWidgetModeChoice: Codable, Equatable, Sendable {
+    public let mode: HakoWidgetMode
+    public let at: Date
+
+    public init(mode: HakoWidgetMode, at: Date) {
+        self.mode = mode
+        self.at = at
+    }
+}
+
+ 
+ 
+ 
 public struct HakoWidgetAppFacts: Codable, Equatable, Sendable {
     public let profile: String?
     public let firstGroup: String?
@@ -75,11 +94,24 @@ public struct HakoWidgetAppFacts: Codable, Equatable, Sendable {
     public let members: [String: [String]]
      
     public let selections: [String: String]
+     
+     
+     
+     
+     
+    public let mode: HakoWidgetMode?
+     
+     
+     
+     
+     
+    public let countsWired: Bool?
     public let writtenAt: Date
 
     public init(
         profile: String?, firstGroup: String?, groups: [String],
         members: [String: [String]] = [:], selections: [String: String] = [:],
+        mode: HakoWidgetMode? = nil, countsWired: Bool? = nil,
         writtenAt: Date
     ) {
         self.profile = profile
@@ -87,7 +119,30 @@ public struct HakoWidgetAppFacts: Codable, Equatable, Sendable {
         self.groups = groups
         self.members = members
         self.selections = selections
+        self.mode = mode
+        self.countsWired = countsWired
         self.writtenAt = writtenAt
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
+public enum HakoWidgetStoredMode {
+     
+     
+    public static let key = "config.runtime.flclash.v1"
+
+    public static func read(from defaults: UserDefaults) -> HakoWidgetMode? {
+        guard let data = defaults.data(forKey: key),
+              let record = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let patchJSON = record["patchJSON"] as? String,
+              let patch = (try? JSONSerialization.jsonObject(with: Data(patchJSON.utf8))) as? [String: Any],
+              let mode = patch["mode"] as? String else { return nil }
+        return HakoWidgetMode(rawValue: mode.lowercased())
     }
 }
 
@@ -116,6 +171,24 @@ public struct HakoWidgetMailboxStore {
 
     public func writeAppFacts(_ facts: HakoWidgetAppFacts) throws {
         try write(facts, to: HakoWidgetMailbox.appFile)
+    }
+
+    public func readModeChoice() -> HakoWidgetModeChoice? {
+        read(HakoWidgetMailbox.modeFile)
+    }
+
+    public func writeModeChoice(_ choice: HakoWidgetModeChoice) throws {
+        try write(choice, to: HakoWidgetMailbox.modeFile)
+    }
+
+    public func clearModeChoice() {
+        try? FileManager.default.removeItem(at: root.appendingPathComponent(HakoWidgetMailbox.modeFile))
+    }
+
+     
+     
+    public func restingMode(stored: HakoWidgetMode?) -> HakoWidgetMode? {
+        readModeChoice()?.mode ?? stored
     }
 
     public func writeRequest(_ request: HakoWidgetRequest) throws {

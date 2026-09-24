@@ -16,6 +16,9 @@ struct HakoWidgetEntry: TimelineEntry {
      
      
     var tunnelControllable: Bool = true
+     
+     
+    var storedMode: HakoWidgetMode?
 }
 
 enum HakoWidgetTimelineBuilder {
@@ -43,7 +46,10 @@ enum HakoWidgetTimelineBuilder {
         return HakoWidgetEntry(
             date: Date(), snapshot: snapshot, facts: store.readAppFacts(),
             tunnelActive: active, style: style, group: group,
-            tunnelControllable: state?.controllable ?? false
+            tunnelControllable: state?.controllable ?? false,
+            storedMode: store.restingMode(
+                stored: UserDefaults(suiteName: HakoAppIdentifiers.appGroup).flatMap(HakoWidgetStoredMode.read(from:))
+            )
         )
     }
 

@@ -2787,7 +2787,6 @@
 "Start or stop the installed Clash by Hako VPN profile." = "Start or stop the installed Clash by Hako VPN profile.";
 "Start the installed Clash by Hako VPN profile." = "Start the installed Clash by Hako VPN profile.";
 "Started" = "Started";
-"Starting Clash VPN." = "Starting Clash VPN.";
 "Starting may ask for Local Network access; Clash cannot accept nearby devices without it." = "Starting may ask for Local Network access; Clash cannot accept nearby devices without it.";
 "Startup cost grows with these. These are measured sizes, not a finding about which one stopped the tunnel." = "Startup cost grows with these. These are measured sizes, not a finding about which one stopped the tunnel.";
 "State" = "State";
@@ -2810,7 +2809,6 @@
 "Stop the VPN before clearing provider caches." = "Stop the VPN before clearing provider caches.";
 "Stop the active Clash by Hako VPN profile." = "Stop the active Clash by Hako VPN profile.";
 "Stopped" = "Stopped";
-"Stopping Clash VPN." = "Stopping Clash VPN.";
 "Storage" = "Storage";
 "Stored URL credentials removed" = "Stored URL credentials removed";
 "Stored in iCloud" = "Stored in iCloud";

@@ -43,7 +43,17 @@ final class WidgetMailboxService {
             self.phase = .connected
             self.startedAt = Date()
             self.register()
-            self.publish(group: nil, reason: "start", reloads: true, reloadDelay: Self.interactionGrace)
+             
+             
+             
+            if let choice = self.store.readModeChoice() {
+                self.act(
+                    #"{"cmd":"setMode","mode":"\#(choice.mode.rawValue)"}"#,
+                    then: nil, reason: "start, card's mode \(choice.mode.rawValue)"
+                )
+            } else {
+                self.publish(group: nil, reason: "start", reloads: true, reloadDelay: Self.interactionGrace)
+            }
         }
     }
 

@@ -2787,7 +2787,6 @@
 "Start or stop the installed Clash by Hako VPN profile." = "啟動或停止已安裝的 Clash by Hako VPN 描述檔案。";
 "Start the installed Clash by Hako VPN profile." = "啟動已安裝的 Clash by Hako VPN 描述檔案。";
 "Started" = "已啟動";
-"Starting Clash VPN." = "正在啟動 Clash VPN。";
 "Starting may ask for Local Network access; Clash cannot accept nearby devices without it." = "啟動時可能請求區域網路許可權；沒有該許可權，Clash 無法接受附近裝置。";
 "Startup cost grows with these. These are measured sizes, not a finding about which one stopped the tunnel." = "啟動開銷隨這些增長。這裡是實測大小，不是對哪一個終止了通道的判斷。";
 "State" = "狀態";
@@ -2810,7 +2809,6 @@
 "Stop the VPN before clearing provider caches." = "請先停止代理，再清除集合快取。";
 "Stop the active Clash by Hako VPN profile." = "停止目前的 Clash by Hako VPN 描述檔案。";
 "Stopped" = "已停";
-"Stopping Clash VPN." = "正在停止 Clash VPN。";
 "Storage" = "儲存空間";
 "Stored URL credentials removed" = "已移除設定連結中儲存的認證資訊";
 "Stored in iCloud" = "已存入 iCloud";

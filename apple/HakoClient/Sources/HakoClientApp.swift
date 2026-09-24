@@ -450,6 +450,11 @@ struct AppShellView: View {
                      
                     syncConnectionsForSelectedTab(isForeground: scenePhaseWitness.phase == .active)
                 }
+                 
+                 
+                if pendingOutboundMode == nil, let raw = HakoWidgetFactsPublisher.takeModeChosenOnACard() {
+                    pendingOutboundMode = raw
+                }
 
 
                 proxyShare.refreshAddresses()

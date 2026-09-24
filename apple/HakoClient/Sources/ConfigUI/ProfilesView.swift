@@ -234,7 +234,11 @@ final class ProfilesViewModel: ObservableObject {
             .sink { [weak self] activeID, profiles in
                 guard let self else { return }
                 let active = profiles.first { $0.id == activeID }
-                HakoWidgetFactsPublisher.publish(activeLabel: active?.label) { [weak self] in
+                 
+                 
+                 
+                let mode = active.flatMap { HakoWidgetMode(rawValue: self.outboundMode(for: $0).rawValue) }
+                HakoWidgetFactsPublisher.publish(activeLabel: active?.label, mode: mode) { [weak self] in
                     guard let self, let active else { return nil }
                     return self.sourceYAML(for: active)
                 }
@@ -2127,6 +2131,7 @@ final class ProfilesViewModel: ObservableObject {
             replacing: ["mode"],
             runtimeAlreadyCarriesChange: kernelCarriesTheChange
         )
+        HakoWidgetFactsPublisher.appChoseMode()
     }
 
      

@@ -39,17 +39,20 @@ enum HakoWidgetSlotFactory {
                         .buttonBorderShape(.circle)
                         .widgetAccentable()
                 ),
+             
+             
             mode: { mode, label in
-                active
-                    ? AnyView(Button(intent: HakoWidgetSetModeIntent(mode: mode)) { label }.buttonStyle(.plain))
-                    : AnyView(Link(destination: HakoSystemRoute.open(.home).url) { label })
+                AnyView(Button(intent: HakoWidgetSetModeIntent(mode: mode)) { label }.buttonStyle(.plain))
             },
             member: { name, label in
                 if active, let group {
                     return AnyView(Button(intent: HakoWidgetSelectIntent(group: group, name: name)) { label }.buttonStyle(.plain))
                 }
-                return AnyView(Link(destination: HakoSystemRoute.open(.proxies).url) { label })
+                 
+                 
+                return label
             },
+            refresh: { label in AnyView(Button(intent: HakoWidgetRefreshIntent()) { label }.buttonStyle(.plain)) },
             accent: { AnyView($0.widgetAccentable()) },
             needsSetup: !entry.tunnelControllable
         )
@@ -78,7 +81,10 @@ struct HakoWidgetView: View {
              
             switch size == .large ? .status : entry.style {
             case .status:
-                HakoWidgetMainView(snapshot: entry.snapshot, facts: entry.facts, now: entry.date, locale: locale, size: size, slots: slots)
+                HakoWidgetMainView(
+                    snapshot: entry.snapshot, facts: entry.facts, now: entry.date, locale: locale,
+                    size: size, slots: slots, configuredMode: entry.storedMode
+                )
             case .group:
                 HakoWidgetGroupView(snapshot: entry.snapshot, facts: entry.facts, group: entry.group, now: entry.date, size: size, slots: slots)
             case .stats:

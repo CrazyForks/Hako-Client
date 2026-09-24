@@ -12,6 +12,7 @@ import SwiftUI
  
  
  
+ 
 
  
 
@@ -25,6 +26,8 @@ public struct HakoWidgetSlots {
      
     public var member: (String, AnyView) -> AnyView
      
+    public var refresh: (AnyView) -> AnyView
+     
      
     public var accent: (AnyView) -> AnyView
      
@@ -36,12 +39,14 @@ public struct HakoWidgetSlots {
         power: AnyView,
         mode: @escaping (HakoWidgetMode, AnyView) -> AnyView,
         member: @escaping (String, AnyView) -> AnyView,
+        refresh: @escaping (AnyView) -> AnyView = { $0 },
         accent: @escaping (AnyView) -> AnyView = { $0 },
         needsSetup: Bool = false
     ) {
         self.power = power
         self.mode = mode
         self.member = member
+        self.refresh = refresh
         self.accent = accent
         self.needsSetup = needsSetup
     }
@@ -69,23 +74,63 @@ public struct HakoWidgetMainModel: Equatable {
     public let down: String
     public let up: String
     public let connections: String
+     
+     
+    public let cells: [HakoWidgetStatsModel.Cell]
 
-    public init(snapshot: HakoWidgetSnapshot?, facts: HakoWidgetAppFacts?, now: Date, locale: Locale) {
+     
+     
+    public var headline: String { node ?? title }
+     
+    public var subtitle: String? { node == nil ? nil : title }
+
+     
+     
+    public init(
+        snapshot: HakoWidgetSnapshot?, facts: HakoWidgetAppFacts?, now: Date, locale: Locale,
+        configuredMode: HakoWidgetMode? = nil
+    ) {
         let fresh = snapshot.flatMap { $0.isFresh(now: now) ? $0 : nil }
         title = snapshot?.profile ?? facts?.profile ?? HakoCopy.string("No Profile", locale: locale)
         phase = fresh?.phase ?? .disconnected
         let connected = fresh?.phase == .connected
-        node = connected ? fresh?.egress : nil
-        mode = connected ? fresh?.mode : nil
+         
+         
+         
+         
+         
+        let firstGroup = facts?.firstGroup
+        let resting = firstGroup.flatMap { facts?.selections[$0] }
+            ?? (snapshot?.group?.name == firstGroup ? snapshot?.group?.now : nil)
+        node = connected ? fresh?.egress : (firstGroup == nil ? nil : resting)
+        mode = connected ? fresh?.mode : (configuredMode ?? facts?.mode)
         since = connected ? fresh?.startedAt : nil
         updatedAt = fresh?.at
          
          
          
-        down = HakoWidgetFormat.rate(fresh?.downRate)
-        up = HakoWidgetFormat.rate(fresh?.upRate)
-        connections = HakoWidgetFormat.count(fresh?.connections?.opened, locale: locale)
+         
+         
+        let idle = snapshot.map { $0.phase == .disconnected } ?? true
+        let sum: (HakoWidgetBytes?) -> Int64? = { $0.map { $0.up + $0.down } }
+        down = HakoWidgetFormat.rate(idle ? 0 : fresh?.downRate)
+        up = HakoWidgetFormat.rate(idle ? 0 : fresh?.upRate)
+        connections = HakoWidgetFormat.count(idle ? 0 : fresh?.connections?.opened, locale: locale)
+         
+         
+        let wired = idle ? (facts?.countsWired ?? false) : (fresh?.cellular == nil && fresh?.wired != nil)
+        cells = [
+            .init(key: "Wi-Fi", symbol: "wifi", value: HakoWidgetFormat.bytes(idle ? 0 : sum(fresh?.wifi))),
+            wired
+                ? .init(key: "Wired", symbol: "cable.connector", value: HakoWidgetFormat.bytes(idle ? 0 : sum(fresh?.wired)))
+                : .init(key: "Cellular", symbol: "cellularbars", value: HakoWidgetFormat.bytes(idle ? 0 : sum(fresh?.cellular))),
+            .init(key: "Connections", symbol: "checkmark", value: connections),
+            .init(key: "Download", symbol: "arrow.down", value: down),
+            .init(key: "Upload", symbol: "arrow.up", value: up),
+            .init(key: "Rejected", symbol: "xmark", value: HakoWidgetFormat.count(idle ? 0 : fresh?.rejectCount, locale: locale)),
+        ]
     }
+
 
      
     public static func hintKey(needsSetup: Bool) -> String {
@@ -190,6 +235,8 @@ public struct HakoWidgetStatsModel: Equatable {
 
  
  
+ 
+ 
 private struct HakoWidgetPlaceholder: View {
     let symbol: String
     let key: String
@@ -202,7 +249,8 @@ private struct HakoWidgetPlaceholder: View {
             Text(hako: .copy(key))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -228,51 +276,44 @@ private struct HakoWidgetFreshness: View {
     }
 }
 
-private struct HakoWidgetStatusLine: View {
-    let model: HakoWidgetMainModel
-    let slots: HakoWidgetSlots
-
-    var body: some View {
-        HStack(spacing: 6) {
-            slots.accent(AnyView(
-                Circle()
-                    .fill(model.phase == .connected ? Color.green : Color.secondary.opacity(0.5))
-                    .frame(width: 8, height: 8)
-            ))
-            Text(hako: .copy(model.statusKey))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 0)
-        }
-    }
-}
-
+ 
  
 private struct HakoWidgetModeRow: View {
     let current: HakoWidgetMode?
     let slots: HakoWidgetSlots
 
     var body: some View {
-        HStack(spacing: 6) {
+         
+         
+         
+         
+        HStack(alignment: .top, spacing: 0) {
             ForEach(HakoWidgetMode.allCases, id: \.rawValue) { mode in
                 let isCurrent = mode == current
+                if mode != HakoWidgetMode.allCases.first {
+                    Spacer(minLength: 4).frame(maxWidth: 20)
+                }
                 slots.mode(mode, AnyView(
-                    Text(hako: .copy(HakoWidgetFormat.modeKey(mode)))
-                        .font(.caption.weight(.semibold))
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .padding(.vertical, 5)
-                        .padding(.horizontal, 12)
-                        .background(
-                            slots.accent(AnyView(
+                    VStack(spacing: 1) {
+                        Text(hako: .copy(HakoWidgetFormat.modeKey(mode)))
+                            .font(.subheadline.weight(isCurrent ? .semibold : .regular))
+                            .textCase(.uppercase)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .foregroundStyle(isCurrent ? Color.primary : Color.secondary)
+                        slots.accent(AnyView(
+                            Image(systemName: "arrowtriangle.up.fill")
+                                .font(.system(size: 7))
                                  
-                                Capsule().fill(isCurrent ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear))
-                            ))
-                        )
-                        .overlay(
-                            Capsule().strokeBorder(Color.secondary.opacity(isCurrent ? 0 : 0.35), lineWidth: 1)
-                        )
-                        .foregroundStyle(isCurrent ? Color.white : Color.primary)
+                                .foregroundStyle(.tint)
+                                .opacity(isCurrent ? 1 : 0)
+                        ))
+                    }
+                    .fixedSize()
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 5)
+                    .contentShape(Rectangle())
+                    .accessibilityAddTraits(isCurrent ? .isSelected : [])
                 ))
             }
         }
@@ -318,8 +359,11 @@ public struct HakoWidgetMainView: View {
     private let size: HakoWidgetSize
     private let slots: HakoWidgetSlots
 
-    public init(snapshot: HakoWidgetSnapshot?, facts: HakoWidgetAppFacts?, now: Date, locale: Locale, size: HakoWidgetSize, slots: HakoWidgetSlots) {
-        model = HakoWidgetMainModel(snapshot: snapshot, facts: facts, now: now, locale: locale)
+    public init(
+        snapshot: HakoWidgetSnapshot?, facts: HakoWidgetAppFacts?, now: Date, locale: Locale,
+        size: HakoWidgetSize, slots: HakoWidgetSlots, configuredMode: HakoWidgetMode? = nil
+    ) {
+        model = HakoWidgetMainModel(snapshot: snapshot, facts: facts, now: now, locale: locale, configuredMode: configuredMode)
         stats = HakoWidgetStatsModel(snapshot: snapshot, now: now, locale: locale, extended: true)
         self.size = size
         self.slots = slots
@@ -335,139 +379,220 @@ public struct HakoWidgetMainView: View {
 
      
      
+    private var head: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .center, spacing: 8) {
+                HakoRegionalFlag.label(model.headline, pointSize: 17, relativeTo: .headline)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 0)
+                 
+                 
+                if size != .small { refresh }
+            }
+            secondLine
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+    }
+
+     
+     
+    private var refresh: some View {
+        slots.refresh(AnyView(
+            Image(systemName: "arrow.clockwise")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                 
+                 
+                .frame(width: 24, height: 24, alignment: size == .small ? .leading : .center)
+                .contentShape(Rectangle())
+                .accessibilityLabel(Text(hako: .copy("Refresh")))
+        ))
+    }
+
+    @ViewBuilder
+    private var secondLine: some View {
+        switch model.phase {
+        case .connecting, .reasserting, .disconnecting:
+            Text(hako: .copy(model.statusKey))
+        case .connected, .disconnected:
+            if slots.needsSetup {
+                Text(hako: .copy(HakoWidgetMainModel.hintKey(needsSetup: true)))
+            } else if let subtitle = model.subtitle {
+                HakoRegionalFlag.label(subtitle, pointSize: 12, relativeTo: .caption)
+            } else {
+                Text(hako: .copy(model.statusKey))
+            }
+        }
+    }
+
+     
+     
+     
+     
+     
+     
+    private static let numberRowHeight: CGFloat = 16
+    private static let numberRowSpacing: CGFloat = 6
+
+    private func number(_ cell: HakoWidgetStatsModel.Cell) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: cell.symbol)
+                .font(.caption.weight(.medium))
+                .frame(width: 15)
+            Text(hako: .verbatim(cell.value))
+                .font(.caption)
+                .monospacedDigit()
+        }
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .fixedSize()
+        .frame(height: Self.numberRowHeight)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(hako: .copy(cell.key)))
+        .accessibilityValue(Text(hako: .verbatim(cell.value)))
+    }
+
+    private func numberColumn(_ cells: [HakoWidgetStatsModel.Cell]) -> some View {
+        VStack(alignment: .leading, spacing: Self.numberRowSpacing) {
+            ForEach(cells, id: \.key) { number($0) }
+        }
+    }
+
+    private var hairlines: some View {
+        VStack(spacing: Self.numberRowSpacing) {
+            ForEach(0..<2, id: \.self) { _ in
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.35))
+                    .frame(width: 1, height: 11)
+                    .frame(height: Self.numberRowHeight)
+            }
+        }
+    }
+
+     
+    private var numbers: some View {
+        let c = model.cells
+        return HStack(alignment: .top, spacing: 7) {
+            numberColumn([c[0], c[3]])
+            hairlines
+            numberColumn([c[1], c[4]])
+            hairlines
+            numberColumn([c[2], c[5]])
+            Spacer(minLength: 0)
+        }
+    }
+
+     
+     
+     
+     
+    private func speedLine(_ font: Font) -> some View {
+        HStack(spacing: 8) {
+            ForEach([model.cells[3], model.cells[4]], id: \.key) { cell in
+                HStack(spacing: 3) {
+                    Image(systemName: cell.symbol).font(font.weight(.medium))
+                    Text(hako: .verbatim(cell.value)).font(font).monospacedDigit()
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(hako: .copy(cell.key)))
+                .accessibilityValue(Text(hako: .verbatim(cell.value)))
+            }
+        }
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .fixedSize()
+    }
+
+    @ViewBuilder
+    private var smallSpeeds: some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            ViewThatFits(in: .horizontal) {
+                speedLine(.caption2)
+                speedLine(.system(size: 9))
+                Color.clear.frame(width: 0, height: 0)
+            }
+        } else {
+            speedLine(.caption2).minimumScaleFactor(0.8)
+        }
+    }
+
+     
+    private var foot: some View {
+        HStack(alignment: .center, spacing: 8) {
+             
+             
+            HakoWidgetModeRow(current: model.mode, slots: slots)
+                .padding(.leading, -5)
+            Spacer(minLength: 0)
+            slots.power
+        }
+    }
+
+    private var medium: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            head
+            Spacer(minLength: 4)
+            numbers
+            Spacer(minLength: 4)
+            foot
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+     
      
      
     private var large: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HakoWidgetStatusLine(model: model, slots: slots)
-                    identity
-                }
-                Spacer(minLength: 8)
-                slots.power
-            }
-            if model.phase == .connected {
-                HStack(alignment: .center) {
-                    HakoWidgetModeRow(current: model.mode, slots: slots)
-                    Spacer(minLength: 8)
-                    HakoWidgetFreshness(at: model.updatedAt)
-                }
-                 
-                 
-                 
-                 
-                VStack(spacing: 0) {
-                    ForEach(Array(stride(from: 0, to: stats.cells.count, by: 2)), id: \.self) { start in
-                        HStack(alignment: .top, spacing: 8) {
-                            ForEach(stats.cells[start..<min(start + 2, stats.cells.count)], id: \.key) { cell in
-                                HakoWidgetStatCell(cell: cell, large: true)
-                            }
+            head
+            VStack(spacing: 0) {
+                ForEach(Array(stride(from: 0, to: largeCells.count, by: 2)), id: \.self) { start in
+                    HStack(alignment: .top, spacing: 8) {
+                        ForEach(largeCells[start..<min(start + 2, largeCells.count)], id: \.key) { cell in
+                            HakoWidgetStatCell(cell: cell, large: true)
                         }
-                         
-                         
-                         
-                         
-                        .frame(maxHeight: .infinity, alignment: .center)
                     }
+                    .frame(maxHeight: .infinity, alignment: .center)
                 }
-            } else {
-                HakoWidgetPlaceholder(symbol: "power", key: HakoWidgetMainModel.hintKey(needsSetup: slots.needsSetup))
             }
+            foot
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var identity: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HakoRegionalFlag.label(model.title, pointSize: 17, relativeTo: .headline)
-                .font(.headline)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            if let node = model.node {
-                HakoRegionalFlag.label(node, pointSize: 15, relativeTo: .subheadline)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            if let since = model.since {
-                HStack(spacing: 4) {
-                    if let mode = model.mode {
-                        Text(hako: .copy(HakoWidgetFormat.modeKey(mode)))
-                        Text(hako: .verbatim("·"))
-                    }
-                     
-                    if #available(iOS 16.0, *) {
-                        Text(timerInterval: since ... Date.distantFuture, countsDown: false)
-                    }
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-            }
-        }
-    }
-
-    private var hint: some View {
-        Text(hako: .copy(HakoWidgetMainModel.hintKey(needsSetup: slots.needsSetup)))
-            .font(.caption)
-            .foregroundStyle(.secondary)
+     
+     
+    private var largeCells: [HakoWidgetStatsModel.Cell] {
+        let extra = model.phase == .connected
+            ? stats.cells.filter { $0.key == "Proxy" || $0.key == "Direct" }
+            : [
+                .init(key: "Proxy", symbol: "arrow.triangle.branch", value: model.cells[0].value),
+                .init(key: "Direct", symbol: "arrow.right", value: model.cells[0].value),
+            ]
+         
+         
+        let c = model.cells
+        return [c[0], c[1], c[3], c[4], c[2], c[5]] + extra
     }
 
     private var small: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HakoWidgetStatusLine(model: model, slots: slots)
-            identity
-            if model.phase != .connected { hint }
-            Spacer(minLength: 0)
-            HStack {
-                HakoWidgetFreshness(at: model.updatedAt)
-                Spacer()
+        VStack(alignment: .leading, spacing: 0) {
+            head
+            Spacer(minLength: 4)
+            smallSpeeds
+            Spacer(minLength: 4)
+            HStack(alignment: .center, spacing: 4) {
+                refresh
+                Spacer(minLength: 0)
                 slots.power
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var medium: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HakoWidgetStatusLine(model: model, slots: slots)
-                    identity
-                }
-                Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 6) {
-                    slots.power
-                    if model.phase == .connected {
-                        VStack(alignment: .trailing, spacing: 2) {
-                            stat("arrow.down", model.down)
-                            stat("arrow.up", model.up)
-                            stat("link", model.connections)
-                        }
-                    }
-                }
-            }
-            Spacer(minLength: 0)
-            HStack(alignment: .center) {
-                if model.phase == .connected {
-                    HakoWidgetModeRow(current: model.mode, slots: slots)
-                } else {
-                    hint
-                }
-                Spacer(minLength: 8)
-                HakoWidgetFreshness(at: model.updatedAt)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func stat(_ symbol: String, _ value: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: symbol).font(.caption2).foregroundStyle(.secondary)
-            Text(hako: .verbatim(value)).font(.caption).monospacedDigit()
-        }
     }
 }
 
@@ -492,13 +617,7 @@ public struct HakoWidgetGroupView: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 5) {
-                Image(systemName: "network")
-                HakoRegionalFlag.label(model.header, pointSize: 12, relativeTo: .caption)
-                    .lineLimit(1)
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
+            HakoWidgetGroupHeader(name: model.header)
             if model.rows.isEmpty {
                 HakoWidgetPlaceholder(symbol: "network", key: "Connect to see the nodes.")
             } else if size == .medium, model.rows.count > HakoWidgetGroupModel.rowLimit {
@@ -515,8 +634,33 @@ public struct HakoWidgetGroupView: View {
     }
 
     private func column(_ rows: [String]) -> some View {
+        HakoWidgetGroupRows(model: model, rows: rows, slots: slots)
+    }
+}
+
+private struct HakoWidgetGroupHeader: View {
+    let name: String
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "network")
+            HakoRegionalFlag.label(name, pointSize: 12, relativeTo: .caption)
+                .lineLimit(1)
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+    }
+}
+
+ 
+private struct HakoWidgetGroupRows: View {
+    let model: HakoWidgetGroupModel
+    var rows: [String]?
+    let slots: HakoWidgetSlots
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ForEach(rows, id: \.self) { name in
+            ForEach(rows ?? model.rows, id: \.self) { name in
                 slots.member(name, AnyView(row(name)))
             }
         }
