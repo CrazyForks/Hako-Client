@@ -1043,14 +1043,20 @@ public struct HakoLogsView<Icon: View>: View {
 
     private var levelsMenu: some View {
         Menu {
-             
-             
             Button {
                 severities.removeAll()
+                send(.setLogLevelDirective(nil))
             } label: {
+                let followTitle: String = {
+                    if let profileLevel = snapshot.activity.activeProfileLogLevel, !profileLevel.isEmpty {
+                        return "Follow profile (\(profileLevel))"
+                    }
+                    return "Follow profile"
+                }()
+                let isFollowSelected = (snapshot.activity.logLevelDirective == nil || snapshot.activity.logLevelDirective?.isEmpty == true) && severities.isEmpty
                 Label(
-                    "All",
-                    systemImage: severities.isEmpty
+                    followTitle,
+                    systemImage: isFollowSelected
                         ? HakoSymbol.checkmark.rawValue
                         : HakoSymbol.circle.rawValue
                 )
@@ -1060,26 +1066,39 @@ public struct HakoLogsView<Icon: View>: View {
 
             ForEach(HakoActivityLogSeverity.allCases) { severity in
                 Button {
-                    if severities.contains(severity) {
-                        severities.remove(severity)
-                    } else {
-                        severities.insert(severity)
-                    }
-                     
-                     
-                     
-                    if severities.count
-                        == HakoActivityLogSeverity.allCases.count {
+                    if severities == [severity] || snapshot.activity.logLevelDirective == severity.rawValue {
                         severities.removeAll()
+                        send(.setLogLevelDirective(nil))
+                    } else {
+                        severities = [severity]
+                        send(.setLogLevelDirective(severity.rawValue))
                     }
                 } label: {
+                    let isSelected = severities.contains(severity) || snapshot.activity.logLevelDirective == severity.rawValue
                     Label(
                         severity.title,
-                        systemImage: severities.contains(severity)
+                        systemImage: isSelected
                             ? HakoSymbol.checkmark.rawValue
                             : HakoSymbol.circle.rawValue
                     )
                 }
+            }
+
+            Button {
+                if snapshot.activity.logLevelDirective == "silent" {
+                    severities.removeAll()
+                    send(.setLogLevelDirective(nil))
+                } else {
+                    severities.removeAll()
+                    send(.setLogLevelDirective("silent"))
+                }
+            } label: {
+                Label(
+                    "Silent",
+                    systemImage: snapshot.activity.logLevelDirective == "silent"
+                        ? HakoSymbol.checkmark.rawValue
+                        : HakoSymbol.circle.rawValue
+                )
             }
         } label: {
              

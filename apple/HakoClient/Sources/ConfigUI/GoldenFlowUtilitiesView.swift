@@ -268,6 +268,7 @@ struct LogsDestinationView: View {
                  
                 survived = []
             },
+            command: command,
             query: query,
             isShown: isShown
         )

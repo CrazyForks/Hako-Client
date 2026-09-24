@@ -44,7 +44,7 @@ struct RequestsView: View {
                 case .closeAllConnections:
                     await model.closeAll()
                 case .clearLogs, .exportLogs, .setLogRecording, .setLogRetention,
-                     .setLogSeverityFilter, .openLogSettings:
+                     .setLogSeverityFilter, .setLogLevelDirective, .openLogSettings:
                     break
                 }
             },

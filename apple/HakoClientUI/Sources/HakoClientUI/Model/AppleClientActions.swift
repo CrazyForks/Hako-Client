@@ -111,6 +111,9 @@ public enum HakoActivityCommand: Codable, Equatable, Sendable {
     case setLogSeverityFilter([String])
      
      
+    case setLogLevelDirective(String?)
+     
+     
      
     case openLogSettings
     case copyText(String)

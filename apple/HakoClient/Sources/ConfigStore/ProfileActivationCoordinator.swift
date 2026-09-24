@@ -296,6 +296,7 @@ enum ProfileRuntimeConfigBuilder {
         let scripted = try configScript(profileScripted, profile.label)
         var providerMerge = ProviderDefinitionMergeReport()
         var hasOwnLogLevel = false
+        var profileLogLevel: String?
         let trimmed = try applyClientTransforms(
             to: scripted,
             profile: profile,
@@ -303,7 +304,10 @@ enum ProfileRuntimeConfigBuilder {
             applyProxyChain: applyProxyChain,
             applyLegacyRelayMigration: applyLegacyRelayMigration,
             providerMerge: &providerMerge,
-            inspectLogLevel: { hasOwnLogLevel = $0 }
+            inspectLogLevel: { hasOwn, level in
+                hasOwnLogLevel = hasOwn
+                profileLogLevel = level
+            }
         )
 
         var effectiveRuntime = runtimeOverride
@@ -329,8 +333,18 @@ enum ProfileRuntimeConfigBuilder {
         }
          
          
-        if runtimePatch.logLevel == nil, !hasOwnLogLevel {
-            runtimePatch.logLevel = "warning"
+         
+        let directiveDefaults = UserDefaults(suiteName: HakoAppIdentifiers.appGroup) ?? .standard
+        HakoLogSettings.setActiveProfileLogLevel(profileLogLevel, in: directiveDefaults)
+
+        let directive = HakoLogSettings.levelDirective(from: directiveDefaults)
+        switch directive {
+        case .forced(let forcedLevel):
+            runtimePatch.logLevel = forcedLevel.rawValue
+        case .followProfile:
+            if runtimePatch.logLevel == nil, !hasOwnLogLevel {
+                runtimePatch.logLevel = "warning"
+            }
         }
         effectiveRuntime.patchJSON = runtimePatch.patchJSON
         let disabledRuntimeRules = Set(
@@ -396,7 +410,7 @@ enum ProfileRuntimeConfigBuilder {
         applyProxyChain: Bool = true,
         applyLegacyRelayMigration: Bool = true,
         providerMerge: inout ProviderDefinitionMergeReport,
-        inspectLogLevel: ((Bool) -> Void)? = nil
+        inspectLogLevel: ((Bool, String?) -> Void)? = nil
     ) throws -> String {
          
          
@@ -446,7 +460,8 @@ enum ProfileRuntimeConfigBuilder {
         }
         touched = try (profile.memoryTrim ?? MemoryTrimSpec())
             .apply(to: &document.root) || touched
-        inspectLogLevel?(document.root["log-level"] != nil && !(document.root["log-level"] is NSNull))
+        let docLogLevel = document.root["log-level"] as? String
+        inspectLogLevel?(docLogLevel != nil && !(document.root["log-level"] is NSNull), docLogLevel)
          
          
          

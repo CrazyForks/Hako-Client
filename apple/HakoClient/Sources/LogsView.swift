@@ -102,12 +102,14 @@ struct LogSettingsView: View {
     private let defaults: UserDefaults
     @State private var recording: Bool
     @State private var retention: HakoLogRetention
+    @State private var directive: String?
 
     init(defaults: UserDefaults = GlobalConfig.appGroupDefaults, onChange: @escaping () -> Void = {}) {
         self.defaults = defaults
         self.onChange = onChange
         _recording = State(initialValue: HakoLogSettings.isRecording(from: defaults))
         _retention = State(initialValue: HakoLogSettings.retention(from: defaults))
+        _directive = State(initialValue: HakoLogSettings.levelDirective(from: defaults).rawValue)
     }
 
     var body: some View {
@@ -131,6 +133,26 @@ struct LogSettingsView: View {
                 .onChange(of: retention) { value in
                     HakoLogSettings.setRetention(
                         value,
+                        in: defaults
+                    )
+                    onChange()
+                }
+                Picker("Level", selection: $directive) {
+                    let followTitle: String = {
+                        if let profileLevel = HakoLogSettings.activeProfileLogLevel(from: defaults), !profileLevel.isEmpty {
+                            return "Follow profile (\(profileLevel))"
+                        }
+                        return "Follow profile"
+                    }()
+                    Text(hako: .verbatim(followTitle)).tag(nil as String?)
+                    ForEach(HakoLogLevel.allCases, id: \.self) { level in
+                        Text(hako: .copy(level.rawValue.capitalized)).tag(level.rawValue as String?)
+                    }
+                }
+                .accessibilityIdentifier("logs.settings.level")
+                .onChange(of: directive) { value in
+                    HakoLogSettings.setLevelDirective(
+                        HakoLogSettings.LevelDirective(rawValue: value),
                         in: defaults
                     )
                     onChange()
@@ -204,6 +226,7 @@ struct LogsContent: View {
     let lines: [String]
     let isConnected: Bool
     let clear: () -> Void
+    var command: ClashCommandClient? = nil
      
     var query = ""
      
@@ -251,7 +274,13 @@ struct LogsContent: View {
                  
                 logSeverityFilter: HakoLogSettings.severityFilter(
                     from: GlobalConfig.appGroupDefaults
-                )
+                ),
+                activeProfileLogLevel: HakoLogSettings.activeProfileLogLevel(
+                    from: GlobalConfig.appGroupDefaults
+                ),
+                logLevelDirective: HakoLogSettings.levelDirective(
+                    from: GlobalConfig.appGroupDefaults
+                ).rawValue
             )
         HakoClientUI.HakoLogsView(
             snapshot: sharedSnapshot,
@@ -288,6 +317,21 @@ struct LogsContent: View {
                         value,
                         in: GlobalConfig.appGroupDefaults
                     )
+                    recordingGeneration &+= 1
+                case .setLogLevelDirective(let raw):
+                    let directive = HakoLogSettings.LevelDirective(rawValue: raw)
+                    HakoLogSettings.setLevelDirective(
+                        directive,
+                        in: GlobalConfig.appGroupDefaults
+                    )
+                    let profileLevel = HakoLogSettings.activeProfileLogLevel(
+                        from: GlobalConfig.appGroupDefaults
+                    )
+                    let effective = HakoLogSettings.effectiveLogLevel(
+                        directive: directive,
+                        profileLevel: profileLevel
+                    )
+                    command?.setLogDisplayLevel(effective)
                     recordingGeneration &+= 1
                 case .setLogSeverityFilter(let levels):
                      
@@ -327,7 +371,16 @@ struct LogsContent: View {
 #endif
         .hakoProductModal(isPresented: $showsSettings, role: .form) {
             HakoFeatureNavigationContainer {
-                LogSettingsView { recordingGeneration &+= 1 }
+                LogSettingsView {
+                    let directive = HakoLogSettings.levelDirective(from: GlobalConfig.appGroupDefaults)
+                    let profileLevel = HakoLogSettings.activeProfileLogLevel(from: GlobalConfig.appGroupDefaults)
+                    let effective = HakoLogSettings.effectiveLogLevel(
+                        directive: directive,
+                        profileLevel: profileLevel
+                    )
+                    command?.setLogDisplayLevel(effective)
+                    recordingGeneration &+= 1
+                }
             }
             .hakoModalPresentation(.form)
         }

@@ -161,9 +161,86 @@ public enum HakoLogSettings {
     ) {
         defaults.set(levels, forKey: severityFilterKey)
     }
+
+     
+     
+     
+    public static let levelDirectiveKey = "logs.levelDirective"
+
+    public enum LevelDirective: Equatable, Sendable {
+        case followProfile
+        case forced(HakoLogLevel)
+
+        public var rawValue: String? {
+            switch self {
+            case .followProfile: return nil
+            case .forced(let level): return level.rawValue
+            }
+        }
+
+        public init(rawValue: String?) {
+            guard let rawValue, !rawValue.isEmpty, rawValue != "follow" else {
+                self = .followProfile
+                return
+            }
+            if let level = HakoLogLevel(rawValue: rawValue.lowercased()) {
+                self = .forced(level)
+            } else {
+                self = .followProfile
+            }
+        }
+    }
+
+    public static func levelDirective(from defaults: UserDefaults) -> LevelDirective {
+        LevelDirective(rawValue: defaults.string(forKey: levelDirectiveKey))
+    }
+
+    public static func setLevelDirective(
+        _ directive: LevelDirective,
+        in defaults: UserDefaults
+    ) {
+        if let raw = directive.rawValue {
+            defaults.set(raw, forKey: levelDirectiveKey)
+        } else {
+            defaults.removeObject(forKey: levelDirectiveKey)
+        }
+    }
+
+     
+    public static func effectiveLogLevel(
+        directive: LevelDirective,
+        profileLevel: String?
+    ) -> String {
+        switch directive {
+        case .forced(let level):
+            return level.rawValue
+        case .followProfile:
+            if let profileLevel = profileLevel?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !profileLevel.isEmpty {
+                return profileLevel.lowercased()
+            }
+            return "warning"
+        }
+    }
+
+     
+    public static let activeProfileLogLevelKey = "logs.activeProfileLevel"
+
+    public static func activeProfileLogLevel(from defaults: UserDefaults) -> String? {
+        defaults.string(forKey: activeProfileLogLevelKey)
+    }
+
+    public static func setActiveProfileLogLevel(_ level: String?, in defaults: UserDefaults) {
+        if let level, !level.isEmpty {
+            defaults.set(level, forKey: activeProfileLogLevelKey)
+        } else {
+            defaults.removeObject(forKey: activeProfileLogLevelKey)
+        }
+    }
 }
 
-public enum HakoLogLevel: String, Sendable {
+public enum HakoLogLevel: String, Sendable, CaseIterable {
+    case silent
     case error
     case warning
     case info

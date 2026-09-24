@@ -536,7 +536,12 @@ final class ClashCommandClient: ObservableObject, ProxyShareCommanding {
      
      
      
-    private var logDisplayLevel = "info"
+    private var logDisplayLevel: String = {
+        let defaults = GlobalConfig.appGroupDefaults
+        let directive = HakoLogSettings.levelDirective(from: defaults)
+        let profileLevel = HakoLogSettings.activeProfileLogLevel(from: defaults)
+        return HakoLogSettings.effectiveLogLevel(directive: directive, profileLevel: profileLevel)
+    }()
     private var pendingLogs = HakoLogBuffer(maximumBytes: 256 * 1024, maximumCount: 1000)
     private var trafficReducer = ClashTrafficReducer()
     private let connectionRuntimeFeed: ConnectionRuntimeFeed
@@ -2132,6 +2137,7 @@ return
         options.statusInterval = 250
         options.addCommand(HakoCommandStatus)
         options.addCommand(HakoCommandLog)
+        options.logLevel = "debug"
          
          
          
@@ -2398,10 +2404,14 @@ return
         } while memoryBytes != memoryState.inuse
     }
 
+    func setLogDisplayLevel(_ level: String) {
+        logDisplayLevel = level.lowercased()
+    }
+
     private func handleLog(_ payload: LogPayload, token: UInt64) {
         guard token == generation else { return }
         let levels = ["debug": 0, "info": 1, "warning": 2, "error": 3, "silent": 4]
-        guard (levels[payload.type.lowercased()] ?? 3) >= (levels[logDisplayLevel] ?? 2) else { return }
+        guard (levels[payload.type.lowercased()] ?? 3) >= (levels[logDisplayLevel] ?? 1) else { return }
          
         enqueueLogLines([
             "\(payload.type.uppercased()) \(payload.payload)",

@@ -512,10 +512,6 @@ struct GlobalCoreBehaviorSettingsView: View {
         )
     }
 
-    private var logLevelState: InheritedText {
-        InheritedText(base: runtime.inheritedTextBase("log-level"), override: runtime.logLevel,
-                      upstreamDefault: UpstreamTextDefault.pinned(for: "log-level"))
-    }
     private var geositeMatcherState: InheritedText {
         InheritedText(base: runtime.inheritedTextBase("geosite-matcher"), override: runtime.geositeMatcher,
                       upstreamDefault: UpstreamTextDefault.pinned(for: "geosite-matcher"))
@@ -608,23 +604,6 @@ struct GlobalCoreBehaviorSettingsView: View {
             }
 
             Section {
-                DNSFieldRows.menuRow(
-                    title: "Log level",
-                    value: logLevelState.primaryTitle,
-                    subtitle: logLevelState.sourceLine,
-                    identifier: "global-core.log-level"
-                ) {
-                    Picker("Log level", selection: $runtime.logLevel) {
-                        Text(hako: logLevelState.followTitle).tag(String?.none)
-                        ForEach(
-                            ProfileRuntimeTrustDraft.supportedLogLevels,
-                            id: \.self
-                        ) {
-                            Text(verbatim: $0).tag(Optional($0))
-                        }
-                    }
-                }
-
                  
                  
                  

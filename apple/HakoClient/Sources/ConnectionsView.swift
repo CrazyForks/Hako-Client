@@ -48,7 +48,7 @@ struct ConnectionsView: View {
                     UIPasteboard.general.string = value
 #endif
                 case .clearLogs, .exportLogs, .setLogRecording, .setLogRetention,
-                     .setLogSeverityFilter, .openLogSettings:
+                     .setLogSeverityFilter, .setLogLevelDirective, .openLogSettings:
                     break
                 }
             },
@@ -92,7 +92,9 @@ enum HakoActivityIOSAdapter {
         logRetentionOptions: [HakoLogRetentionOption] = [],
         logRetention: String? = nil,
         logRetentionSummary: String? = nil,
-        logSeverityFilter: [String] = []
+        logSeverityFilter: [String] = [],
+        activeProfileLogLevel: String? = nil,
+        logLevelDirective: String? = nil
     ) -> AppleClientSnapshot {
         let connections =
             model?.activityConnections ?? []
@@ -158,7 +160,9 @@ enum HakoActivityIOSAdapter {
             logRetentionOptions: logRetentionOptions,
             logRetention: logRetention,
             logRetentionSummary: logRetentionSummary,
-            logSeverityFilter: logSeverityFilter
+            logSeverityFilter: logSeverityFilter,
+            activeProfileLogLevel: activeProfileLogLevel,
+            logLevelDirective: logLevelDirective
             ),
             capabilities: AppleClientCapabilities([
                 .activity: .available,

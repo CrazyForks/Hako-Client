@@ -283,6 +283,11 @@ public struct HakoActivitySnapshot: Codable, Equatable, Sendable {
      
      
     public let logSeverityFilter: [String]
+     
+    public let activeProfileLogLevel: String?
+     
+     
+    public let logLevelDirective: String?
 
     public init(
         phase: HakoActivityPhase,
@@ -303,7 +308,9 @@ public struct HakoActivitySnapshot: Codable, Equatable, Sendable {
         logRetentionOptions: [HakoLogRetentionOption] = [],
         logRetention: String? = nil,
         logRetentionSummary: String? = nil,
-        logSeverityFilter: [String] = []
+        logSeverityFilter: [String] = [],
+        activeProfileLogLevel: String? = nil,
+        logLevelDirective: String? = nil
     ) {
         self.phase = phase
         self.activeConnectionCount = max(0, activeConnectionCount)
@@ -335,6 +342,8 @@ public struct HakoActivitySnapshot: Codable, Equatable, Sendable {
         self.logRetention = logRetention
         self.logRetentionSummary = logRetentionSummary
         self.logSeverityFilter = logSeverityFilter
+        self.activeProfileLogLevel = activeProfileLogLevel
+        self.logLevelDirective = logLevelDirective
     }
 
     public static let disconnected = Self(phase: .disconnected)
