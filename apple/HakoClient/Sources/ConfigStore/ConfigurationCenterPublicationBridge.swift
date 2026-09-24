@@ -66,6 +66,22 @@ enum ConfigurationCenterPublicationBridge {
             if snapshot.recipes.count != count || dropped {
                 _ = try library.commit(snapshot, payloads: [], expectedGeneration: snapshot.generation)
             }
+             
+             
+             
+             
+             
+             
+             
+            let collected: ConfigurationLibraryGarbageCollection
+            do { collected = try library.collectGarbage() }
+            catch ConfigurationLibraryError.busy { return }
+            if collected != ConfigurationLibraryGarbageCollection() {
+                HakoLogStore.shared.append(
+                    "library gc records=\(collected.removedRecords) versions=\(collected.removedVersions) publications=\(collected.removedPublications)",
+                    stream: .app
+                )
+            }
             return
         }
         throw ProfileStore.StoreError.unreadableStore

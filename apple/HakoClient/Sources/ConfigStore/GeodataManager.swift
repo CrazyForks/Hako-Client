@@ -204,3 +204,38 @@ final class GeodataManager {
         }
     }
 }
+
+ 
+
+extension GeodataManager {
+     
+    static let namedGeodataFiles = ["GeoIP.dat", "GeoSite.dat", "geoip.metadb", "ASN.mmdb"]
+
+     
+     
+     
+     
+     
+     
+     
+     
+    static func staleGeodataBlobs(homeDir: URL) -> [URL] {
+        let fm = FileManager.default
+        let live = Set(namedGeodataFiles.compactMap { name -> String? in
+            guard let data = try? Data(contentsOf: homeDir.appendingPathComponent(name)) else { return nil }
+            return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        })
+        let cacheDir = homeDir.appendingPathComponent("geodata", isDirectory: true)
+        let entries = (try? fm.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])) ?? []
+        return entries
+            .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
+            .filter { !live.contains($0.deletingPathExtension().lastPathComponent) }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+     
+    @discardableResult
+    static func removeStaleGeodataBlobs(homeDir: URL) -> [URL] {
+        staleGeodataBlobs(homeDir: homeDir).filter { (try? FileManager.default.removeItem(at: $0)) != nil }
+    }
+}

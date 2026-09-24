@@ -1352,3 +1352,52 @@ enum TunnelIntentStamp {
         defaults.string(forKey: key)
     }
 }
+
+ 
+
+extension ConfigResourceStore {
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    func orphanedProfileDirectories(registered: Set<String>) throws -> [URL] {
+        try withExclusiveLock { try orphanedProfileDirectoriesLocked(registered: registered) }
+    }
+
+     
+     
+    @discardableResult
+    func removeOrphanedProfileDirectories(registered: Set<String>) throws -> [String] {
+        try withExclusiveLock {
+            var removed: [String] = []
+            for url in try orphanedProfileDirectoriesLocked(registered: registered) {
+                guard (try? fileManager.removeItem(at: url)) != nil else { continue }
+                removed.append(url.lastPathComponent)
+            }
+            if !removed.isEmpty { try syncDirectory(profilesURL) }
+            return removed
+        }
+    }
+
+    private func orphanedProfileDirectoriesLocked(registered: Set<String>) throws -> [URL] {
+        var protected = registered
+        protected.insert(Self.defaultProfileID)
+        if let active = try? readPointer(Name.activePointer) { protected.insert(active.profileID) }
+        if let good = try? readPointer(Name.lastKnownGoodPointer) { protected.insert(good.profileID) }
+        guard fileManager.fileExists(atPath: profilesURL.path) else { return [] }
+        return try fileManager.contentsOfDirectory(
+            at: profilesURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        )
+        .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+        .filter { !protected.contains($0.lastPathComponent) }
+        .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+}

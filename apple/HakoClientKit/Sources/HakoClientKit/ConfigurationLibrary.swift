@@ -50,6 +50,8 @@ public struct ConfigurationSourceRecord: Codable, Equatable, Identifiable, Senda
      
     public var registersSuppliedRules: Bool?
      
+     
+     
     public var isRetainedSnapshot: Bool? = nil
     public var nodeChain: ConfigurationNodeChain? = nil
     public var subscriptionUsage: ConfigurationSubscriptionUsage? = nil
@@ -370,6 +372,7 @@ public final class ConfigurationLibraryStore: Sendable {
             current.pendingPublications?.removeAll { $0 == reference }
             current.generation += 1
             try writeSnapshot(current)
+            _ = sweep(current)
         }
     }
 
@@ -455,6 +458,16 @@ public final class ConfigurationLibraryStore: Sendable {
         try locked {
             let previous = try readSnapshot()
             guard previous.generation == expectedGeneration else { throw ConfigurationLibraryError.staleGeneration }
+             
+             
+             
+            let candidate = Self.pruningUnreferencedRetainedRecords(candidate).snapshot
+             
+             
+            let payloads = payloads.filter { payload in
+                candidate.sources.contains { $0.id == payload.record.id }
+                    || candidate.recipes.contains { $0.settingsSource == ConfigurationSourceVersion(payload.record) }
+            }
             try validate(candidate, payloads: payloads)
             let pending = candidate.pendingPublications ?? []
             guard Set(pending.map(\.profileID)).count == pending.count,
@@ -474,6 +487,9 @@ public final class ConfigurationLibraryStore: Sendable {
             var committed = candidate
             committed.generation = previous.generation + 1
             try writeSnapshot(committed)
+             
+             
+            _ = sweep(committed)
             return committed
         }
     }
@@ -712,8 +728,154 @@ public final class ConfigurationLibraryStore: Sendable {
         let fd = open(path, O_CREAT | O_RDWR | O_CLOEXEC, S_IRUSR | S_IWUSR)
         guard fd >= 0 else { throw ConfigurationLibraryError.unreadable }
         defer { close(fd) }
-        guard flock(fd, LOCK_EX | LOCK_NB) == 0 else { throw ConfigurationLibraryError.busy }
+         
+         
+         
+         
+         
+         
+        let deadline = Date().addingTimeInterval(1)
+        while flock(fd, LOCK_EX | LOCK_NB) != 0 {
+            guard errno == EWOULDBLOCK || errno == EAGAIN, Date() < deadline else {
+                throw ConfigurationLibraryError.busy
+            }
+            usleep(10_000)
+        }
         defer { flock(fd, LOCK_UN) }
         return try body()
+    }
+}
+
+ 
+public struct ConfigurationLibraryGarbageCollection: Equatable, Sendable {
+     
+    public var removedRecords: Int = 0
+     
+    public var removedVersions: Int = 0
+     
+    public var removedPublications: Int = 0
+    public init(removedRecords: Int = 0, removedVersions: Int = 0, removedPublications: Int = 0) {
+        self.removedRecords = removedRecords
+        self.removedVersions = removedVersions
+        self.removedPublications = removedPublications
+    }
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+extension ConfigurationLibraryStore {
+     
+    public static func referencedVersions(of snapshot: ConfigurationLibrarySnapshot) -> Set<ConfigurationSourceVersion> {
+        var kept = Set(snapshot.sources.map(ConfigurationSourceVersion.init))
+        for source in snapshot.sources { for hop in source.nodeChain?.hops ?? [] { kept.insert(hop.source) } }
+        for recipe in snapshot.recipes { kept.formUnion(recipe.dependencies) }
+        return kept
+    }
+
+     
+    static func pruningUnreferencedRetainedRecords(_ snapshot: ConfigurationLibrarySnapshot)
+        -> (snapshot: ConfigurationLibrarySnapshot, removed: Int) {
+        var result = snapshot
+        let dependedOn = Set(snapshot.recipes.flatMap { $0.dependencies.map(\.id) })
+        let hoppedThrough = Set(snapshot.sources.flatMap { ($0.nodeChain?.hops ?? []).map(\.source.id) })
+        let orphanSources = Set(snapshot.sources.filter {
+            $0.isRetainedSnapshot == true && !dependedOn.contains($0.id) && !hoppedThrough.contains($0.id)
+        }.map(\.id))
+        let runOn = Set(snapshot.recipes.map(\.ruleSchemeID))
+        var removed = 0
+        result.sources.removeAll { orphanSources.contains($0.id) }
+        removed += orphanSources.count
+        result.rules.removeAll { rule in
+            let goes = orphanSources.contains(rule.sourceID)
+                || (rule.isRetainedSnapshot == true && !runOn.contains(rule.id))
+            if goes { removed += 1 }
+            return goes
+        }
+        return (result, removed)
+    }
+
+     
+     
+     
+    public func collectGarbage() throws -> ConfigurationLibraryGarbageCollection {
+        try locked {
+            var current = try readSnapshot()
+            let pruned = Self.pruningUnreferencedRetainedRecords(current)
+            if pruned.removed > 0 {
+                current = pruned.snapshot
+                current.generation += 1
+                try writeSnapshot(current)
+            }
+            var result = sweep(current)
+            result.removedRecords = pruned.removed
+            return result
+        }
+    }
+
+     
+     
+     
+    func sweep(_ snapshot: ConfigurationLibrarySnapshot) -> ConfigurationLibraryGarbageCollection {
+        let fm = FileManager.default
+        var result = ConfigurationLibraryGarbageCollection()
+        func subdirectories(_ url: URL) -> [URL] {
+            (try? fm.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]))?
+                .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true } ?? []
+        }
+        func isEmpty(_ url: URL) -> Bool {
+            ((try? fm.contentsOfDirectory(atPath: url.path)) ?? []).isEmpty
+        }
+        let kept = Self.referencedVersions(of: snapshot)
+        for sourceDirectory in subdirectories(directory.appendingPathComponent("sources")) {
+            let id = sourceDirectory.lastPathComponent
+            for versionDirectory in subdirectories(sourceDirectory)
+            where !kept.contains(.init(id: id, version: versionDirectory.lastPathComponent)) {
+                if (try? fm.removeItem(at: versionDirectory)) != nil { result.removedVersions += 1 }
+            }
+            if isEmpty(sourceDirectory) { try? fm.removeItem(at: sourceDirectory) }
+        }
+        let pending = Set(snapshot.pendingPublications ?? [])
+        for profileDirectory in subdirectories(directory.appendingPathComponent("publications")) {
+            let profileID = profileDirectory.lastPathComponent
+            let files = (try? fm.contentsOfDirectory(at: profileDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
+            for file in files where file.pathExtension == "json" {
+                let reference = ConfigurationPublicationReference(profileID: profileID, version: file.deletingPathExtension().lastPathComponent)
+                guard !pending.contains(reference) else { continue }
+                if (try? fm.removeItem(at: file)) != nil { result.removedPublications += 1 }
+            }
+            if isEmpty(profileDirectory) { try? fm.removeItem(at: profileDirectory) }
+        }
+        return result
     }
 }
