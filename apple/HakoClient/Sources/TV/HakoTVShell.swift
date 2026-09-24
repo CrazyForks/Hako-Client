@@ -173,6 +173,8 @@ struct HakoTVShell: View {
              
             if let refreshed = await tunnel.refreshRestoredProfilesIfNewer(store: store) { store = refreshed }
             guard let current = store.current else { return }
+
+
             await tunnel.connect(subscription: current)
         }
     }

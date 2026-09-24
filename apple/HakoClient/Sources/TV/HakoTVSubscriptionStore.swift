@@ -41,6 +41,12 @@ struct HakoTVSubscription: Codable, Equatable, Identifiable {
 
     var effectiveRules: HakoTVProfileRules { rules ?? .own }
 
+     
+     
+    func withRules(_ rules: HakoTVProfileRules) -> HakoTVSubscription {
+        HakoTVSubscription(requestURL: requestURL, name: name, updatedAt: updatedAt, restored: restored, rules: rules)
+    }
+
     struct Restored: Codable, Equatable {
         let archiveProfileID: String
         let sourceInstallID: String

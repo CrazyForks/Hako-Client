@@ -111,8 +111,14 @@ final class HakoTVConfigPipeline {
 
      
      
+     
+     
+     
+     
     static func profileID(for subscription: HakoTVSubscription) -> String {
-        let digest = SHA256.hash(data: Data(subscription.requestURL.absoluteString.utf8))
+        var identity = subscription.requestURL.absoluteString
+        if subscription.effectiveRules != .own { identity += "\n" + subscription.effectiveRules.rawValue }
+        let digest = SHA256.hash(data: Data(identity.utf8))
         let bytes = Array(digest.prefix(16))
         let uuid = UUID(uuid: (
             bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
