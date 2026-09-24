@@ -780,11 +780,17 @@ public struct HakoProxiesSnapshot: Codable, Equatable, Sendable {
          
         if isEmptyGroup(member) { return .untested }
         let direct = latency(for: member.name)
-        guard direct == .untested,
-              let route = resolvedDisplayRoute(for: member) else {
-            return direct
-        }
-        return latency(for: route)
+        guard let route = resolvedDisplayRoute(for: member) else { return direct }
+        let routed = latency(for: route)
+         
+         
+         
+         
+         
+         
+         
+        if member.isGroup, routed != .untested { return routed }
+        return direct == .untested ? routed : direct
     }
 
      
