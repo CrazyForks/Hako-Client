@@ -101,6 +101,11 @@ public struct HakoMoreSnapshot: Codable, Equatable, Sendable {
                 title: .copy(destination.title),
                 subtitle: "GeoIP, GeoSite, ASN, and MMDB data"
             )
+        case .storage:
+            return HakoProductDestinationPresentation(
+                title: .copy(destination.title),
+                subtitle: "Configurations, data, and caches"
+            )
         case .backupRestore:
             return HakoProductDestinationPresentation(
                 title: .copy(destination.title),

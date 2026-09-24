@@ -260,6 +260,8 @@ struct GoldenFlowMoreDestinationAdapter: View {
                 EmptyView()
             case .geoResources:
                 ResourcesView()
+            case .storage:
+                StorageView(vpn: vpn, command: command, preferences: preferences)
             case .backupRestore:
                 BackupRestoreView()
             case .onDemand:

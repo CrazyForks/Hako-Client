@@ -28,6 +28,7 @@ public enum HakoMoreDestination:
 {
     case root
     case geoResources
+    case storage
     case backupRestore
     case onDemand
     case tunnel
@@ -48,6 +49,7 @@ public enum HakoMoreDestination:
         switch self {
         case .root: "More"
         case .geoResources: "Geo Resources"
+        case .storage: "Storage"
         case .backupRestore: "Backup & Restore"
         case .onDemand: "On Demand"
         case .ipStack: "IP Stack"
@@ -68,6 +70,7 @@ public enum HakoMoreDestination:
         switch self {
         case .root: .ellipsisCircle
         case .geoResources: .globeAsiaAustralia
+        case .storage: .externaldrive
         case .backupRestore: .arrowClockwiseIcloud
         case .onDemand: .appBadgeCheckmarkFill
         case .ipStack: .globeBadgeChevronBackward
@@ -88,6 +91,7 @@ public enum HakoMoreDestination:
         switch self {
         case .root: .blue
         case .geoResources: .green
+        case .storage: .indigo
         case .backupRestore: .teal
         case .onDemand: .cyan
         case .ipStack: .blue
@@ -156,7 +160,9 @@ public enum HakoMoreCatalog {
          
         HakoMoreSectionDescriptor(
             id: .dataAndResources,
-            destinations: [.geoResources]
+             
+             
+            destinations: [.geoResources, .storage]
         ),
         HakoMoreSectionDescriptor(
             id: .connectionBehavior,

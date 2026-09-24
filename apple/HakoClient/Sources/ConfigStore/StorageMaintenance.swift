@@ -60,7 +60,14 @@ struct StorageMaintenance {
     func measure() -> [Measurement] { Area.allCases.map(measure) }
 
     func measure(_ area: Area) -> Measurement {
-        let bytes = paths(area).reduce(0) { $0 + StorageMeasurement.allocatedBytes(at: $1) }
+        var bytes = paths(area).reduce(0) { $0 + StorageMeasurement.allocatedBytes(at: $1) }
+        if area == .configurations {
+             
+             
+            bytes -= temporaryItems().filter { $0.lastPathComponent.hasPrefix(".tmp-") }
+                .reduce(0) { $0 + StorageMeasurement.allocatedBytes(at: $1) }
+            bytes = max(0, bytes)
+        }
         let reclaimable = reclaimableItems(area).reduce(0) { $0 + StorageMeasurement.allocatedBytes(at: $1) }
         return Measurement(area: area, bytes: bytes, reclaimable: min(reclaimable, bytes))
     }
@@ -109,9 +116,14 @@ struct StorageMaintenance {
      
      
     @discardableResult
-    func reclaim() throws -> Outcome {
+    func reclaim() throws -> Outcome { try reclaim(Set(Area.allCases)) }
+
+     
+     
+    @discardableResult
+    func reclaim(_ areas: Set<Area>) throws -> Outcome {
         var outcome = Outcome()
-        for area in Area.allCases {
+        for area in Area.allCases where areas.contains(area) {
             let before = measure(area).reclaimable
             guard before > 0 else { continue }
             switch area {

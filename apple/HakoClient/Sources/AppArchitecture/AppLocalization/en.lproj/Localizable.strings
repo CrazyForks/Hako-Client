@@ -21,6 +21,7 @@
 "%@ affected." = "%@ affected.";
 "%@ asked for the system resolver, which the tunnel cannot use; it was removed." = "%@ asked for the system resolver, which the tunnel cannot use; it was removed.";
 "%@ available · %@ unavailable" = "%@ available · %@ unavailable";
+"%@ can be freed" = "%@ can be freed";
 "%@ cannot be reached from inside the tunnel." = "%@ cannot be reached from inside the tunnel.";
 "%@ chain overrides" = "%@ chain overrides";
 "%@ chain overrides · %@ relay migrations" = "%@ chain overrides · %@ relay migrations";
@@ -613,6 +614,8 @@
 "Clash, Powered by Hako, Version %@" = "Clash, Powered by Hako, Version %@";
 "Clash’s VPN profile is ready. Connect when you are ready." = "Clash’s VPN profile is ready. Connect when you are ready.";
 "Classical" = "Classical";
+"Clean Up" = "Clean Up";
+"Clean Up Unused Data" = "Clean Up Unused Data";
 "Clear" = "Clear";
 "Clear DNS cache?" = "Clear DNS cache?";
 "Clear Field Patch" = "Clear Field Patch";
@@ -648,6 +651,7 @@
 "Compatibility" = "Compatibility";
 "Compatibility & Trust" = "Compatibility & Trust";
 "Compatible Route" = "Compatible Route";
+"Compiled Geo Data" = "Compiled Geo Data";
 "Condition" = "Condition";
 "Condition Type" = "Condition Type";
 "Condition expression" = "Condition expression";
@@ -667,7 +671,9 @@
 "Configuration resource needs attention" = "Configuration resource needs attention";
 "Configuration revision is invalid" = "Configuration revision is invalid";
 "Configuration store limits are invalid" = "Configuration store limits are invalid";
+"Configurations" = "Configurations";
 "Configurations lose this source. Its rule schemes fall back to Basic." = "Configurations lose this source. Its rule schemes fall back to Basic.";
+"Configurations, data, and caches" = "Configurations, data, and caches";
 "Configured Options" = "Configured Options";
 "Configured policy groups and nodes are always browsable; connection adds live runtime state." = "Configured policy groups and nodes are always browsable; connection adds live runtime state.";
 "Configured strategy" = "Configured strategy";
@@ -910,6 +916,8 @@
 "Delete This Rule" = "Delete This Rule";
 "Delete rule scheme %@?" = "Delete rule scheme %@?";
 "Delete source %@?" = "Delete source %@?";
+"Deletes every configuration, setting, and stored credential on this device. The VPN configuration in Settings and your iCloud backups stay." = "Deletes every configuration, setting, and stored credential on this device. The VPN configuration in Settings and your iCloud backups stay.";
+"Deletes every configuration, setting, and stored credential on this device. The VPN configuration in Settings and your iCloud backups stay. Clash starts over as on first launch." = "Deletes every configuration, setting, and stored credential on this device. The VPN configuration in Settings and your iCloud backups stay. Clash starts over as on first launch.";
 "Density" = "Density";
 "Desktop/router services are disclosed in iOS Changes and never presented as working controls." = "Desktop/router services are disclosed in iOS Changes and never presented as working controls.";
 "Destination" = "Destination";
@@ -959,6 +967,7 @@
 "Discard Previous Script" = "Discard Previous Script";
 "Disclaimer" = "Disclaimer";
 "Disconnect" = "Disconnect";
+"Disconnect first to reset local data." = "Disconnect first to reset local data.";
 "Disconnect on Sleep" = "Disconnect on Sleep";
 "Disconnected" = "Disconnected";
 "Disconnecting" = "Disconnecting";
@@ -1240,6 +1249,7 @@
 "Format" = "Format";
 "Forward Mode" = "Forward Mode";
 "Frame crossed a runtime confirmation boundary" = "Frame crossed a runtime confirmation boundary";
+"Freed %@" = "Freed %@";
 "From" = "From";
 "From %@" = "From %@";
 "From Files" = "From Files";
@@ -1602,6 +1612,8 @@
 "Local addresses use Direct; other traffic uses your selected nodes." = "Local addresses use Direct; other traffic uses your selected nodes.";
 "Local cache · read-only" = "Local cache · read-only";
 "Local copy · edits apply on the next start" = "Local copy · edits apply after you reselect this profile";
+"Local data is unavailable." = "Local data is unavailable.";
+"Local data was reset." = "Local data was reset.";
 "Local mappings could not be saved. The previous configuration is still available." = "Local mappings could not be saved. The previous configuration is still available.";
 "Local network" = "Local network";
 "Local paths and credentials stay private. Re-import the profile if one of its supporting files is missing." = "Local paths and credentials stay private. Re-import the profile if one of its supporting files is missing.";
@@ -1892,6 +1904,7 @@
 "No usable network" = "No usable network";
 "No valid active or last-known-good configuration is available" = "No valid active or last-known-good configuration is available";
 "Node" = "Node";
+"Node & Rule Library" = "Node & Rule Library";
 "Node Collection File" = "Node Collection File";
 "Node Collections" = "Node Collections";
 "Node DNS" = "Node DNS";
@@ -1942,6 +1955,7 @@
 "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to." = "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to.";
 "Nothing needed an update." = "Nothing needed an update.";
 "Nothing to Show" = "Nothing to Show";
+"Nothing to clean up" = "Nothing to clean up";
 "Nothing to do — you can leave it or remove it." = "Nothing to do — you can leave it or remove it.";
 "OK" = "OK";
 "OK — script returned a valid config object." = "OK — script returned a valid config object.";
@@ -1967,6 +1981,7 @@
 "On Demand Rules" = "On Demand Rules";
 "On Demand reacts to network changes. It is not supervised-device Always-On VPN. Disconnecting inside Clash turns On Demand off until the next connect; disconnecting from the system VPN settings leaves it armed, so the system may reconnect on demand." = "On Demand reacts to network changes. It is not supervised-device Always-On VPN. Disconnecting inside Clash turns On Demand off until the next connect; disconnecting from the system VPN settings leaves it armed, so the system may reconnect on demand.";
 "On Home" = "On Home";
+"On This Device" = "On This Device";
 "On iOS these rules are kept but match nothing: the owner metadata they test cannot be resolved, so the next rule decides. UID is the exception — it is removed, because a UID rule cannot be built on this platform and keeping it would stop the whole configuration from loading. Use domain, IP, GEOSITE or GEOIP conditions instead." = "On iOS these rules are kept but match nothing: the owner metadata they test cannot be resolved, so the next rule decides. UID is the exception — it is removed, because a UID rule cannot be built on this platform and keeping it would stop the whole configuration from loading. Use domain, IP, GEOSITE or GEOIP conditions instead.";
 "On iOS, process-, inbound-user- and source-app-based rules run but match nothing, because the owner metadata they test cannot be resolved; UID rules are removed at activation. The editor lets you write them and marks them, so the same profile can carry them for a Mac." = "On iOS, process-, inbound-user- and source-app-based rules run but match nothing, because the owner metadata they test cannot be resolved; UID rules are removed at activation. The editor lets you write them and marks them, so the same profile can carry them for a Mac.";
 "On iOS, process-, inbound-user- and source-app-based rules run but match nothing, because the owner metadata they test cannot be resolved; UID rules are removed at activation. The structured rule editor rejects all of them up front." = "On iOS, process-, inbound-user- and source-app-based rules run but match nothing, because the owner metadata they test cannot be resolved; UID rules are removed at activation. The structured rule editor rejects all of them up front.";
@@ -2365,6 +2380,7 @@
 "Remove this profile from Clash" = "Remove this profile from Clash";
 "Removed" = "Removed";
 "Removed by the profile URL · yours: %@" = "Removed by the profile URL · yours: %@";
+"Removes configurations no longer listed, superseded downloads, and temporary files. Data any configuration still uses is never touched." = "Removes configurations no longer listed, superseded downloads, and temporary files. Data any configuration still uses is never touched.";
 "Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay." = "Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay.";
 "Removing the override does not delete or modify the downloaded source." = "Removing the override does not delete or modify the downloaded source.";
 "Removing them may require importing again." = "Removing them may require importing again.";
@@ -2405,6 +2421,9 @@
 "Reset Credentials" = "Reset Credentials";
 "Reset Failed" = "Reset Failed";
 "Reset LAN proxy credentials?" = "Reset LAN proxy credentials?";
+"Reset Local Data" = "Reset Local Data";
+"Reset Local Data?" = "Reset Local Data?";
+"Reset Local Data…" = "Reset Local Data…";
 "Reset Saved Credentials" = "Reset Saved Credentials";
 "Reset VPN Profile" = "Reset VPN Profile";
 "Reset VPN Profile?" = "Reset VPN Profile?";
@@ -2495,6 +2514,7 @@
 "Rule Providers" = "Rule Providers";
 "Rule Scheme" = "Rule Scheme";
 "Rule Set" = "Rule Set";
+"Rule Set & Node Set Cache" = "Rule Set & Node Set Cache";
 "Rule Set File" = "Rule Set File";
 "Rule Sets" = "Rule Sets";
 "Rule Sets (%@)" = "Rule Sets (%@)";
@@ -2758,6 +2778,7 @@
 "Stop the active Clash by Hako VPN profile." = "Stop the active Clash by Hako VPN profile.";
 "Stopped" = "Stopped";
 "Stopping Clash VPN." = "Stopping Clash VPN.";
+"Storage" = "Storage";
 "Stored URL credentials removed" = "Stored URL credentials removed";
 "Stored in iCloud" = "Stored in iCloud";
 "Strategy" = "Strategy";
@@ -2838,6 +2859,7 @@
 "Target" = "Target";
 "Target not in this profile" = "Target not in this profile";
 "Technical details" = "Technical details";
+"Temporary Files" = "Temporary Files";
 "Terminal" = "Terminal";
 "Terms of Use" = "Terms of Use";
 "Test All" = "Test All";
@@ -3281,6 +3303,7 @@
 "Tokyo 02" = "Tokyo 02";
 "Tools" = "Tools";
 "Top-level interface names and Linux routing marks are not applied. Apple selects physical egress through Network Extension and its current network path." = "Top-level interface names and Linux routing marks are not applied. Apple selects physical egress through Network Extension and its current network path.";
+"Total" = "Total";
 "Total %@" = "Total %@";
 "Traditional Chinese" = "Traditional Chinese";
 "Traffic" = "Traffic";

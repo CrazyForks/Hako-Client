@@ -545,6 +545,18 @@ final class ProfilesViewModel: ObservableObject {
                 try await register { current in ConfigurationBuiltins.retiringCommunitySchemes(in: current) }
             } catch { failures.append(error.localizedDescription) }
             if !failures.isEmpty { throw PipelineError.sourceUnavailable(failures.joined(separator: "\n")) }
+             
+             
+             
+             
+             
+            if let container {
+                let running = StorageView.tunnelIsRunning(vpn.status)
+                Task.detached(priority: .utility) {
+                    _ = try? StorageMaintenance(containerURL: container, tunnelIsRunning: { running })
+                        .reclaim([.configurations, .geodata])
+                }
+            }
         }
         legacyRegistration = (registrationID, task)
         defer { if legacyRegistration?.id == registrationID { legacyRegistration = nil } }

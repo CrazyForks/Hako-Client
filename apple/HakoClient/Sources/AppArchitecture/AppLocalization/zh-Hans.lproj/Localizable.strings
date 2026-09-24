@@ -21,6 +21,7 @@
 "%@ affected." = "%@ 处受影响。";
 "%@ asked for the system resolver, which the tunnel cannot use; it was removed." = "%@ 要用系统解析器，隧道里用不了，已移除。";
 "%@ available · %@ unavailable" = "%@ 个可用 · %@ 个不可用";
+"%@ can be freed" = "可释放 %@";
 "%@ cannot be reached from inside the tunnel." = "%@ 在隧道内无法访问。";
 "%@ chain overrides" = "%@ 项链式覆写";
 "%@ chain overrides · %@ relay migrations" = "%@ 项链式覆写 · %@ 项 relay 迁移";
@@ -613,6 +614,8 @@
 "Clash, Powered by Hako, Version %@" = "Clash，由 Hako 驱动，版本 %@";
 "Clash’s VPN profile is ready. Connect when you are ready." = "Clash VPN 配置已准备好，可在需要时连接。";
 "Classical" = "完整规则";
+"Clean Up" = "清理";
+"Clean Up Unused Data" = "清理未使用数据";
 "Clear" = "清除";
 "Clear DNS cache?" = "清除 DNS 缓存？";
 "Clear Field Patch" = "清除字段补丁";
@@ -648,6 +651,7 @@
 "Compatibility" = "兼容性";
 "Compatibility & Trust" = "兼容性与信任";
 "Compatible Route" = "兼容线路";
+"Compiled Geo Data" = "已编译的地理数据";
 "Condition" = "条件";
 "Condition Type" = "条件类型";
 "Condition expression" = "条件表达式";
@@ -667,7 +671,9 @@
 "Configuration resource needs attention" = "配置资源需要处理";
 "Configuration revision is invalid" = "配置版本无效";
 "Configuration store limits are invalid" = "配置存储的限额无效";
+"Configurations" = "配置";
 "Configurations lose this source. Its rule schemes fall back to Basic." = "配置将移除此来源。使用它的规则方案将退回基础分流。";
+"Configurations, data, and caches" = "配置、数据与缓存";
 "Configured Options" = "已配置的选项";
 "Configured policy groups and nodes are always browsable; connection adds live runtime state." = "已配置的策略组与节点随时可浏览；连接后会附加实时运行状态。";
 "Configured strategy" = "已配置的策略";
@@ -910,6 +916,8 @@
 "Delete This Rule" = "删除这条";
 "Delete rule scheme %@?" = "删除规则方案“%@”？";
 "Delete source %@?" = "删除来源“%@”？";
+"Deletes every configuration, setting, and stored credential on this device. The VPN configuration in Settings and your iCloud backups stay." = "将删除本机上的全部配置、设置和已保存的凭据。系统设置中的 VPN 配置与 iCloud 备份保留。";
+"Deletes every configuration, setting, and stored credential on this device. The VPN configuration in Settings and your iCloud backups stay. Clash starts over as on first launch." = "将删除本机上的全部配置、设置和已保存的凭据。系统设置中的 VPN 配置与 iCloud 备份保留。Clash 将回到首次安装状态。";
 "Density" = "密度";
 "Desktop/router services are disclosed in iOS Changes and never presented as working controls." = "桌面/路由器服务只在「iOS 变更」中披露，不会伪装成可用控件。";
 "Destination" = "目标地址";
@@ -959,6 +967,7 @@
 "Discard Previous Script" = "丢弃旧版脚本";
 "Disclaimer" = "免责声明";
 "Disconnect" = "断开";
+"Disconnect first to reset local data." = "重置本地数据前请先断开连接。";
 "Disconnect on Sleep" = "睡眠时断开";
 "Disconnected" = "未连接";
 "Disconnecting" = "正在断开";
@@ -1240,6 +1249,7 @@
 "Format" = "格式";
 "Forward Mode" = "转发模式";
 "Frame crossed a runtime confirmation boundary" = "连接快照跨越了运行实例确认边界";
+"Freed %@" = "已释放 %@";
 "From" = "来自";
 "From %@" = "来自 %@";
 "From Files" = "来自文件";
@@ -1602,6 +1612,8 @@
 "Local addresses use Direct; other traffic uses your selected nodes." = "本地地址直连，其余走所选节点。";
 "Local cache · read-only" = "本地缓存 · 只读";
 "Local copy · edits apply on the next start" = "本地副本 · 修改在重新选择此配置后生效";
+"Local data is unavailable." = "本地数据不可用。";
+"Local data was reset." = "本地数据已重置。";
 "Local mappings could not be saved. The previous configuration is still available." = "本地映射无法保存。先前的配置仍然可用。";
 "Local network" = "局域网";
 "Local paths and credentials stay private. Re-import the profile if one of its supporting files is missing." = "本地路径与凭据不外泄。若某个附属文件缺失，请重新导入该配置。";
@@ -1892,6 +1904,7 @@
 "No usable network" = "无可用网络";
 "No valid active or last-known-good configuration is available" = "没有可用的当前配置，也没有上一次正常的配置";
 "Node" = "节点";
+"Node & Rule Library" = "节点与规则库";
 "Node Collection File" = "节点集合文件";
 "Node Collections" = "节点集合";
 "Node DNS" = "节点 DNS";
@@ -1942,6 +1955,7 @@
 "Nothing leaks. Games, voice and video calls that relied on the fallthrough will stop working unless a rule sends them to DIRECT — they have no TCP fallback to drop to." = "不再泄漏。此前靠兜底直连跑通的游戏、语音与视频通话会停止工作，除非有规则把它们送往 DIRECT——它们没有 TCP 可以回落。";
 "Nothing needed an update." = "没有需要更新的内容。";
 "Nothing to Show" = "没有可显示的内容";
+"Nothing to clean up" = "没有可清理的数据";
 "Nothing to do — you can leave it or remove it." = "不用处理——留着或删掉都可以。";
 "OK" = "好";
 "OK — script returned a valid config object." = "OK — 脚本返回了有效的 config 对象。";
@@ -1967,6 +1981,7 @@
 "On Demand Rules" = "按需求规则";
 "On Demand reacts to network changes. It is not supervised-device Always-On VPN. Disconnecting inside Clash turns On Demand off until the next connect; disconnecting from the system VPN settings leaves it armed, so the system may reconnect on demand." = "按需连接对网络变化作出反应，它不是受监管设备的 Always-On VPN。在 Clash 内断开会关闭按需，直到下次连接；从系统 VPN 设置断开则仍处于待命状态，系统可能按需重连。";
 "On Home" = "已显示";
+"On This Device" = "本机占用";
 "On iOS these rules are kept but match nothing: the owner metadata they test cannot be resolved, so the next rule decides. UID is the exception — it is removed, because a UID rule cannot be built on this platform and keeping it would stop the whole configuration from loading. Use domain, IP, GEOSITE or GEOIP conditions instead." = "在 iOS 上这些规则会保留，但匹配不到任何东西：它们检验的归属元数据无法解析，于是交由下一条规则决定。UID 是例外——它会被移除，因为这个平台上构建不出 UID 规则，留着会让整份配置无法加载。请改用域名、IP、GEOSITE 或 GEOIP 条件。";
 "On iOS, process-, inbound-user- and source-app-based rules run but match nothing, because the owner metadata they test cannot be resolved; UID rules are removed at activation. The editor lets you write them and marks them, so the same profile can carry them for a Mac." = "在 iOS 上，基于进程、入站用户、来源 App 的规则会运行但不会匹配，因为它们检查的信息在这里拿不到；UID 规则在激活时被移除。编辑器允许你写入并标注，这样同一份配置可以带着它们给 Mac 用。";
 "On iOS, process-, inbound-user- and source-app-based rules run but match nothing, because the owner metadata they test cannot be resolved; UID rules are removed at activation. The structured rule editor rejects all of them up front." = "在 iOS 上，基于进程、入站用户和来源应用的规则会运行但匹配不到任何东西，因为它们检验的归属元数据无法解析；UID 规则会在激活时被移除。结构化规则编辑器会在录入时就拒绝它们。";
@@ -2365,6 +2380,7 @@
 "Remove this profile from Clash" = "从 Clash 中移除此配置";
 "Removed" = "已移除";
 "Removed by the profile URL · yours: %@" = "配置链接已删除 · 你的：%@";
+"Removes configurations no longer listed, superseded downloads, and temporary files. Data any configuration still uses is never touched." = "清理不再列出的配置、已被替换的下载和临时文件。任何配置仍在使用的数据不会被动。";
 "Removes the rules, renames and reordering added after the scheme was created. My Rule Sets stay." = "移除当前方案后来添加的规则、改名与排序；我的规则集会保留。";
 "Removing the override does not delete or modify the downloaded source." = "移除覆写不会删除或修改已下载的源码。";
 "Removing them may require importing again." = "移除后可能需要重新导入。";
@@ -2405,6 +2421,9 @@
 "Reset Credentials" = "重置凭据";
 "Reset Failed" = "重置失败";
 "Reset LAN proxy credentials?" = "重置局域网代理凭据？";
+"Reset Local Data" = "重置本地数据";
+"Reset Local Data?" = "要重置本地数据吗？";
+"Reset Local Data…" = "重置本地数据…";
 "Reset Saved Credentials" = "重置已保存的凭据";
 "Reset VPN Profile" = "重置 VPN 配置";
 "Reset VPN Profile?" = "重置 VPN 配置？";
@@ -2495,6 +2514,7 @@
 "Rule Providers" = "规则集";
 "Rule Scheme" = "规则方案";
 "Rule Set" = "规则集";
+"Rule Set & Node Set Cache" = "规则集与节点集缓存";
 "Rule Set File" = "规则集文件";
 "Rule Sets" = "规则集合";
 "Rule Sets (%@)" = "规则集（%@）";
@@ -2758,6 +2778,7 @@
 "Stop the active Clash by Hako VPN profile." = "停止当前的 Clash by Hako VPN 描述文件。";
 "Stopped" = "已停";
 "Stopping Clash VPN." = "正在停止 Clash VPN。";
+"Storage" = "存储空间";
 "Stored URL credentials removed" = "已移除配置链接中保存的凭据";
 "Stored in iCloud" = "已存入 iCloud";
 "Strategy" = "策略";
@@ -2838,6 +2859,7 @@
 "Target" = "目标";
 "Target not in this profile" = "目标不在此配置中";
 "Technical details" = "技术细节";
+"Temporary Files" = "临时文件";
 "Terminal" = "终端";
 "Terms of Use" = "Terms of Use";
 "Test All" = "全部测速";
@@ -3281,6 +3303,7 @@
 "Tokyo 02" = "Tokyo 02";
 "Tools" = "工具";
 "Top-level interface names and Linux routing marks are not applied. Apple selects physical egress through Network Extension and its current network path." = "顶层网卡名与 Linux 路由标记不会生效。Apple 通过网络扩展及其当前网络路径选择物理出口。";
+"Total" = "总计";
 "Total %@" = "共 %@";
 "Traditional Chinese" = "繁体中文";
 "Traffic" = "流量";
