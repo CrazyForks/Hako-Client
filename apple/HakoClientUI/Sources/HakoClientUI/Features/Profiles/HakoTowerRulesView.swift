@@ -126,7 +126,7 @@ public struct HakoTowerRulesLibraryView: View {
             ForEach(roots) { scheme in
                 Button { open(scheme.id) } label: {
                     HakoConfigurationLibraryRow(title: displayLabel(scheme),
-                        count: HakoConfigurationSourceCopy.ruleSummary(record(scheme)))
+                        count: HakoConfigurationSourceCopy.ruleSummary(record(scheme), locale: locale))
                 }.buttonStyle(.plain)
                     .padding(.vertical, HakoMacSettingsMetrics.rowVerticalInset(touch: HakoTheme.Spacing.row))
                     .contextMenu {

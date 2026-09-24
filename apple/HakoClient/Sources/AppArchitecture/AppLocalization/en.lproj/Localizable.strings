@@ -24,6 +24,7 @@
 "%@ cannot be reached from inside the tunnel." = "%@ cannot be reached from inside the tunnel.";
 "%@ chain overrides" = "%@ chain overrides";
 "%@ chain overrides · %@ relay migrations" = "%@ chain overrides · %@ relay migrations";
+"%@ collection" = "%@ collection";
 "%@ collections" = "%@ collections";
 "%@ could not be backed up completely: a saved credential is missing. Re-enter it, then back up again." = "%@ could not be backed up completely: a saved credential is missing. Re-enter it, then back up again.";
 "%@ could not be deleted" = "%@ could not be deleted";

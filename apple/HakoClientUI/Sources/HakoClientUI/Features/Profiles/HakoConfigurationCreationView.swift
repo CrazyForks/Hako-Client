@@ -1786,16 +1786,26 @@ public struct HakoConfigurationLibraryAddCard: View {
 }
 
 public enum HakoConfigurationSourceCopy {
-    public static func ruleSummary(_ source: ConfigurationSourceRecord?) -> HakoDisplayText {
+     
+     
+    static func counted(_ count: Int, one: String, other: String) -> HakoDisplayText {
+        .format(count == 1 ? one : other, [String(count)])
+    }
+    public static func ruleSummary(_ source: ConfigurationSourceRecord?, locale: Locale) -> HakoDisplayText {
         let count = source?.ruleCount ?? 0, collections = source?.ruleProviderCount ?? 0
-        if collections == 0 { return .format("%@ rules", [String(count)]) }
-        if count == 0 { return .format("%@ collections", [String(collections)]) }
-        return .format("%@ rules · %@ collections", [String(count), String(collections)])
+        let rules = counted(count, one: "%@ rule", other: "%@ rules")
+        let sets = counted(collections, one: "%@ collection", other: "%@ collections")
+        if collections == 0 { return rules }
+        if count == 0 { return sets }
+         
+        return .verbatim(rules.resolved(locale: locale) + " · " + sets.resolved(locale: locale))
     }
     public static func summary(_ source: ConfigurationSourceRecord, locale: Locale) -> String {
-        if source.providerCount == 0 { return HakoDisplayText.format("%@ nodes", [String(source.nodeCount)]).resolved(locale: locale) }
-        if source.nodeCount == 0 { return HakoDisplayText.format("%@ collections", [String(source.providerCount)]).resolved(locale: locale) }
-        return HakoDisplayText.format("%@ nodes · %@ collections", [String(source.nodeCount), String(source.providerCount)]).resolved(locale: locale)
+        let nodes = counted(source.nodeCount, one: "%@ node", other: "%@ nodes")
+        let sets = counted(source.providerCount, one: "%@ collection", other: "%@ collections")
+        if source.providerCount == 0 { return nodes.resolved(locale: locale) }
+        if source.nodeCount == 0 { return sets.resolved(locale: locale) }
+        return nodes.resolved(locale: locale) + " · " + sets.resolved(locale: locale)
     }
 }
 

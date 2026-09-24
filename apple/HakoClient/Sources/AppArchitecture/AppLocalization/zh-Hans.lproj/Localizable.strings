@@ -24,6 +24,7 @@
 "%@ cannot be reached from inside the tunnel." = "%@ 在隧道内无法访问。";
 "%@ chain overrides" = "%@ 项链式覆写";
 "%@ chain overrides · %@ relay migrations" = "%@ 项链式覆写 · %@ 项 relay 迁移";
+"%@ collection" = "%@ 个集合";
 "%@ collections" = "%@ 个集合";
 "%@ could not be backed up completely: a saved credential is missing. Re-enter it, then back up again." = "%@ 无法完整备份：有已保存的凭据缺失。请重新填写后再备份。";
 "%@ could not be deleted" = "%@ 无法删除";

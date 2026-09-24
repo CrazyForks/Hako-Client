@@ -24,6 +24,7 @@
 "%@ cannot be reached from inside the tunnel." = "%@ 在通道內無法存取。";
 "%@ chain overrides" = "%@ 項鍊式覆寫";
 "%@ chain overrides · %@ relay migrations" = "%@ 項鍊式覆寫 · %@ 項 relay 遷移";
+"%@ collection" = "%@ 個集合";
 "%@ collections" = "%@ 個集合";
 "%@ could not be backed up completely: a saved credential is missing. Re-enter it, then back up again." = "%@ 無法完整備份：有已儲存的認證資訊缺失。請重新填寫後再備份。";
 "%@ could not be deleted" = "%@ 無法刪除";

@@ -148,7 +148,7 @@ struct ProfileNetworkSettingsView: View {
                 }
             }
             
-            .hakoPageTitle("Profile Network")
+            .hakoPageTitle("Sniffer & NTP")
              
              
              
