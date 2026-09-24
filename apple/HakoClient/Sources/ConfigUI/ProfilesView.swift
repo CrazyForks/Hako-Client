@@ -471,6 +471,12 @@ final class ProfilesViewModel: ObservableObject {
                     }
                 } catch { failures.append(profile.label + ": " + error.localizedDescription) }
             }
+             
+             
+             
+            do {
+                try await register { current in ConfigurationBuiltins.retiringCommunitySchemes(in: current) }
+            } catch { failures.append(error.localizedDescription) }
             if !failures.isEmpty { throw PipelineError.sourceUnavailable(failures.joined(separator: "\n")) }
         }
         legacyRegistration = (registrationID, task)

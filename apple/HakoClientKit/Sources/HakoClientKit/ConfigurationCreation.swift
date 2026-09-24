@@ -617,43 +617,47 @@ extension ConfigurationLibraryStore {
 }
 
 public extension ConfigurationBuiltins {
-    static var communityRecords: [ConfigurationSourceRecord] {
-        [("acl4ssr-default", "ACL4SSR", 11, 16), ("acl4ssr-mini", "ACL4SSR Mini", 5, 13),
-         ("acl4ssr-full", "ACL4SSR Full", 29, 33)].map { id, label, groups, rules in
-            .init(id: id, label: label, origin: .bundled(id), version: "f7c4233b2bc706c89668753b18a9f899d7e9f9bf-1",
-                groupCount: groups, ruleCount: rules, suppliesNodes: false, updatedAt: Date(timeIntervalSince1970: 0))
-        }
-    }
-    static var communitySchemes: [ConfigurationRuleScheme] {
-        communityRecords.map { .init(id: $0.id, label: $0.label, kind: .community, sourceID: $0.id) }
-    }
-    static var schemes: [ConfigurationRuleScheme] { [basicScheme, lazyScheme] + communitySchemes }
-    static var records: [ConfigurationSourceRecord] { [basicRecord, lazyRecord] + communityRecords }
+     
+     
+     
+    static let retiredCommunityRuleIDs = ["acl4ssr-default", "acl4ssr-mini", "acl4ssr-full"]
+    static var schemes: [ConfigurationRuleScheme] { [basicScheme, lazyScheme] }
+    static var records: [ConfigurationSourceRecord] { [basicRecord, lazyRecord] }
 
-     
-     
     static func source(for id: String) throws -> ConfigurationSourcePayload? {
         if id == basicRuleID { return basicSource }
         if id == lazyRuleID { return try lazySource() }
-        guard let record = communityRecords.first(where: { $0.id == id }) else { return nil }
-        func resource(_ name: String) throws -> Data {
-            guard let url = Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "CommunityRules") else {
-                throw ConfigurationLibraryError.missingDependency(name)
+        return nil
+    }
+
+     
+     
+     
+     
+     
+     
+    static func retiringCommunitySchemes(in snapshot: ConfigurationLibrarySnapshot)
+        -> (snapshot: ConfigurationLibrarySnapshot, payloads: [ConfigurationSourcePayload])? {
+        let retired = Set(retiredCommunityRuleIDs)
+        var candidate = snapshot
+        let affected = candidate.recipes.indices.filter { retired.contains(candidate.recipes[$0].ruleSchemeID) }
+        let stale = candidate.rules.contains { retired.contains($0.id) } || candidate.sources.contains { retired.contains($0.id) }
+        guard !affected.isEmpty || stale else { return nil }
+        var payloads: [ConfigurationSourcePayload] = []
+        if !affected.isEmpty {
+            let basic = basicSource
+            if !candidate.rules.contains(where: { $0.id == basicRuleID }) { candidate.rules.append(basicScheme) }
+            if !candidate.sources.contains(where: { $0.id == basic.record.id }) {
+                candidate.sources.append(basic.record); payloads.append(basic)
             }
-            return try Data(contentsOf: url)
-        }
-        guard let json = String(data: try resource(id + ".json"), encoding: .utf8),
-              case .object(let providers) = try OrderedJSON.parse(json).topLevelValue("rule-providers") else {
-            throw ConfigurationLibraryError.unreadable
-        }
-        var files: [String: Data] = [:]
-        for (_, provider) in providers {
-            guard case .string(let name) = provider.topLevelValue("path"), !name.contains("/"), !name.contains("..") else {
-                throw ConfigurationLibraryError.invalidIdentifier
+            for index in affected {
+                candidate.recipes[index].ruleSchemeID = basicRuleID
+                candidate.recipes[index].ruleSource = .init(basic.record)
             }
-            files[name] = try resource(name)
         }
-        return .init(record: record, original: try resource(id + ".ini"), documentJSON: json, resourceFiles: files)
+        candidate.rules.removeAll { retired.contains($0.id) }
+        candidate.sources.removeAll { retired.contains($0.id) }
+        return (candidate, payloads)
     }
 }
 

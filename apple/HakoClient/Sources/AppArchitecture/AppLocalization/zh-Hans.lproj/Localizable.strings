@@ -207,7 +207,6 @@
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "填了 token 就是 TUIC v4，它会忽略 UUID 和密码。二者留一个。";
 "A username cannot begin or end with a space, contain a colon, or contain hidden characters." = "用户名不能以空格开头或结尾，不能含冒号，也不能包含隐藏字符。";
 "A validated runtime revision is ready" = "已准备可运行的验证版本";
-"ACL4SSR · CC BY-SA 4.0" = "ACL4SSR · CC BY-SA 4.0";
 "Abort the request." = "拒绝该请求。";
 "About" = "关于";
 "About Clash" = "关于 Clash";
@@ -625,7 +624,6 @@
 "Comment" = "备注";
 "Common" = "常用";
 "Community" = "社区";
-"Community Rules" = "社区规则";
 "Compact" = "紧凑";
 "Compare" = "对比";
 "Compatibility" = "兼容性";

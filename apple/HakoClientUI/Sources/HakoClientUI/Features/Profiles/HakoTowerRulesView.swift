@@ -53,7 +53,7 @@ public struct HakoTowerRulesLibraryView: View {
         }
         return scheme.label
     }
-    private func bundled(_ scheme: ConfigurationRuleScheme) -> Bool { scheme.kind == .builtin || scheme.kind == .community }
+    private func bundled(_ scheme: ConfigurationRuleScheme) -> Bool { scheme.kind == .builtin }
     public var body: some View {
         HakoConfigurationLibraryList(palette: palette, accessibilityIdentifier: "configuration.library.rules.content") {
             if updateAll == nil, let error { Text(verbatim: error).foregroundStyle(.orange) }
@@ -732,11 +732,10 @@ private struct HakoTowerInlineRules: View {
 
  
 public enum HakoConfigurationRuleLibrarySection: CaseIterable {
-    case builtin, community, custom, subscription, file
+    case builtin, custom, subscription, file
     public var title: String {
         switch self {
         case .builtin: "Built-in Rules"
-        case .community: "Community Rules"
         case .custom: "My Rules"
         case .subscription: "From Subscriptions"
         case .file: "From Files"
@@ -757,7 +756,9 @@ public enum HakoConfigurationRuleLibrarySection: CaseIterable {
         } ?? scheme
         switch base.kind {
         case .builtin: return self == .builtin
-        case .community: return self == .community
+         
+         
+        case .community: return false
         case .custom: return self == .custom
         case .supplied, .imported:
             return library.sources.first { $0.id == base.sourceID }.map { contains($0) } ?? (self == .file)

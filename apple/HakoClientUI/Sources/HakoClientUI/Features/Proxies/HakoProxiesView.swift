@@ -657,6 +657,12 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
                 HakoPerf.mark("proxies page disappears")
                 send(.cancelLatency)
             }
+            .onChange(of: visibleGroupNames) { _ in
+                keepOneGroupOpen()
+            }
+            .onAppear {
+                keepOneGroupOpen()
+            }
             .onChange(of: foldCommand) { _ in
                  
                  
@@ -1999,6 +2005,32 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
     }
 
      
+     
+     
+     
+    private var visibleGroupNames: [String] {
+        var names = snapshot.proxies.groups.map(\.name)
+        if !snapshot.proxies.ungrouped.isEmpty {
+            names.append(HakoProxyBrowsing.ungroupedKey)
+        }
+        return names
+    }
+
+     
+    private func keepOneGroupOpen() {
+        guard HakoPlatformLayout.proxiesKeepsOneGroupOpen else { return }
+        guard let name = HakoProxyBrowsing.groupToKeepOpen(
+            visible: visibleGroupNames,
+            expanded: expanded,
+            lastOpened: lastExpandedGroup,
+            isSearching: isSearching
+        ) else { return }
+        HakoPerf.emit("proxies keep-open group=\(name)")
+        expanded = [name]
+        send(.setGroupExpanded(name: name, isExpanded: true))
+        send(.setVisibleGroup(name: name))
+    }
+
     private var hasExpandedGroups: Bool {
         browsedGroups.contains { expanded.contains($0.name) }
             || expanded.contains(HakoProxyBrowsing.ungroupedKey)

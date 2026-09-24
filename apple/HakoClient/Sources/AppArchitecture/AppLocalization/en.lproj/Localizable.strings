@@ -207,7 +207,6 @@
 "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other." = "A token selects TUIC v4, which ignores the UUID and password. Keep one or the other.";
 "A username cannot begin or end with a space, contain a colon, or contain hidden characters." = "A username cannot begin or end with a space, contain a colon, or contain hidden characters.";
 "A validated runtime revision is ready" = "A validated runtime revision is ready";
-"ACL4SSR · CC BY-SA 4.0" = "ACL4SSR · CC BY-SA 4.0";
 "Abort the request." = "Abort the request.";
 "About" = "About";
 "About Clash" = "About Clash";
@@ -625,7 +624,6 @@
 "Comment" = "Comment";
 "Common" = "Common";
 "Community" = "Community";
-"Community Rules" = "Community Rules";
 "Compact" = "Compact";
 "Compare" = "Compare";
 "Compatibility" = "Compatibility";

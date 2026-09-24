@@ -808,6 +808,26 @@ public enum HakoProxyBrowsing {
         "proxies.group.\(name)"
     }
 
+     
+     
+     
+     
+     
+     
+     
+     
+    public static func groupToKeepOpen(
+        visible: [String],
+        expanded: Set<String>,
+        lastOpened: String?,
+        isSearching: Bool
+    ) -> String? {
+        guard !isSearching, !visible.isEmpty else { return nil }
+        guard !visible.contains(where: expanded.contains) else { return nil }
+        if let lastOpened, visible.contains(lastOpened) { return lastOpened }
+        return visible.first
+    }
+
     public static func columnCount(
         availableWidth: Double,
         layout: HakoProxiesDisplayPreferences.Layout

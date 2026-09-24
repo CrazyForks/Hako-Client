@@ -71,6 +71,18 @@ public enum HakoPlatformLayout {
      
      
      
+     
+     
+     
+     
+    public static var proxiesKeepsOneGroupOpen: Bool {
+#if os(macOS)
+        false
+#else
+        true
+#endif
+    }
+
     public static var pageUsesSystemSettingsIdiom: Bool {
 #if os(macOS)
         true

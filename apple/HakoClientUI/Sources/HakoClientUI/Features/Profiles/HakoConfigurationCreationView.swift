@@ -956,12 +956,6 @@ public struct HakoConfigurationRuleSchemeDetailView: View {
                 }
                 if case .subscription(let url) = source.origin { Text(verbatim: url).font(.footnote).textSelection(.enabled) }
             }
-            if scheme.kind == .community {
-                Section {
-                    Text(verbatim: "ACL4SSR · CC BY-SA 4.0")
-                    Text(verbatim: "https://github.com/ACL4SSR/ACL4SSR").font(.footnote).textSelection(.enabled)
-                }
-            }
             if !configurations.isEmpty {
                 Section("Used by Configurations") {
                     ForEach(Array(configurations.enumerated()), id: \.offset) { _, name in Text(verbatim: name) }
