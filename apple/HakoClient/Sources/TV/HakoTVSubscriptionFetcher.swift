@@ -88,6 +88,13 @@ enum HakoTVSubscriptionFetcher {
         var request = URLRequest(url: url)
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 30
+         
+         
+         
+         
+         
+         
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         let data: Data
         let response: HTTPURLResponse?
         do {
