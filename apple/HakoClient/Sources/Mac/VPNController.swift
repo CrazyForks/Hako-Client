@@ -1251,6 +1251,8 @@ final class VPNController: ObservableObject, DNSOnlyTunnelControlling {
         }
     }
 
+
+
     private func updateStatus(_ status: NEVPNStatus) {
         switch status {
         case .invalid, .disconnected: self.status = "disconnected"

@@ -3664,7 +3664,11 @@ private final class HakoMacSceneModel: ObservableObject {
             downloadTotalBytes: traffic.downloadTotal,
             uploadRatesBytesPerSecond: traffic.uploadHistory,
             downloadRatesBytesPerSecond: traffic.downloadHistory,
-            coreStartedAtUnixSeconds: command.runtimeDiagnostics?.startTimeUnix ?? 0
+            coreStartedAtUnixSeconds: {
+
+
+                return command.runtimeDiagnostics?.startTimeUnix ?? 0
+            }()
         )
     }
 
