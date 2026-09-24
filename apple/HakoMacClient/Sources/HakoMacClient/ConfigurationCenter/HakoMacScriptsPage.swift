@@ -122,35 +122,6 @@ public struct HakoMacScriptsPage: View {
 
      
      
-     
-     
-    @ViewBuilder
-    private func bandHeader(_ title: HakoDisplayText, leads: Bool) -> some View {
-        HStack {
-            Text(hako: title)
-            Spacer()
-            if leads, let updateAll = actions.updateAll {
-                Button {
-                    guard !busy else { return }
-                    busy = true
-                    error = nil
-                    Task { @MainActor in
-                        defer { busy = false }
-                        do {
-                            let result = try await updateAll()
-                            state = result.state
-                            updateMessage = result.message
-                        } catch { self.error = error.localizedDescription }
-                    }
-                } label: { Text(hako: .copy("Update All")) }
-                    .disabled(busy)
-                    .accessibilityIdentifier("configuration-center.scripts.update-all")
-            }
-        }
-    }
-
-     
-     
     @ViewBuilder
     private func scriptRow(_ script: HakoMacScriptEntry) -> some View {
         HakoMacChoiceRow(
@@ -175,50 +146,61 @@ public struct HakoMacScriptsPage: View {
     }
 
     public var body: some View {
-        List {
-             
-             
-             
-             
-             
-             
-             
-             
-            let chosen = state.scripts.first { $0.id == state.selectedID }
-            let others = state.scripts.filter { $0.id != state.selectedID }
+         
+         
+         
+         
+         
+         
+         
+         
+         
+        let chosen = state.scripts.first { $0.id == state.selectedID }
+        let others = state.scripts.filter { $0.id != state.selectedID }
+        HakoMacCardPage {
             if let chosen {
-                Section {
-                    scriptRow(chosen)
-                } header: {
-                    bandHeader(.copy("Script"), leads: true)
-                        .accessibilityIdentifier("configuration-center.scripts.selected")
+                HakoMacCardSection(.copy("Script")) {
+                    scriptRow(chosen).hakoMacCardRow()
                 }
+                .accessibilityIdentifier("configuration-center.scripts.selected")
             }
             if !others.isEmpty {
-                Section {
+                HakoMacCardSection(chosen == nil ? .copy("Scripts") : .copy("Other Scripts")) {
                     ForEach(others) { script in
-                        scriptRow(script)
-                    }
-                } header: {
-                    if chosen == nil {
-                        bandHeader(.copy("Scripts"), leads: true)
-                    } else {
-                        bandHeader(.copy("Other Scripts"), leads: false)
-                            .accessibilityIdentifier("configuration-center.scripts.other")
+                        scriptRow(script).hakoMacCardRow()
                     }
                 }
+                .accessibilityIdentifier(chosen == nil ? "configuration-center.scripts.all" : "configuration-center.scripts.other")
             }
-            Section {
+            HakoMacCardSection(chosen == nil && others.isEmpty ? .copy("Scripts") : nil) {
                 HakoMacListAddRow(.copy("Add Script")) { adding = true }
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.scripts.add")
-            } header: {
-                if chosen == nil, others.isEmpty {
-                    bandHeader(.copy("Scripts"), leads: true)
+                    .hakoMacCardRow()
+                if let updateAll = actions.updateAll {
+                     
+                     
+                     
+                    HakoMacListAddRow(.copy("Update All")) {
+                        guard !busy else { return }
+                        busy = true
+                        error = nil
+                        Task { @MainActor in
+                            defer { busy = false }
+                            do {
+                                let result = try await updateAll()
+                                state = result.state
+                                updateMessage = result.message
+                            } catch { self.error = error.localizedDescription }
+                        }
+                    }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.scripts.update-all")
+                    .hakoMacCardRow()
                 }
             }
             if state.patchFieldCount > 0 {
-                Section {
+                HakoMacCardSection {
                     LabeledContent {
                         Button { perform { try await actions.clearPatch() } } label: { Text(hako: .copy("Clear Field Patch")) }
                             .disabled(busy)
@@ -227,13 +209,13 @@ public struct HakoMacScriptsPage: View {
                         Text(hako: .copy("Field Patch"))
                         Text(hako: .format("%@ fields", [String(state.patchFieldCount)]))
                     }
+                    .hakoMacCardRow()
                 }
             }
             if !state.exceptions.isEmpty {
-                Section {
+                HakoMacCardSection(.copy("This Profile's Exceptions")) {
                     ForEach(Array(state.exceptions.enumerated()), id: \.offset) { index, rule in
-                        Text(verbatim: rule)
-                            .font(.body.monospaced())
+                        HStack { Text(verbatim: rule).font(.body.monospaced()); Spacer() }
                             .contextMenu {
                                 Button(role: .destructive) {
                                     perform { try await actions.removeException(index) }
@@ -242,19 +224,17 @@ public struct HakoMacScriptsPage: View {
                                 }
                             }
                             .accessibilityIdentifier("configuration-center.scripts.exception.\(index)")
+                            .hakoMacCardRow()
                     }
-                } header: {
-                    Text(hako: .copy("This Profile's Exceptions"))
                 }
             }
             if let error {
-                Section {
-                    Text(verbatim: error).foregroundStyle(.red)
-                        .accessibilityIdentifier("configuration-center.scripts.error")
+                HakoMacCardSection {
+                    HStack { Text(verbatim: error).foregroundStyle(.red).accessibilityIdentifier("configuration-center.scripts.error"); Spacer() }
+                        .hakoMacCardRow()
                 }
             }
         }
-        .hakoMacCardList()
         .task {
             guard !loaded else { return }
             loaded = true
