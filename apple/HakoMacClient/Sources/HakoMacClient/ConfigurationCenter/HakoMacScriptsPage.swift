@@ -101,32 +101,70 @@ public struct HakoMacScriptsPage: View {
         _state = State(initialValue: initial)
     }
 
+     
+     
+    @ViewBuilder
+    private func scriptRow(_ script: HakoMacScriptEntry) -> some View {
+        HakoMacChoiceRow(
+            title: .verbatim(script.label),
+            subtitle: .copy("Script"),
+            style: .single,
+            isSelected: state.selectedID == script.id,
+            identifier: "configuration-center.scripts.row.\(script.id)",
+            toggle: { perform { try await actions.select(state.selectedID == script.id ? nil : script.id) } }
+        )
+        .disabled(busy)
+        .contextMenu {
+            if let edit = actions.edit {
+                Button { edit(script.id) } label: { Text(hako: .copy("Edit")) }
+                Divider()
+            }
+            Button(role: .destructive) { deleting = script } label: { Text(hako: .copy("Delete")) }
+        }
+    }
+
     public var body: some View {
         List {
-            Section {
-                ForEach(state.scripts) { script in
-                    HakoMacChoiceRow(
-                        title: .verbatim(script.label),
-                        subtitle: .copy("Script"),
-                        style: .single,
-                        isSelected: state.selectedID == script.id,
-                        identifier: "configuration-center.scripts.row.\(script.id)",
-                        toggle: { perform { try await actions.select(state.selectedID == script.id ? nil : script.id) } }
-                    )
-                    .disabled(busy)
-                    .contextMenu {
-                        if let edit = actions.edit {
-                            Button { edit(script.id) } label: { Text(hako: .copy("Edit")) }
-                            Divider()
-                        }
-                        Button(role: .destructive) { deleting = script } label: { Text(hako: .copy("Delete")) }
+             
+             
+             
+             
+             
+             
+             
+             
+            let chosen = state.scripts.first { $0.id == state.selectedID }
+            let others = state.scripts.filter { $0.id != state.selectedID }
+            if let chosen {
+                Section {
+                    scriptRow(chosen)
+                } header: {
+                    Text(hako: .copy("Script"))
+                        .accessibilityIdentifier("configuration-center.scripts.selected")
+                }
+            }
+            if !others.isEmpty {
+                Section {
+                    ForEach(others) { script in
+                        scriptRow(script)
+                    }
+                } header: {
+                    if chosen == nil {
+                        Text(hako: .copy("Scripts"))
+                    } else {
+                        Text(hako: .copy("Other Scripts"))
+                            .accessibilityIdentifier("configuration-center.scripts.other")
                     }
                 }
+            }
+            Section {
                 HakoMacListAddRow(.copy("Add Script")) { adding = true }
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.scripts.add")
             } header: {
-                Text(hako: .copy("Scripts"))
+                if chosen == nil, others.isEmpty {
+                    Text(hako: .copy("Scripts"))
+                }
             }
             if state.patchFieldCount > 0 {
                 Section {
