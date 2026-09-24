@@ -621,7 +621,19 @@ extension ConfigurationLibraryStore {
              
              
              
-            let systemDNS = ConfigurationDNSSettings.automatic
+             
+             
+             
+             
+             
+             
+             
+             
+             
+            var systemDNS = ConfigurationDNSSettings.automatic
+            if nodeNameservers == nil, let servers = Self.sourceNodeNameservers(in: inputs) {
+                systemDNS = systemDNS.settingTopLevel("proxy-server-nameserver", to: .array(servers.map(OrderedJSON.string)))
+            }
             composition = .init(document: composition.document.settingTopLevel("dns", to: systemDNS),
                 sourceIDs: composition.sourceIDs)
         }
@@ -639,6 +651,25 @@ extension ConfigurationLibraryStore {
         guard case .object = dns else { throw ConfigurationCompositionError.invalidDocument(ruleInput.id) }
         let updated = dns.settingTopLevel("proxy-server-nameserver", to: .array(servers.map(OrderedJSON.string)))
         return .init(document: composition.document.settingTopLevel("dns", to: updated), sourceIDs: composition.sourceIDs)
+    }
+
+     
+     
+     
+    static func sourceNodeNameservers(in inputs: [ConfigurationInput]) -> [String]? {
+        for input in inputs {
+            guard let dns = input.document.topLevelValue("dns"), case .object = dns else { continue }
+            for key in ["proxy-server-nameserver", "nameserver"] {
+                guard case .array(let values)? = dns.topLevelValue(key) else { continue }
+                let servers = values.compactMap { value -> String? in
+                    guard case .string(let server) = value else { return nil }
+                    let trimmed = server.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return trimmed.isEmpty ? nil : trimmed
+                }
+                if !servers.isEmpty { return servers }
+            }
+        }
+        return nil
     }
 
     public func exportArchive() throws -> ConfigurationLibraryArchive {
@@ -963,15 +994,26 @@ public extension ConfigurationLibraryStore {
             document = try Self.settingsExpanded(baseline: originalSettingsBaseline(of: recipe, resolveInput: resolveInput),
                                                  delta: OrderedJSON.parse(recipe.originalSettingsJSON ?? "{}"))
         } else {
-            document = try includingDNS ? advancedSourceDocument(recipe) : OrderedJSON.parse(recipe.settingsJSON ?? "{}")
+            let derived = includingDNS && recipe.dnsMode == .system && recipe.nodeNameservers == nil
+                ? Self.sourceNodeNameservers(in: try recipe.sources.map { try resolveInput(payload($0)) }) : nil
+            document = try includingDNS ? advancedSourceDocument(recipe, sourceNodeNameservers: derived) : OrderedJSON.parse(recipe.settingsJSON ?? "{}")
         }
         return (ConfigurationAdvancedSettingsDocument.project(document, includingDNS: includingDNS).serialized(), current.generation)
     }
 }
 
-private func advancedSourceDocument(_ recipe: ConfigurationRecipe) throws -> OrderedJSON {
+private func advancedSourceDocument(_ recipe: ConfigurationRecipe, sourceNodeNameservers: [String]? = nil) throws -> OrderedJSON {
     let settings = try OrderedJSON.parse(recipe.settingsJSON ?? "{}")
-    if recipe.dnsMode == .system { return settings.settingTopLevel("dns", to: ConfigurationDNSSettings.automatic) }
+    if recipe.dnsMode == .system {
+         
+         
+         
+        var dns = ConfigurationDNSSettings.automatic
+        if recipe.nodeNameservers == nil, let servers = sourceNodeNameservers {
+            dns = dns.settingTopLevel("proxy-server-nameserver", to: .array(servers.map(OrderedJSON.string)))
+        }
+        return settings.settingTopLevel("dns", to: dns)
+    }
     if recipe.dnsMode == .custom { return settings.settingTopLevel("dns", to: try ConfigurationDNSSettings.custom(recipe.customDNSJSON)) }
     return settings
 }
