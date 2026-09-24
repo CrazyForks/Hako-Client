@@ -140,6 +140,8 @@
 "%d unchanged" = "%d 个无变化";
 "%d updated" = "已更新 %d 个";
 "%lld of %lld complete" = "已完成 %lld / %lld";
+"%lld scripts updated." = "已更新 %lld 个脚本。";
+"%lld scripts updated; these failed: %@" = "已更新 %lld 个脚本；这些失败了：%@";
 "%{public}@ #%{public}d %{public}.2fms" = "%{public}@ #%{public}d %{public}.2fms";
 "(?i)hk|港" = "(?i)hk|港";
 "* cannot sit inside a label" = "* 不能出现在某一段的内部";
@@ -2618,6 +2620,7 @@
 "Script URL" = "脚本 URL";
 "Script name" = "脚本名称";
 "Scripts" = "脚本";
+"Scripts Updated" = "脚本已更新";
 "Scripts are imported over http or https. This address uses %@." = "脚本只能通过 http 或 https 导入，而这个地址用的是 %@。";
 "Scripts, custom overrides, and long-tail core fields" = "脚本、自定义覆写与内核长尾字段";
 "Search" = "搜索";

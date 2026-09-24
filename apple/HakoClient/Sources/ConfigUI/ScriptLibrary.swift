@@ -7,6 +7,12 @@ struct ConfigScript: Codable, Equatable, Identifiable {
     var id: String
     var label: String
     var body: String
+     
+     
+     
+     
+     
+    var sourceURL: String? = nil
 }
 
 enum ScriptImportError: LocalizedError, Equatable {
@@ -133,6 +139,21 @@ enum ScriptImport {
             throw ScriptImportError.empty
         }
         return text
+    }
+
+     
+     
+     
+    static func refreshed(
+        _ script: ConfigScript,
+        using downloader: HTTPFetching = ResourceDownloader()
+    ) async throws -> ConfigScript {
+        guard let address = script.sourceURL, !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw ScriptImportError.emptyAddress
+        }
+        var updated = script
+        updated.body = try await body(at: address, using: downloader)
+        return updated
     }
 }
 
@@ -274,6 +295,7 @@ enum ScriptLibrary {
         id: String,
         label: String,
         body: String,
+        sourceURL: String? = nil,
         existing: [ConfigScript] = []
     ) -> ConfigScript? {
         let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -283,7 +305,7 @@ enum ScriptLibrary {
                 && $0.label.caseInsensitiveCompare(trimmed) == .orderedSame
         }
         guard !taken else { return nil }
-        return ConfigScript(id: id, label: trimmed, body: body)
+        return ConfigScript(id: id, label: trimmed, body: body, sourceURL: sourceURL)
     }
 
     static func upsert(_ script: ConfigScript, in defaults: UserDefaults = appGroupDefaults) {
@@ -373,6 +395,11 @@ struct ScriptLibraryView: View {
     @State private var deletingScripts: [ConfigScript] = []
     @State private var editing: ConfigScript?
     @State private var adding: ConfigScript?
+    @State private var updating = false
+    @State private var updateMessage = ""
+    @State private var showsUpdateResult = false
+     
+    private var updatable: [ConfigScript] { scripts.filter { !($0.sourceURL ?? "").isEmpty } }
 
     var body: some View {
         Group {
@@ -442,6 +469,17 @@ struct ScriptLibraryView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("scripts.row.\(script.id)")
+                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                    if !(script.sourceURL ?? "").isEmpty {
+                         
+                         
+                        Button { Task { await update([script]) } } label: {
+                            Label("Update", systemImage: HakoSymbol.arrowClockwise.name)
+                        }
+                        .tint(.blue)
+                        .accessibilityIdentifier("scripts.row.update")
+                    }
+                }
             }
             .onDelete { offsets in
                 deletingScripts = offsets.compactMap { scripts.indices.contains($0) ? scripts[$0] : nil }
@@ -463,11 +501,25 @@ struct ScriptLibraryView: View {
             }
         .hakoToolbarUnlessInPanel {
             ToolbarItemGroup(placement: .hakoNavigationTrailing) {
+                if !updatable.isEmpty {
+                     
+                     
+                    Button { Task { await update(updatable) } } label: {
+                        Label("Update All", systemImage: HakoSymbol.arrowClockwise.name)
+                    }
+                    .disabled(updating)
+                    .accessibilityIdentifier("scripts.update.all")
+                }
                 HakoEditButton()
                 Button { adding = ScriptLibrary.fresh() } label: {
                     Label("Add Script", systemImage: HakoSymbol.plus.name)
                 }
             }
+        }
+        .alert(Text(hako: .copy("Scripts Updated")), isPresented: $showsUpdateResult) {
+            Button("OK") {}
+        } message: {
+            Text(verbatim: updateMessage)
         }
          
         .hakoProductModal(item: $editing, role: .page, immersive: { _ in true }) { script in
@@ -485,6 +537,34 @@ struct ScriptLibraryView: View {
         scripts = ScriptLibrary.load()
         editing = nil
         adding = nil
+    }
+
+     
+     
+     
+    @MainActor
+    private func update(_ targets: [ConfigScript]) async {
+        guard !updating else { return }
+        updating = true
+        defer { updating = false }
+        var changed = 0
+        var failed: [String] = []
+        for script in targets {
+            do {
+                let refreshed = try await ScriptImport.refreshed(script)
+                if refreshed.body != script.body {
+                    ScriptLibrary.upsert(refreshed)
+                    changed += 1
+                }
+            } catch {
+                failed.append(script.label)
+            }
+        }
+        scripts = ScriptLibrary.load()
+        updateMessage = failed.isEmpty
+            ? HakoCopy.format("%lld scripts updated.", locale: .current, changed)
+            : HakoCopy.format("%lld scripts updated; these failed: %@", locale: .current, changed, failed.joined(separator: ", "))
+        showsUpdateResult = true
     }
 }
 
@@ -564,6 +644,9 @@ struct ScriptEditorView: View {
     @State private var renaming = false
     @State private var renameDraft = ""
     @State private var importingFromLink = false
+     
+     
+    @State private var sourceURL: String?
     @State private var showsTestResult = false
     @State private var showsSaveResult = false
     @State private var showsImportError = false
@@ -580,6 +663,7 @@ struct ScriptEditorView: View {
         originalBody = script.body
         _label = State(initialValue: script.label)
         _bodyText = State(initialValue: script.body)
+        _sourceURL = State(initialValue: script.sourceURL)
     }
 
      
@@ -775,6 +859,19 @@ struct ScriptEditorView: View {
         .accessibilityIdentifier("scripts.editor.softWrap")
         if showsImportInMenu {
             Divider()
+            if let sourceURL, !sourceURL.isEmpty {
+                 
+                 
+                Button {
+                    importResult = ""
+                    importAddress = sourceURL
+                    Task { @MainActor in await importFromAddress() }
+                } label: {
+                    Label("Update", systemImage: HakoSymbol.arrowClockwise.name)
+                }
+                .disabled(importing)
+                .accessibilityIdentifier("scripts.editor.update")
+            }
             Button {
                 importResult = ""
                 importingFromLink = true
@@ -861,6 +958,7 @@ struct ScriptEditorView: View {
         do {
             let text = try await ScriptImport.body(at: importAddress)
             bodyText = text
+            sourceURL = importAddress.trimmingCharacters(in: .whitespacesAndNewlines)
             result = ""
             diagnosticLine = nil
             if label == ScriptLibrary.defaultLabel || label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -935,6 +1033,7 @@ struct ScriptEditorView: View {
             id: script.id,
             label: label,
             body: bodyText,
+            sourceURL: sourceURL,
             existing: ScriptLibrary.load()
         ) else {
             saveResult = "Another script already uses that name."
@@ -1064,7 +1163,7 @@ struct ScriptAddSheet: View {
             let text = try await ScriptImport.body(at: address)
             let label = (try? ScriptImport.address(address)).flatMap(ScriptImport.suggestedName(for:))
                 ?? ScriptLibrary.defaultLabel
-            finish(label: label, body: text)
+            finish(label: label, body: text, sourceURL: address.trimmingCharacters(in: .whitespacesAndNewlines))
         } catch {
             fail((error as NSError).localizedDescription)
         }
@@ -1099,15 +1198,15 @@ struct ScriptAddSheet: View {
 
      
      
-    private func finish(label: String, body: String) {
+    private func finish(label: String, body: String, sourceURL: String? = nil) {
         let existing = ScriptLibrary.load(from: library)
         let id = UUID().uuidString
         var candidate = label.trimmingCharacters(in: .whitespacesAndNewlines)
         if candidate.isEmpty { candidate = ScriptLibrary.defaultLabel }
         var attempt = 2
-        var script = ScriptLibrary.editedScript(id: id, label: candidate, body: body, existing: existing)
+        var script = ScriptLibrary.editedScript(id: id, label: candidate, body: body, sourceURL: sourceURL, existing: existing)
         while script == nil, attempt < 100 {
-            script = ScriptLibrary.editedScript(id: id, label: "\(candidate) \(attempt)", body: body, existing: existing)
+            script = ScriptLibrary.editedScript(id: id, label: "\(candidate) \(attempt)", body: body, sourceURL: sourceURL, existing: existing)
             attempt += 1
         }
         guard let script else { fail(ScriptImportError.empty.localizedDescription); return }

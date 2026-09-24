@@ -178,6 +178,7 @@ final class ProfilesViewModel: ObservableObject {
     private(set) var storeReplacementObserver: NSObjectProtocol?
     private var selectionObserver: NSObjectProtocol?
     private var scheduledRefreshObserver: NSObjectProtocol?
+    private var scriptLibraryObserver: NSObjectProtocol?
      
      
      
@@ -293,6 +294,18 @@ final class ProfilesViewModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             self?.load()
+        }
+         
+         
+         
+         
+         
+        scriptLibraryObserver = NotificationCenter.default.addObserver(
+            forName: ScriptLibrary.didChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.restageForClientRuntimeSetting()
         }
     }
 

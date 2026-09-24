@@ -140,6 +140,8 @@
 "%d unchanged" = "%d unchanged";
 "%d updated" = "%d updated";
 "%lld of %lld complete" = "%lld of %lld complete";
+"%lld scripts updated." = "%lld scripts updated.";
+"%lld scripts updated; these failed: %@" = "%lld scripts updated; these failed: %@";
 "%{public}@ #%{public}d %{public}.2fms" = "%{public}@ #%{public}d %{public}.2fms";
 "(?i)hk|港" = "(?i)hk|港";
 "* cannot sit inside a label" = "* cannot sit inside a label";
@@ -2618,6 +2620,7 @@
 "Script URL" = "Script URL";
 "Script name" = "Script name";
 "Scripts" = "Scripts";
+"Scripts Updated" = "Scripts Updated";
 "Scripts are imported over http or https. This address uses %@." = "Scripts are imported over http or https. This address uses %@.";
 "Scripts, custom overrides, and long-tail core fields" = "Scripts, custom overrides, and long-tail core fields";
 "Search" = "Search";

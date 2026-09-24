@@ -518,6 +518,24 @@ struct ProfileOverrideView: View {
                  
                 .tint(.red)
         }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            if !(script.sourceURL ?? "").isEmpty {
+                 
+                 
+                 
+                Button {
+                    Task { @MainActor in
+                        if let refreshed = try? await ScriptImport.refreshed(script), refreshed.body != script.body {
+                            ScriptLibrary.upsert(refreshed, in: scriptLibrary)
+                        }
+                    }
+                } label: {
+                    Label("Update", systemImage: HakoSymbol.arrowClockwise.name)
+                }
+                .tint(.blue)
+                .accessibilityIdentifier("profile.override.script.update")
+            }
+        }
     }
 
      
