@@ -82,6 +82,8 @@
 "%@ saved" = "%@ 已保存";
 "%@ saved for the next connection" = "%@ 已保存，下次连接时生效";
 "%@ scripts" = "%@ 个脚本";
+"%@ source" = "%@ 个来源";
+"%@ sources" = "%@ 个来源";
 "%@ staged; applying to tunnel…" = "%@ 已暂存，正在应用到隧道…";
 "%@ synced" = "%@ 已同步";
 "%@ synced · %@ change(s) held back by your settings" = "%@ 已同步 · %@ 项更新被你的设置压住";

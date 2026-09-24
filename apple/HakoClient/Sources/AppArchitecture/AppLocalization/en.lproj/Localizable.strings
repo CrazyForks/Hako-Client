@@ -82,6 +82,8 @@
 "%@ saved" = "%@ saved";
 "%@ saved for the next connection" = "%@ saved for the next connection";
 "%@ scripts" = "%@ scripts";
+"%@ source" = "%@ source";
+"%@ sources" = "%@ sources";
 "%@ staged; applying to tunnel…" = "%@ staged; applying to tunnel…";
 "%@ synced" = "%@ synced";
 "%@ synced · %@ change(s) held back by your settings" = "%@ synced · %@ change(s) held back by your settings";

@@ -82,6 +82,8 @@
 "%@ saved" = "%@ 已儲存";
 "%@ saved for the next connection" = "%@ 已儲存，下次連線時生效";
 "%@ scripts" = "%@ 個指令碼";
+"%@ source" = "%@ 個來源";
+"%@ sources" = "%@ 個來源";
 "%@ staged; applying to tunnel…" = "%@ 已暫存，正在套用到通道…";
 "%@ synced" = "%@ 已同步";
 "%@ synced · %@ change(s) held back by your settings" = "%@ 已同步 · %@ 項更新被你的設定壓住";
