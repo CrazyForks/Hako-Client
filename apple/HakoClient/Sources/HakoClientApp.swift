@@ -430,7 +430,12 @@ struct AppShellView: View {
             if phase == .active {
                 Task {
                     await restoreTunnelControlSession()
-                    syncConnectionsForSelectedTab(isForeground: scenePhase == .active)
+                     
+                     
+                     
+                     
+                     
+                    syncConnectionsForSelectedTab(isForeground: true)
                 }
 
 
