@@ -52,6 +52,7 @@
 "%@ members" = "%@ 个成员";
 "%@ missing · %@ references" = "缺失 %@ · 引用 %@";
 "%@ needs a name after it." = "%@ 后面需要写名称。";
+"%@ node" = "%@ 个节点";
 "%@ nodes" = "%@ 个节点";
 "%@ nodes · %@ collections" = "%@ 个节点 · %@ 个集合";
 "%@ nodes · %@ providers" = "%@ 个节点 · %@ 个代理集合";
@@ -3422,6 +3423,7 @@
 "Used" = "已用流量";
 "Used %@" = "已用 %@";
 "Used %@ · %@ left / %@" = "已用 %1$@ · 剩 %2$@ / %3$@";
+"Used by %@ profile" = "被 %@ 份配置使用";
 "Used by %@ profiles" = "被 %@ 份配置使用";
 "Used by Profiles" = "使用此来源的配置";
 "Used by node delay tests. Empty resets to the default endpoint." = "用于节点延迟测试。留空则恢复默认端点。";

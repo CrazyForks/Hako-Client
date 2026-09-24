@@ -26,6 +26,14 @@ struct ActivityView: View, Equatable {
     let connections: ConnectionsModel
     @Binding var lens: HakoActivityLens
     var loadsPersistedLogs = true
+    #if os(macOS)
+     
+     
+     
+     
+    @State private var segmentTitles: [(lens: HakoActivityLens, title: String)] = []
+    @Environment(\.locale) private var locale
+    #endif
 
     static func == (lhs: ActivityView, rhs: ActivityView) -> Bool {
         lhs.command === rhs.command
@@ -44,11 +52,48 @@ struct ActivityView: View, Equatable {
         #endif
     }
 
+     
+     
+     
+    private static var showsLensStrip: Bool {
+        #if os(macOS)
+        false
+        #else
+        true
+        #endif
+    }
+
     var body: some View {
+        page
+            #if os(macOS)
+             
+             
+            .hakoToolbarUnlessInPanel {
+                ToolbarItem(placement: .principal) {
+                    Picker(selection: $lens) {
+                        ForEach(segmentTitles, id: \.lens) { segment in
+                            Text(verbatim: segment.title).tag(segment.lens)
+                        }
+                    } label: {
+                        Text(hako: .copy("Activity"))
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .accessibilityIdentifier("activity.lens.segment")
+                }
+            }
+            .task(id: locale) {
+                segmentTitles = HakoActivityLens.allCases.map { ($0, HakoCopy.string($0.title, locale: locale)) }
+            }
+            #endif
+    }
+
+    private var page: some View {
         HakoActivityPageView(
             lens: $lens,
             palette: HakoActivityIOSAdapter.palette,
-            searchFieldStyle: Self.searchFieldStyle
+            searchFieldStyle: Self.searchFieldStyle,
+            showsLensStrip: Self.showsLensStrip
         ) { query, isShown in
              
              

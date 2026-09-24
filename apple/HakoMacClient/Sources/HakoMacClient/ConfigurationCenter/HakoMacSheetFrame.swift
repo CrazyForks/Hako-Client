@@ -56,7 +56,7 @@ struct HakoMacSheetFrame<Content: View, Leading: View, Trailing: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
             HStack(spacing: 12) {
-                leading()
+                leading().tint(.primary)
                 Spacer()
                 trailing()
             }
@@ -80,6 +80,7 @@ struct HakoMacSheetButtons: View {
 
     var body: some View {
         Button(action: onClose) { Text(hako: closeTitle) }
+            .tint(.primary)
             .keyboardShortcut(.cancelAction)
             .accessibilityIdentifier(closeIdentifier)
         if let primaryTitle {

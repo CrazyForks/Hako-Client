@@ -94,6 +94,11 @@ public struct HakoActivityPageView<
     private let connections: (String, Bool) -> Connections
     private let requests: (String, Bool) -> Requests
     private let logs: (String, Bool) -> Logs
+     
+     
+     
+     
+    private let showsLensStrip: Bool
 
      
      
@@ -130,6 +135,7 @@ public struct HakoActivityPageView<
         lens: Binding<HakoActivityLens>,
         palette: HakoProductPalette,
         searchFieldStyle: HakoActivitySearchFieldStyle = .standard,
+        showsLensStrip: Bool = true,
         @ViewBuilder connections: @escaping (String, Bool) -> Connections,
         @ViewBuilder requests: @escaping (String, Bool) -> Requests,
         @ViewBuilder logs: @escaping (String, Bool) -> Logs
@@ -137,6 +143,7 @@ public struct HakoActivityPageView<
         _lens = lens
         self.palette = palette
         self.searchFieldStyle = searchFieldStyle
+        self.showsLensStrip = showsLensStrip
         self.connections = connections
         self.requests = requests
         self.logs = logs
@@ -145,7 +152,7 @@ public struct HakoActivityPageView<
     public var body: some View {
         searchField(
             lensContent
-                .hakoPinnedTopBar { strip }
+                .hakoPinnedTopBar { if showsLensStrip { strip } }
         )
             .task(id: locale) { options = Self.options(in: locale) }
              

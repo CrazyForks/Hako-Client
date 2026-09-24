@@ -52,6 +52,7 @@
 "%@ members" = "%@ members";
 "%@ missing · %@ references" = "%@ missing · %@ references";
 "%@ needs a name after it." = "%@ needs a name after it.";
+"%@ node" = "%@ node";
 "%@ nodes" = "%@ nodes";
 "%@ nodes · %@ collections" = "%@ nodes · %@ collections";
 "%@ nodes · %@ providers" = "%@ nodes · %@ providers";
@@ -3422,6 +3423,7 @@
 "Used" = "Used";
 "Used %@" = "Used %@";
 "Used %@ · %@ left / %@" = "Used %1$@ · %2$@ left / %3$@";
+"Used by %@ profile" = "Used by %@ profile";
 "Used by %@ profiles" = "Used by %@ profiles";
 "Used by Profiles" = "Used by Profiles";
 "Used by node delay tests. Empty resets to the default endpoint." = "Used by node delay tests. Empty resets to the default endpoint.";

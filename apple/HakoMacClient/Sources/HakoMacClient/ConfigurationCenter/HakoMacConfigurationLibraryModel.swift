@@ -29,6 +29,37 @@ public struct HakoMacConfigurationLibraryActions {
      
      
     public var copyScheme: @MainActor (String, String, UInt64) async throws -> ConfigurationLibrarySnapshot
+     
+     
+    public var loadCollections: @Sendable (ConfigurationLibrarySnapshot) async throws -> [ConfigurationCollectionEntry] = { _ in [] }
+     
+     
+     
+    public var updateSourceReplacingRules: @MainActor (String, String?) async throws -> Void = { _, _ in
+        throw ConfigurationLibraryError.unreadable
+    }
+     
+     
+     
+     
+    public var updateAllSources: (@MainActor (_ progress: @escaping @MainActor (String) -> Void) async -> HakoMacBatchOutcome)?
+     
+     
+    public var updateAllRuleSets: (@MainActor (_ progress: @escaping @MainActor (String) -> Void) async -> HakoMacBatchOutcome)?
+     
+     
+     
+    public var saveSourceDetails: @MainActor (String, String, ConfigurationSourceSettingsDraft?, UInt64) async throws -> ConfigurationLibrarySnapshot = { _, _, _, _ in
+        throw ConfigurationLibraryError.unreadable
+    }
+     
+     
+     
+    public var syncLegacyProfiles: (@MainActor (_ progress: @escaping @MainActor (String) -> Void) async -> HakoMacBatchOutcome)?
+     
+    public var saveSourceSettings: @MainActor (String, ConfigurationSourceSettingsDraft, UInt64) async throws -> ConfigurationLibrarySnapshot = { _, _, _ in
+        throw ConfigurationLibraryError.unreadable
+    }
 
     public init(
         load: @escaping @Sendable () async throws -> ConfigurationLibrarySnapshot,
@@ -139,6 +170,9 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
     @Published public private(set) var ruleShelves: [HakoMacRuleLibraryShelf] = []
      
     @Published public private(set) var schemeUsage: [String: Int] = [:]
+     
+    @Published public private(set) var collections: [ConfigurationCollectionEntry] = []
+    private var collectionsGeneration: UInt64?
     @Published public private(set) var phase: Phase = .idle
      
     @Published public private(set) var isBusy = false
@@ -146,6 +180,20 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
     @Published public private(set) var updatingSourceIDs: Set<String> = []
      
     @Published public private(set) var lastError: String?
+     
+    @Published public private(set) var updateProgress: String?
+     
+    @Published public private(set) var updateStatus: String?
+     
+    @Published public private(set) var updateError: String?
+    public var isUpdatingAll: Bool { updateProgress != nil }
+     
+     
+    @Published public private(set) var updateFailures: [String: String] = [:]
+     
+     
+     
+    @Published public private(set) var ruleConflictSourceID: String?
 
     private let actions: HakoMacConfigurationLibraryActions
 
@@ -173,7 +221,38 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
         nodeShelves = Self.nodeShelves(next)
         ruleShelves = Self.ruleShelves(next)
         schemeUsage = next.recipes.reduce(into: [:]) { counts, recipe in counts[recipe.ruleSchemeID, default: 0] += 1 }
+        refreshCollections(next)
         return true
+    }
+
+    private func refreshCollections(_ next: ConfigurationLibrarySnapshot) {
+        guard collectionsGeneration != next.generation else { return }
+        collectionsGeneration = next.generation
+        let load = actions.loadCollections
+        Task { [weak self] in
+            let loaded = (try? await load(next)) ?? []
+            await MainActor.run {
+                guard let self, self.collectionsGeneration == next.generation else { return }
+                self.collections = loaded
+            }
+        }
+    }
+
+     
+    public func collections(for sourceID: String, kind: ConfigurationCollection.Kind = .nodes) -> [ConfigurationCollectionEntry] {
+        collections.filter { $0.source.id == sourceID && $0.id.kind == kind }
+    }
+
+    @discardableResult
+    public func saveSourceSettings(_ id: String, draft: ConfigurationSourceSettingsDraft) async -> Bool {
+        await write { [actions] generation in try await actions.saveSourceSettings(id, draft, generation) }
+    }
+
+     
+     
+    @discardableResult
+    public func saveSourceDetails(_ id: String, label: String, settings: ConfigurationSourceSettingsDraft?) async -> Bool {
+        await write { [actions] generation in try await actions.saveSourceDetails(id, label, settings, generation) }
     }
 
     public func clearError() { lastError = nil }
@@ -230,21 +309,102 @@ public final class HakoMacConfigurationLibraryModel: ObservableObject {
 
      
      
+     
+    public func updateAllSources() async {
+        guard updateProgress == nil else { return }
+        guard let batch = actions.updateAllSources else {
+            for source in snapshot.sources {
+                if case .subscription = source.origin { _ = await updateSource(source.id) }
+            }
+            return
+        }
+        await runBatch(batch, statusKey: "Resources updated")
+    }
+
+     
+     
+    public func updateAllRuleSets() async {
+        guard updateProgress == nil, let batch = actions.updateAllRuleSets else { return }
+        await runBatch(batch, statusKey: "Rule sets updated")
+    }
+
+     
+     
+     
+    public func updateEverything() async {
+        guard updateProgress == nil else { return }
+        let legacy = actions.syncLegacyProfiles
+        let sources = actions.updateAllSources
+        let rules = actions.updateAllRuleSets
+        guard legacy != nil || sources != nil || rules != nil else { return }
+        await runBatch({ progress in
+            var total = HakoMacBatchOutcome()
+            for stage in [legacy, sources, rules].compactMap({ $0 }) {
+                let outcome = await stage(progress)
+                total.updated += outcome.updated
+                total.failures += outcome.failures
+            }
+            return total
+        }, statusKey: "Resources updated")
+    }
+
+     
+     
+    public func hasLinkedContent(legacyProfiles: Bool) -> Bool {
+        legacyProfiles
+            || snapshot.availableSources.contains { if case .subscription = $0.origin { return $0.isRetainedSnapshot != true }; return false }
+            || collections.contains { $0.collection.type == "http" && $0.source.isRetainedSnapshot != true }
+    }
+
+    private func runBatch(
+        _ batch: @MainActor (_ progress: @escaping @MainActor (String) -> Void) async -> HakoMacBatchOutcome, statusKey: String
+    ) async {
+        updateProgress = ""
+        updateStatus = nil
+        updateError = nil
+        let outcome = await batch { [weak self] line in self?.updateProgress = line }
+        await reload()
+         
+        collectionsGeneration = nil
+        refreshCollections(snapshot)
+        updateProgress = nil
+        updateStatus = HakoCopy.string(statusKey, locale: .current) + ": " + String(outcome.updated)
+        updateError = outcome.failures.isEmpty ? nil : outcome.failures.joined(separator: "\n")
+    }
+
+    public func clearUpdateStatus() { updateStatus = nil; updateError = nil }
+
+     
+     
     @discardableResult
-    public func updateSource(_ id: String) async -> Bool {
+    public func updateSource(_ id: String, replacingRules: Bool = false) async -> Bool {
         guard !updatingSourceIDs.contains(id) else { return false }
         updatingSourceIDs.insert(id)
         lastError = nil
+        updateFailures[id] = nil
+        ruleConflictSourceID = nil
         defer { updatingSourceIDs.remove(id) }
         do {
-            try await actions.updateSource(id)
+            if replacingRules {
+                let version = snapshot.sources.first { $0.id == id }?.version
+                try await actions.updateSourceReplacingRules(id, version)
+            } else {
+                try await actions.updateSource(id)
+            }
             await reload()
             return true
         } catch {
-            lastError = error.localizedDescription
+            if error is ConfigurationRuleReplay.Conflict {
+                ruleConflictSourceID = id
+            } else {
+                updateFailures[id] = HakoConfigurationUpdateCopy.message(error, locale: .current)
+                lastError = error.localizedDescription
+            }
             return false
         }
     }
+
+    public func dismissRuleConflict() { ruleConflictSourceID = nil }
 
     private func write(_ operation: (UInt64) async throws -> ConfigurationLibrarySnapshot) async -> Bool {
         guard !isBusy else { return false }
@@ -354,5 +514,22 @@ public final class HakoMacDateFormatterCache: @unchecked Sendable {
         formatter.timeStyle = timeStyle
         formatters[locale.identifier] = formatter
         return formatter
+    }
+}
+
+ 
+ 
+public struct HakoMacBatchOutcome: Sendable {
+    public var updated: Int
+    public var failures: [String]
+    public init(updated: Int = 0, failures: [String] = []) { self.updated = updated; self.failures = failures }
+}
+
+extension ConfigurationRuleScheme {
+     
+     
+    var canBeDeleted: Bool {
+        !ConfigurationBuiltins.isNative(id) && isRetainedSnapshot != true
+            && (kind == .imported || kind == .custom || kind == .supplied)
     }
 }

@@ -32,6 +32,11 @@ public struct HakoMacRuleEditorActions {
     public var copy: @MainActor (ConfigurationRuleDraft, String) async throws -> Void
      
     public var download: @MainActor (String) async throws -> [String]
+     
+     
+     
+    public var documentText: (@Sendable (String) throws -> String)? = nil
+    public var documentFromText: (@Sendable (String) throws -> String)? = nil
 
     public init(
         load: @escaping @MainActor () async throws -> HakoMacRuleEditorState,
@@ -80,15 +85,28 @@ public struct HakoMacRuleEditorSheet: View {
         case rule(UUID?)
         case group(UUID?)
         case ruleSet
-        case source
         case duplicate
         var id: String {
             switch self {
             case .rule(let id): "rule-\(id?.uuidString ?? "new")"
             case .group(let id): "group-\(id?.uuidString ?? "new")"
             case .ruleSet: "rule-set"
-            case .source: "source"
             case .duplicate: "duplicate"
+            }
+        }
+    }
+
+     
+     
+    public enum Pane: String, CaseIterable, Identifiable {
+        case rules, groups, ruleSets, source
+        public var id: String { rawValue }
+        var title: HakoDisplayText {
+            switch self {
+            case .rules: .copy("Rules")
+            case .groups: .copy("Policy Groups")
+            case .ruleSets: .copy("Rule Sets")
+            case .source: .copy("Source")
             }
         }
     }
@@ -116,10 +134,15 @@ public struct HakoMacRuleEditorSheet: View {
     @State private var sheet: Sheet?
     @State private var confirmsDiscard = false
     @State private var confirmsReset = false
+    @State private var pane: Pane = .rules
+    @State private var sourceText = ""
+     
+    @State private var shownSourceText = ""
 
-    public init(actions: HakoMacRuleEditorActions, saved: @escaping () -> Void = {}) {
+    public init(actions: HakoMacRuleEditorActions, initialPane: Pane = .rules, saved: @escaping () -> Void = {}) {
         self.actions = actions
         self.saved = saved
+        _pane = State(initialValue: initialPane)
     }
 
     private var dirty: Bool { edited && state != nil && baseline != nil }
@@ -127,7 +150,7 @@ public struct HakoMacRuleEditorSheet: View {
     public var body: some View {
         HakoMacSheetFrame(
             title: .verbatim(state?.draft.label ?? ""),
-            subtitle: state.map { HakoDisplayText.format("%@ rules", [String($0.draft.rows.count)]) },
+            subtitle: state.map { HakoDisplayText.count($0.draft.rows.count, one: "%@ rule", other: "%@ rules") },
             width: 680,
             height: 640
         ) {
@@ -143,17 +166,11 @@ public struct HakoMacRuleEditorSheet: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         } leading: {
-            Menu {
-                Button { sheet = .duplicate } label: { Text(hako: .copy("Duplicate")) }
-                Button { sheet = .source } label: { Text(hako: .copy("Edit Rules Source")) }
-                Divider()
-                Button(role: .destructive) { confirmsReset = true } label: { Text(hako: .copy("Reset")) }
-            } label: {
-                Text(hako: .copy("Manage"))
-            }
-            .fixedSize()
-            .disabled(busy || state == nil)
-            .accessibilityIdentifier("configuration-center.rule-editor.more")
+             
+             
+            Button { sheet = .duplicate } label: { Text(hako: .copy("Copy Rule Scheme")) }
+                .disabled(busy || state == nil)
+                .accessibilityIdentifier("configuration-center.rule-editor.save-as")
             if let error {
                 Text(verbatim: error).foregroundStyle(.red).font(.subheadline).lineLimit(2)
                     .accessibilityIdentifier("configuration-center.rule-editor.error")
@@ -161,7 +178,8 @@ public struct HakoMacRuleEditorSheet: View {
         } trailing: {
             HakoMacSheetButtons(
                 closeIdentifier: "configuration-center.rule-editor.cancel",
-                primaryTitle: .copy("Save"),
+                 
+                primaryTitle: .copy("OK"),
                 primaryIdentifier: "configuration-center.rule-editor.save",
                 primaryDisabled: !dirty || busy,
                 isBusy: busy,
@@ -189,20 +207,15 @@ public struct HakoMacRuleEditorSheet: View {
                     )
                 case .group(let id):
                     HakoMacRuleGroupEditor(
-                        document: id.flatMap { gid in state.draft.groups.first { $0.id == gid }?.document.serialized() } ?? "",
-                        commit: { text in try mutateThrowing { draft in try draft.setGroup(OrderedJSON.parse(text), groupID: id) } },
+                        group: id.flatMap { gid in state.draft.groups.first { $0.id == gid } },
+                        all: state.draft.groups,
+                        commit: { document in try mutateThrowing { draft in try draft.setGroup(document, groupID: id) } },
                         close: { sheet = nil }
                     )
                 case .ruleSet:
                     HakoMacLocalRuleSetEditor(
                         download: actions.download,
                         commit: { value in try await runThrowing { let next = try await actions.saveLocal(value); adopt(next, keepDraft: true) } },
-                        close: { sheet = nil }
-                    )
-                case .source:
-                    HakoMacRuleSourceEditor(
-                        text: (try? state.draft.document().serialized()) ?? state.draft.originalDocument.serialized(),
-                        commit: { text in try mutateThrowing { draft in try draft.replaceContents(OrderedJSON.parse(text)) } },
                         close: { sheet = nil }
                     )
                 case .duplicate:
@@ -237,14 +250,86 @@ public struct HakoMacRuleEditorSheet: View {
      
 
     private func content(_ state: HakoMacRuleEditorState) -> some View {
-        List {
-            rulesSection(state.draft)
-            groupsSection(state.draft)
-            ruleSetsSection(state)
+        HStack(spacing: 0) {
+            List(selection: $pane) {
+                ForEach(Pane.allCases) { item in
+                    Text(hako: item.title).tag(item)
+                }
+            }
+            .listStyle(.sidebar)
+            .frame(width: 150)
+            .accessibilityIdentifier("configuration-center.rule-editor.pane")
+            Divider()
+            Group {
+                switch pane {
+                case .rules: List { rulesSection(state.draft) }.listStyle(.inset)
+                case .groups: List { groupsSection(state.draft) }.listStyle(.inset)
+                case .ruleSets: List { ruleSetsSection(state) }.listStyle(.inset)
+                case .source: sourcePane(state)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .listStyle(.inset)
         .hakoFrameWatch("configuration-rule-editor")
         .accessibilityIdentifier("configuration-center.rule-editor")
+    }
+
+     
+     
+     
+    private func sourcePane(_ state: HakoMacRuleEditorState) -> some View {
+        let currentJSON = Self.sourceText(state)
+        return VStack(spacing: 0) {
+            TextEditor(text: $sourceText)
+                .font(.body.monospaced())
+                .padding(12)
+                .accessibilityIdentifier("configuration-center.rule-editor.source.text")
+            Divider()
+            HStack {
+                Button(role: .destructive) { confirmsReset = true } label: { Text(hako: .copy("Reset")) }
+                    .accessibilityIdentifier("configuration-center.rule-editor.source.reset")
+                Spacer()
+                Button { applySourceText() } label: { Text(hako: .copy("Done")) }
+                    .disabled(busy || sourceText == shownSourceText)
+                    .accessibilityIdentifier("configuration-center.rule-editor.source.done")
+            }
+            .padding(10)
+        }
+        .task(id: currentJSON) {
+             
+            let convert = actions.documentText
+            let text = await Task.detached { (try? convert?(currentJSON)) ?? currentJSON }.value
+            shownSourceText = text
+            sourceText = text
+        }
+    }
+
+     
+     
+     
+    private func applySourceText() {
+        let text = sourceText
+        let convert = actions.documentFromText
+        busy = true
+        Task {
+            defer { busy = false }
+            do {
+                let root = try await Task.detached { try OrderedJSON.parse(try convert?(text) ?? text) }.value
+                if case .object(let entries) = root,
+                   entries.contains(where: { !ConfigurationRuleDocument.keys.contains($0.key) }) {
+                    throw HakoMacRuleSourceError.foreignKeys
+                }
+                try mutateThrowing { draft in try draft.replaceContents(root) }
+            } catch HakoMacRuleSourceError.foreignKeys {
+                error = HakoCopy.string("Only rules and policy groups belong here. Add nodes in Node Library.", locale: locale)
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
+
+    private static func sourceText(_ state: HakoMacRuleEditorState) -> String {
+        (try? state.draft.document().serialized()) ?? state.draft.originalDocument.serialized()
     }
 
     private func rulesSection(_ draft: ConfigurationRuleDraft) -> some View {
@@ -346,7 +431,7 @@ public struct HakoMacRuleEditorSheet: View {
                     let key = HakoMacRuleSetKey.local(set)
                     HakoMacChoiceRow(
                         title: .verbatim(set.name),
-                        subtitle: .format("%@ rules", [String(set.rules.count)]),
+                        subtitle: .count(set.rules.count, one: "%@ rule", other: "%@ rules"),
                         style: .multiple,
                         isSelected: installedRuleSets.contains(key),
                         identifier: "configuration-center.rule-editor.local.\(set.id)",
@@ -637,88 +722,196 @@ struct HakoMacRuleRowEditor: View {
  
  
  
+ 
+ 
 struct HakoMacRuleGroupEditor: View {
-    let document: String
-    let commit: (String) throws -> Void
+    let group: ConfigurationRuleDraft.Group?
+    let all: [ConfigurationRuleDraft.Group]
+    let commit: (OrderedJSON) throws -> Void
     let close: () -> Void
-    @State private var text: String
+    @State private var name: String
+    @State private var kind: String
+    @State private var selected: [String]
+    @State private var includeAll: Bool
+    @State private var filter: String
     @State private var error: String?
 
-    init(document: String, commit: @escaping (String) throws -> Void, close: @escaping () -> Void) {
-        self.document = document
+    init(group: ConfigurationRuleDraft.Group?, all: [ConfigurationRuleDraft.Group], commit: @escaping (OrderedJSON) throws -> Void, close: @escaping () -> Void) {
+        self.group = group
+        self.all = all
         self.commit = commit
         self.close = close
-        _text = State(initialValue: document.isEmpty ? "{\n  \"name\": \"\",\n  \"type\": \"select\",\n  \"proxies\": [\"DIRECT\"]\n}" : document)
+        let seed = Self.fields(of: group)
+        _name = State(initialValue: seed.name)
+        _kind = State(initialValue: seed.kind)
+        _selected = State(initialValue: seed.selected)
+        _includeAll = State(initialValue: seed.includeAll)
+        _filter = State(initialValue: seed.filter)
+    }
+
+    struct Fields: Equatable {
+        var name = ""
+        var kind = "select"
+        var selected: [String] = []
+        var includeAll = false
+        var filter = ""
+    }
+
+     
+    static func fields(of group: ConfigurationRuleDraft.Group?) -> Fields {
+        guard let group else { return Fields() }
+        var fields = Fields(name: group.name, kind: group.type)
+        if case .array(let values) = group.document.topLevelValue("proxies") {
+            fields.selected = values.compactMap { if case .string(let value) = $0 { return value }; return nil }
+        }
+        fields.includeAll = group.document.topLevelValue("include-all") == .scalar("true")
+            || group.document.topLevelValue("include-all-proxies") == .scalar("true")
+        if case .string(let value) = group.document.topLevelValue("filter") { fields.filter = value }
+        return fields
+    }
+
+     
+     
+     
+    static func document(base: OrderedJSON?, fields: Fields) -> OrderedJSON {
+        var document = (base ?? .object([])).settingTopLevel("name", to: .string(fields.name))
+        let previousType: String? = { if case .string(let value) = base?.topLevelValue("type") { return value }; return nil }()
+        if fields.kind != previousType, case .object(let entries) = document {
+            let typeFields: Set<String> = ["url", "interval", "tolerance", "strategy", "lazy", "expected-status", "max-failed-times"]
+            document = .object(entries.filter { !typeFields.contains($0.key) })
+        }
+        document = document.settingTopLevel("type", to: .string(fields.kind))
+            .settingTopLevel("proxies", to: .array(fields.selected.map(OrderedJSON.string)))
+            .settingTopLevel("include-all", to: .scalar(fields.includeAll ? "true" : "false"))
+            .settingTopLevel("include-all-proxies", to: .scalar("false"))
+            .settingTopLevel("filter", to: .string(fields.filter))
+        if fields.kind == "url-test" || fields.kind == "fallback" {
+            if document.topLevelValue("url") == nil { document = document.settingTopLevel("url", to: .string("https://www.gstatic.com/generate_204")) }
+            if document.topLevelValue("interval") == nil { document = document.settingTopLevel("interval", to: .scalar("300")) }
+        }
+        return document
+    }
+
+    private var fields: Fields { Fields(name: name, kind: kind, selected: selected, includeAll: includeAll, filter: filter) }
+    private var dirty: Bool { fields != Self.fields(of: group) }
+    private var canCommit: Bool { !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (!selected.isEmpty || includeAll) }
+    private var kinds: [String] { Array(Set([group?.type ?? "select", "select", "url-test", "fallback"])).sorted() }
+    private var options: [String] {
+        var seen = Set<String>()
+        return (["DIRECT", "REJECT"] + all.filter { $0.id != group?.id }.map(\.name) + selected).filter { seen.insert($0).inserted }
+    }
+    private var available: [String] {
+        let chosen = Set(selected)
+        return options.filter { !chosen.contains($0) }
     }
 
     var body: some View {
         HakoMacSheetFrame(
-            title: document.isEmpty ? .copy("Add Group") : .copy("Group"),
+            title: group == nil ? .copy("Add Group") : .copy("Group"),
             subtitle: .copy("Policy Groups"),
-            width: 560, height: 440
+            width: 560, height: 640
         ) {
-            TextEditor(text: $text)
-                .font(.body.monospaced())
-                .padding(12)
-                .accessibilityIdentifier("configuration-center.rule-editor.group.text")
-        } leading: {
-            if let error {
-                Text(verbatim: error).foregroundStyle(.red).font(.subheadline).lineLimit(2)
-                    .accessibilityIdentifier("configuration-center.rule-editor.group.error")
+            HakoMacSheetForm {
+                 
+                Section {
+                    TextField(text: $name, prompt: Text(hako: .copy("e.g. 🎬 Netflix"))) { Text(hako: .copy("Group Name")) }
+                        .accessibilityIdentifier("configuration-center.rule-editor.group.name")
+                    Picker(selection: $kind) {
+                        ForEach(kinds, id: \.self) { Text(verbatim: $0).tag($0) }
+                    } label: {
+                        Text(hako: .copy("Group Type"))
+                    }
+                    .pickerStyle(.menu)
+                    .accessibilityIdentifier("configuration-center.rule-editor.group.type")
+                } footer: {
+                    Text(hako: .copy("Changing the group type changes how routes are chosen."))
+                }
+                Section {
+                    if selected.isEmpty {
+                        Text(hako: .copy("None")).foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(selected.enumerated()), id: \.element) { index, item in
+                        HStack(spacing: HakoTheme.Spacing.compact) {
+                            Text(verbatim: item)
+                            Spacer()
+                            Button { move(item, by: -1) } label: { Image(systemName: "chevron.up") }
+                                .disabled(index == 0)
+                                .accessibilityLabel(Text(hako: .copy("Move Up")))
+                                .accessibilityIdentifier("configuration-center.rule-editor.group.up")
+                            Button { move(item, by: 1) } label: { Image(systemName: "chevron.down") }
+                                .disabled(index == selected.count - 1)
+                                .accessibilityLabel(Text(hako: .copy("Move Down")))
+                                .accessibilityIdentifier("configuration-center.rule-editor.group.down")
+                            Button { selected.removeAll { $0 == item } } label: { Image(systemName: "minus.circle") }
+                                .accessibilityLabel(Text(hako: .copy("Delete")))
+                                .accessibilityIdentifier("configuration-center.rule-editor.group.remove")
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                } header: {
+                    Text(hako: .copy("Selected (in priority order)"))
+                }
+                Section {
+                    if available.isEmpty {
+                        Text(hako: .copy("None")).foregroundStyle(.secondary)
+                    }
+                    ForEach(available, id: \.self) { item in
+                        Button { selected.append(item) } label: {
+                            HStack {
+                                Text(verbatim: item).foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "plus.circle")
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("configuration-center.rule-editor.group.add-policy")
+                    }
+                } header: {
+                    Text(hako: .copy("Available"))
+                }
+                Section {
+                    Toggle(isOn: $includeAll) { Text(hako: .copy("Include all proxies")) }
+                        .accessibilityIdentifier("configuration-center.rule-editor.group.include-all")
+                    TextField(text: $filter, prompt: Text(verbatim: "(HK|SG)")) { Text(hako: .copy("Include filter")) }
+                        .accessibilityIdentifier("configuration-center.rule-editor.group.filter")
+                } header: {
+                    Text(hako: .copy("Node Name Match"))
+                }
+                if let error {
+                    Section {
+                        Text(verbatim: error).foregroundStyle(.red)
+                            .accessibilityIdentifier("configuration-center.rule-editor.group.error")
+                    }
+                }
             }
         } trailing: {
             HakoMacSheetButtons(
                 closeIdentifier: "configuration-center.rule-editor.group.cancel",
                 primaryTitle: .copy("Done"),
                 primaryIdentifier: "configuration-center.rule-editor.group.done",
-                primaryDisabled: text == document || text.isEmpty,
+                primaryDisabled: !canCommit || !dirty,
                 onClose: close,
-                onPrimary: { do { try commit(text); close() } catch { self.error = error.localizedDescription } }
+                onPrimary: {
+                    do {
+                        try commit(Self.document(base: group?.document, fields: fields))
+                        close()
+                    } catch {
+                        self.error = error.localizedDescription
+                    }
+                }
             )
         }
     }
-}
 
- 
-struct HakoMacRuleSourceEditor: View {
-    let text: String
-    let commit: (String) throws -> Void
-    let close: () -> Void
-    @State private var draft: String
-    @State private var error: String?
-
-    init(text: String, commit: @escaping (String) throws -> Void, close: @escaping () -> Void) {
-        self.text = text
-        self.commit = commit
-        self.close = close
-        _draft = State(initialValue: text)
-    }
-
-    var body: some View {
-        HakoMacSheetFrame(title: .copy("Edit Rules Source"), width: 700, height: 580) {
-            TextEditor(text: $draft)
-                .font(.body.monospaced())
-                .padding(12)
-                .accessibilityIdentifier("configuration-center.rule-editor.source.text")
-        } leading: {
-            if let error {
-                Text(verbatim: error).foregroundStyle(.red).font(.subheadline).lineLimit(2)
-                    .accessibilityIdentifier("configuration-center.rule-editor.source.error")
-            }
-        } trailing: {
-            HakoMacSheetButtons(
-                closeIdentifier: "configuration-center.rule-editor.source.cancel",
-                primaryTitle: .copy("Done"),
-                primaryIdentifier: "configuration-center.rule-editor.source.done",
-                primaryDisabled: draft == text,
-                onClose: close,
-                onPrimary: { do { try commit(draft); close() } catch { self.error = error.localizedDescription } }
-            )
-        }
+    private func move(_ item: String, by offset: Int) {
+        guard let index = selected.firstIndex(of: item) else { return }
+        let target = index + offset
+        guard selected.indices.contains(target) else { return }
+        selected.swapAt(index, target)
     }
 }
 
- 
  
 struct HakoMacLocalRuleSetEditor: View {
     let download: @MainActor (String) async throws -> [String]
@@ -839,3 +1032,5 @@ struct HakoMacNamePrompt: View {
         }
     }
 }
+
+private enum HakoMacRuleSourceError: Error { case foreignKeys }

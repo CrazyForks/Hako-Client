@@ -46,6 +46,8 @@ public struct HakoMacScriptsActions {
      
     public var addManual: @MainActor (String, String) async throws -> HakoMacScriptsState
     public var remove: @MainActor (String) async throws -> HakoMacScriptsState
+     
+    public var edit: (@MainActor (String) -> Void)? = nil
     public var clearPatch: @MainActor () async throws -> HakoMacScriptsState
     public var removeException: @MainActor (Int) async throws -> HakoMacScriptsState
 
@@ -113,6 +115,10 @@ public struct HakoMacScriptsPage: View {
                     )
                     .disabled(busy)
                     .contextMenu {
+                        if let edit = actions.edit {
+                            Button { edit(script.id) } label: { Text(hako: .copy("Edit")) }
+                            Divider()
+                        }
                         Button(role: .destructive) { deleting = script } label: { Text(hako: .copy("Delete")) }
                     }
                 }
@@ -201,32 +207,6 @@ public struct HakoMacScriptsPage: View {
     private func apply(_ operation: @escaping () async throws -> HakoMacScriptsState) async throws {
         state = try await operation()
         adding = false
-    }
-}
-
- 
- 
-public struct HakoMacScriptsSheet: View {
-    private let configurationName: String
-    private let actions: HakoMacScriptsActions
-     
-     
-     
-     
-    @State private var dismiss = HakoDismissHandle()
-
-    public init(configurationName: String, actions: HakoMacScriptsActions) {
-        self.configurationName = configurationName
-        self.actions = actions
-    }
-
-    public var body: some View {
-        HakoMacSheetFrame(title: .copy("Overrides and Scripts"), subtitle: .verbatim(configurationName), width: 600, height: 520) {
-            HakoMacScriptsPage(actions: actions)
-        } trailing: {
-            HakoMacSheetButtons(closeTitle: .copy("Close"), closeIdentifier: "configuration-center.scripts.close", onClose: { dismiss() })
-        }
-        .hakoCapturesDismiss(dismiss)
     }
 }
 

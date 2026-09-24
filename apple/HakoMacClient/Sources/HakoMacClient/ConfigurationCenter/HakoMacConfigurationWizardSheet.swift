@@ -7,6 +7,16 @@ import SwiftUI
 public struct HakoMacConfigurationWizardActions {
     public var create: @MainActor (ConfigurationCreationDraft, UInt64, String) async throws -> Void
     public var sourceImport: HakoMacSourceImportActions
+     
+     
+     
+    public var loadScopeChoices: @MainActor (ConfigurationSourceRecord, ConfigurationSourcePayload?) async throws -> HakoMacNodeScopeChoices = { _, _ in
+        throw ConfigurationLibraryError.unreadable
+    }
+     
+     
+     
+    public var preview: (@MainActor (ConfigurationCreationDraft) async throws -> HakoMacWizardPreview)?
 
     public init(
         create: @escaping @MainActor (ConfigurationCreationDraft, UInt64, String) async throws -> Void,
@@ -87,16 +97,23 @@ public struct HakoMacConfigurationWizardSheet: View {
     @State private var draft = ConfigurationCreationDraft()
     @State private var creationID = UUID().uuidString.lowercased()
     @State private var addingSource = false
+     
+    @State private var scopeSourceID: String?
+    @State private var confirmsDiscard = false
+    @State private var preview: HakoMacWizardPreview?
+    @State private var expandedShelves: Set<String> = []
     @State private var busy = false
     @State private var error: String?
 
     public init(
         model: HakoMacConfigurationLibraryModel,
         actions: HakoMacConfigurationWizardActions,
+        initialDraft: ConfigurationCreationDraft? = nil,
         created: @escaping () -> Void
     ) {
         self.model = model
         self.actions = actions
+        if let initialDraft { _draft = State(initialValue: initialDraft) }
         self.created = created
     }
 
@@ -113,12 +130,80 @@ public struct HakoMacConfigurationWizardSheet: View {
     private var stepSubtitle: HakoDisplayText {
         switch draft.step {
         case .sources: .copy("Node Library")
-        case .rules: .copy("Keep the document's nodes, rules and settings.")
+        case .rules: .copy("Rule Library")
         case .finish: .copy("Configuration")
         }
     }
 
     public var body: some View {
+         
+         
+         
+         
+        if addingSource {
+            HakoMacSourceImportSheet(
+                purpose: .nodes,
+                actions: actions.sourceImport,
+                closeTitle: .copy("Back"),
+                accept: { payload in
+                    draft.add(payload, rule: nil)
+                    addingSource = false
+                },
+                close: { addingSource = false }
+            )
+        } else if let scopeSourceID, let source = scopeSource(scopeSourceID) {
+             
+            HakoMacNodeScopePage(
+                source: source,
+                load: { [actions] in
+                    try await actions.loadScopeChoices(source, draft.newSources.first { $0.record.id == scopeSourceID })
+                },
+                initial: draft.nodeScopes?[scopeSourceID],
+                save: { scope in
+                     
+                     
+                    var scopes = draft.nodeScopes ?? [:]
+                    scopes[scopeSourceID] = scope?.isEmpty == true ? nil : scope
+                    draft.nodeScopes = scopes.isEmpty ? nil : scopes
+                    if scope?.isEmpty == true {
+                        draft.selectedSourceIDs.removeAll { $0 == scopeSourceID }
+                    } else if !draft.selectedSourceIDs.contains(scopeSourceID) {
+                        draft.selectedSourceIDs.append(scopeSourceID)
+                    }
+                    self.scopeSourceID = nil
+                },
+                back: { self.scopeSourceID = nil }
+            )
+        } else {
+            wizard
+        }
+    }
+
+    private func scopeSource(_ id: String) -> ConfigurationSourceRecord? {
+        draft.newSources.first { $0.record.id == id }?.record ?? model.snapshot.sources.first { $0.id == id }
+    }
+
+     
+    private func scopeButton(_ id: String) -> some View {
+        Button { scopeSourceID = id } label: { Image(systemName: "info.circle") }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text(hako: .copy("Node Collections")))
+            .accessibilityIdentifier("configuration-center.wizard.scope.\(id)")
+    }
+
+    private var wizard: some View {
+        wizardFrame
+             
+            .alert(Text(hako: .copy("Discard Changes?")), isPresented: $confirmsDiscard) {
+                Button(role: .destructive) { dismiss() } label: { Text(hako: .copy("Discard Changes")) }
+                    .accessibilityIdentifier("configuration-center.wizard.discard.confirm")
+                Button(role: .cancel) {} label: { Text(hako: .copy("Keep Editing")) }
+            } message: {
+                Text(hako: .copy("This profile has changes that have not been saved."))
+            }
+    }
+
+    private var wizardFrame: some View {
         HakoMacSheetFrame(title: stepTitle, subtitle: draft.step == .finish ? nil : stepSubtitle, width: 600, height: 560) {
             Group {
                 switch draft.step {
@@ -129,7 +214,13 @@ public struct HakoMacConfigurationWizardSheet: View {
             }
             .accessibilityIdentifier("configuration-center.wizard")
         } leading: {
-            if draft.step != .sources {
+            if draft.step == .sources {
+                 
+                 
+                Button { addingSource = true } label: { Text(hako: .opens("Add Source", locale: locale)) }
+                    .disabled(busy)
+                    .accessibilityIdentifier("configuration-center.wizard.add-source")
+            } else {
                 Button(action: back) { Text(hako: .copy("Back")) }
                     .disabled(busy)
                     .accessibilityIdentifier("configuration-center.wizard.back")
@@ -141,95 +232,113 @@ public struct HakoMacConfigurationWizardSheet: View {
         } trailing: {
             HakoMacSheetButtons(
                 closeIdentifier: "configuration-center.wizard.cancel",
+                 
+                 
+                 
+                 
                 primaryTitle: draft.step == .finish ? .copy("Save") : .copy("Next"),
                 primaryIdentifier: "configuration-center.wizard.next",
                 primaryDisabled: !canAdvance,
                 isBusy: busy,
-                onClose: { dismiss() },
+                onClose: { if draft != ConfigurationCreationDraft() && !busy { confirmsDiscard = true } else { dismiss() } },
                 onPrimary: advance
             )
         }
         .task { if model.phase == .idle { await model.reload() } }
-        .sheet(isPresented: $addingSource) {
-            HakoMacSourceImportSheet(
-                purpose: .nodes,
-                actions: actions.sourceImport,
-                accept: { payload in
-                    draft.add(payload, rule: nil)
-                    addingSource = false
-                },
-                close: { addingSource = false }
-            )
-            .hakoModalPresentation(.fitted)
-        }
         .hakoCapturesDismiss(dismiss)
     }
 
      
 
+     
+    private var rowsShownAtOnce: Int { 30 }
+
     private var sourcesStep: some View {
-        List {
+        HakoMacCardPage {
             if !draft.newSources.isEmpty {
-                Section {
-                    ForEach(Array(draft.newSources.enumerated()), id: \.offset) { _, payload in
-                        HakoMacChoiceRow(
-                            title: .verbatim(payload.record.label),
-                            subtitle: .verbatim(HakoConfigurationSourceCopy.summary(payload.record, locale: locale)),
-                            style: .multiple,
-                            isSelected: true,
-                            identifier: "configuration-center.wizard.new-source.\(payload.record.id)",
-                            toggle: {}
-                        )
+                 
+                 
+                HakoMacCardSection(.copy("Add Source")) {
+                    ForEach(Array(draft.newSources.enumerated()), id: \.offset) { index, payload in
+                         
+                        let chosen = draft.selectedSourceIDs.contains(payload.record.id)
+                        HStack(spacing: HakoTheme.Spacing.compact) {
+                            HakoMacCheckRow(
+                                title: .verbatim(payload.record.label),
+                                subtitle: .verbatim(HakoConfigurationSourceCopy.summary(payload.record, locale: locale)),
+                                isOn: chosen,
+                                identifier: "configuration-center.wizard.new-source.\(payload.record.id)",
+                                toggle: { draft.toggleSource(payload.record.id) }
+                            )
+                            if chosen { scopeButton(payload.record.id) }
+                        }
+                        .hakoMacCardRow(isLast: index == draft.newSources.count - 1)
                     }
-                } header: {
-                    Text(hako: .copy("Add Source"))
                 }
             }
             ForEach(model.nodeShelves) { shelf in
-                Section {
-                    ForEach(shelf.sources) { source in
-                        HakoMacChoiceRow(
-                            title: .verbatim(source.label),
-                            subtitle: .verbatim(HakoConfigurationSourceCopy.summary(source, locale: locale)),
-                            style: .multiple,
-                            isSelected: draft.selectedSourceIDs.contains(source.id),
-                            identifier: "configuration-center.wizard.source.\(source.id)",
-                            toggle: { draft.toggleSource(source.id) }
-                        )
+                let expanded = expandedShelves.contains(shelf.id) || shelf.sources.count <= rowsShownAtOnce
+                let shown = expanded ? shelf.sources : Array(shelf.sources.prefix(rowsShownAtOnce))
+                HakoMacCardSection(.copy(shelf.group.title)) {
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { index, source in
+                        let chosen = draft.selectedSourceIDs.contains(source.id)
+                        HStack(spacing: HakoTheme.Spacing.compact) {
+                            HakoMacCheckRow(
+                                title: .verbatim(source.label),
+                                subtitle: .verbatim(HakoConfigurationSourceCopy.summary(source, locale: locale)),
+                                isOn: chosen,
+                                identifier: "configuration-center.wizard.source.\(source.id)",
+                                toggle: { draft.toggleSource(source.id) }
+                            )
+                            if chosen { scopeButton(source.id) }
+                        }
+                        .hakoMacCardRow(isLast: expanded && index == shown.count - 1)
                     }
-                } header: {
-                    Text(hako: .copy(shelf.group.title))
+                    if !expanded {
+                        HakoMacShowAllRow(title: .copy("All Sources"), identifier: "configuration-center.wizard.show-all") {
+                            expandedShelves.insert(shelf.id)
+                        }
+                        .hakoMacCardRow(isLast: true)
+                    }
                 }
             }
-            Section {
-                HakoMacListAddRow(.copy("Add Source")) { addingSource = true }
-                    .accessibilityIdentifier("configuration-center.wizard.add-source")
+            if model.nodeShelves.isEmpty && draft.newSources.isEmpty {
+                HakoMacCardSection { Text(hako: .copy("None")).foregroundStyle(.secondary).hakoMacCardRow(isLast: true) }
             }
         }
-        .listStyle(.inset)
+    }
+
+     
+     
+    private func schemeSubtitle(_ scheme: ConfigurationRuleScheme) -> HakoDisplayText {
+        let base = scheme.baseSchemeID ?? scheme.id
+        if base == ConfigurationBuiltins.basicRuleID {
+            return .copy("China and local traffic use Direct; other traffic uses your selected nodes.")
+        }
+        if base == ConfigurationBuiltins.lazyRuleID {
+            return .copy("Ready-made routing for AI, streaming, social and gaming services.")
+        }
+        return .count(model.usageCount(ofScheme: scheme.id), one: "Used by %@ profile", other: "Used by %@ profiles")
     }
 
     private var rulesStep: some View {
         let selected = HakoMacConfigurationWizardRules.defaultRuleID(draft)
-        return List {
+        return HakoMacCardPage {
             ForEach(model.ruleShelves) { shelf in
-                Section {
-                    ForEach(shelf.schemes) { scheme in
-                        HakoMacChoiceRow(
+                HakoMacCardSection(.copy(shelf.section.title)) {
+                    ForEach(Array(shelf.schemes.enumerated()), id: \.element.id) { index, scheme in
+                        HakoMacTickRow(
                             title: .verbatim(scheme.displayLabel),
-                            subtitle: .format("Used by %@ profiles", [String(model.usageCount(ofScheme: scheme.id))]),
-                            style: .single,
-                            isSelected: scheme.id == selected,
+                            subtitle: schemeSubtitle(scheme),
+                            isOn: scheme.id == selected,
                             identifier: "configuration-center.wizard.rule.\(scheme.id)",
-                            toggle: { draft.selectedRuleID = scheme.id }
+                            select: { draft.selectedRuleID = scheme.id }
                         )
+                        .hakoMacCardRow(isLast: index == shelf.schemes.count - 1)
                     }
-                } header: {
-                    Text(hako: .copy(shelf.section.title))
                 }
             }
         }
-        .listStyle(.inset)
     }
 
     private var finishStep: some View {
@@ -253,6 +362,28 @@ public struct HakoMacConfigurationWizardSheet: View {
                     Text(hako: .copy("Rule Scheme"))
                 }
             }
+             
+            if actions.preview != nil {
+                Section {
+                    LabeledContent {
+                        if let preview { Text(verbatim: String(preview.nodes)) } else { ProgressView().controlSize(.small) }
+                    } label: {
+                        Text(hako: .copy("Nodes"))
+                    }
+                    .accessibilityIdentifier("configuration-center.wizard.preview.nodes")
+                    LabeledContent {
+                        if let preview { Text(verbatim: String(preview.rules)) } else { ProgressView().controlSize(.small) }
+                    } label: {
+                        Text(hako: .copy("Rules"))
+                    }
+                    .accessibilityIdentifier("configuration-center.wizard.preview.rules")
+                }
+            }
+        }
+        .task(id: draft.step) {
+            guard draft.step == .finish, let load = actions.preview else { return }
+            preview = nil
+            preview = try? await load(draft)
         }
     }
 
@@ -344,4 +475,12 @@ struct HakoMacChoiceRow: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier(identifier)
     }
+}
+
+ 
+ 
+public struct HakoMacWizardPreview: Equatable, Sendable {
+    public var nodes: Int
+    public var rules: Int
+    public init(nodes: Int, rules: Int) { self.nodes = nodes; self.rules = rules }
 }
