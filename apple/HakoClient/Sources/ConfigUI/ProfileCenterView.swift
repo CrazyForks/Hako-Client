@@ -323,6 +323,33 @@ struct ProfileCenterAdapter: View {
         }
     }
 
+     
+     
+     
+     
+    struct LibraryProfileFacts: Equatable {
+        var lastUpdatedAt: Date?
+        var usage: ConfigurationSubscriptionUsage?
+    }
+
+    static func libraryFacts(for profile: Profile, in library: ConfigurationLibrarySnapshot) -> LibraryProfileFacts? {
+        guard let recipe = library.recipes.first(where: { $0.id == profile.id }) else { return nil }
+        let links = recipe.sources.compactMap { reference in
+            library.sources.first { record in
+                guard record.id == reference.id, case .subscription = record.origin else { return false }
+                return true
+            }
+        }
+        return LibraryProfileFacts(lastUpdatedAt: links.map(\.updatedAt).max(),
+                                   usage: links.count == 1 ? links[0].subscriptionUsage : nil)
+    }
+
+    private static func subscriptionSnapshot(upload: Int64, download: Int64, total: Int64, expire: Int64) -> HakoProfileSubscriptionSnapshot {
+        HakoProfileSubscriptionSnapshot(
+            uploadBytes: upload, downloadBytes: download, totalBytes: total,
+            expiration: expire > 0 ? Date(timeIntervalSince1970: TimeInterval(expire)) : nil)
+    }
+
     private func profileSnapshot(
         _ profile: Profile, scripts: [ConfigScript]
     ) -> HakoProfileSnapshot? {
@@ -330,6 +357,7 @@ struct ProfileCenterAdapter: View {
             return nil
         }
         let isCurrent = profile.id == model.activeProfileID
+        let libraryFacts = Self.libraryFacts(for: profile, in: configurationLibrary)
         let canDelete = ProfileCenterPolicy.canDelete(
             profileID: profile.id,
             activeProfileID: model.activeProfileID
@@ -340,20 +368,10 @@ struct ProfileCenterAdapter: View {
             label: profile.label,
             source: sourceKind(profile.source),
             sourceSummary: sourceSummary(profile),
-            subscription: profile.subscriptionInfo.map {
-                HakoProfileSubscriptionSnapshot(
-                    uploadBytes: $0.upload,
-                    downloadBytes: $0.download,
-                    totalBytes: $0.total,
-                    expiration: $0.expire > 0
-                        ? Date(
-                            timeIntervalSince1970:
-                                TimeInterval($0.expire)
-                        )
-                        : nil
-                )
-            },
-            lastUpdatedAt: profile.lastUpdatedAt,
+            subscription: libraryFacts != nil
+                ? libraryFacts?.usage.map { Self.subscriptionSnapshot(upload: $0.upload, download: $0.download, total: $0.total, expire: $0.expire) }
+                : profile.subscriptionInfo.map { Self.subscriptionSnapshot(upload: $0.upload, download: $0.download, total: $0.total, expire: $0.expire) },
+            lastUpdatedAt: libraryFacts != nil ? libraryFacts?.lastUpdatedAt : profile.lastUpdatedAt,
             autoUpdate: profile.autoUpdate,
             updateIntervalHours: profile.updateIntervalHours,
             isCurrent: isCurrent,

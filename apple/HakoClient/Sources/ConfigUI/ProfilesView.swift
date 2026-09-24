@@ -3517,15 +3517,26 @@ final class ProfilesViewModel: ObservableObject {
              
              
             guard !references.isEmpty else { return }
+             
+             
+             
+             
+             
+            guard busyProfileID == nil else { return }
+            busyProfileID = profile.id
             clearFailure()
             statusMessage = .format("Syncing %@…", [profile.label])
             Task { [weak self] in
                 guard let self else { return }
+                defer { self.busyProfileID = nil }
                 do {
                     let outcome = try await self.refreshConfigurationSources(references)
                      
                      
                     self.load()
+                     
+                     
+                    self.busyProfileID = nil
                     await self.restageAfterSourceRefresh(profile.id, changed: outcome.changed)
                      
                      

@@ -1982,6 +1982,7 @@ private struct HakoProfileDetailView<
                         symbol: .arrowTriangle2Circlepath,
                         tint: .primary,
                         showsDisclosure: false,
+                        isBusy: profile.isBusy,
                         icon: icon
                     )
                 }
@@ -2907,6 +2908,10 @@ struct HakoProfileActionRow<Icon: View>: View {
     let tint: Color
     var titleColor: Color = .primary
     var showsDisclosure: Bool = true
+     
+     
+     
+    var isBusy: Bool = false
     let icon: (HakoSymbol) -> Icon
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -2928,7 +2933,10 @@ struct HakoProfileActionRow<Icon: View>: View {
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }
-                    if showsDisclosure {
+                    if isBusy {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else if showsDisclosure {
                         disclosureIcon
                     }
                 }
@@ -2953,7 +2961,10 @@ struct HakoProfileActionRow<Icon: View>: View {
             HStack {
                 leadingIcon
                 Spacer(minLength: HakoTheme.Spacing.standard)
-                if showsDisclosure {
+                if isBusy {
+                    ProgressView()
+                        .controlSize(.small)
+                } else if showsDisclosure {
                     disclosureIcon
                 }
             }
