@@ -1612,6 +1612,36 @@ public struct HakoProxiesView<Icon: View>: View, Equatable {
         in group: HakoProxyGroupSnapshot?
     ) -> some View {
         let _ = HakoPerf.count("proxies.card.make")
+         
+         
+         
+         
+         
+         
+         
+         
+        if snapshot.proxies.canEdit(member) {
+            plainMemberCard(member, in: group)
+                .contextMenu {
+                    Button {
+                        send(.editMember(name: member.name))
+                    } label: {
+                        Label {
+                            Text(HakoCopy.key("Edit Node"))
+                        } icon: {
+                            Image(systemName: HakoSymbol.pencil.rawValue)
+                        }
+                    }
+                }
+        } else {
+            plainMemberCard(member, in: group)
+        }
+    }
+
+    private func plainMemberCard(
+        _ member: HakoProxyMemberSnapshot,
+        in group: HakoProxyGroupSnapshot?
+    ) -> some View {
         HakoProxyMemberCard(
             member: member,
             detail: memberDetail(member),
