@@ -162,6 +162,11 @@ final class ConfigResourceStore {
         static let lock = ".configuration-store.lock"
         static let activePointer = "active.json"
         static let lastKnownGoodPointer = "last-known-good.json"
+         
+         
+         
+         
+        static let replacedActivePointer = "replaced-active.json"
         static let profileCurrent = "current"
         static let resolvedConfiguration = "config.resolved.yaml"
         static let compatibilityConfiguration = "config.yaml"
@@ -183,11 +188,6 @@ final class ConfigResourceStore {
     private let maximumRevisions: Int
     private let lockTimeout: TimeInterval
     private let faultInjector: ((ConfigResourceStoreFaultPoint) -> Bool)?
-     
-     
-     
-     
-    private var replacedActive: Pointer?
     private let fileManager: FileManager
 
     var activeConfigURL: URL {
@@ -863,7 +863,12 @@ final class ConfigResourceStore {
     }
 
     private func commitActive(_ pointer: Pointer, data: Data) throws {
-        replacedActive = try? readPointer(Name.activePointer)
+         
+         
+         
+        if let replaced = try? readPointer(Name.activePointer), replaced != pointer {
+            try writePointer(Name.replacedActivePointer, pointer: replaced)
+        }
         try writePointer(Name.activePointer, pointer: pointer)
         Self.forgetActivePointer(at: storeURL.appendingPathComponent(Name.activePointer))
         try inject(.currentCommitted)
@@ -1024,7 +1029,9 @@ final class ConfigResourceStore {
         var protected = Set([profileCurrent].compactMap { $0 })
         if active?.profileID == profileID { protected.insert(active!.revision) }
         if lastKnownGood?.profileID == profileID { protected.insert(lastKnownGood!.revision) }
-        if let replaced = replacedActive, replaced.profileID == profileID { protected.insert(replaced.revision) }
+        if let replaced = try? readPointer(Name.replacedActivePointer), replaced.profileID == profileID {
+            protected.insert(replaced.revision)
+        }
         let entries = try fileManager.contentsOfDirectory(
             at: profile.revisions,
             includingPropertiesForKeys: [.contentModificationDateKey],
@@ -1440,6 +1447,7 @@ extension ConfigResourceStore {
         guard fileManager.fileExists(atPath: profilesURL.path) else { return [] }
         let active = try? readPointer(Name.activePointer)
         let lastKnownGood = try? readPointer(Name.lastKnownGoodPointer)
+        let replaced = try? readPointer(Name.replacedActivePointer)
         let profileDirectories = try fileManager.contentsOfDirectory(
             at: profilesURL,
             includingPropertiesForKeys: [.isDirectoryKey],
@@ -1455,6 +1463,7 @@ extension ConfigResourceStore {
             if let current = try? readProfileCurrent(profile) { protected.insert(current) }
             if active?.profileID == profileID, let revision = active?.revision { protected.insert(revision) }
             if lastKnownGood?.profileID == profileID, let revision = lastKnownGood?.revision { protected.insert(revision) }
+            if replaced?.profileID == profileID, let revision = replaced?.revision { protected.insert(revision) }
             let revisions = try fileManager.contentsOfDirectory(
                 at: profile.revisions,
                 includingPropertiesForKeys: [.contentModificationDateKey],
@@ -1579,9 +1588,25 @@ struct ProviderPayloadStore {
     static func linkCount(of url: URL) -> Int {
         ((try? FileManager.default.attributesOfItem(atPath: url.path))?[.referenceCount] as? Int) ?? 1
     }
+
+     
+    static func inode(of url: URL) -> UInt64? {
+        ((try? FileManager.default.attributesOfItem(atPath: url.path))?[.systemFileNumber] as? NSNumber)?.uint64Value
+    }
+
+     
+    func inodes() -> [UInt64] {
+        let entries = (try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]
+        )) ?? []
+        return entries.compactMap { Self.inode(of: $0) }
+    }
 }
 
 extension ConfigResourceStore {
+     
+     
+     
      
      
      
@@ -1594,6 +1619,7 @@ extension ConfigResourceStore {
             guard fileManager.fileExists(atPath: profilesURL.path) else { return 0 }
             let payloads = payloadStore
             try fileManager.createDirectory(at: payloads.directory, withIntermediateDirectories: true)
+            var held = Set(payloads.inodes())
             var adopted = 0
             let profiles = try fileManager.contentsOfDirectory(
                 at: profilesURL, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
@@ -1615,7 +1641,7 @@ extension ConfigResourceStore {
                     }
                     for file in files where !file.lastPathComponent.hasPrefix(".") {
                         guard (try? file.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
-                              ProviderPayloadStore.linkCount(of: file) <= 1,
+                              let inode = ProviderPayloadStore.inode(of: file), !held.contains(inode),
                               let data = try? readBoundedFile(file, maximumBytes: Self.maximumCandidateResourceBytes)
                         else { continue }
                         let blob = payloads.directory.appendingPathComponent(
@@ -1625,6 +1651,7 @@ extension ConfigResourceStore {
                             guard (try? ProviderPayloadStore.link(blob, to: file)) != nil else { continue }
                         } else {
                             guard (try? fileManager.linkItem(at: file, to: blob)) != nil else { continue }
+                            held.insert(inode)
                         }
                         adopted += 1
                     }

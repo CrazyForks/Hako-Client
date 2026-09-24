@@ -1644,7 +1644,16 @@ final class ProfileActivationCoordinator {
         do {
             try activator(store.activeConfigURL)
         } catch {
-            try? store.restoreActive(previous)
+             
+             
+             
+             
+             
+            do {
+                try store.restoreActive(previous)
+            } catch {
+                _ = try? store.recoverCurrentFromLastKnownGood()
+            }
             throw error
         }
 
