@@ -385,13 +385,14 @@ enum ConfigurationLegacyRegistration {
      
      
      
+     
+     
+     
     static func customNodePayload(profile: Profile, workingDir: URL) throws -> ConfigurationSourcePayload? {
         guard let definition = profile.providerDefinitions?.proxyProviders
                 .first(where: { $0.name == CustomNodePayload.providerName })?.definitionJSON else { return nil }
-        guard !(try CustomNodePayload.payload(inDefinition: definition)).isEmpty else { return nil }
-        guard case .array(let nodes)? = try OrderedJSON.parse(definition).topLevelValue("payload") else {
-            throw ProfileProviderDefinitionError.invalidPayload
-        }
+        guard !(try CustomNodePayload.payload(inDefinition: definition)).isEmpty,
+              case .array(let nodes)? = try OrderedJSON.parse(definition).topLevelValue("payload") else { return nil }
         let yaml = try ConfigTransforms.jsonToYAML(OrderedJSON.object([(key: "proxies", value: .array(nodes))]).serialized())
         let files = try ConfigurationCenterSourceBridge.capturedFiles(profile: profile, yaml: yaml, workingDir: workingDir)
         return try ConfigurationCenterSourceBridge.payload(label: profile.label, origin: .customNodes,
