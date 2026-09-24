@@ -1028,6 +1028,7 @@
 "Each traffic-recognition port must be between 1 and 65535, optionally written as a valid range." = "每个流量识别端口须在 1 到 65535 之间，也可写成有效区间。";
 "Early Data" = "Early Data";
 "Early Data Header" = "Early Data 头";
+"EasyTier Demo" = "EasyTier Demo";
 "Edit" = "编辑";
 "Edit %d personal rules" = "编辑 %d 条个人规则";
 "Edit Advanced Source" = "编辑高级源码";
@@ -1058,6 +1059,7 @@
 "Edited from the profile URL" = "已在配置链接基础上修改";
 "Effective Configuration" = "实际运行配置";
 "Egress" = "出口";
+"Embedded EasyTier mesh outbound that joins a network by name and secret and routes through its peers." = "内嵌 EasyTier 组网出站，按网络名与密钥加入网络并经由其节点转发。";
 "Embedded ZeroTier outbound that joins a network and routes through it." = "内嵌 ZeroTier 出站，加入指定网络并经由它转发。";
 "Embedded tsnet outbound for tailnet routes and optional exit-node use." = "内嵌 tsnet 出站，用于 tailnet 路由与可选的出口节点。";
 "Empty Fallback" = "Empty Fallback";
@@ -1080,6 +1082,7 @@
 "Encrypted Resolver" = "加密解析器";
 "Encrypted TCP and UDP proxy using a selected Shadowsocks cipher." = "使用所选 Shadowsocks 加密方式的 TCP/UDP 加密代理。";
 "Encrypted resolvers, no packet tunnel" = "加密解析器，不建隧道";
+"Encryption Algorithm" = "加密算法";
 "Encryption Key" = "加密密钥";
 "Endpoint-Independent NAT" = "端点无关 NAT (Endpoint-Independent)";
 "Endpoints" = "端点";
@@ -1543,6 +1546,7 @@
 "Kept so older profiles round-trip safely; new profiles use the sections above." = "保留它是为了让旧配置能安全往返；新配置请使用上面的分区。";
 "Kept, but nothing here can match it — the next rule decides." = "保留着，但在这里匹配不到任何东西——由下一条规则决定。";
 "Kernel built-in group" = "内核内建组";
+"Key Pair" = "密钥对";
 "Kind" = "种类";
 "LAN HTTP and SOCKS proxy" = "局域网 HTTP 与 SOCKS 代理";
 "LAN IP" = "局域网 IP";
@@ -1816,6 +1820,7 @@
 "Network Available" = "网络可用";
 "Network Diagnostics" = "网络诊断";
 "Network Quality" = "网络质量";
+"Network Secret" = "网络密钥";
 "Network Tools" = "网络工具";
 "Network Unavailable" = "网络不可用";
 "Network quality test failed" = "网络质量测试失败";
@@ -3547,6 +3552,7 @@
 "View Runtime Configuration" = "查看运行时配置";
 "View Safe Diagnostics" = "查看安全诊断";
 "View Selected Nodes" = "查看已选节点";
+"Virtual IPv4" = "虚拟 IPv4";
 "Visual settings only" = "仅使用可视化设置";
 "WARN network path changed; flushing stale connections" = "WARN network path changed; flushing stale connections";
 "Wait for the current LAN proxy change to finish." = "请等待当前局域网代理变更完成。";
