@@ -778,11 +778,25 @@ struct GlobalCoreBehaviorSettingsView: View {
         }
         .hakoDoorPresenter(
             selection: $doorSelection,
-            title: { _ in "TCP Keep Alive" }
+            title: { _ in "TCP Keep Alive" },
+             
+            saving: HakoDoorSaving(
+                isDirty: { hasUnsavedChanges },
+                save: { $0(commit()) },
+                discard: revert
+            )
         ) { _ in
             keepAliveDestination
         }
         .hakoPageTitle("Core Behavior")
+         
+         
+         
+        .hakoRegistersDeparture(
+            isDirty: hasUnsavedChanges,
+            save: { completion in completion(commit()) },
+            discard: revert
+        )
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                  
@@ -826,7 +840,24 @@ struct GlobalCoreBehaviorSettingsView: View {
             : HakoCopy.format("%d overriding the profile", locale: locale, count)
     }
 
-    private func persist() {
+     
+     
+     
+    private func persist() { if commit() { closePage() } }
+
+     
+     
+    private func revert() {
+        network = storedNetwork
+        runtime = storedRuntime
+        keepAliveIdleText = storedKeepAliveIdleText
+        keepAliveIntervalText = storedKeepAliveIntervalText
+        userAgentPreset = storedUserAgentPreset
+        certificateStore = storedCertificateStore
+    }
+
+    @discardableResult
+    private func commit() -> Bool {
         do {
             network.keepAliveIdleSeconds = try Self.seconds(
                 keepAliveIdleText,
@@ -849,8 +880,15 @@ struct GlobalCoreBehaviorSettingsView: View {
                 certificateStore,
                 forKey: CertificateStorePolicy.defaultsKey
             )
+             
+             
+            storedNetwork = network
+            storedRuntime = runtime
+            storedKeepAliveIdleText = keepAliveIdleText
+            storedKeepAliveIntervalText = keepAliveIntervalText
+            storedUserAgentPreset = userAgentPreset
             storedCertificateStore = certificateStore
-            closePage()
+            return true
         } catch let bounded as ProfileNetworkDraftError {
             error = bounded.localizedDescription
         } catch let bounded as ProfileRuntimeTrustError {
@@ -859,6 +897,7 @@ struct GlobalCoreBehaviorSettingsView: View {
             self.error =
                 "Core behavior could not be saved. The previous configuration remains available."
         }
+        return false
     }
 
     private static func seconds(

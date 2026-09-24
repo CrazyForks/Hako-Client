@@ -220,7 +220,16 @@ struct ProfileRoutePresetView: View {
                 )
             }.value
         }
-        .hakoDoorPresenter(payload: $routingDoor)
+         
+         
+        .hakoDoorPresenter(
+            payload: $routingDoor,
+            saving: HakoDoorSaving(
+                isDirty: { draft != openedWith },
+                save: { $0(commit()) },
+                discard: { draft = openedWith }
+            )
+        )
         .hakoPageTitle("Tunnel & Routes")
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if insideProductModal {

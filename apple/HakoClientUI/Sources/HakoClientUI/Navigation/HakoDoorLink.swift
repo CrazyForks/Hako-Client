@@ -166,10 +166,41 @@ public struct HakoPayloadDoorLink<Destination: View, RowLabel: View>: View {
     }
 }
 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+public struct HakoDoorSaving {
+    public let isDirty: () -> Bool
+     
+     
+    public let save: (@escaping (Bool) -> Void) -> Void
+    public let discard: () -> Void
+
+    public init(
+        isDirty: @escaping () -> Bool,
+        save: @escaping (@escaping (Bool) -> Void) -> Void,
+        discard: @escaping () -> Void
+    ) {
+        self.isDirty = isDirty
+        self.save = save
+        self.discard = discard
+    }
+}
+
 public extension View {
      
     @ViewBuilder
-    func hakoDoorPresenter(payload: Binding<HakoDoorPayload?>) -> some View {
+    func hakoDoorPresenter(
+        payload: Binding<HakoDoorPayload?>,
+        saving: HakoDoorSaving? = nil
+    ) -> some View {
 #if os(macOS)
         hakoProductModal(item: payload, role: .form) { item in
             HakoSingleColumnNavigationContainer {
@@ -177,6 +208,9 @@ public extension View {
                  
                 item.destination
                     .hakoProductModalRoot(title: item.title)
+                    .hakoDoorSaveBar(saving) { payload.wrappedValue = nil }
+                     
+                     
                      
                      
                      
@@ -187,9 +221,9 @@ public extension View {
                      
                      
                     .hakoRegistersDeparture(
-                        isDirty: false,
-                        save: { $0(true) },
-                        discard: {}
+                        isDirty: saving?.isDirty() ?? false,
+                        save: saving?.save ?? { $0(true) },
+                        discard: saving?.discard ?? {}
                     )
             }
         }
@@ -206,6 +240,7 @@ public extension View {
     func hakoDoorPresenter<Route: Hashable & Identifiable, C: View>(
         selection: Binding<Route?>,
         title: @escaping (Route) -> String,
+        saving: HakoDoorSaving? = nil,
         @ViewBuilder content: @escaping (Route) -> C
     ) -> some View {
 #if os(macOS)
@@ -217,12 +252,14 @@ public extension View {
             HakoSingleColumnNavigationContainer {
                 content(route)
                     .hakoProductModalRoot(title: title(route))
+                    .hakoDoorSaveBar(saving) { selection.wrappedValue = nil }
+                     
                      
                      
                     .hakoRegistersDeparture(
-                        isDirty: false,
-                        save: { $0(true) },
-                        discard: {}
+                        isDirty: saving?.isDirty() ?? false,
+                        save: saving?.save ?? { $0(true) },
+                        discard: saving?.discard ?? {}
                     )
             }
         }
@@ -231,3 +268,26 @@ public extension View {
 #endif
     }
 }
+
+#if os(macOS)
+private extension View {
+     
+     
+     
+     
+    @ViewBuilder
+    func hakoDoorSaveBar(_ saving: HakoDoorSaving?, close: @escaping () -> Void) -> some View {
+        if let saving {
+            safeAreaInset(edge: .bottom, spacing: 0) {
+                HakoModalActionBar(
+                    primaryTitle: "Save",
+                    primaryDisabled: !saving.isDirty(),
+                    onPrimary: { saving.save { saved in if saved { close() } } }
+                )
+            }
+        } else {
+            self
+        }
+    }
+}
+#endif

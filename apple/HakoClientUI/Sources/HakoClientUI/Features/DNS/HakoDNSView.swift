@@ -288,7 +288,24 @@ public struct HakoDNSSettingsView<
                                 draft: local,
                                 snapshot: snapshot.dns,
                                 capabilities: capabilities,
-                                icon: icon
+                                icon: icon,
+                                 
+                                 
+                                 
+                                 
+                                 
+                                saving: HakoDoorSaving(
+                                    isDirty: { local.wrappedValue != openedWith },
+                                    save: { completion in
+                                        shownDraft.wrappedValue = local.wrappedValue
+                                        persist(completion: completion)
+                                    },
+                                    discard: {
+                                        saveCoordinator.cancel()
+                                        local.wrappedValue = openedWith
+                                        draft = openedWith
+                                    }
+                                )
                             )
                         }
                         .hakoPushedDetailPage()
@@ -644,8 +661,11 @@ public struct HakoDNSSettingsView<
                 switch outcome {
                 case .saved(let saved):
                     openedWith = saved
-                    completion?(true)
-                    dismiss()
+                     
+                     
+                     
+                     
+                    if let completion { completion(true) } else { dismiss() }
                 case .failed(let message):
                     error = message
                     completion?(false)
@@ -1160,6 +1180,9 @@ private struct HakoDNSAdvancedView<Icon: View>: View {
     let snapshot: HakoDNSSnapshot
     let capabilities: HakoDNSCapabilities
     let icon: (HakoSymbol) -> Icon
+     
+     
+    var saving: HakoDoorSaving? = nil
 
     @ViewBuilder
     private func doorDestination(_ route: DNSDoorRoute) -> some View {
@@ -1566,7 +1589,8 @@ private struct HakoDNSAdvancedView<Icon: View>: View {
         }
         .hakoDoorPresenter(
             selection: $advancedDoor,
-            title: doorTitle
+            title: doorTitle,
+            saving: saving
         ) { route in
             doorDestination(route)
         }
