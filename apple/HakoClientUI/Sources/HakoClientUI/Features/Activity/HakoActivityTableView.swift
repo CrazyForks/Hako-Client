@@ -873,9 +873,6 @@ struct HakoActivityMacFilterBar: View {
                 Text(verbatim: "\(count)")
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
-                Text(verbatim: "↓ \(HakoActivityByteFormatter.count(traffic.download))  ↑ \(HakoActivityByteFormatter.count(traffic.upload))")
-                    .foregroundStyle(.tertiary)
-                    .monospacedDigit()
             }
         }
         .buttonStyle(HakoActivityFilterWordStyle(isOn: on))
@@ -1160,6 +1157,78 @@ struct HakoActivityMacConnectionDetail: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 9)
+    }
+}
+ 
+ 
+ 
+ 
+ 
+ 
+struct HakoActivityMacChainTotals: View {
+    let summaries: [HakoActivityChainSummary]
+    let palette: HakoProductPalette
+    let onChoose: (String) -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+    private let rowHeight: CGFloat = 28
+    private let numberWidth: CGFloat = 90
+
+    var body: some View {
+        let lines = summaries.sorted { ($0.connectionCount, $1.path) > ($1.connectionCount, $0.path) }
+        HakoActivityTableCard(palette: palette) {
+            VStack(spacing: 0) {
+                row(
+                    Text(hako: .copy("Chain Totals")), Text(hako: .copy("Connections")),
+                    Text(hako: .copy("Download")), Text(hako: .copy("Upload"))
+                )
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(height: 24)
+                Divider()
+                ScrollView(.vertical) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(lines.enumerated()), id: \.element.id) { index, summary in
+                            Button {
+                                if let outbound = summary.chains.first { onChoose(outbound) }
+                            } label: {
+                                row(
+                                    Text(verbatim: summary.path),
+                                    Text(verbatim: "\(summary.connectionCount)"),
+                                    Text(verbatim: HakoActivityByteFormatter.count(summary.download)),
+                                    Text(verbatim: HakoActivityByteFormatter.count(summary.upload))
+                                )
+                                .font(.system(size: 13))
+                                .frame(height: rowHeight)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                        .fill(Color(nsColor: .labelColor).opacity(
+                                            index.isMultiple(of: 2) ? 0 : (colorScheme == .dark ? 0.05 : 0.025)
+                                        ))
+                                        .padding(.horizontal, 6)
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .frame(height: min(CGFloat(lines.count), 4) * rowHeight)
+            }
+        }
+    }
+
+     
+    private func row(_ chain: Text, _ count: Text, _ down: Text, _ up: Text) -> some View {
+        HStack(spacing: 0) {
+            chain.lineLimit(1).truncationMode(.middle)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            count.frame(width: numberWidth, alignment: .trailing)
+            down.frame(width: numberWidth, alignment: .trailing)
+            up.frame(width: numberWidth, alignment: .trailing)
+        }
+        .monospacedDigit()
+        .padding(.horizontal, 18)
     }
 }
 #endif

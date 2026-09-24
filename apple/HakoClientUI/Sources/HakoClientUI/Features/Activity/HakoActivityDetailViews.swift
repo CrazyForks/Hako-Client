@@ -398,6 +398,11 @@ public struct HakoConnectionsView<Icon: View>: View {
                 total: preparedBarTotal,
                 keywords: $keywords
             )
+            if !chainSummaries.isEmpty {
+                HakoActivityMacChainTotals(summaries: chainSummaries, palette: palette) { outbound in
+                    keywords.insert(outbound)
+                }
+            }
             if hasPrepared && preparedConnections.isEmpty {
                 ScrollView { emptyState }
             } else {

@@ -117,6 +117,11 @@ extension HakoActivityTableRow {
             "RuleSet": "RULE-SET", "Match": "MATCH", "DSCP": "DSCP",
         ]
         if let spelled = known[kernel] { return spelled }
+         
+         
+        if kernel.contains("-") || kernel.contains(",") || kernel == kernel.uppercased() {
+            return String(kernel.split(separator: ",", maxSplits: 1).first ?? "").uppercased()
+        }
         var out = ""
         for (index, character) in kernel.enumerated() {
             if index > 0, character.isUppercase, !(out.last?.isUppercase ?? true) { out.append("-") }
